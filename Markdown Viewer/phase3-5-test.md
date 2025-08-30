@@ -23,7 +23,7 @@ This document tests all the critical fixes implemented in Phase 3.5.
 
 ## 3. Standalone Checkbox Test
 
-[x] Standalone unchecked task (should be clickable)
+[ ] Standalone unchecked task (should be clickable)
 
 [x] Standalone checked task (should be clickable)
 

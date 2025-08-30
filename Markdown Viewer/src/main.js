@@ -5,12 +5,13 @@ class MarkdownViewer {
   constructor() {
     this.currentFile = null;
     this.isDirty = false;
-    this.theme = 'light';
+    this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+    this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
     this.currentMode = 'preview';
     this.monacoEditor = null;
     this.isMonacoLoaded = false;
     this.isScrollSyncing = false;
-    this.suggestionsEnabled = true;
+    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false';
     this.isLoadingFile = false;
     this.lastEditorScrollTop = 0;
     this.lastPreviewScrollTop = 0;
@@ -21,6 +22,12 @@ class MarkdownViewer {
     this.taskListStates = new Map();
     this.isTyping = false;
     this.typingTimeout = null;
+    this.previewUpdateTimeout = null;
+    this.performanceMetrics = {
+      lastUpdateTime: 0,
+      updateCount: 0,
+      averageUpdateTime: 0
+    };
     
     console.log('[MarkdownViewer] Phase 3 Constructor started');
     this.initializeElements();
@@ -35,8 +42,10 @@ class MarkdownViewer {
     this.showWelcomePage(); // Show welcome page initially
     this.updateCursorPosition();
     this.updateModeButtons(); // Initialize mode button states
+    this.applyDefaultTheme(); // Apply saved theme
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
+    this.checkStartupFile(); // Check for file passed via command line
     console.log('[MarkdownViewer] Phase 3 Constructor completed');
   }
 
@@ -174,9 +183,9 @@ class MarkdownViewer {
   setupMonacoEventListeners() {
     if (!this.monacoEditor) return;
 
-    // Content change events
+    // Content change events with debounced preview updates
     this.monacoEditor.onDidChangeModelContent(() => {
-      this.updatePreview();
+      this.debouncedUpdatePreview();
       this.markDirty();
       this.updateCursorPosition();
       
@@ -276,8 +285,9 @@ class MarkdownViewer {
       }
     });
     
-    // Keyboard shortcuts
+    // Enhanced keyboard shortcuts - OS compliant
     document.addEventListener('keydown', (e) => {
+      // Handle Ctrl/Cmd shortcuts
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
           case 'n':
@@ -300,6 +310,11 @@ class MarkdownViewer {
             e.preventDefault();
             this.closeFile();
             break;
+          case 'q':
+            // Quit application (Ctrl+Q)
+            e.preventDefault();
+            this.quitApplication();
+            break;
           case '1':
             e.preventDefault();
             this.setMode('code');
@@ -313,12 +328,89 @@ class MarkdownViewer {
             this.setMode('split');
             break;
           case 'i':
-            if (e.ctrlKey && e.shiftKey) {
+            if (e.shiftKey) {
               e.preventDefault();
               this.toggleSuggestions();
             }
             break;
+          case 'e':
+            if (e.shiftKey) {
+              // Export to HTML (Ctrl+Shift+E)
+              e.preventDefault();
+              this.exportToHtml();
+            }
+            break;
+          case 'p':
+            if (e.shiftKey) {
+              // Export to PDF (Ctrl+Shift+P)
+              e.preventDefault();
+              this.exportToPdf();
+            } else {
+              // Print (Ctrl+P)
+              e.preventDefault();
+              this.exportToPdf();
+            }
+            break;
+          case ',':
+            // Settings/Preferences (Ctrl+,)
+            e.preventDefault();
+            this.showSettings();
+            break;
+          case '/':
+            // Toggle theme (Ctrl+/)
+            e.preventDefault();
+            this.toggleTheme();
+            break;
+          case 'f':
+            // Find in editor (handled by Monaco)
+            if (!e.shiftKey) {
+              // Let Monaco handle Ctrl+F
+              return;
+            }
+            break;
+          case 'h':
+            if (e.shiftKey) {
+              // Find and replace (handled by Monaco)
+              return;
+            }
+            break;
+          case 'z':
+            // Undo/Redo (handled by Monaco)
+            return;
+          case 'y':
+            // Redo (handled by Monaco)
+            return;
+          case 'a':
+            // Select all (handled by Monaco)
+            return;
+          case 'c':
+          case 'v':
+          case 'x':
+            // Copy/Paste/Cut (handled by Monaco)
+            return;
         }
+      }
+      
+      // Handle function keys
+      switch (e.key) {
+        case 'F1':
+          e.preventDefault();
+          this.showHelp();
+          break;
+        case 'F5':
+          e.preventDefault();
+          this.refreshPreview();
+          break;
+        case 'F11':
+          e.preventDefault();
+          this.toggleFullscreen();
+          break;
+        case 'Escape':
+          // Close dialogs or exit fullscreen
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          }
+          break;
       }
     });
     
@@ -415,15 +507,14 @@ class MarkdownViewer {
         this.isDirty = false;
         this.updateFilename();
         this.updateModeButtons();
+        this.setMode(this.defaultMode); // Use default mode for opened files
         
         console.log('[File] File opened successfully');
       } else {
         console.log('[File] No file selected');
       }
     } catch (error) {
-      console.error('[File] Error opening file:', error);
-      console.error('[File] Error stack:', error.stack);
-      alert('Error opening file: ' + error.message);
+      this.handleError(error, 'File Opening');
     }
   }
 
@@ -468,9 +559,7 @@ class MarkdownViewer {
         }
       }
     } catch (error) {
-      console.error('[File] Error saving file:', error);
-      console.error('[File] Error stack:', error.stack);
-      alert('Error saving file: ' + error.message);
+      this.handleError(error, 'File Saving');
     }
   }
 
@@ -498,8 +587,7 @@ class MarkdownViewer {
         console.log('[File] File saved as successfully');
       }
     } catch (error) {
-      console.error('[File] Error saving file as:', error);
-      alert('Error saving file: ' + error.message);
+      this.handleError(error, 'Save As');
     }
   }
 
@@ -566,6 +654,7 @@ class MarkdownViewer {
     this.updatePreview();
     this.updateFilename();
     this.updateModeButtons();
+    this.setMode(this.defaultMode); // Use default mode for new files
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
     console.log('[File] New file created');
@@ -577,12 +666,14 @@ class MarkdownViewer {
     this.isLoadingFile = true;
     this.setEditorContent('');
     this.isLoadingFile = false;
+    // Clear preview content
+    this.preview.innerHTML = '';
     this.showWelcomePage();
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
     this.updateFilename();
     this.updateModeButtons();
-    console.log('[File] File closed, editor cleared, showing welcome page');
+    console.log('[File] File closed, editor and preview cleared, showing welcome page');
   }
   
   showWelcomePage() {
@@ -709,14 +800,28 @@ class MarkdownViewer {
       this.codeBtn.classList.remove('disabled');
       this.previewBtn.classList.remove('disabled');
       this.splitBtn.classList.remove('disabled');
+      
+      // Enable export, save, and close buttons
+      this.saveBtn.disabled = false;
+      this.saveAsBtn.disabled = false;
+      this.closeBtn.disabled = false;
+      this.exportHtmlBtn.disabled = false;
+      this.exportPdfBtn.disabled = false;
     } else {
-      // Disable mode buttons and force preview mode
+      // Disable all mode buttons when no document
       this.codeBtn.disabled = true;
-      this.previewBtn.disabled = false; // Keep preview enabled for welcome page
+      this.previewBtn.disabled = true;
       this.splitBtn.disabled = true;
       this.codeBtn.classList.add('disabled');
-      this.previewBtn.classList.remove('disabled');
+      this.previewBtn.classList.add('disabled');
       this.splitBtn.classList.add('disabled');
+      
+      // Disable export, save, and close buttons
+      this.saveBtn.disabled = true;
+      this.saveAsBtn.disabled = true;
+      this.closeBtn.disabled = true;
+      this.exportHtmlBtn.disabled = true;
+      this.exportPdfBtn.disabled = true;
       
       // Force preview mode
       this.setMode('preview');
@@ -1189,119 +1294,265 @@ class MarkdownViewer {
   }
   
   async exportToPdf() {
-    // PDF Export moved to dedicated phase due to library loading complexity
-    alert('PDF Export is currently under development and will be available in a future update.\n\nFor now, you can use HTML Export and then print to PDF from your browser.');
-    return;
-    
     try {
-      console.log('[Export] Exporting to PDF...');
+      console.log('[Export] Starting PDF export...');
       
-      // Check for html2canvas with all possible locations
-      let html2canvasLib;
-      if (typeof window.html2canvas !== 'undefined') {
-        html2canvasLib = window.html2canvas;
-      } else if (typeof html2canvas !== 'undefined') {
-        html2canvasLib = html2canvas;
-      } else {
-        throw new Error('html2canvas library not loaded. Please refresh the page and try again.');
-      }
-      
-      // Check for jsPDF with all possible locations
-      let jsPDFClass;
-      if (window.jspdf && window.jspdf.jsPDF) {
-        jsPDFClass = window.jspdf.jsPDF;
-      } else if (typeof jsPDF !== 'undefined') {
-        jsPDFClass = jsPDF;
-      } else if (window.jsPDF) {
-        jsPDFClass = window.jsPDF;
-      } else {
-        throw new Error('jsPDF library not loaded properly. Please refresh the page and try again.');
-      }
-      
-      console.log('[Export] Libraries found successfully');
-      
-      // Create a temporary container with the preview content
-      const tempContainer = document.createElement('div');
-      tempContainer.style.cssText = `
-        position: absolute;
-        top: -9999px;
-        left: -9999px;
-        width: 800px;
-        padding: 20px;
-        background: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-        line-height: 1.6;
-        color: #24292f;
-      `;
-      tempContainer.innerHTML = this.preview.innerHTML;
-      document.body.appendChild(tempContainer);
-      
-      console.log('[Export] Converting to canvas...');
-      
-      // Convert to canvas with error handling
-      const canvas = await html2canvasLib(tempContainer, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      // Remove temporary container
-      document.body.removeChild(tempContainer);
-      
-      console.log('[Export] Canvas created, generating PDF...');
-      
-      // Create PDF
-      const pdf = new jsPDFClass('p', 'mm', 'a4');
-      
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      
-      let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      
-      console.log('[Export] PDF generated, saving file...');
-      
-      // Save PDF file
-      if (window.__TAURI__) {
-        const filePath = await window.__TAURI__.dialog.save({
-          filters: [{
-            name: 'PDF',
-            extensions: ['pdf']
-          }]
-        });
-        
-        if (filePath) {
-          const pdfBlob = pdf.output('blob');
-          const arrayBuffer = await pdfBlob.arrayBuffer();
-          const uint8Array = new Uint8Array(arrayBuffer);
-          await window.__TAURI__.fs.writeBinaryFile(filePath, uint8Array);
-          console.log('[Export] PDF exported successfully to:', filePath);
-          alert('PDF exported successfully!');
-        }
-      } else {
-        // Fallback for non-Tauri environments
-        pdf.save('markdown-export.pdf');
-        console.log('[Export] PDF downloaded via browser');
-      }
+      // Use Tauri's native print functionality or browser print
+      await this.printContent();
       
     } catch (error) {
-      console.error('[Export] Error exporting to PDF:', error);
-      console.error('[Export] Error stack:', error.stack);
-      alert('Error exporting to PDF: ' + error.message + '\n\nPlease refresh the page and try again.');
+      console.error('[Export] PDF export failed:', error);
+      alert('PDF Export Error: ' + error.message + '\n\nTip: Use Ctrl+P to print directly, or try HTML Export and print from your browser.');
     }
+  }
+  
+  async printContent() {
+    try {
+      console.log('[Export] Preparing content for printing...');
+      
+      // Get content based on current mode
+      let contentToPrint = '';
+      let printTitle = 'Markdown Document';
+      
+      if (this.currentMode === 'code') {
+        // Print Monaco editor content with syntax highlighting
+        const editorContent = this.getEditorContent();
+        contentToPrint = `<pre><code class="language-markdown hljs">${this.escapeHtml(editorContent)}</code></pre>`;
+        printTitle = 'Markdown Source Code';
+      } else {
+        // Print rendered markdown (preview mode or split mode)
+        contentToPrint = this.getPreviewContentForPrint();
+        printTitle = 'Rendered Markdown';
+      }
+      
+      // Create print-optimized HTML
+      const printHtml = this.createPrintHtml(contentToPrint, printTitle);
+      
+      // Try to use Tauri's print functionality first
+      if (window.__TAURI__ && window.__TAURI__.shell) {
+        try {
+          // Create temporary HTML file and open with system print
+          const tempPath = await this.createTempPrintFile(printHtml);
+          await window.__TAURI__.shell.open(tempPath);
+          console.log('[Export] Opened with system default application');
+          return;
+        } catch (error) {
+          console.warn('[Export] Tauri print failed, falling back to browser print:', error);
+        }
+      }
+      
+      // Fallback to browser print without popup
+      this.printViaBrowserDirect(printHtml);
+      
+    } catch (error) {
+      console.error('[Export] Print content failed:', error);
+      throw error;
+    }
+  }
+  
+  createPrintHtml(content, title) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      max-width: none;
+      margin: 0;
+      padding: 15px;
+      color: #24292f;
+      background: white;
+    }
+    h1, h2 { border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+    code { background-color: #f6f8fa; padding: 0.2em 0.4em; border-radius: 6px; }
+    pre { 
+      background-color: transparent !important; 
+      padding: 16px; 
+      border-radius: 6px; 
+      overflow: visible;
+      page-break-inside: avoid;
+      border: none;
+    }
+    pre code { 
+      white-space: pre-wrap; 
+      word-wrap: break-word;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    /* Ensure syntax highlighting colors are preserved */
+    .hljs { background: transparent !important; }
+    .hljs-keyword { color: #d73a49 !important; }
+    .hljs-string { color: #032f62 !important; }
+    .hljs-comment { color: #6a737d !important; }
+    .hljs-number { color: #005cc5 !important; }
+    .hljs-title { color: #6f42c1 !important; }
+    
+    blockquote { border-left: 0.25em solid #d0d7de; padding: 0 1em; color: #656d76; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #d0d7de; padding: 6px 13px; text-align: left; }
+    th { background-color: #f6f8fa; }
+    .task-list-item { list-style: none; margin-bottom: 4px; }
+    
+    /* Better Mermaid diagram handling for print */
+    .mermaid-diagram { 
+      text-align: center; 
+      margin: 20px 0;
+      page-break-inside: avoid;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .mermaid-diagram svg { 
+      max-width: 100% !important; 
+      height: auto !important;
+      max-height: 600px !important;
+      page-break-inside: avoid;
+    }
+    
+    /* Print-specific styles */
+    @media print {
+      body { margin: 0; padding: 15px; }
+      .no-print { display: none !important; }
+      .toolbar, .status-bar, .welcome-page { display: none !important; }
+      
+      /* Better page break handling */
+      pre, .mermaid-diagram, blockquote, table { 
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      h1, h2, h3, h4, h5, h6 { 
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+      
+      /* Optimize images and diagrams */
+      img, svg { 
+        max-width: 100% !important; 
+        height: auto !important;
+        page-break-inside: avoid;
+      }
+      
+      /* Force syntax highlighting colors in print */
+      * {
+        color-adjust: exact !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+    
+    @page {
+      margin: 0.6in;
+      size: letter;
+    }
+  </style>
+</head>
+<body>
+  ${content}
+  <script>
+    // Ensure syntax highlighting is applied after content loads
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof hljs !== 'undefined') {
+        document.querySelectorAll('pre code').forEach(function(block) {
+          if (!block.classList.contains('hljs')) {
+            hljs.highlightElement(block);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>`;
+  }
+  
+  async createTempPrintFile(htmlContent) {
+    const tempDir = await window.__TAURI__.path.tempDir();
+    const tempFile = await window.__TAURI__.path.join(tempDir, 'markdown-print.html');
+    await window.__TAURI__.fs.writeTextFile(tempFile, htmlContent);
+    return tempFile;
+  }
+  
+  printViaBrowserDirect(htmlContent) {
+    // Create a hidden iframe for printing to avoid popup blockers
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    
+    document.body.appendChild(iframe);
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+    
+    // Wait for content to load, then print
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          
+          // Clean up after printing
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+          }, 1000);
+        } catch (error) {
+          console.error('[Export] Iframe print failed:', error);
+          document.body.removeChild(iframe);
+          
+          // Final fallback: direct browser print
+          this.showPrintInstructions();
+        }
+      }, 500);
+    };
+    
+    console.log('[Export] Print iframe created and content loaded');
+  }
+  
+  showPrintInstructions() {
+    const message = `Print Setup Instructions:
+
+1. Press Ctrl+P (or Cmd+P on Mac) to open the print dialog
+2. Select "Save as PDF" or your preferred printer
+3. Adjust print settings as needed
+
+Current mode: ${this.currentMode}
+• Code mode: Prints the markdown source code
+• Preview mode: Prints the rendered markdown
+• Split mode: Prints the rendered markdown
+
+Tip: You can also use HTML Export and then print from your browser.`;
+    
+    alert(message);
+  }
+  
+  getPreviewContentForPrint() {
+    // Clone the preview content and ensure syntax highlighting is applied
+    const previewClone = this.preview.cloneNode(true);
+    
+    // Apply syntax highlighting to code blocks in the clone
+    if (typeof hljs !== 'undefined') {
+      previewClone.querySelectorAll('pre code').forEach((block) => {
+        if (!block.classList.contains('hljs')) {
+          hljs.highlightElement(block);
+        }
+      });
+    }
+    
+    return previewClone.innerHTML;
+  }
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   applySyntaxHighlighting() {
@@ -1353,6 +1604,388 @@ class MarkdownViewer {
       console.log('[Libraries] html2canvas:', typeof html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
       console.log('[Libraries] jsPDF:', typeof jsPDF !== 'undefined' ? 'loaded' : 'not loaded');
     }, 2000);
+  }
+
+  async checkStartupFile() {
+    try {
+      if (window.__TAURI__) {
+        console.log('[Startup] Checking for startup file...');
+        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
+        
+        if (startupFile) {
+          console.log('[Startup] Found startup file:', startupFile);
+          await this.openSpecificFile(startupFile);
+          // Clear the startup file so it doesn't open again
+          await window.__TAURI__.core.invoke('clear_startup_file');
+        } else {
+          console.log('[Startup] No startup file found');
+        }
+      }
+    } catch (error) {
+      console.error('[Startup] Error checking startup file:', error);
+    }
+  }
+
+  async openSpecificFile(filePath) {
+    try {
+      console.log('[File] Opening specific file:', filePath);
+      
+      if (!window.__TAURI__) {
+        throw new Error('Tauri API not available');
+      }
+      
+      const content = await window.__TAURI__.fs.readTextFile(filePath);
+      console.log('[File] File content length:', content.length);
+      
+      this.isLoadingFile = true;
+      this.setEditorContent(content);
+      this.isLoadingFile = false;
+      this.showEditor();
+      this.updatePreview();
+      this.currentFile = filePath;
+      this.isDirty = false;
+      this.updateFilename();
+      this.updateModeButtons();
+      this.setMode(this.defaultMode); // Use default mode for startup files
+      
+      console.log('[File] Specific file opened successfully');
+    } catch (error) {
+      console.error('[File] Error opening specific file:', error);
+      alert('Error opening file: ' + error.message);
+    }
+  }
+
+  async quitApplication() {
+    console.log('[App] Quit application requested');
+    if (this.isDirty) {
+      const shouldSave = await window.__TAURI__.dialog.confirm(
+        'You have unsaved changes. Do you want to save before quitting?',
+        { title: 'Unsaved Changes' }
+      );
+      
+      if (shouldSave) {
+        try {
+          await this.saveFile();
+        } catch (error) {
+          console.error('[App] Error saving before quit:', error);
+          return; // Don't quit if save failed
+        }
+      }
+    }
+    
+    if (window.__TAURI__) {
+      await window.__TAURI__.process.exit(0);
+    }
+  }
+
+  showSettings() {
+    console.log('[Settings] Settings dialog requested');
+    const performanceStats = this.getPerformanceStats();
+    
+    // Show current settings and stats
+    const currentSettings = [
+      `CURRENT SETTINGS:`,
+      `• Theme: ${this.theme}`,
+      `• Default Mode: ${this.defaultMode}`,
+      `• Text Suggestions: ${this.suggestionsEnabled ? 'Enabled' : 'Disabled'}`,
+      ``,
+      `SYSTEM INFO:`,
+      `• Current Mode: ${this.currentMode}`,
+      `• Mermaid: ${this.mermaidInitialized ? 'Loaded' : 'Not Loaded'}`,
+      `• KaTeX: ${this.katexInitialized ? 'Loaded' : 'Not Loaded'}`,
+      ``,
+      `PERFORMANCE STATS:`,
+      `• Updates: ${performanceStats.updateCount}`,
+      `• Last Update: ${performanceStats.lastUpdateTime.toFixed(2)}ms`,
+      `• Average Update: ${performanceStats.averageUpdateTime.toFixed(2)}ms`
+    ];
+    
+    if (performanceStats.memoryUsage) {
+      currentSettings.push(
+        `• Memory Used: ${performanceStats.memoryUsage.used}MB / ${performanceStats.memoryUsage.total}MB`
+      );
+    }
+    
+    const settingsText = currentSettings.join('\n');
+    
+    // Show settings and ask what to change
+    const choice = prompt(`${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n\nEnter 1, 2, or 3:`);
+    
+    switch (choice) {
+      case '1':
+        this.changeDefaultTheme();
+        break;
+      case '2':
+        this.changeDefaultMode();
+        break;
+      case '3':
+        this.changeTextSuggestions();
+        break;
+      default:
+        if (choice !== null) {
+          alert('Invalid choice. Please enter:\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions');
+        }
+        break;
+    }
+  }
+  
+  changeDefaultTheme() {
+    const newTheme = prompt(`Current theme: ${this.theme}\n\nEnter new default theme (light/dark):`, this.theme);
+    
+    if (newTheme && ['light', 'dark'].includes(newTheme.toLowerCase())) {
+      const themeValue = newTheme.toLowerCase();
+      localStorage.setItem('markdownViewer_defaultTheme', themeValue);
+      
+      // Apply theme immediately
+      if (this.theme !== themeValue) {
+        this.toggleTheme();
+      }
+      
+      console.log(`[Settings] Default theme changed to: ${themeValue}`);
+      alert(`Default theme changed to: ${themeValue}`);
+    } else if (newTheme !== null) {
+      alert('Invalid theme. Please enter "light" or "dark".');
+    }
+  }
+  
+  changeDefaultMode() {
+    const newMode = prompt(`Current default mode: ${this.defaultMode}\n\nEnter new default mode (code/preview/split):`, this.defaultMode);
+    
+    if (newMode && ['code', 'preview', 'split'].includes(newMode.toLowerCase())) {
+      this.defaultMode = newMode.toLowerCase();
+      localStorage.setItem('markdownViewer_defaultMode', this.defaultMode);
+      console.log(`[Settings] Default mode changed to: ${this.defaultMode}`);
+      alert(`Default mode changed to: ${this.defaultMode}`);
+    } else if (newMode !== null) {
+      alert('Invalid mode. Please enter "code", "preview", or "split".');
+    }
+  }
+  
+  changeTextSuggestions() {
+    const newSuggestions = prompt(`Current text suggestions: ${this.suggestionsEnabled ? 'Enabled' : 'Disabled'}\n\nEnable text suggestions? (true/false):`, this.suggestionsEnabled.toString());
+    
+    if (newSuggestions !== null) {
+      const enabled = newSuggestions.toLowerCase() === 'true';
+      this.suggestionsEnabled = enabled;
+      localStorage.setItem('markdownViewer_suggestionsEnabled', enabled.toString());
+      
+      // Apply setting immediately if Monaco is loaded
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        this.monacoEditor.updateOptions({
+          suggest: {
+            showKeywords: enabled,
+            showSnippets: enabled,
+            showWords: enabled
+          },
+          quickSuggestions: enabled
+        });
+      }
+      
+      console.log(`[Settings] Text suggestions changed to: ${enabled}`);
+      alert(`Text suggestions ${enabled ? 'enabled' : 'disabled'}`);
+    }
+  }
+
+  showHelp() {
+    console.log('[Help] Help dialog requested');
+    const helpText = `Markdown Viewer - Keyboard Shortcuts
+
+File Operations:
+• Ctrl+N - New file
+• Ctrl+O - Open file
+• Ctrl+S - Save file
+• Ctrl+Shift+S - Save as
+• Ctrl+W - Close file
+• Ctrl+Q - Quit application
+
+View Modes:
+• Ctrl+1 - Code mode
+• Ctrl+2 - Preview mode
+• Ctrl+3 - Split mode
+
+Export & Print:
+• Ctrl+Shift+E - Export to HTML
+• Ctrl+P - Print current view
+• Ctrl+Shift+P - Print current view
+
+Editor:
+• Ctrl+Shift+I - Toggle suggestions
+• Ctrl+F - Find
+• Ctrl+Shift+H - Find and replace
+• Ctrl+Z - Undo
+• Ctrl+Y - Redo
+
+Other:
+• Ctrl+/ - Toggle theme
+• Ctrl+, - Settings
+• F1 - This help
+• F5 - Refresh preview
+• F11 - Toggle fullscreen
+• Esc - Exit fullscreen`;
+    
+    alert(helpText);
+  }
+
+  refreshPreview() {
+    console.log('[Preview] Manual refresh requested');
+    this.updatePreview();
+  }
+
+  toggleFullscreen() {
+    console.log('[UI] Toggle fullscreen requested');
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error('[UI] Error entering fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen().catch(err => {
+        console.error('[UI] Error exiting fullscreen:', err);
+      });
+    }
+  }
+
+  debouncedUpdatePreview() {
+    // Clear existing timeout
+    clearTimeout(this.previewUpdateTimeout);
+    
+    // Set new timeout for debounced update
+    this.previewUpdateTimeout = setTimeout(() => {
+      this.updatePreviewWithMetrics();
+    }, 300); // 300ms debounce
+  }
+
+  updatePreviewWithMetrics() {
+    const startTime = performance.now();
+    
+    this.updatePreview().then(() => {
+      const endTime = performance.now();
+      const updateTime = endTime - startTime;
+      
+      // Update performance metrics
+      this.performanceMetrics.updateCount++;
+      this.performanceMetrics.lastUpdateTime = updateTime;
+      this.performanceMetrics.averageUpdateTime = 
+        (this.performanceMetrics.averageUpdateTime * (this.performanceMetrics.updateCount - 1) + updateTime) / 
+        this.performanceMetrics.updateCount;
+      
+      // Log performance if update takes too long
+      if (updateTime > 1000) {
+        console.warn(`[Performance] Slow preview update: ${updateTime.toFixed(2)}ms`);
+      }
+    }).catch(error => {
+      console.error('[Performance] Preview update error:', error);
+    });
+  }
+
+  getPerformanceStats() {
+    return {
+      ...this.performanceMetrics,
+      memoryUsage: performance.memory ? {
+        used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+        total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+        limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+      } : null
+    };
+  }
+
+  optimizeMemory() {
+    // Clear any cached data that's no longer needed
+    if (this.taskListStates.size > 100) {
+      this.taskListStates.clear();
+      console.log('[Performance] Cleared task list states cache');
+    }
+    
+    // Force garbage collection if available
+    if (window.gc) {
+      window.gc();
+      console.log('[Performance] Forced garbage collection');
+    }
+  }
+
+  handleError(error, context = 'Unknown', showUser = true) {
+    const errorInfo = {
+      message: error.message,
+      stack: error.stack,
+      context: context,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    };
+    
+    console.error(`[Error] ${context}:`, errorInfo);
+    
+    if (showUser) {
+      const userMessage = this.getUserFriendlyErrorMessage(error, context);
+      alert(userMessage);
+    }
+    
+    // Optional: Send error to logging service
+    this.logError(errorInfo);
+  }
+
+  getUserFriendlyErrorMessage(error, context) {
+    const baseMessage = `An error occurred in ${context}.`;
+    
+    // Provide specific guidance based on error type
+    if (error.message.includes('Tauri API not available')) {
+      return `${baseMessage}\n\nThe application is not running in the proper environment. Please restart the application.`;
+    }
+    
+    if (error.message.includes('Permission denied')) {
+      return `${baseMessage}\n\nPermission denied. Please check file permissions and try again.`;
+    }
+    
+    if (error.message.includes('Network')) {
+      return `${baseMessage}\n\nNetwork error. Please check your internet connection and try again.`;
+    }
+    
+    if (error.message.includes('library not loaded')) {
+      return `${baseMessage}\n\nRequired libraries failed to load. Please refresh the page and try again.`;
+    }
+    
+    // Generic error message with helpful suggestions
+    return `${baseMessage}\n\nError: ${error.message}\n\nSuggestions:\n• Try refreshing the page\n• Check your internet connection\n• Restart the application\n• Contact support if the problem persists`;
+  }
+
+  logError(errorInfo) {
+    // Store error locally for debugging
+    try {
+      const errors = JSON.parse(localStorage.getItem('markdownViewer_errors') || '[]');
+      errors.push(errorInfo);
+      
+      // Keep only last 10 errors
+      if (errors.length > 10) {
+        errors.splice(0, errors.length - 10);
+      }
+      
+      localStorage.setItem('markdownViewer_errors', JSON.stringify(errors));
+    } catch (e) {
+      console.warn('[Error] Could not store error log:', e);
+    }
+  }
+
+  getErrorLogs() {
+    try {
+      return JSON.parse(localStorage.getItem('markdownViewer_errors') || '[]');
+    } catch (e) {
+      console.warn('[Error] Could not retrieve error logs:', e);
+      return [];
+    }
+  }
+
+  clearErrorLogs() {
+    try {
+      localStorage.removeItem('markdownViewer_errors');
+      console.log('[Error] Error logs cleared');
+    } catch (e) {
+      console.warn('[Error] Could not clear error logs:', e);
+    }
+  }
+  
+  applyDefaultTheme() {
+    document.documentElement.setAttribute('data-theme', this.theme);
+    this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
+    console.log(`[Theme] Applied default theme: ${this.theme}`);
   }
 }
 

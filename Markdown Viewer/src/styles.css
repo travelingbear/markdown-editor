@@ -120,6 +120,7 @@ body {
   width: var(--preview-width);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .editor-pane {
@@ -655,6 +656,12 @@ body {
   justify-content: center;
   padding: 40px;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
 }
 
 .welcome-content {
@@ -803,6 +810,113 @@ kbd {
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
+/* Print Styles - Hide UI elements and optimize for printing */
+@media print {
+  .toolbar,
+  .status-bar,
+  .welcome-page,
+  .splitter {
+    display: none !important;
+  }
+  
+  .app {
+    height: auto !important;
+  }
+  
+  .main-content {
+    display: block !important;
+    height: auto !important;
+  }
+  
+  .editor-pane,
+  .preview-pane {
+    width: 100% !important;
+    height: auto !important;
+    border: none !important;
+  }
+  
+  /* Hide editor in preview/split modes for printing */
+  .main-content.preview-mode .editor-pane,
+  .main-content.split-mode .editor-pane {
+    display: none !important;
+  }
+  
+  /* Hide preview in code mode for printing */
+  .main-content.code-mode .preview-pane {
+    display: none !important;
+  }
+  
+  .preview-content,
+  .monaco-editor-container,
+  #editor {
+    padding: 10px !important;
+    margin: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Ensure good page breaks */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  
+  pre, blockquote, table {
+    page-break-inside: avoid;
+  }
+  
+  /* Optimize images and diagrams for print */
+  img, svg {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+  
+  .mermaid-diagram {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .mermaid-diagram svg {
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 500px !important;
+    page-break-inside: avoid;
+  }
+  
+  /* Better code block printing */
+  pre {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border: none !important;
+    background: transparent !important;
+  }
+  
+  pre code {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+  }
+  
+  /* Print-friendly colors and syntax highlighting */
+  * {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure syntax highlighting is visible in print */
+  .hljs { background: transparent !important; }
+  .hljs-keyword { color: #d73a49 !important; }
+  .hljs-string { color: #032f62 !important; }
+  .hljs-comment { color: #6a737d !important; }
+  .hljs-number { color: #005cc5 !important; }
+  .hljs-title { color: #6f42c1 !important; }
+  .hljs-attr { color: #e36209 !important; }
+  .hljs-built_in { color: #005cc5 !important; }
+}
+
 /* Responsive Design for Advanced Features */
 @media (max-width: 768px) {
   .welcome-content {
@@ -856,4 +970,26 @@ kbd {
   }
 }
 
+/* Print button styling */
+.toolbar-btn[title*="PDF"],
+.toolbar-btn[title*="Print"] {
+  position: relative;
+}
+
+.toolbar-btn[title*="PDF"]:hover::after,
+.toolbar-btn[title*="Print"]:hover::after {
+  content: "Print current view";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+  border: 1px solid var(--border-primary);
+}
 

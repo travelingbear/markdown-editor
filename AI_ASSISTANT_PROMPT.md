@@ -1,420 +1,146 @@
-# AI Assistant Development Prompt
+# AI Assistant Development Prompt - Markdown Viewer
 
 ## 🎯 Project Context
 
-You are helping develop a **Native Markdown Viewer** desktop application. This is a complete rewrite of a previous Electron project that had theme synchronization issues.
+**Native Markdown Viewer** desktop application built with Tauri + Rust + TypeScript/JavaScript.
+Complete rewrite of previous Electron project with theme synchronization issues.
 
-## 📋 Current Project Status
+## 📋 Current Status
 
-**Phase**: Phase 4 IN PROGRESS ✅ - Day 1 COMPLETE
-**Next Action**: Continue Phase 4 - OS Integration & Advanced Features
-**Technology Stack**: Tauri + Rust + TypeScript/JavaScript (SELECTED)
-**Git Status**: Phase 4 Day 1 complete, tested, and committed
+**Phase**: Phase 4 - OS Integration & Polish (95% COMPLETE)
+**Branch**: `feature/phase-4-polish-integration`
+**Technology Stack**: Tauri + Rust + TypeScript/JavaScript ✅
 
-**✅ PHASE 4 DAY 1 ACHIEVEMENTS**:
-1. **Code Syntax Highlighting Fix**: Working correctly in preview mode
-2. **Welcome/Front Page**: Professional landing page with features showcase
-3. **New File Button**: Create new documents (📄 New + Ctrl+N)
-4. **Close Dialog Enhancement**: Proper Yes/No/Cancel behavior
-5. **Mode Button Management**: Disabled when no document loaded
-6. **Save As Button**: Added to toolbar and fully functional
-7. **PDF Export User Message**: Informative message about future availability
-8. **All Phase 3.5 Features**: Preserved and working correctly
+### ✅ COMPLETED PHASES:
+- **Phase 1**: Core foundation with basic file operations ✅
+- **Phase 2**: Monaco Editor integration with scroll sync ✅  
+- **Phase 3**: Advanced features foundation ✅
+- **Phase 3.5**: Math rendering (KaTeX), diagrams (Mermaid), interactive checkboxes ✅
+- **Phase 4**: OS integration, performance optimization, error handling ✅
 
-**📋 REMAINING PHASE 4 DELIVERABLES**:
-- **File Association Registration**: .md files open with the app
-- **Context Menu Integration**: "Open with Markdown Viewer" option
-- **PDF Export Resolution**: Complete implementation with proper library loading
-- **Enhanced Keyboard Shortcuts**: Full OS-compliant shortcut system
-- **Performance Optimization**: Final tuning and benchmarking
-- **Error Handling**: Comprehensive user feedback and error recovery
+### ✅ ALL MAJOR FEATURES WORKING:
+- Three-mode interface (Code, Preview, Split) with Monaco Editor
+- Real-time markdown rendering with KaTeX math and Mermaid diagrams
+- Interactive task lists with checkbox state persistence
+- GitHub-style themes (light/dark) with perfect synchronization
+- File operations (open/save/save as/new/close) with native dialogs
+- HTML export and PDF printing with mode-specific behavior
+- Comprehensive keyboard shortcuts and settings system
+- Performance monitoring and error handling with recovery
 
-## 🔍 Key Files to Reference
+## 🚨 CURRENT CHALLENGES
 
-### Primary Planning Documents
-- `PROJECT_PLAN.md` - Complete project specification, features, and phases
-- `DEBUGGING_REPORT.md` - Lessons learned from previous Electron attempt
-- `PROJECT_STATUS.md` - Historical context of what was previously built
+### 1. **Drag-and-Drop Not Working** ❌
+- **Issue**: Files dragged onto application window don't open
+- **Attempted**: Web drag-and-drop events + Tauri native listeners
+- **Status**: No console errors, events not triggering
+- **Files**: `main.js` (setupDragAndDrop, setupTauriDragDrop methods)
 
-### Development Files (CREATED ✅)
-- `DEVELOPMENT_LOG.md` - Phase 1 & 2 progress documented
-- `CHANGELOG.md` - Version history with Phase 2 completion
-- `Markdown Viewer/README.md` - Project setup instructions
-- `Markdown Viewer/` - Complete Tauri application structure
+### 2. **File Association Error** ❌  
+- **Issue**: Double-clicking .md files shows "Error opening file: undefined"
+- **Status**: File associations configured, but startup file detection failing
+- **Files**: `lib.rs` (startup file handling), `main.js` (checkStartupFile method)
 
-## 🎉 Phase 3.5 COMPLETE - What's Next
+## 📁 Key Project Files
 
-### Immediate Next Steps
-1. **🎯 CONTINUE PHASE 4**: OS Integration & Advanced Features
-   - File association registration (.md files open with app)
-   - Context menu integration ("Open with Markdown Viewer")
-   - PDF Export resolution (complete implementation)
-   - Enhanced keyboard shortcuts (full OS-compliant system)
-   - Performance optimization (final tuning)
-   - Error handling (comprehensive user feedback)
+### Core Application
+- `Markdown Viewer/src/main.js` - Main application logic
+- `Markdown Viewer/src/index.html` - UI structure  
+- `Markdown Viewer/src/styles.css` - Styling and themes
+- `Markdown Viewer/src-tauri/src/lib.rs` - Rust backend
+- `Markdown Viewer/src-tauri/tauri.conf.json` - Tauri configuration
 
-2. **Current branch**: `feature/phase-4-polish-integration` (Day 1 complete)
+### Documentation
+- `PROJECT_PLAN.md` - Complete project specification
+- `DEVELOPMENT_LOG.md` - Detailed development progress
+- `CHANGELOG.md` - Version history and features
 
-3. **Phase 4 Day 1 Status**: ✅ COMPLETE - All user-requested features implemented and approved
+## 🎯 IMMEDIATE NEXT STEPS
 
-### Development Process Rules
+### Priority 1: Fix Drag-and-Drop
+- **Debug**: Add more console logging to identify why events aren't firing
+- **Alternative**: Try different Tauri drag-and-drop approaches
+- **Test**: Verify both web and Tauri event listeners are working
 
-#### ⚠️ CRITICAL: User Validation & Git Requirements
-- **DO NOT proceed to next phase without BOTH conditions met:**
-  1. **User Testing & Approval**: User must test and explicitly approve all deliverables
-  2. **Git Commit**: All changes must be staged and committed to repository
-- Each phase has specific validation checkpoints
-- Wait for "✅ TESTED, APPROVED & COMMITTED - PROCEED TO NEXT PHASE" confirmation
+### Priority 2: Fix File Association
+- **Debug**: Improve startup file detection and error handling
+- **Test**: Build application and test file associations after installation
+- **Validate**: Ensure file paths are correctly passed from OS to application
 
-#### 📝 Documentation Requirements
-- Update `DEVELOPMENT_LOG.md` with daily progress
-- Maintain `README.md` with current setup instructions
-- Update `CHANGELOG.md` with each significant change
-- Document all technical decisions and rationale
+### Priority 3: Context menu integration
 
-#### 🌿 Git Branching Strategy
-- **Main branch**: Stable, tested, approved code only
-- **Feature branches**: All new features/enhancements must use separate branches
-- **Branch naming**: `feature/phase-X-description` or `enhancement/feature-name`
-- **Merge process**: Only merge to main after user testing and approval
-- **Disruptive changes**: Always use new branch, never work directly on main
+### Priority 4: Complete Phase 4
+- **Validate**: Test all remaining Phase 4 features
+- **Document**: Update development log with final status
+- **Prepare**: Ready for Phase 5 (Distribution & Release)
 
-#### 🧪 Testing Requirements
-- Write unit tests for each component
-- Create integration tests for user workflows
-- Perform cross-platform testing
-- Validate performance requirements
+## 🔧 Technical Architecture
 
-## ✅ Phase 3 Foundation Deliverables (COMPLETED)
+### Frontend (TypeScript/JavaScript)
+- **Monaco Editor**: Professional code editing with markdown syntax highlighting
+- **Marked.js**: Markdown parsing with custom renderers
+- **KaTeX**: Mathematical expression rendering
+- **Mermaid.js**: Diagram rendering (flowcharts, sequence diagrams)
+- **Highlight.js**: Code syntax highlighting in preview
 
-### Core Features Implemented
-- ✅ **Math Expression Detection**: `$...$` and `$$...$$` syntax detected and processed
-- ❌ **Math Rendering**: Shows LaTeX code instead of rendered equations
-- ✅ **Mermaid Diagram Detection**: Code blocks detected and converted to placeholders
-- ❌ **Diagram Rendering**: Shows placeholder boxes instead of visual diagrams
-- ✅ **Interactive Task Lists**: Clickable checkboxes with state persistence
-- ✅ **Export Functionality**: HTML and PDF export buttons available
-- ✅ **Enhanced Styling**: Professional placeholder styling
-- ✅ **No Library Conflicts**: Stable application without AMD errors
-- ✅ **Phase 2 Preservation**: All previous functionality maintained
+### Backend (Rust/Tauri)
+- **File Operations**: Native file dialogs and I/O
+- **Command Line**: Startup file detection for file associations
+- **Performance**: Benchmarking and optimization
+- **Error Handling**: Comprehensive error recovery
 
-### ✅ Issues RESOLVED
-- ✅ **AMD/RequireJS Conflicts**: RESOLVED using ES module dynamic imports
-- ✅ **Math Rendering**: KaTeX now renders actual equations
-- ✅ **Diagram Rendering**: Mermaid.js now renders visual diagrams
-- ✅ **Standalone Checkboxes**: Working and clickable
-- ✅ **Theme Synchronization**: All rendered content respects theme changes
+### Key Features Working
+- ✅ Real-time preview with advanced rendering
+- ✅ Perfect theme synchronization
+- ✅ Interactive task lists with markdown sync
+- ✅ Export functionality (HTML + PDF printing)
+- ✅ Performance monitoring and optimization
+- ✅ Comprehensive keyboard shortcuts
+- ✅ Settings persistence and management
 
-### ✅ Issues RESOLVED (Phase 3.5)
-- ✅ **Dash-prefixed Checkboxes**: FIXED - All checkboxes now clickable with proper markdown sync
-- ✅ **Application Name**: FIXED - Shows "Markdown Viewer" correctly
-- ✅ **Checkbox Styling**: FIXED - Completed tasks show subtle fade instead of strikethrough
-- ✅ **Checkbox State Sync**: FIXED - Preview and markdown source stay synchronized
-
-## ✅ Phase 2 Deliverables (COMPLETED)
-
-### Core Features Implemented
-- ✅ **Monaco Editor Integration**: Professional code editor with markdown syntax highlighting
-- ✅ **Native File Operations**: Enhanced file dialogs (open/save/save as) with proper error handling
-- ✅ **Bidirectional Scroll Synchronization**: Perfect scroll sync across all three modes
-- ✅ **Visual Save Button Feedback**: Red button for unsaved changes, normal when saved
-- ✅ **Enhanced Close Dialog**: Native Tauri confirm dialog for unsaved changes
-- ✅ **Monaco Suggestions Toggle**: Ctrl+Shift+I to enable/disable autocomplete
-- ✅ **Enhanced Markdown Rendering**: Proper lists, tables, blockquotes styling
-- ✅ **Cross-Mode Scroll Persistence**: Maintains scroll positions when switching modes
-- ✅ **Performance Optimizations**: All targets met, no regressions from Phase 1
-
-## ✅ Phase 3.5 Deliverables (COMPLETE)
-
-### ✅ ALL CRITICAL ISSUES RESOLVED
-- **✅ RESOLVED: Math Rendering**: KaTeX renders actual equations correctly
-- **✅ RESOLVED: Diagram Rendering**: Mermaid.js renders visual diagrams correctly
-- **✅ RESOLVED: Dash-prefixed Checkboxes**: All checkboxes clickable with proper markdown sync
-- **✅ RESOLVED: Application Name**: Shows "Markdown Viewer" correctly
-- **✅ RESOLVED: Checkbox Styling**: Subtle fade effect for completed tasks
-- **✅ RESOLVED: Library Loading**: ES module dynamic imports working perfectly
-- **✅ RESOLVED: Theme Synchronization**: All rendered content respects theme changes
-
-### Technical Solutions Implemented
-- **✅ AMD Conflict Resolution**: ES module dynamic imports prevent conflicts
-- **✅ HTML Structure Fix**: Converted `<li>` checkboxes to `<div>` elements to avoid browser blocking
-- **✅ State Synchronization**: Fixed regex pattern for proper checkbox state detection
-- **✅ Event Handling**: Comprehensive event delegation for all checkbox types
-- **✅ CSS Improvements**: Enhanced styling with fade effects instead of strikethrough
-- **✅ Tauri Configuration**: Fixed application name in tauri.conf.json
-
-### Success Criteria - ALL MET ✅
-- ✅ **Math expressions**: KaTeX renders actual equations correctly
-- ✅ **Mermaid diagrams**: Visual diagrams render correctly
-- ✅ **Task lists**: ALL checkboxes (standalone AND dash-prefixed) work perfectly
-- ✅ **HTML Export**: Works correctly with proper formatting
-- ✅ **Application Name**: Shows "Markdown Viewer" correctly
-- ✅ **Performance**: Acceptable with advanced features
-- ✅ **No regressions**: Phase 1 & 2 functionality preserved
-- ✅ **Code syntax highlighting**: Working with highlight.js
-- ✅ **Theme synchronization**: Perfect across all rendered content
-
-### Moved to Phase 4
-- **PDF Export**: Complex library loading issues - moved to Phase 4 for dedicated focus
-
-## 🔧 Technical Requirements
-
-### Architecture Principles
-- **Single source of truth** for theme management
-- **Modular design** with clear separation of concerns
-- **Cross-platform compatibility** from day one
-- **Performance first** - meet all benchmarks in PROJECT_PLAN.md
-
-### Key Features from Previous Version
-- Three-mode interface (Code, Preview, Split View) ✅
-- Monaco Editor integration with markdown syntax highlighting ✅
-- GitHub-style themes (light/dark) ✅
-- Scroll synchronization between panes ✅
-- File operations with unsaved changes detection ✅
-
-### Phase 4 Technical Focus (NEXT)
-- **File Association Registration**: .md files open with the app
-- **Context Menu Integration**: "Open with Markdown Viewer" option
-- **PDF Export Resolution**: Complete implementation with proper library loading
-- **Keyboard Shortcuts**: Full implementation following OS conventions
-- **Performance Optimization**: Final optimizations and benchmarking
-- **Error Handling**: Comprehensive user feedback and error recovery
-
-### Phase 4 Progress Summary
-
-**✅ COMPLETED (Day 1)**:
-- Code syntax highlighting fix
-- Welcome page with clean layout
-- New File button and functionality
-- Enhanced close dialog (Yes/No/Cancel)
-- Mode button state management
-- Save As button in toolbar
-- PDF export user messaging
-- All Phase 3.5 functionality preserved
-
-**🎯 NEXT PRIORITIES (Day 2+)**:
-- File association registration
-- Context menu integration
-- PDF export complete implementation
-- Enhanced keyboard shortcuts
-- Performance optimization
-- Error handling improvements
-
-**User Validation Status**: ✅ TESTED, APPROVED & COMMITTED - READY FOR NEXT PHASE 4 FEATURES
-
-**Git Status**: All Phase 4 Day 1 changes committed (74efa0e) on `feature/phase-4-polish-integration` branchred**:
-1. **Test all checkbox functionality** (standalone and dash-prefixed)
-2. **Verify math expression rendering** (inline and display)
-3. **Test Mermaid diagram rendering** (flowcharts, sequence diagrams)
-4. **Confirm HTML export works** correctly
-5. **Verify application name** shows "Markdown Viewer"
-6. **Test theme switching** with all rendered content
-7. **Confirm no regressions** from previous phases
-
-**If approved**: Commit changes and proceed to Phase 4
-**Git Status**: Ready for commit after user validation **🔥 ACTUAL MATH RENDERING**: Implement real KaTeX rendering (not placeholders)
-- **🔥 ACTUAL DIAGRAM RENDERING**: Implement real Mermaid.js rendering (not placeholders)
-- **🔥 LIBRARY LOADING STRATEGY**: Find working approach for external library integration
-- **🔥 THEME SYNCHRONIZATION**: Ensure rendered content respects theme changes
-
-### Critical Lessons Learned
-- **Avoid dual theme state management** (resolved in Phase 1)
-- **Use stable, well-supported frameworks** (Monaco Editor working perfectly)
-- **Test theme synchronization thoroughly** (all themes working)
-- **Implement proper error handling** (comprehensive error handling in place)
-- **🔥 NEW: AMD/RequireJS Conflicts** - Monaco Editor conflicts with external libraries
-- **🔥 NEW: Library Loading Issues** - Both CDN and local files fail due to module system conflicts
-- **🔥 NEW: Placeholder vs Real Rendering** - Detection works, actual rendering blocked by conflicts
-
-## 💡 Development Approach
-
-### Start Simple, Build Up
-1. Get basic functionality working first
-2. Add complexity incrementally
-3. Test thoroughly at each step
-4. Get user approval before proceeding
-
-### Focus Areas by Phase
-- **Phase 1**: Basic functionality and project setup ✅
-- **Phase 2**: Editor integration and mode switching ✅
-- **Phase 3**: Foundation (detection, placeholders) ✅ **COMPLETE**
-- **Phase 3.5**: Actual rendering (math, diagrams) ← **🔥 CRITICAL CURRENT**
-- **Phase 4**: OS integration and polish
-- **Phase 5**: Distribution and release
-
-## 🎨 UI/UX Requirements
-
-### Layout Structure (Established)
-```
-┌─────────────────────────────────────────────────────────┐
-│ File  Edit  View  Tools  Help                   [- □ ×] │
-├─────────────────────────────────────────────────────────┤
-│📁 Open 💾 Save ❌ Close │ Code │ Preview │ Split │ 🌙 │
-├─────────────────────────────────────────────────────────┤
-│  [Editor Pane]              │  [Preview Pane]           │
-│                             │                           │
-│  # Markdown Content         │  Rendered HTML            │
-│  ```mermaid                 │  [Mermaid Diagram]        │
-│  graph TD                   │  $LaTeX: x^2 + y^2 = z^2$ │
-│  A --> B                    │  ☐ Interactive Task       │
-│  ```                        │                           │
-├─────────────────────────────────────────────────────────┤
-│ Line 1, Col 1              │              filename.md   │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Theme Requirements (Established)
-- GitHub-style light theme (default) ✅
-- Dark theme with proper contrast ✅
-- **Perfect synchronization** between all UI elements ✅
-- Theme persistence across sessions ✅
-- **New**: Mermaid diagrams must adapt to theme changes
-- **New**: Math expressions must be readable in both themes
-
-## 📊 Performance Targets
-
+## 📊 Performance Targets (All Met)
 - Application launch: < 2 seconds ✅
-- File opening: < 500ms for files up to 10MB ✅
+- File opening: < 500ms ✅
 - Mode switching: < 100ms ✅
-- Real-time preview updates: < 300ms debounce ✅
-- Memory usage: < 200MB for typical files ✅
-- **New**: Mermaid diagram rendering: < 1 second
-- **New**: Math expression rendering: < 500ms
-- **New**: Export operations: < 5 seconds for typical documents
+- Preview updates: < 300ms (debounced) ✅
 
-## 🚨 Common Pitfalls to Avoid
+## 🚀 Success Definition
 
-1. **🔥 AMD/RequireJS Conflicts** - Monaco Editor conflicts with external libraries
-2. **🔥 Library Loading Order** - Timing and sequence of library initialization
-3. **🔥 Module System Conflicts** - Different module systems interfering
-4. **Theme Desynchronization** - Ensure rendered content respects theme changes
-5. **Performance with Real Rendering** - Profile actual math and diagram rendering
-6. **Fallback Strategies** - Graceful degradation when libraries fail to load
+**Phase 4 Complete When**:
+- ❌ File associations work (double-click .md files opens app)
+- ❌ Context menu integration ("Open with Markdown Viewer")
+- ❌ Drag-and-drop functionality works
+- ✅ All keyboard shortcuts functional
+- ✅ Performance optimization complete
+- ✅ Error handling comprehensive
 
-## 🎯 Success Definition
+**Ready for Phase 5**: Distribution & Release with cross-platform builds
 
-The project is successful when:
-- All three modes work flawlessly with perfect theme sync ✅
-- **🔥 CRITICAL**: Math expressions show rendered equations (not LaTeX code)
-- **🔥 CRITICAL**: Mermaid diagrams show visual diagrams (not placeholder boxes)
-- Interactive task lists work with checkboxes ✅
-- Export functionality produces quality output ✅
-- Performance remains acceptable with real rendering
-- No regressions from Phase 1 & 2 functionality ✅
+## 💡 Development Rules
 
-## 🔥 CURRENT BLOCKER
+### Git Workflow
+- ⚠️ **Never work directly on main branch**
+- ⚠️ **Never commit without user approval** 
+- ⚠️ **Always use feature branches**
+- ⚠️ **User validation required before phase completion**
 
-**AMD/RequireJS Conflict**: Monaco Editor's module system prevents loading of Mermaid.js and KaTeX libraries. This is the primary technical challenge blocking Phase 3.5 completion.
+### Current Branch Status
+- **Branch**: `feature/phase-4-polish-integration`
+- **Last Commit**: 06ff6c2 (Fix Tauri config)
+- **Status**: Ready for drag-and-drop and file association fixes
 
-**Evidence**: Console shows "Can only have one anonymous define call per script file" errors when attempting to load external libraries.
+## 🎨 UI/UX (Complete)
 
-**Impact**: Math expressions and diagrams show as styled placeholders instead of rendered content.
+Professional three-pane interface with:
+- Toolbar with file operations and mode switching
+- Monaco Editor with markdown syntax highlighting  
+- Live preview with math, diagrams, and interactive elements
+- Status bar with cursor position and file info
+- Welcome page for new users
+- Settings dialog with performance reporting
 
-**Test Files Available**: `phase3-test.md` and `sample-phase3.md` for testing rendering fixes.tive elements work smoothly
-- Export functionality produces high-quality output
-- Performance meets all benchmarks
-- UI feels native on each platform ✅
-- No crashes or data loss ✅
-
-## 📞 Communication Protocol
-
-### When to Ask for User Input
-- Technology stack selection ✅
-- Major architectural decisions
-- Phase completion validation
-- UI/UX design choices
-- Performance optimization strategies
-
-### How to Request Approval
-```
-## Phase [X] Completion - Validation Required
-
-### Deliverables Completed:
-- ✅ [Feature 1]
-- ✅ [Feature 2]
-- ✅ [Feature 3]
-
-### Tests Passed:
-- ✅ [Test 1]
-- ✅ [Test 2]
-
-### Documentation Updated:
-- ✅ README.md
-- ✅ DEVELOPMENT_LOG.md
-- ✅ CHANGELOG.md
-
-### Git Status:
-- ✅ All changes staged
-- ✅ Ready for commit after approval
-- 📍 Current branch: [branch-name]
-
-### User Actions Required:
-1. **Test the application:**
-   - [ ] [Validation point 1]
-   - [ ] [Validation point 2]
-   - [ ] [Validation point 3]
-
-2. **If approved, please:**
-   - [ ] Confirm testing results
-   - [ ] Approve commit and merge (if on feature branch)
-   - [ ] Give greenlight for next phase
-
-**Awaiting: Testing → Approval → Git Commit → Phase [X+1] Greenlight**
-```
-
-### Git Workflow for Each Phase
-```
-1. Create feature branch: git checkout -b feature/phase-X-name
-2. Develop and test locally
-3. Stage changes: git add .
-4. Request user validation (DO NOT COMMIT YET)
-5. Wait for user testing and approval
-6. Commit: git commit -m "Phase X: [description]"
-7. Merge to main (if approved): git checkout main && git merge feature/phase-X-name
-8. Proceed to next phase
-```
+**Themes**: GitHub-style light/dark with perfect synchronization across all elements.
 
 ---
 
-## 🚀 Ready for Phase 3!
-
-**Current Status**: Phase 2 COMPLETE ✅ - Professional markdown editor with Monaco integration, native file operations, and perfect scroll synchronization
-
-**Technology Stack**: Tauri + Rust + TypeScript/JavaScript ✅
-
-**Application Structure**: Complete Tauri app with Monaco Editor ✅
-
-**Git Status**: All Phase 2 changes committed to main branch ✅
-
-**Next Action**: Begin Phase 3 - Advanced Features
-
-### Phase 3 Focus Areas:
-1. **Mermaid.js Integration** - Add diagram rendering capabilities
-2. **Mathematical Expressions** - Implement LaTeX/MathJax support
-3. **Enhanced Assets** - Improve image and GIF handling
-4. **Interactive Elements** - Add clickable task lists
-5. **Export Functionality** - HTML and PDF export capabilities
-6. **Performance** - Optimize for advanced features
-
-### To Start Phase 3:
-1. Create feature branch: `git checkout -b feature/phase-3-advanced-features`
-2. Navigate to project: `cd "Markdown Viewer"`
-3. Start development server: `npm run tauri dev`
-4. Begin Mermaid.js integration following PROJECT_PLAN.md Phase 3 specifications
-
-**Ready to enhance the markdown viewer with advanced rendering capabilities!**
-
-### Key Dependencies to Add:
-- `mermaid` - Diagram rendering
-- `mathjax` or `katex` - Mathematical expressions
-- `html2pdf` or similar - PDF export functionality
-- Enhanced image processing libraries as needed
-
-### Architecture Considerations:
-- Mermaid diagrams must respect theme changes
-- Math expressions need proper styling integration
-- Asset management requires secure path resolution
-- Export functionality needs to maintain all styling
-- Interactive elements require state management
-
-**The foundation is solid - now let's add the advanced features that make this a truly powerful markdown viewer!**
+**FOCUS**: Fix drag-and-drop and file association issues to complete Phase 4, then proceed to Phase 5 (Distribution & Release).

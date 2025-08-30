@@ -45,6 +45,7 @@ class MarkdownViewer {
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
     this.checkStartupFile();
+    this.setupTauriDragDrop();
     
     this.startupTime = performance.now() - startupStartTime;
     console.log(`[MarkdownViewer] Phase 4 Constructor completed in ${this.startupTime.toFixed(2)}ms`);
@@ -911,54 +912,78 @@ class MarkdownViewer {
   }
 
   setupDragAndDrop() {
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      document.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-    });
-
-    // Handle drag over
-    document.addEventListener('dragover', (e) => {
+    console.log('[DragDrop] Setting up drag and drop functionality');
+    
+    // Prevent default drag behaviors on document
+    document.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[DragDrop] Drag enter');
       document.body.classList.add('drag-over');
     });
 
-    // Handle drag leave
+    document.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.body.classList.add('drag-over');
+    });
+
     document.addEventListener('dragleave', (e) => {
-      if (!e.relatedTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Only remove if leaving the document entirely
+      if (e.clientX === 0 && e.clientY === 0) {
+        console.log('[DragDrop] Drag leave');
         document.body.classList.remove('drag-over');
       }
     });
 
-    // Handle file drop
     document.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[DragDrop] File dropped');
+      
       document.body.classList.remove('drag-over');
       
+      if (!e.dataTransfer || !e.dataTransfer.files) {
+        console.log('[DragDrop] No files in drop event');
+        return;
+      }
+      
       const files = Array.from(e.dataTransfer.files);
+      console.log('[DragDrop] Files dropped:', files.map(f => f.name));
+      
       const markdownFile = files.find(file => 
-        file.name.endsWith('.md') || 
-        file.name.endsWith('.markdown') || 
-        file.name.endsWith('.txt')
+        file.name.toLowerCase().endsWith('.md') || 
+        file.name.toLowerCase().endsWith('.markdown') || 
+        file.name.toLowerCase().endsWith('.txt')
       );
 
       if (markdownFile) {
+        console.log('[DragDrop] Processing markdown file:', markdownFile.name);
         try {
           const content = await markdownFile.text();
+          console.log('[DragDrop] File content loaded, length:', content.length);
+          
           this.isLoadingFile = true;
           this.setEditorContent(content);
           this.isLoadingFile = false;
           this.showEditor();
           this.updatePreview();
-          this.currentFile = markdownFile.path || markdownFile.name;
+          this.currentFile = markdownFile.name;
           this.isDirty = false;
           this.updateFilename();
           this.updateModeButtons();
           this.setMode(this.defaultMode);
-          console.log('[DragDrop] File loaded successfully');
+          
+          console.log('[DragDrop] File loaded successfully:', markdownFile.name);
         } catch (error) {
+          console.error('[DragDrop] Error loading file:', error);
           this.handleError(error, 'Drag and Drop');
         }
+      } else {
+        console.log('[DragDrop] No supported files found');
+        alert('Please drop a .md, .markdown, or .txt file');
       }
     });
   }
@@ -2077,6 +2102,41 @@ Other:
     setInterval(() => {
       this.optimizeMemory();
     }, 300000); // Every 5 minutes
+  }
+
+  async setupTauriDragDrop() {
+    try {
+      if (window.__TAURI__ && window.__TAURI__.event) {
+        console.log('[TauriDragDrop] Setting up Tauri native drag-and-drop');
+        
+        await window.__TAURI__.event.listen('tauri://file-drop', async (event) => {
+          console.log('[TauriDragDrop] Files dropped:', event.payload);
+          const files = event.payload;
+          if (files && files.length > 0) {
+            const markdownFile = files.find(filePath => 
+              filePath.toLowerCase().endsWith('.md') || 
+              filePath.toLowerCase().endsWith('.markdown') || 
+              filePath.toLowerCase().endsWith('.txt')
+            );
+            if (markdownFile) {
+              await this.openSpecificFile(markdownFile);
+            }
+          }
+        });
+        
+        await window.__TAURI__.event.listen('tauri://file-drop-hover', () => {
+          document.body.classList.add('drag-over');
+        });
+        
+        await window.__TAURI__.event.listen('tauri://file-drop-cancelled', () => {
+          document.body.classList.remove('drag-over');
+        });
+        
+        console.log('[TauriDragDrop] Tauri listeners registered');
+      }
+    } catch (error) {
+      console.error('[TauriDragDrop] Setup error:', error);
+    }
   }
 
   handleError(error, context = 'Unknown', showUser = true) {

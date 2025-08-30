@@ -11,8 +11,8 @@ This document tests all the critical fixes implemented in Phase 3.5.
 ### These checkboxes should ALL be clickable:
 - [x] Unchecked dash-prefixed task (click to check)
 - [x] Checked dash-prefixed task (click to uncheck)
-- [ ] Another unchecked task
-- [ ] Test task with longer text content that spans multiple lines to ensure the clickable area works properly
+- [x] Another unchecked task
+- [x] Test task with longer text content that spans multiple lines to ensure the clickable area works properly
 - [x] Completed task that should show strikethrough
 
 ### Expected Behavior:
@@ -27,7 +27,7 @@ This document tests all the critical fixes implemented in Phase 3.5.
 
 [x] Standalone checked task (should be clickable)
 
-[ ] Another standalone task with some content
+[x] Another standalone task with some content
 
 ### Expected Behavior:
 - ✅ All standalone checkboxes should be clickable
@@ -152,11 +152,11 @@ def fibonacci(n):
 ## Test Results Summary
 
 **Phase 3.5 Critical Fixes Status:**
-- [ ] Application name shows "Markdown Viewer" ✅
-- [ ] All dash-prefixed checkboxes are clickable ✅
-- [ ] All standalone checkboxes are clickable ✅
-- [ ] Math expressions render as equations ✅
-- [ ] Mermaid diagrams render as visuals ✅
+- [x] Application name shows "Markdown Viewer" ✅
+- [x] All dash-prefixed checkboxes are clickable ✅
+- [x] All standalone checkboxes are clickable ✅
+- [x] Math expressions render as equations ✅
+- [x] Mermaid diagrams render as visuals ✅
 - [ ] PDF export works without errors ✅
 - [ ] HTML export works correctly ✅
 - [ ] Theme switching updates all content ✅

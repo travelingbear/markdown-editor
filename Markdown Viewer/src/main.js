@@ -35,6 +35,7 @@ class MarkdownViewer {
     this.showWelcomePage(); // Show welcome page initially
     this.updateCursorPosition();
     this.initializeAdvancedFeatures();
+    this.checkExportLibraries();
     console.log('[MarkdownViewer] Phase 3 Constructor completed');
   }
 
@@ -499,19 +500,22 @@ class MarkdownViewer {
     console.log('[Close] isDirty:', this.isDirty);
     if (this.isDirty) {
       try {
-        const save = await window.__TAURI__.dialog.confirm(
+        const result = await window.__TAURI__.dialog.ask(
           'You have unsaved changes. Do you want to save before closing?',
-          { title: 'Unsaved Changes' }
+          { title: 'Unsaved Changes', type: 'warning' }
         );
-        console.log('[Close] User chose to save:', save);
-        if (save) {
+        console.log('[Close] User choice:', result);
+        if (result === true) {
+          // Yes - save and close
           await this.saveFile();
           this.doClose();
-        } else {
+        } else if (result === false) {
+          // No - close without saving
           this.doClose();
         }
+        // Cancel - do nothing (dialog already closed)
       } catch (error) {
-        console.error('[Close] Error showing confirm dialog:', error);
+        console.error('[Close] Error showing dialog:', error);
         this.doClose();
       }
     } else {
@@ -1128,15 +1132,26 @@ class MarkdownViewer {
   async exportToPdf() {
     try {
       console.log('[Export] Exporting to PDF...');
+      console.log('[Export] Checking libraries:', {
+        html2canvas: typeof html2canvas !== 'undefined',
+        window_html2canvas: typeof window.html2canvas !== 'undefined',
+        jsPDF: typeof jsPDF !== 'undefined',
+        window_jspdf: typeof window.jspdf !== 'undefined'
+      });
       
-      if (typeof html2canvas === 'undefined') {
+      // Check for html2canvas
+      const html2canvasLib = window.html2canvas || html2canvas;
+      if (!html2canvasLib) {
         throw new Error('html2canvas library not loaded. Please refresh the page and try again.');
       }
       
-      let jsPDFClass = window.jspdf?.jsPDF || jsPDF;
+      // Check for jsPDF with multiple possible locations
+      let jsPDFClass = window.jspdf?.jsPDF || window.jsPDF || jsPDF;
       if (!jsPDFClass) {
         throw new Error('jsPDF library not loaded properly. Please refresh the page and try again.');
       }
+      
+      console.log('[Export] Libraries found successfully');
       
       // Create a temporary container with the preview content
       const tempContainer = document.createElement('div');
@@ -1157,7 +1172,7 @@ class MarkdownViewer {
       console.log('[Export] Converting to canvas...');
       
       // Convert to canvas with error handling
-      const canvas = await html2canvas(tempContainer, {
+      const canvas = await html2canvasLib(tempContainer, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
@@ -1256,6 +1271,21 @@ class MarkdownViewer {
     }
     
     console.log(`[Theme] Switched to ${this.theme} theme`);
+  }
+  
+  checkExportLibraries() {
+    console.log('[Libraries] Checking export libraries availability...');
+    console.log('[Libraries] html2canvas:', typeof html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
+    console.log('[Libraries] window.html2canvas:', typeof window.html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
+    console.log('[Libraries] jsPDF:', typeof jsPDF !== 'undefined' ? 'loaded' : 'not loaded');
+    console.log('[Libraries] window.jspdf:', typeof window.jspdf !== 'undefined' ? 'loaded' : 'not loaded');
+    
+    // Wait a bit for libraries to fully initialize
+    setTimeout(() => {
+      console.log('[Libraries] Delayed check:');
+      console.log('[Libraries] html2canvas:', typeof html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
+      console.log('[Libraries] jsPDF:', typeof jsPDF !== 'undefined' ? 'loaded' : 'not loaded');
+    }, 2000);
   }
 }
 

@@ -6,10 +6,12 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 
 ## 📋 Current Project Status
 
-**Phase**: Phase 2 COMPLETE ✅ - Ready for Phase 3
-**Next Action**: Begin Phase 3 - Advanced Features
+**Phase**: Phase 3 FOUNDATION COMPLETE ✅ - Ready for Phase 3.5
+**Next Action**: Implement actual Math and Diagram rendering
 **Technology Stack**: Tauri + Rust + TypeScript/JavaScript (SELECTED)
-**Git Status**: All Phase 2 changes committed to main branch
+**Git Status**: Phase 3 foundation committed to feature branch
+
+**🔥 CRITICAL ISSUE**: Math expressions and Mermaid diagrams show as placeholders instead of rendered content. AMD/RequireJS conflicts prevent external library loading.
 
 ## 🔍 Key Files to Reference
 
@@ -27,18 +29,16 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 ## 🚀 What You Need to Do
 
 ### Immediate Next Steps
-1. **Begin Phase 3 development** following the plan in `PROJECT_PLAN.md`:
-   - Mermaid.js diagram rendering (flowcharts, sequence diagrams, etc.)
-   - LaTeX/MathJax mathematical expressions rendering
-   - Enhanced image support with local asset management
-   - GIF support and animated content
-   - Interactive task lists with checkboxes
-   - Advanced table editing and styling
-   - Export functionality (HTML, PDF)
+1. **🔥 CRITICAL: Fix Math and Diagram Rendering** - Phase 3.5:
+   - Resolve AMD/RequireJS conflicts with Monaco Editor
+   - Implement actual KaTeX math expression rendering
+   - Implement actual Mermaid.js diagram rendering
+   - Ensure theme synchronization works with rendered content
+   - Test performance with real rendering
 
-2. **Create Phase 3 feature branch**: `feature/phase-3-advanced-features`
+2. **Current branch**: `feature/phase-3-advanced-features`
 
-3. **Follow strict validation process** before proceeding to Phase 4
+3. **Phase 3 Foundation Status**: ✅ Detection, ❌ Rendering
 
 ### Development Process Rules
 
@@ -68,6 +68,24 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - Perform cross-platform testing
 - Validate performance requirements
 
+## ✅ Phase 3 Foundation Deliverables (COMPLETED)
+
+### Core Features Implemented
+- ✅ **Math Expression Detection**: `$...$` and `$$...$$` syntax detected and processed
+- ❌ **Math Rendering**: Shows LaTeX code instead of rendered equations
+- ✅ **Mermaid Diagram Detection**: Code blocks detected and converted to placeholders
+- ❌ **Diagram Rendering**: Shows placeholder boxes instead of visual diagrams
+- ✅ **Interactive Task Lists**: Clickable checkboxes with state persistence
+- ✅ **Export Functionality**: HTML and PDF export buttons available
+- ✅ **Enhanced Styling**: Professional placeholder styling
+- ✅ **No Library Conflicts**: Stable application without AMD errors
+- ✅ **Phase 2 Preservation**: All previous functionality maintained
+
+### 🔥 Issues Identified
+- ❌ **AMD/RequireJS Conflicts**: Monaco Editor prevents external library loading
+- ❌ **Console Error**: "Can only have one anonymous define call per script file"
+- ❌ **Library Status**: `mermaid: false, katex: false` despite loading attempts
+
 ## ✅ Phase 2 Deliverables (COMPLETED)
 
 ### Core Features Implemented
@@ -81,27 +99,38 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - ✅ **Cross-Mode Scroll Persistence**: Maintains scroll positions when switching modes
 - ✅ **Performance Optimizations**: All targets met, no regressions from Phase 1
 
-## 🎯 Phase 3 Deliverables (Current Target)
+## 🔥 Phase 3.5 Deliverables (CRITICAL TARGET)
 
-### Core Features to Implement
-- **Mermaid.js Integration**: Flowcharts, sequence diagrams, gantt charts, etc.
-- **LaTeX/MathJax Support**: Mathematical expressions and formulas
-- **Enhanced Asset Management**: Local images with relative path resolution
-- **GIF and Video Support**: Animated content rendering
-- **Interactive Task Lists**: Clickable checkboxes with state persistence
-- **Advanced Table Features**: Better table editing and styling
-- **Export Functionality**: HTML and PDF export with proper formatting
-- **Emoji Support**: GitHub-style emoji rendering
-- **Code Block Enhancements**: Better syntax highlighting for code blocks
+### 🚨 MUST FIX - Rendering Issues
+- **❌ CRITICAL: Actual Math Rendering**: Replace placeholders with real KaTeX rendering
+- **❌ CRITICAL: Actual Diagram Rendering**: Replace placeholders with real Mermaid.js rendering
+- **❌ CRITICAL: Library Loading**: Resolve AMD/RequireJS conflicts with Monaco Editor
 
-### Success Criteria
-- ✅ Mermaid diagrams render correctly in both light and dark themes
-- ✅ Math expressions display properly with LaTeX syntax
-- ✅ Local images load with correct relative paths
-- ✅ Task lists are interactive and maintain state
-- ✅ Export functions work correctly
-- ✅ Performance remains acceptable with advanced features
-- ✅ No regressions from Phase 1 & 2 functionality
+### Technical Challenges Identified
+- **AMD Conflict**: Monaco Editor's RequireJS conflicts with Mermaid/KaTeX loading
+- **Library Loading**: CDN and local file loading both fail due to module conflicts
+- **Theme Sync**: Need to ensure rendered content respects theme changes
+
+### Evidence of Issues
+- **User Report**: Math shows as `\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}` instead of rendered equation
+- **User Report**: Diagrams show placeholder box with "Diagram rendering will be implemented in a future update"
+- **Console Error**: "Can only have one anonymous define call per script file"
+- **Library Status**: `{marked: true, mermaid: false, katex: false}`
+
+### Potential Solutions to Try
+- Load libraries in separate iframe/worker
+- Use different math/diagram libraries without AMD
+- Implement custom rendering without external libraries
+- Load libraries before Monaco initialization
+- Use different module loading approach
+
+### Success Criteria (UPDATED)
+- ❌ **Math expressions**: Must show rendered equations, not LaTeX code
+- ❌ **Mermaid diagrams**: Must show visual diagrams, not placeholder boxes
+- ✅ **Task lists**: Interactive checkboxes working
+- ✅ **Export functions**: Available and functional
+- ✅ **Performance**: Acceptable with advanced features
+- ✅ **No regressions**: Phase 1 & 2 functionality preserved
 
 ## 🔧 Technical Requirements
 
@@ -118,18 +147,21 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - Scroll synchronization between panes ✅
 - File operations with unsaved changes detection ✅
 
-### Phase 3 Technical Focus
-- **Mermaid.js Integration**: Client-side diagram rendering
-- **MathJax/KaTeX**: Mathematical expression rendering
-- **Asset Pipeline**: Local file resolution and caching
-- **Interactive Elements**: Clickable task lists and enhanced tables
-- **Export Engine**: HTML and PDF generation with styling
+### Phase 3.5 Technical Focus (CRITICAL)
+- **🔥 RESOLVE AMD CONFLICTS**: Fix Monaco Editor vs external library conflicts
+- **🔥 ACTUAL MATH RENDERING**: Implement real KaTeX rendering (not placeholders)
+- **🔥 ACTUAL DIAGRAM RENDERING**: Implement real Mermaid.js rendering (not placeholders)
+- **🔥 LIBRARY LOADING STRATEGY**: Find working approach for external library integration
+- **🔥 THEME SYNCHRONIZATION**: Ensure rendered content respects theme changes
 
 ### Critical Lessons Learned
 - **Avoid dual theme state management** (resolved in Phase 1)
 - **Use stable, well-supported frameworks** (Monaco Editor working perfectly)
 - **Test theme synchronization thoroughly** (all themes working)
 - **Implement proper error handling** (comprehensive error handling in place)
+- **🔥 NEW: AMD/RequireJS Conflicts** - Monaco Editor conflicts with external libraries
+- **🔥 NEW: Library Loading Issues** - Both CDN and local files fail due to module system conflicts
+- **🔥 NEW: Placeholder vs Real Rendering** - Detection works, actual rendering blocked by conflicts
 
 ## 💡 Development Approach
 
@@ -142,7 +174,8 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 ### Focus Areas by Phase
 - **Phase 1**: Basic functionality and project setup ✅
 - **Phase 2**: Editor integration and mode switching ✅
-- **Phase 3**: Advanced features (Mermaid, math, assets) ← **CURRENT**
+- **Phase 3**: Foundation (detection, placeholders) ✅ **COMPLETE**
+- **Phase 3.5**: Actual rendering (math, diagrams) ← **🔥 CRITICAL CURRENT**
 - **Phase 4**: OS integration and polish
 - **Phase 5**: Distribution and release
 
@@ -188,18 +221,33 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 
 ## 🚨 Common Pitfalls to Avoid
 
-1. **Theme Desynchronization** - Ensure Mermaid and MathJax respect theme changes
-2. **Performance Degradation** - Profile diagram and math rendering
-3. **Asset Path Issues** - Proper relative path resolution for images
-4. **Export Quality** - Maintain formatting and styling in exports
-5. **Interactive Element State** - Persist task list states properly
+1. **🔥 AMD/RequireJS Conflicts** - Monaco Editor conflicts with external libraries
+2. **🔥 Library Loading Order** - Timing and sequence of library initialization
+3. **🔥 Module System Conflicts** - Different module systems interfering
+4. **Theme Desynchronization** - Ensure rendered content respects theme changes
+5. **Performance with Real Rendering** - Profile actual math and diagram rendering
+6. **Fallback Strategies** - Graceful degradation when libraries fail to load
 
 ## 🎯 Success Definition
 
 The project is successful when:
 - All three modes work flawlessly with perfect theme sync ✅
-- Advanced features (diagrams, math, assets) render correctly
-- Interactive elements work smoothly
+- **🔥 CRITICAL**: Math expressions show rendered equations (not LaTeX code)
+- **🔥 CRITICAL**: Mermaid diagrams show visual diagrams (not placeholder boxes)
+- Interactive task lists work with checkboxes ✅
+- Export functionality produces quality output ✅
+- Performance remains acceptable with real rendering
+- No regressions from Phase 1 & 2 functionality ✅
+
+## 🔥 CURRENT BLOCKER
+
+**AMD/RequireJS Conflict**: Monaco Editor's module system prevents loading of Mermaid.js and KaTeX libraries. This is the primary technical challenge blocking Phase 3.5 completion.
+
+**Evidence**: Console shows "Can only have one anonymous define call per script file" errors when attempting to load external libraries.
+
+**Impact**: Math expressions and diagrams show as styled placeholders instead of rendered content.
+
+**Test Files Available**: `phase3-test.md` and `sample-phase3.md` for testing rendering fixes.tive elements work smoothly
 - Export functionality produces high-quality output
 - Performance meets all benchmarks
 - UI feels native on each platform ✅

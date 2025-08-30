@@ -30,10 +30,16 @@ pub fn run() {
     // Get command line arguments
     let args: Vec<String> = env::args().collect();
     let startup_file = if args.len() > 1 {
-        // Check if the argument is a markdown file
+        // Check if the argument is a supported file
         let file_path = &args[1];
-        if file_path.ends_with(".md") || file_path.ends_with(".markdown") {
-            Some(file_path.clone())
+        if file_path.ends_with(".md") || file_path.ends_with(".markdown") || file_path.ends_with(".txt") {
+            // Validate that the file exists and is readable
+            if std::path::Path::new(file_path).exists() {
+                Some(file_path.clone())
+            } else {
+                eprintln!("Warning: File does not exist: {}", file_path);
+                None
+            }
         } else {
             None
         }

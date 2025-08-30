@@ -431,6 +431,9 @@ class MarkdownViewer {
     
     // Scroll synchronization for preview
     this.setupScrollSync();
+    
+    // Drag and drop functionality
+    this.setupDragAndDrop();
   }
 
   setupSplitter() {
@@ -903,6 +906,59 @@ class MarkdownViewer {
         setTimeout(() => {
           this.isScrollSyncing = false;
         }, 100);
+      }
+    });
+  }
+
+  setupDragAndDrop() {
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      document.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    // Handle drag over
+    document.addEventListener('dragover', (e) => {
+      document.body.classList.add('drag-over');
+    });
+
+    // Handle drag leave
+    document.addEventListener('dragleave', (e) => {
+      if (!e.relatedTarget) {
+        document.body.classList.remove('drag-over');
+      }
+    });
+
+    // Handle file drop
+    document.addEventListener('drop', async (e) => {
+      document.body.classList.remove('drag-over');
+      
+      const files = Array.from(e.dataTransfer.files);
+      const markdownFile = files.find(file => 
+        file.name.endsWith('.md') || 
+        file.name.endsWith('.markdown') || 
+        file.name.endsWith('.txt')
+      );
+
+      if (markdownFile) {
+        try {
+          const content = await markdownFile.text();
+          this.isLoadingFile = true;
+          this.setEditorContent(content);
+          this.isLoadingFile = false;
+          this.showEditor();
+          this.updatePreview();
+          this.currentFile = markdownFile.path || markdownFile.name;
+          this.isDirty = false;
+          this.updateFilename();
+          this.updateModeButtons();
+          this.setMode(this.defaultMode);
+          console.log('[DragDrop] File loaded successfully');
+        } catch (error) {
+          this.handleError(error, 'Drag and Drop');
+        }
       }
     });
   }
@@ -1617,23 +1673,29 @@ Tip: You can also use HTML Export and then print from your browser.`;
         console.log('[Startup] Checking for startup file...');
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
         
-        if (startupFile) {
+        if (startupFile && startupFile !== 'undefined' && startupFile.trim() !== '') {
           console.log('[Startup] Found startup file:', startupFile);
           await this.openSpecificFile(startupFile);
           // Clear the startup file so it doesn't open again
           await window.__TAURI__.core.invoke('clear_startup_file');
         } else {
-          console.log('[Startup] No startup file found');
+          console.log('[Startup] No valid startup file found');
         }
       }
     } catch (error) {
       console.error('[Startup] Error checking startup file:', error);
+      // Don't show error to user for startup file issues
     }
   }
 
   async openSpecificFile(filePath) {
     try {
       console.log('[File] Opening specific file:', filePath);
+      
+      if (!filePath || filePath === 'undefined') {
+        console.log('[File] No valid file path provided');
+        return;
+      }
       
       if (!window.__TAURI__) {
         throw new Error('Tauri API not available');
@@ -1651,12 +1713,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.isDirty = false;
       this.updateFilename();
       this.updateModeButtons();
-      this.setMode(this.defaultMode); // Use default mode for startup files
+      this.setMode(this.defaultMode);
       
       console.log('[File] Specific file opened successfully');
     } catch (error) {
       console.error('[File] Error opening specific file:', error);
-      alert('Error opening file: ' + error.message);
+      const errorMsg = error.message || 'Unknown error occurred';
+      this.handleError(new Error(`Failed to open file: ${errorMsg}`), 'File Association');
     }
   }
 

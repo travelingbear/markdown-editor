@@ -500,13 +500,24 @@ class MarkdownViewer {
     console.log('[Close] isDirty:', this.isDirty);
     if (this.isDirty) {
       try {
-        const result = await window.__TAURI__.dialog.ask(
-          'You have unsaved changes. Do you want to save before closing?',
-          { title: 'Unsaved Changes', type: 'warning' }
-        );
+        // Try ask dialog first, fallback to confirm if not available
+        let result;
+        try {
+          result = await window.__TAURI__.dialog.ask(
+            'You have unsaved changes. Do you want to save before closing?',
+            { title: 'Unsaved Changes', type: 'warning' }
+          );
+        } catch (askError) {
+          console.log('[Close] ask dialog not available, using confirm:', askError.message);
+          result = await window.__TAURI__.dialog.confirm(
+            'You have unsaved changes. Click OK to save and close, Cancel to close without saving.',
+            { title: 'Unsaved Changes' }
+          );
+        }
+        
         console.log('[Close] User choice:', result);
         if (result === true) {
-          // Yes - save and close
+          // Yes/OK - save and close
           try {
             await this.saveFile();
             this.doClose();
@@ -515,7 +526,7 @@ class MarkdownViewer {
             // Don't close if save failed
           }
         } else if (result === false) {
-          // No - close without saving
+          // No/Cancel - close without saving (for ask) or don't close (for confirm)
           this.doClose();
         }
         // Cancel (result === null) - do nothing
@@ -1135,6 +1146,10 @@ class MarkdownViewer {
   }
   
   async exportToPdf() {
+    // PDF Export moved to dedicated phase due to library loading complexity
+    alert('PDF Export is currently under development and will be available in a future update.\n\nFor now, you can use HTML Export and then print to PDF from your browser.');
+    return;
+    
     try {
       console.log('[Export] Exporting to PDF...');
       

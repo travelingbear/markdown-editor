@@ -526,6 +526,71 @@ markdown-viewer/
 
 ---
 
+### Phase 6: UI/UX Enhancements (3-4 weeks)
+**Deliverables:**
+- **Recent Files List**: Last 3 opened documents on welcome page with clear history button
+- **Markdown Toolbar**: Common elements toolbar (H1-H3, Bold, Italic, Lists, Links, Images, Tables)
+- **Distraction-Free Modes**: Clean code and preview modes without toolbars
+- **Enhanced Keyboard Shortcuts**: Complete shortcut system for all toolbar actions
+- **Improved File Management**: Better file state tracking and recent files persistence
+
+**Tests Required:**
+- Recent files functionality tests
+- Toolbar action tests
+- Distraction-free mode tests
+- Keyboard shortcut integration tests
+- File history persistence tests
+
+**Documentation:**
+- Updated user manual with new features
+- Keyboard shortcuts reference
+- UI/UX design documentation
+
+**User Validation Required:**
+- ✅ Recent files list works correctly
+- ✅ Markdown toolbar actions function properly
+- ✅ Distraction-free modes provide clean experience
+- ✅ All keyboard shortcuts work as expected
+- ✅ File history persists across sessions
+
+**🚦 CHECKPOINT: User must test, approve, AND commit changes before proceeding to Phase 7**
+
+---
+
+### Phase 7: WYSIWYG Mode (4-6 weeks)
+**Deliverables:**
+- **WYSIWYG Editor**: What-You-See-Is-What-You-Get markdown editing mode
+- **Rich Text Editing**: Direct editing of formatted text with markdown generation
+- **Inline Editing**: Edit headings, lists, and text directly in preview mode
+- **Format Preservation**: Maintain markdown structure while providing visual editing
+- **Mode Switching**: Seamless switching between WYSIWYG and code modes
+- **Advanced Formatting**: Support for tables, links, images in WYSIWYG mode
+
+**Tests Required:**
+- WYSIWYG editing functionality tests
+- Markdown generation accuracy tests
+- Mode switching integration tests
+- Format preservation tests
+- Complex document editing tests
+
+**Documentation:**
+- WYSIWYG mode user guide
+- Technical architecture documentation
+- Feature comparison documentation
+
+**User Validation Required:**
+- ✅ WYSIWYG mode provides intuitive editing experience
+- ✅ Generated markdown is clean and accurate
+- ✅ Mode switching works seamlessly
+- ✅ All formatting options work correctly
+- ✅ Complex documents edit properly
+
+**🚦 CHECKPOINT: User must test, approve, AND commit changes before proceeding to Phase 8**
+
+**Note**: This is a major phase that may require breaking into sub-phases based on complexity.
+
+---
+
 ## 📚 Documentation Requirements
 
 ### Core Documentation Files

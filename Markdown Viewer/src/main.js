@@ -507,16 +507,21 @@ class MarkdownViewer {
         console.log('[Close] User choice:', result);
         if (result === true) {
           // Yes - save and close
-          await this.saveFile();
-          this.doClose();
+          try {
+            await this.saveFile();
+            this.doClose();
+          } catch (error) {
+            console.error('[Close] Error saving file:', error);
+            // Don't close if save failed
+          }
         } else if (result === false) {
           // No - close without saving
           this.doClose();
         }
-        // Cancel - do nothing (dialog already closed)
+        // Cancel (result === null) - do nothing
       } catch (error) {
         console.error('[Close] Error showing dialog:', error);
-        this.doClose();
+        // Don't close on dialog error
       }
     } else {
       console.log('[Close] No unsaved changes, closing directly');
@@ -1132,22 +1137,26 @@ class MarkdownViewer {
   async exportToPdf() {
     try {
       console.log('[Export] Exporting to PDF...');
-      console.log('[Export] Checking libraries:', {
-        html2canvas: typeof html2canvas !== 'undefined',
-        window_html2canvas: typeof window.html2canvas !== 'undefined',
-        jsPDF: typeof jsPDF !== 'undefined',
-        window_jspdf: typeof window.jspdf !== 'undefined'
-      });
       
-      // Check for html2canvas
-      const html2canvasLib = window.html2canvas || html2canvas;
-      if (!html2canvasLib) {
+      // Check for html2canvas with all possible locations
+      let html2canvasLib;
+      if (typeof window.html2canvas !== 'undefined') {
+        html2canvasLib = window.html2canvas;
+      } else if (typeof html2canvas !== 'undefined') {
+        html2canvasLib = html2canvas;
+      } else {
         throw new Error('html2canvas library not loaded. Please refresh the page and try again.');
       }
       
-      // Check for jsPDF with multiple possible locations
-      let jsPDFClass = window.jspdf?.jsPDF || window.jsPDF || jsPDF;
-      if (!jsPDFClass) {
+      // Check for jsPDF with all possible locations
+      let jsPDFClass;
+      if (window.jspdf && window.jspdf.jsPDF) {
+        jsPDFClass = window.jspdf.jsPDF;
+      } else if (typeof jsPDF !== 'undefined') {
+        jsPDFClass = jsPDF;
+      } else if (window.jsPDF) {
+        jsPDFClass = window.jsPDF;
+      } else {
         throw new Error('jsPDF library not loaded properly. Please refresh the page and try again.');
       }
       

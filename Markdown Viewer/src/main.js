@@ -34,6 +34,7 @@ class MarkdownViewer {
     this.setMode('preview');
     this.showWelcomePage(); // Show welcome page initially
     this.updateCursorPosition();
+    this.updateModeButtons(); // Initialize mode button states
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
     console.log('[MarkdownViewer] Phase 3 Constructor completed');
@@ -408,6 +409,7 @@ class MarkdownViewer {
         this.currentFile = selected;
         this.isDirty = false;
         this.updateFilename();
+        this.updateModeButtons();
         
         console.log('[File] File opened successfully');
       } else {
@@ -558,6 +560,7 @@ class MarkdownViewer {
     this.showEditor();
     this.updatePreview();
     this.updateFilename();
+    this.updateModeButtons();
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
     console.log('[File] New file created');
@@ -573,6 +576,7 @@ class MarkdownViewer {
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
     this.updateFilename();
+    this.updateModeButtons();
     console.log('[File] File closed, editor cleared, showing welcome page');
   }
   
@@ -688,6 +692,31 @@ class MarkdownViewer {
       this.filename.textContent = 'untitled.md' + (this.isDirty ? ' *' : '');
     }
   }
+  
+  updateModeButtons() {
+    const hasDocument = this.currentFile || (this.welcomePage && this.welcomePage.style.display === 'none');
+    
+    if (hasDocument) {
+      // Enable mode buttons
+      this.codeBtn.disabled = false;
+      this.previewBtn.disabled = false;
+      this.splitBtn.disabled = false;
+      this.codeBtn.classList.remove('disabled');
+      this.previewBtn.classList.remove('disabled');
+      this.splitBtn.classList.remove('disabled');
+    } else {
+      // Disable mode buttons and force preview mode
+      this.codeBtn.disabled = true;
+      this.previewBtn.disabled = false; // Keep preview enabled for welcome page
+      this.splitBtn.disabled = true;
+      this.codeBtn.classList.add('disabled');
+      this.previewBtn.classList.remove('disabled');
+      this.splitBtn.classList.add('disabled');
+      
+      // Force preview mode
+      this.setMode('preview');
+    }
+  }
 
   markDirty() {
     if (!this.isDirty && !this.isLoadingFile) {
@@ -700,6 +729,13 @@ class MarkdownViewer {
 
   setMode(mode) {
     console.log(`[Mode] Switching to ${mode} mode`);
+    
+    // Check if mode switching is allowed
+    const hasDocument = this.currentFile || (this.welcomePage && this.welcomePage.style.display === 'none');
+    if (!hasDocument && (mode === 'code' || mode === 'split')) {
+      console.log('[Mode] Mode switching disabled - no document loaded');
+      return;
+    }
     
     // Store current scroll positions before switching
     this.storeScrollPositions();

@@ -48,6 +48,7 @@ class MarkdownViewer {
     this.newBtn = document.getElementById('new-btn');
     this.openBtn = document.getElementById('open-btn');
     this.saveBtn = document.getElementById('save-btn');
+    this.saveAsBtn = document.getElementById('save-as-btn');
     this.closeBtn = document.getElementById('close-btn');
     this.themeBtn = document.getElementById('theme-btn');
     this.codeBtn = document.getElementById('code-btn');
@@ -218,6 +219,10 @@ class MarkdownViewer {
     this.saveBtn.addEventListener('click', () => {
       console.log('[Event] Save button clicked');
       this.saveFile();
+    });
+    this.saveAsBtn.addEventListener('click', () => {
+      console.log('[Event] Save As button clicked');
+      this.saveAsFile();
     });
     this.closeBtn.addEventListener('click', () => {
       console.log('[Event] Close button clicked');

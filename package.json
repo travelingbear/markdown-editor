@@ -1,0 +1,16 @@
+{
+  "name": "markdown-viewer",
+  "version": "0.1.0",
+  "description": "Native Markdown Viewer built with Tauri + Rust",
+  "scripts": {
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.5.0"
+  },
+  "dependencies": {
+    "marked": "^9.1.0"
+  }
+}

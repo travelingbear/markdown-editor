@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <button id="open-btn" class="toolbar-btn">📁 Open</button>
+          <button id="save-btn" class="toolbar-btn">💾 Save</button>
+          <button id="close-btn" class="toolbar-btn">❌ Close</button>
+        </div>
+        <div class="toolbar-center">
+          <button id="code-btn" class="mode-btn">Code</button>
+          <button id="preview-btn" class="mode-btn active">Preview</button>
+          <button id="split-btn" class="mode-btn">Split</button>
+        </div>
+        <div class="toolbar-right">
+          <button id="theme-btn" class="toolbar-btn">🌙</button>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Editor Pane -->
+        <div class="editor-pane">
+          <textarea id="editor" placeholder="# Welcome to Markdown Viewer\n\nStart typing your markdown here..."></textarea>
+        </div>
+        
+        <!-- Splitter -->
+        <div id="splitter" class="splitter"></div>
+        
+        <!-- Preview Pane -->
+        <div class="preview-pane">
+          <div id="preview" class="preview-content">
+            <h1>Welcome to Markdown Viewer</h1>
+            <p>Start typing your markdown here...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="status-left">
+          <span id="cursor-pos">Line 1, Col 1</span>
+        </div>
+        <div class="status-right">
+          <span id="filename">untitled.md</span>
+        </div>
+      </div>
+
+
+    </div>
+  </body>
+</html>

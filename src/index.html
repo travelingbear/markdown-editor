@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <div class="toolbar">
+            <div class="file-actions">
+                <button id="open-btn" class="btn">📁 Open</button>
+                <button id="save-btn" class="btn">💾 Save</button>
+                <button id="close-btn" class="btn">❌ Close</button>
+            </div>
+            <div class="mode-actions">
+                <button id="code-btn" class="btn mode-btn active">Code</button>
+                <button id="preview-btn" class="btn mode-btn">Preview</button>
+                <button id="split-btn" class="btn mode-btn">Split</button>
+            </div>
+            <div class="theme-actions">
+                <button id="theme-btn" class="btn">🌙</button>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div id="editor-pane" class="pane">
+                <textarea id="editor" placeholder="Start typing your markdown here..."></textarea>
+            </div>
+            <div id="preview-pane" class="pane hidden">
+                <div id="preview"></div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="cursor-info">Line 1, Col 1</span>
+            <span id="filename">Untitled</span>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

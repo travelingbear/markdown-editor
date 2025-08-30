@@ -500,14 +500,14 @@ class MarkdownViewer {
     console.log('[Close] isDirty:', this.isDirty);
     if (this.isDirty) {
       try {
-        const result = await window.__TAURI__.dialog.confirm(
-          'You have unsaved changes. Click OK to save and close, Cancel to close without saving.',
+        // Create custom 3-button dialog using browser confirm and additional logic
+        const saveFirst = await window.__TAURI__.dialog.confirm(
+          'You have unsaved changes. Do you want to save before closing?',
           { title: 'Unsaved Changes' }
         );
         
-        console.log('[Close] User choice:', result);
-        if (result === true) {
-          // OK - save and close
+        if (saveFirst) {
+          // User chose to save - try to save first
           try {
             await this.saveFile();
             this.doClose();
@@ -516,8 +516,16 @@ class MarkdownViewer {
             // Don't close if save failed
           }
         } else {
-          // Cancel - close without saving
-          this.doClose();
+          // User chose not to save - ask if they want to close without saving
+          const closeWithoutSaving = await window.__TAURI__.dialog.confirm(
+            'Close without saving changes?',
+            { title: 'Confirm Close' }
+          );
+          
+          if (closeWithoutSaving) {
+            this.doClose();
+          }
+          // If they cancel the second dialog, do nothing (stay in document)
         }
       } catch (error) {
         console.error('[Close] Error showing dialog:', error);
@@ -557,10 +565,15 @@ class MarkdownViewer {
   
   doClose() {
     this.currentFile = null;
+    // Clear editor content
+    this.isLoadingFile = true;
+    this.setEditorContent('');
+    this.isLoadingFile = false;
     this.showWelcomePage();
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
-    console.log('[File] File closed, showing welcome page');
+    this.updateFilename();
+    console.log('[File] File closed, editor cleared, showing welcome page');
   }
   
   showWelcomePage() {

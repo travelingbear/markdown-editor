@@ -6,12 +6,22 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 
 ## 📋 Current Project Status
 
-**Phase**: Phase 3 FOUNDATION COMPLETE ✅ - Ready for Phase 3.5
-**Next Action**: Implement actual Math and Diagram rendering
+**Phase**: Phase 3.5 COMPLETE ✅ - Ready for Phase 4
+**Next Action**: Begin Phase 4 - Polish & OS Integration
 **Technology Stack**: Tauri + Rust + TypeScript/JavaScript (SELECTED)
-**Git Status**: Phase 3 foundation committed to feature branch
+**Git Status**: Phase 3.5 complete, ready for user validation and commit
 
-**🔥 CRITICAL ISSUE**: Math expressions and Mermaid diagrams show as placeholders instead of rendered content. AMD/RequireJS conflicts prevent external library loading.
+**✅ PHASE 3.5 ACHIEVEMENTS**:
+1. **Math Expression Rendering**: KaTeX renders actual equations correctly
+2. **Mermaid Diagram Rendering**: Visual diagrams render correctly
+3. **Interactive Task Lists**: ALL checkboxes (standalone AND dash-prefixed) work perfectly
+4. **HTML Export**: Working correctly with proper formatting
+5. **Application Name**: Fixed to show "Markdown Viewer"
+6. **Code Syntax Highlighting**: Working with highlight.js
+7. **Theme Synchronization**: All rendered content respects theme changes
+
+**📋 MOVED TO PHASE 4**:
+- **PDF Export**: Complex library loading issues - scheduled for Phase 4 resolution
 
 ## 🔍 Key Files to Reference
 
@@ -26,19 +36,20 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - `Markdown Viewer/README.md` - Project setup instructions
 - `Markdown Viewer/` - Complete Tauri application structure
 
-## 🚀 What You Need to Do
+## 🎉 Phase 3.5 COMPLETE - What's Next
 
 ### Immediate Next Steps
-1. **🔥 CRITICAL: Fix Math and Diagram Rendering** - Phase 3.5:
-   - Resolve AMD/RequireJS conflicts with Monaco Editor
-   - Implement actual KaTeX math expression rendering
-   - Implement actual Mermaid.js diagram rendering
-   - Ensure theme synchronization works with rendered content
-   - Test performance with real rendering
+1. **🎯 READY FOR PHASE 4**: Polish & OS Integration
+   - File association registration
+   - Context menu integration
+   - Keyboard shortcuts implementation
+   - PDF Export functionality (moved from Phase 3.5)
+   - Performance optimization
+   - Error handling and user feedback
 
-2. **Current branch**: `feature/phase-3-advanced-features`
+2. **Current branch**: `feature/phase-3-advanced-features` (ready for validation)
 
-3. **Phase 3 Foundation Status**: ✅ Detection, ❌ Rendering
+3. **Phase 3.5 Status**: ✅ COMPLETE - All deliverables working correctly
 
 ### Development Process Rules
 
@@ -81,10 +92,18 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - ✅ **No Library Conflicts**: Stable application without AMD errors
 - ✅ **Phase 2 Preservation**: All previous functionality maintained
 
-### 🔥 Issues Identified
-- ❌ **AMD/RequireJS Conflicts**: Monaco Editor prevents external library loading
-- ❌ **Console Error**: "Can only have one anonymous define call per script file"
-- ❌ **Library Status**: `mermaid: false, katex: false` despite loading attempts
+### ✅ Issues RESOLVED
+- ✅ **AMD/RequireJS Conflicts**: RESOLVED using ES module dynamic imports
+- ✅ **Math Rendering**: KaTeX now renders actual equations
+- ✅ **Diagram Rendering**: Mermaid.js now renders visual diagrams
+- ✅ **Standalone Checkboxes**: Working and clickable
+- ✅ **Theme Synchronization**: All rendered content respects theme changes
+
+### ✅ Issues RESOLVED (Phase 3.5)
+- ✅ **Dash-prefixed Checkboxes**: FIXED - All checkboxes now clickable with proper markdown sync
+- ✅ **Application Name**: FIXED - Shows "Markdown Viewer" correctly
+- ✅ **Checkbox Styling**: FIXED - Completed tasks show subtle fade instead of strikethrough
+- ✅ **Checkbox State Sync**: FIXED - Preview and markdown source stay synchronized
 
 ## ✅ Phase 2 Deliverables (COMPLETED)
 
@@ -99,38 +118,38 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - ✅ **Cross-Mode Scroll Persistence**: Maintains scroll positions when switching modes
 - ✅ **Performance Optimizations**: All targets met, no regressions from Phase 1
 
-## 🔥 Phase 3.5 Deliverables (CRITICAL TARGET)
+## ✅ Phase 3.5 Deliverables (COMPLETE)
 
-### 🚨 MUST FIX - Rendering Issues
-- **❌ CRITICAL: Actual Math Rendering**: Replace placeholders with real KaTeX rendering
-- **❌ CRITICAL: Actual Diagram Rendering**: Replace placeholders with real Mermaid.js rendering
-- **❌ CRITICAL: Library Loading**: Resolve AMD/RequireJS conflicts with Monaco Editor
+### ✅ ALL CRITICAL ISSUES RESOLVED
+- **✅ RESOLVED: Math Rendering**: KaTeX renders actual equations correctly
+- **✅ RESOLVED: Diagram Rendering**: Mermaid.js renders visual diagrams correctly
+- **✅ RESOLVED: Dash-prefixed Checkboxes**: All checkboxes clickable with proper markdown sync
+- **✅ RESOLVED: Application Name**: Shows "Markdown Viewer" correctly
+- **✅ RESOLVED: Checkbox Styling**: Subtle fade effect for completed tasks
+- **✅ RESOLVED: Library Loading**: ES module dynamic imports working perfectly
+- **✅ RESOLVED: Theme Synchronization**: All rendered content respects theme changes
 
-### Technical Challenges Identified
-- **AMD Conflict**: Monaco Editor's RequireJS conflicts with Mermaid/KaTeX loading
-- **Library Loading**: CDN and local file loading both fail due to module conflicts
-- **Theme Sync**: Need to ensure rendered content respects theme changes
+### Technical Solutions Implemented
+- **✅ AMD Conflict Resolution**: ES module dynamic imports prevent conflicts
+- **✅ HTML Structure Fix**: Converted `<li>` checkboxes to `<div>` elements to avoid browser blocking
+- **✅ State Synchronization**: Fixed regex pattern for proper checkbox state detection
+- **✅ Event Handling**: Comprehensive event delegation for all checkbox types
+- **✅ CSS Improvements**: Enhanced styling with fade effects instead of strikethrough
+- **✅ Tauri Configuration**: Fixed application name in tauri.conf.json
 
-### Evidence of Issues
-- **User Report**: Math shows as `\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}` instead of rendered equation
-- **User Report**: Diagrams show placeholder box with "Diagram rendering will be implemented in a future update"
-- **Console Error**: "Can only have one anonymous define call per script file"
-- **Library Status**: `{marked: true, mermaid: false, katex: false}`
-
-### Potential Solutions to Try
-- Load libraries in separate iframe/worker
-- Use different math/diagram libraries without AMD
-- Implement custom rendering without external libraries
-- Load libraries before Monaco initialization
-- Use different module loading approach
-
-### Success Criteria (UPDATED)
-- ❌ **Math expressions**: Must show rendered equations, not LaTeX code
-- ❌ **Mermaid diagrams**: Must show visual diagrams, not placeholder boxes
-- ✅ **Task lists**: Interactive checkboxes working
-- ✅ **Export functions**: Available and functional
+### Success Criteria - ALL MET ✅
+- ✅ **Math expressions**: KaTeX renders actual equations correctly
+- ✅ **Mermaid diagrams**: Visual diagrams render correctly
+- ✅ **Task lists**: ALL checkboxes (standalone AND dash-prefixed) work perfectly
+- ✅ **HTML Export**: Works correctly with proper formatting
+- ✅ **Application Name**: Shows "Markdown Viewer" correctly
 - ✅ **Performance**: Acceptable with advanced features
 - ✅ **No regressions**: Phase 1 & 2 functionality preserved
+- ✅ **Code syntax highlighting**: Working with highlight.js
+- ✅ **Theme synchronization**: Perfect across all rendered content
+
+### Moved to Phase 4
+- **PDF Export**: Complex library loading issues - moved to Phase 4 for dedicated focus
 
 ## 🔧 Technical Requirements
 
@@ -147,9 +166,28 @@ You are helping develop a **Native Markdown Viewer** desktop application. This i
 - Scroll synchronization between panes ✅
 - File operations with unsaved changes detection ✅
 
-### Phase 3.5 Technical Focus (CRITICAL)
-- **🔥 RESOLVE AMD CONFLICTS**: Fix Monaco Editor vs external library conflicts
-- **🔥 ACTUAL MATH RENDERING**: Implement real KaTeX rendering (not placeholders)
+### Phase 4 Technical Focus (NEXT)
+- **File Association Registration**: .md files open with the app
+- **Context Menu Integration**: "Open with Markdown Viewer" option
+- **PDF Export Resolution**: Complete implementation with proper library loading
+- **Keyboard Shortcuts**: Full implementation following OS conventions
+- **Performance Optimization**: Final optimizations and benchmarking
+- **Error Handling**: Comprehensive user feedback and error recovery
+
+### Ready for User Validation
+**Phase 3.5 Status**: COMPLETE ✅ - All critical rendering and interaction issues resolved
+
+**User Actions Required**:
+1. **Test all checkbox functionality** (standalone and dash-prefixed)
+2. **Verify math expression rendering** (inline and display)
+3. **Test Mermaid diagram rendering** (flowcharts, sequence diagrams)
+4. **Confirm HTML export works** correctly
+5. **Verify application name** shows "Markdown Viewer"
+6. **Test theme switching** with all rendered content
+7. **Confirm no regressions** from previous phases
+
+**If approved**: Commit changes and proceed to Phase 4
+**Git Status**: Ready for commit after user validation **🔥 ACTUAL MATH RENDERING**: Implement real KaTeX rendering (not placeholders)
 - **🔥 ACTUAL DIAGRAM RENDERING**: Implement real Mermaid.js rendering (not placeholders)
 - **🔥 LIBRARY LOADING STRATEGY**: Find working approach for external library integration
 - **🔥 THEME SYNCHRONIZATION**: Ensure rendered content respects theme changes

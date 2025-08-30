@@ -19,6 +19,8 @@ class MarkdownViewer {
     this.mermaidInitialized = false;
     this.katexInitialized = false;
     this.taskListStates = new Map();
+    this.isTyping = false;
+    this.typingTimeout = null;
     
     console.log('[MarkdownViewer] Phase 3 Constructor started');
     this.initializeElements();
@@ -57,39 +59,38 @@ class MarkdownViewer {
 
   async initializeAdvancedFeatures() {
     try {
-      console.log('[Advanced] Initializing advanced features...');
+      console.log('[Advanced] Initializing advanced features with dynamic imports...');
       
-      // Wait a bit for libraries to load
-      setTimeout(() => {
-        // Initialize Mermaid
-        const mermaidLib = window.mermaid || (typeof mermaid !== 'undefined' ? mermaid : undefined);
-        if (mermaidLib) {
-          mermaidLib.initialize({
-            startOnLoad: false,
-            theme: this.theme === 'dark' ? 'dark' : 'default',
-            securityLevel: 'loose',
-            fontFamily: 'inherit'
-          });
-          this.mermaidInitialized = true;
-          console.log('[Mermaid] Initialized successfully');
-        } else {
-          console.warn('[Mermaid] Mermaid library not loaded');
-          console.log('[Mermaid] Checking window object:', Object.keys(window).filter(k => k.toLowerCase().includes('mermaid')));
-        }
-        
-        // KaTeX is ready to use when loaded
-        const katexLib = window.katex || (typeof katex !== 'undefined' ? katex : undefined);
-        if (katexLib) {
-          this.katexInitialized = true;
-          console.log('[KaTeX] Ready for math rendering');
-        } else {
-          console.warn('[KaTeX] KaTeX library not loaded');
-          console.log('[KaTeX] Checking window object:', Object.keys(window).filter(k => k.toLowerCase().includes('katex')));
-        }
-        
-        // Update preview after libraries are initialized
-        this.updatePreview();
-      }, 500);
+      // Load Mermaid using dynamic import to avoid AMD conflicts
+      try {
+        const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.esm.min.mjs');
+        this.mermaid = mermaidModule.default;
+        this.mermaid.initialize({
+          startOnLoad: false,
+          theme: this.theme === 'dark' ? 'dark' : 'default',
+          securityLevel: 'loose',
+          fontFamily: 'inherit'
+        });
+        this.mermaidInitialized = true;
+        console.log('[Mermaid] Loaded and initialized successfully via ES module');
+      } catch (error) {
+        console.warn('[Mermaid] Failed to load via ES module:', error);
+        this.mermaidInitialized = false;
+      }
+      
+      // Load KaTeX using dynamic import
+      try {
+        const katexModule = await import('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.mjs');
+        this.katex = katexModule.default;
+        this.katexInitialized = true;
+        console.log('[KaTeX] Loaded successfully via ES module');
+      } catch (error) {
+        console.warn('[KaTeX] Failed to load via ES module:', error);
+        this.katexInitialized = false;
+      }
+      
+      // Update preview after libraries are loaded
+      this.updatePreview();
       
     } catch (error) {
       console.error('[Advanced] Error initializing advanced features:', error);
@@ -171,6 +172,13 @@ class MarkdownViewer {
       this.updatePreview();
       this.markDirty();
       this.updateCursorPosition();
+      
+      // Disable scroll sync temporarily during typing
+      this.isTyping = true;
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = setTimeout(() => {
+        this.isTyping = false;
+      }, 1000);
     });
 
     // Cursor position change events
@@ -180,7 +188,7 @@ class MarkdownViewer {
 
     // Scroll synchronization
     this.monacoEditor.onDidScrollChange((e) => {
-      if (this.currentMode === 'split') {
+      if (this.currentMode === 'split' && !this.isTyping) {
         this.syncScrollToPreview(e.scrollTop, e.scrollHeight);
       }
     });
@@ -523,7 +531,7 @@ class MarkdownViewer {
       // First, process math expressions in the raw markdown
       let processedMarkdown = this.processMathInMarkdown(markdown);
       
-      // Configure marked with basic settings first
+      // Configure marked with basic settings
       marked.setOptions({
         breaks: true,
         gfm: true
@@ -647,7 +655,7 @@ class MarkdownViewer {
   setupScrollSync() {
     // Sync from preview to editor
     this.preview.addEventListener('scroll', () => {
-      if (this.currentMode === 'split' && !this.isScrollSyncing) {
+      if (this.currentMode === 'split' && !this.isScrollSyncing && !this.isTyping) {
         this.isScrollSyncing = true;
         this.syncScrollToEditor();
         setTimeout(() => {
@@ -770,68 +778,221 @@ class MarkdownViewer {
   }
 
   processMathInMarkdown(markdown) {
-    console.log('[Math] Processing math expressions with simple styling...');
+    console.log('[Math] Processing math expressions...');
     
-    // Simple math styling without external libraries
-    // Process display math: $$...$$
-    markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
-      return `<div class="math-display"><code>${math.trim()}</code></div>`;
-    });
-    
-    // Process inline math: $...$
-    markdown = markdown.replace(/\$([^$\n]+)\$/g, (match, math) => {
-      return `<span class="math-inline"><code>${math.trim()}</code></span>`;
-    });
+    if (this.katexInitialized && this.katex) {
+      console.log('[Math] Using KaTeX for rendering');
+      
+      // Process display math: $$...$$
+      markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+        try {
+          const rendered = this.katex.renderToString(math.trim(), {
+            displayMode: true,
+            throwOnError: false
+          });
+          return `<div class="math-display">${rendered}</div>`;
+        } catch (error) {
+          console.warn('[Math] KaTeX display math error:', error);
+          return `<div class="math-display math-error"><code>${math.trim()}</code></div>`;
+        }
+      });
+      
+      // Process inline math: $...$
+      markdown = markdown.replace(/\$([^$\n]+)\$/g, (match, math) => {
+        try {
+          const rendered = this.katex.renderToString(math.trim(), {
+            displayMode: false,
+            throwOnError: false
+          });
+          return `<span class="math-inline">${rendered}</span>`;
+        } catch (error) {
+          console.warn('[Math] KaTeX inline math error:', error);
+          return `<span class="math-inline math-error"><code>${math.trim()}</code></span>`;
+        }
+      });
+    } else {
+      console.log('[Math] KaTeX not available, using fallback styling');
+      
+      // Fallback styling without external libraries
+      markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+        return `<div class="math-display math-fallback"><code>${math.trim()}</code></div>`;
+      });
+      
+      markdown = markdown.replace(/\$([^$\n]+)\$/g, (match, math) => {
+        return `<span class="math-inline math-fallback"><code>${math.trim()}</code></span>`;
+      });
+    }
     
     return markdown;
   }
   
   processMermaidInHtml(html) {
-    console.log('[Mermaid] Processing Mermaid code blocks with simple placeholders...');
+    console.log('[Mermaid] Processing Mermaid code blocks...');
     
-    // Replace mermaid code blocks with simple placeholders
-    html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-      const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-      return `<div class="mermaid-placeholder">
-        <div class="placeholder-header">📊 Mermaid Diagram</div>
-        <pre class="diagram-code">${decodedCode}</pre>
-        <div class="placeholder-note">Diagram rendering will be implemented in a future update</div>
-      </div>`;
-    });
+    if (this.mermaidInitialized && this.mermaid) {
+      console.log('[Mermaid] Using Mermaid.js for rendering');
+      
+      // Replace mermaid code blocks with containers for rendering
+      html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
+        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        return `<div class="mermaid-diagram" id="${id}" data-mermaid-code="${encodeURIComponent(decodedCode.trim())}"></div>`;
+      });
+    } else {
+      console.log('[Mermaid] Mermaid not available, using fallback placeholders');
+      
+      // Fallback placeholders
+      html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
+        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        return `<div class="mermaid-placeholder mermaid-fallback">
+          <div class="placeholder-header">📊 Mermaid Diagram</div>
+          <pre class="diagram-code">${decodedCode}</pre>
+          <div class="placeholder-note">Mermaid.js not loaded - showing code instead</div>
+        </div>`;
+      });
+    }
     
     return html;
   }
   
   processTaskListsInHtml(html) {
     console.log('[TaskList] Processing task lists...');
+    let taskCount = 0;
     
-    // Convert task list items
-    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/g, (match, checked, content) => {
-      const isChecked = checked === 'x';
+    // First, handle any existing disabled checkboxes in li elements
+    html = html.replace(/<li><input[^>]*disabled[^>]*type="checkbox"[^>]*>\s*([^<]*)<\/li>/g, (match, content) => {
+      // Check for checked attribute specifically as an attribute
+      const isChecked = /\bchecked\b[="']?/.test(match);
       const id = 'task-' + Math.random().toString(36).substr(2, 9);
-      console.log('[TaskList] Found task:', { checked: isChecked, content: content.substring(0, 30) });
-      return `<li class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''} onchange="window.markdownViewer.toggleTaskItem('${id}', this.checked)"> <label for="${id}">${content}</label></li>`;
+      taskCount++;
+
+      return `<div class="task-list-item dash-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content.trim()}</label></div>`;
     });
     
+    // Handle dash-prefixed task lists in li elements (markdown syntax)
+    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (match, checked, content) => {
+      const isChecked = checked === 'x';
+      const id = 'task-' + Math.random().toString(36).substr(2, 9);
+      taskCount++;
+
+      return `<div class="task-list-item dash-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
+    });
+    
+    // Handle standalone checkbox patterns in paragraphs
+    html = html.replace(/<p>\[([ x])\]\s*([^<]*?)<\/p>/g, (match, checked, content) => {
+      const isChecked = checked === 'x';
+      const cleanContent = content.trim();
+      const id = 'task-' + Math.random().toString(36).substr(2, 9);
+      taskCount++;
+
+      return `<div class="task-list-item standalone-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
+    });
+    
+    console.log(`[TaskList] Processed ${taskCount} total tasks`);
     return html;
   }
   
   async renderMermaidDiagrams() {
-    console.log('[Mermaid] Mermaid placeholders already rendered');
-    // Placeholders are already in place, no additional rendering needed
+    if (!this.mermaidInitialized || !this.mermaid) {
+      console.log('[Mermaid] Mermaid not initialized, skipping diagram rendering');
+      return;
+    }
+    
+    console.log('[Mermaid] Rendering Mermaid diagrams...');
+    
+    const diagrams = document.querySelectorAll('.mermaid-diagram');
+    console.log(`[Mermaid] Found ${diagrams.length} diagrams to render`);
+    
+    for (let i = 0; i < diagrams.length; i++) {
+      const diagram = diagrams[i];
+      const code = decodeURIComponent(diagram.getAttribute('data-mermaid-code'));
+      
+      try {
+        console.log(`[Mermaid] Rendering diagram ${i + 1}/${diagrams.length}`);
+        
+        // Clear any existing content
+        diagram.innerHTML = '';
+        
+        // Render the diagram
+        const { svg } = await this.mermaid.render(diagram.id + '-svg', code);
+        diagram.innerHTML = svg;
+        
+        console.log(`[Mermaid] Successfully rendered diagram ${i + 1}`);
+      } catch (error) {
+        console.error(`[Mermaid] Error rendering diagram ${i + 1}:`, error);
+        diagram.innerHTML = `
+          <div class="mermaid-error">
+            <div class="error-header">⚠️ Mermaid Rendering Error</div>
+            <pre class="diagram-code">${code}</pre>
+            <div class="error-message">${error.message}</div>
+          </div>
+        `;
+      }
+    }
+    
+    console.log('[Mermaid] Finished rendering all diagrams');
   }
   
   setupTaskListInteractions() {
-    // Make window.markdownViewer available for task list callbacks
-    window.markdownViewer = this;
+    console.log('[TaskList] Setting up task list interactions...');
+    
+    if (this.taskChangeHandler) {
+      this.preview.removeEventListener('change', this.taskChangeHandler);
+    }
+    
+    this.taskChangeHandler = (e) => {
+      if (e.target.type === 'checkbox' && e.target.closest('.task-list-item')) {
+        const label = e.target.nextElementSibling;
+        if (label && label.tagName === 'LABEL') {
+          const taskText = label.textContent.trim();
+          this.updateTaskInMarkdown(taskText, e.target.checked);
+          this.markDirty();
+        }
+      }
+    };
+    
+    this.preview.addEventListener('change', this.taskChangeHandler);
+    
+    const checkboxes = this.preview.querySelectorAll('.task-list-item input[type="checkbox"]');
+    console.log(`[TaskList] Set up event handling for ${checkboxes.length} checkboxes`);
+
   }
   
-  toggleTaskItem(taskId, checked) {
-    console.log(`[TaskList] Task ${taskId} ${checked ? 'checked' : 'unchecked'}`);
-    // Store task state for persistence
-    this.taskListStates.set(taskId, checked);
-    // Mark document as dirty since task state changed
-    this.markDirty();
+  updateTaskInMarkdown(taskText, checked) {
+    const currentContent = this.getEditorContent();
+    const lines = currentContent.split('\n');
+    
+    let updated = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes(taskText)) {
+        // Handle dash-prefixed tasks: - [ ] or - [x]
+        if (line.includes('- [ ]') || line.includes('- [x]')) {
+          if (checked) {
+            lines[i] = line.replace('- [ ]', '- [x]');
+          } else {
+            lines[i] = line.replace('- [x]', '- [ ]');
+          }
+          updated = true;
+          break;
+        }
+        // Handle standalone tasks: [ ] or [x]
+        else if (line.includes('[ ]') || line.includes('[x]')) {
+          if (checked) {
+            lines[i] = line.replace('[ ]', '[x]');
+          } else {
+            lines[i] = line.replace('[x]', '[ ]');
+          }
+          updated = true;
+          break;
+        }
+      }
+    }
+    
+    if (updated) {
+      const newContent = lines.join('\n');
+      this.setEditorContent(newContent);
+    }
   }
   
   async exportToHtml() {
@@ -899,8 +1060,13 @@ class MarkdownViewer {
     try {
       console.log('[Export] Exporting to PDF...');
       
-      if (typeof html2canvas === 'undefined' || typeof jsPDF === 'undefined') {
-        throw new Error('PDF export libraries not loaded');
+      if (typeof html2canvas === 'undefined') {
+        throw new Error('html2canvas library not loaded. Please refresh the page and try again.');
+      }
+      
+      let jsPDFClass = window.jspdf?.jsPDF || jsPDF;
+      if (!jsPDFClass) {
+        throw new Error('jsPDF library not loaded properly. Please refresh the page and try again.');
       }
       
       // Create a temporary container with the preview content
@@ -919,18 +1085,23 @@ class MarkdownViewer {
       tempContainer.innerHTML = this.preview.innerHTML;
       document.body.appendChild(tempContainer);
       
-      // Convert to canvas
+      console.log('[Export] Converting to canvas...');
+      
+      // Convert to canvas with error handling
       const canvas = await html2canvas(tempContainer, {
         backgroundColor: '#ffffff',
-        scale: 2
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
       });
       
       // Remove temporary container
       document.body.removeChild(tempContainer);
       
+      console.log('[Export] Canvas created, generating PDF...');
+      
       // Create PDF
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDFClass('p', 'mm', 'a4');
       
       const imgData = canvas.toDataURL('image/png');
       const imgWidth = 210; // A4 width in mm
@@ -950,6 +1121,8 @@ class MarkdownViewer {
         heightLeft -= pageHeight;
       }
       
+      console.log('[Export] PDF generated, saving file...');
+      
       // Save PDF file
       if (window.__TAURI__) {
         const filePath = await window.__TAURI__.dialog.save({
@@ -965,12 +1138,30 @@ class MarkdownViewer {
           const uint8Array = new Uint8Array(arrayBuffer);
           await window.__TAURI__.fs.writeBinaryFile(filePath, uint8Array);
           console.log('[Export] PDF exported successfully to:', filePath);
+          alert('PDF exported successfully!');
         }
+      } else {
+        // Fallback for non-Tauri environments
+        pdf.save('markdown-export.pdf');
+        console.log('[Export] PDF downloaded via browser');
       }
       
     } catch (error) {
       console.error('[Export] Error exporting to PDF:', error);
-      alert('Error exporting to PDF: ' + error.message);
+      console.error('[Export] Error stack:', error.stack);
+      alert('Error exporting to PDF: ' + error.message + '\n\nPlease refresh the page and try again.');
+    }
+  }
+
+  applySyntaxHighlighting() {
+    // Apply highlight.js syntax highlighting to code blocks
+    if (typeof hljs !== 'undefined') {
+      console.log('[Syntax] Applying highlight.js highlighting');
+      this.preview.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+      });
+    } else {
+      console.warn('[Syntax] highlight.js not loaded');
     }
   }
 
@@ -985,14 +1176,14 @@ class MarkdownViewer {
     }
     
     // Update Mermaid theme and re-render diagrams
-    if (this.mermaidInitialized) {
-      mermaid.initialize({
+    if (this.mermaidInitialized && this.mermaid) {
+      this.mermaid.initialize({
         theme: this.theme === 'dark' ? 'dark' : 'default',
         securityLevel: 'loose',
         fontFamily: 'inherit'
       });
       // Re-render all Mermaid diagrams with new theme
-      this.renderMermaidDiagrams();
+      this.updatePreview();
     }
     
     console.log(`[Theme] Switched to ${this.theme} theme`);

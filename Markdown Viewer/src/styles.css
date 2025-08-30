@@ -324,7 +324,22 @@ body {
 
 /* Phase 3: Advanced Features Styles */
 
-/* Mermaid Diagram Placeholders */
+/* Mermaid Diagrams - Rendered */
+.mermaid-diagram {
+  margin: 20px 0;
+  text-align: center;
+  background-color: var(--bg-primary);
+  border-radius: 6px;
+  padding: 16px;
+  border: 1px solid var(--border-primary);
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mermaid Diagram Placeholders (fallback) */
 .mermaid-placeholder {
   margin: 20px 0;
   padding: 16px;
@@ -332,6 +347,11 @@ body {
   border-radius: 6px;
   border: 2px dashed var(--border-primary);
   text-align: center;
+}
+
+.mermaid-placeholder.mermaid-fallback {
+  border-color: #f85149;
+  background-color: rgba(248, 81, 73, 0.1);
 }
 
 .placeholder-header {
@@ -359,30 +379,84 @@ body {
   margin-top: 8px;
 }
 
-/* Task Lists */
+/* Mermaid Error States */
+.mermaid-error {
+  margin: 20px 0;
+  padding: 16px;
+  background-color: rgba(248, 81, 73, 0.1);
+  border-radius: 6px;
+  border: 2px solid #f85149;
+  text-align: center;
+}
+
+.error-header {
+  font-weight: 600;
+  color: #f85149;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.error-message {
+  font-size: 12px;
+  color: #f85149;
+  font-style: italic;
+  margin-top: 8px;
+  background-color: rgba(248, 81, 73, 0.05);
+  padding: 8px;
+  border-radius: 4px;
+}
+
+/* Task Lists - Simplified structure using divs */
 .preview-content .task-list-item {
-  list-style: none;
-  margin-left: -1.5em;
-  padding-left: 0;
+  margin-bottom: 8px;
+  padding: 4px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
 }
 
-.preview-content .task-list-item input[type="checkbox"] {
-  margin-right: 8px;
+/* Dash tasks (converted from li) get list-style appearance */
+.preview-content .task-list-item.dash-task {
+  margin-left: 20px;
+  position: relative;
+}
+
+.preview-content .task-list-item.dash-task::before {
+  content: '•';
+  position: absolute;
+  left: -16px;
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+
+/* Standalone tasks */
+.preview-content .task-list-item.standalone-task {
   margin-left: 0;
-  cursor: pointer;
 }
 
+/* Checkboxes - now fully clickable */
+.preview-content .task-list-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Labels */
 .preview-content .task-list-item label {
   cursor: pointer;
   user-select: none;
+  flex: 1;
+  line-height: 1.4;
 }
 
 .preview-content .task-list-item input[type="checkbox"]:checked + label {
-  text-decoration: line-through;
+  opacity: 0.6;
   color: var(--text-secondary);
 }
 
-/* Simple Math Expressions */
+/* Math Expressions - Rendered with KaTeX */
 .math-display {
   margin: 16px 0;
   text-align: center;
@@ -390,29 +464,111 @@ body {
   background-color: var(--bg-secondary);
   border-radius: 6px;
   border-left: 4px solid var(--accent-primary);
+  overflow-x: auto;
 }
 
-.math-display code {
-  font-size: 1.1em;
-  background-color: transparent;
-  padding: 0;
-  color: var(--accent-primary);
-  font-weight: 500;
+.math-display .katex-display {
+  margin: 0;
 }
 
 .math-inline {
   display: inline;
-  background-color: var(--bg-secondary);
-  padding: 2px 6px;
-  border-radius: 4px;
   margin: 0 2px;
 }
 
-.math-inline code {
+/* Math Expressions - Fallback styling */
+.math-display.math-fallback {
+  border-left-color: #f85149;
+  background-color: rgba(248, 81, 73, 0.1);
+}
+
+.math-display.math-fallback code {
+  font-size: 1.1em;
   background-color: transparent;
   padding: 0;
-  color: var(--accent-primary);
+  color: #f85149;
+  font-weight: 500;
+}
+
+.math-inline.math-fallback {
+  background-color: rgba(248, 81, 73, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #f85149;
+}
+
+.math-inline.math-fallback code {
+  background-color: transparent;
+  padding: 0;
+  color: #f85149;
   font-size: 0.95em;
+}
+
+/* Math Error States */
+.math-error {
+  border-left-color: #f85149 !important;
+  background-color: rgba(248, 81, 73, 0.1) !important;
+}
+
+.math-error code {
+  color: #f85149 !important;
+}
+
+/* KaTeX Styling Adjustments */
+.katex {
+  font-size: 1.1em;
+}
+
+.katex-display {
+  margin: 0.5em 0;
+}
+
+/* Dark theme adjustments for KaTeX */
+[data-theme="dark"] .katex {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .mermaid-diagram {
+  background-color: var(--bg-secondary);
+}
+
+/* highlight.js theme integration */
+[data-theme="light"] .preview-content pre code.hljs {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .preview-content pre code.hljs {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Override highlight.js colors for better theme integration */
+[data-theme="dark"] .hljs-comment,
+[data-theme="dark"] .hljs-quote {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .hljs-keyword,
+[data-theme="dark"] .hljs-selector-tag,
+[data-theme="dark"] .hljs-type {
+  color: #ff7b72 !important;
+}
+
+[data-theme="dark"] .hljs-string,
+[data-theme="dark"] .hljs-attr {
+  color: #7ee787 !important;
+}
+
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal,
+[data-theme="dark"] .hljs-variable {
+  color: #79c0ff !important;
+}
+
+[data-theme="dark"] .hljs-function,
+[data-theme="dark"] .hljs-title {
+  color: #d2a8ff !important;
 }
 
 /* Enhanced Tables */
@@ -483,12 +639,27 @@ body {
     padding: 8px;
   }
   
+  .mermaid-placeholder {
+    margin: 10px 0;
+    padding: 8px;
+  }
+  
   .katex {
     font-size: 1em;
   }
   
+  .math-display {
+    padding: 8px;
+    margin: 12px 0;
+  }
+  
   .preview-content table {
     font-size: 12px;
+  }
+  
+  .diagram-code {
+    font-size: 11px;
+    padding: 8px;
   }
 }
 

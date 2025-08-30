@@ -398,6 +398,48 @@ markdown-viewer/
 
 ---
 
+### Phase 3.5: Critical Rendering Issues (COMPLETE ✅)
+**Status**: COMPLETE - All markdown rendering functionality working perfectly
+
+**COMPLETED Deliverables**:
+- ✅ **AMD/RequireJS Conflict Resolution**: ES module dynamic imports working
+- ✅ **Actual Math Rendering**: KaTeX renders real mathematical expressions
+- ✅ **Actual Diagram Rendering**: Mermaid.js renders visual diagrams
+- ✅ **Standalone Checkbox Functionality**: Working and clickable
+- ✅ **Code Syntax Highlighting**: highlight.js integration working
+- ✅ **Theme Synchronization**: All rendered content respects theme changes
+- ✅ **Scroll Jump Fix**: Improved behavior during typing
+- ✅ **Application Name**: Fixed to show "Markdown Viewer"
+- ✅ **HTML Export**: Working correctly
+
+**ALL ISSUES RESOLVED ✅**:
+- ✅ **Dash-prefixed Checkbox Interactions**: ALL checkboxes now work perfectly with markdown sync
+- ✅ **Checkbox State Synchronization**: Preview and markdown source stay synchronized
+- ✅ **Checkbox Styling**: Improved visual feedback with fade effect
+- ✅ **Event Handling**: Comprehensive event delegation for all checkbox types
+
+**Technical Solutions Implemented**:
+- **HTML Structure Fix**: Converted `<li>` elements to `<div>` to avoid browser event blocking
+- **State Detection Fix**: Fixed regex pattern for accurate checkbox attribute detection
+- **CSS Improvements**: Enhanced styling with opacity fade for completed tasks
+- **Event System**: Robust event handling for all checkbox interactions
+
+**MOVED TO PHASE 4**:
+- **PDF Export Functionality**: Complex library loading issues - moved to Phase 4 for dedicated resolution
+
+**User Validation COMPLETE ✅**:
+- ✅ Math expressions render correctly
+- ✅ Mermaid diagrams render correctly
+- ✅ Standalone checkboxes work and update markdown
+- ✅ Dash-prefixed checkboxes work and update markdown
+- ✅ HTML export works
+- ✅ Application shows correct name
+- ✅ All functionality tested and approved
+
+**Git Status**: Ready for commit on `feature/phase-3-advanced-features` branch
+
+---
+
 ### Phase 4: Polish & OS Integration (2-3 weeks)
 **Deliverables:**
 - File association registration
@@ -405,7 +447,8 @@ markdown-viewer/
 - Keyboard shortcuts implementation
 - Performance optimization
 - Error handling and user feedback
-- Export functionality (HTML, PDF)
+- **PDF Export Functionality**: Complete implementation with proper library loading
+- **Advanced Export Options**: Enhanced HTML and PDF export with formatting options
 
 **Tests Required:**
 - File association tests

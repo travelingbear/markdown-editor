@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Phase 4 Days 2-4 - Print/Export System & Settings Enhancement
+
+#### Added
+- **Complete Print/Export System** with mode-specific behavior and popup-free implementation
+- **Comprehensive Settings Dialog** (Ctrl+,) with theme, mode, and suggestions configuration
+- **Enhanced Button State Management** with context-aware enable/disable states
+- **Default Preferences System** with persistent user settings
+- **Welcome Page Enhancement** with complete keyboard shortcuts reference
+
+#### Enhanced
+- **Print Quality** with optimized margins, transparent backgrounds, and proper page breaks
+- **User Experience** with professional button behavior and settings accessibility
+- **Performance** with optimized print preparation and settings loading
+
+#### Fixed
+- **Popup Blockers** preventing print functionality
+- **Button States** remaining active when no document loaded
+- **Settings Persistence** across application sessions
+
 ### Phase 4 - Polish & OS Integration
 
 #### Phase 4 Day 1 - User Experience Enhancements (COMPLETE ✅)
@@ -57,7 +76,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **JavaScript Architecture**: Enhanced state management and event handling
 - **User Experience**: Consistent behavior across all application states
 
-**Status**: Phase 4 Day 1 COMPLETE ✅ - All features tested, approved, and committed
+**Status**: Phase 4 Days 1-4 COMPLETE ✅ - Major UI/UX improvements and settings system implemented
+
+#### Phase 4 Days 2-4 - Print/Export System & Settings Enhancement (COMPLETE ✅)
+
+##### Added
+- **Complete Print/Export System**:
+  - Mode-specific printing (Preview: rendered markdown, Code: syntax-highlighted source, Split: rendered markdown)
+  - Popup-free implementation using hidden iframe method
+  - Optimized print layout with 0.6in margins and appropriate font sizes
+  - Transparent backgrounds for code blocks in print mode
+  - Proper page breaks for Mermaid diagrams and code blocks
+  - Enhanced CSS print media queries
+- **Comprehensive Settings Dialog (Ctrl+,)**:
+  - Three configurable options: 1-Theme, 2-Default Mode, 3-Text Suggestions
+  - Persistent settings stored in localStorage
+  - Immediate application of settings changes
+  - System information and performance stats display
+- **Enhanced Button State Management**:
+  - Document-dependent buttons (Save, Save As, Close, Export) disabled when no document loaded
+  - All mode buttons disabled on welcome page
+  - Proper state synchronization when opening/closing documents
+- **Default Preferences System**:
+  - Default theme setting with startup application
+  - Default mode applied to new and opened files
+  - Text suggestions preference with Monaco editor integration
+- **Welcome Page Enhancement**:
+  - Added Ctrl+, (Settings) and F1 (Help) to keyboard shortcuts section
+  - Better discoverability of application features
+
+##### Enhanced
+- **Print Quality**: Improved syntax highlighting, better margins, transparent backgrounds
+- **User Experience**: Professional button behavior and context-aware UI states
+- **Settings Accessibility**: Clear numbered menu system with validation
+- **Performance**: Optimized print preparation and settings loading
+
+##### Fixed
+- **Popup Blockers**: Print functionality no longer blocked by browser popup restrictions
+- **Button States**: Export and save buttons properly disabled when no document present
+- **Content Clearing**: Editor and preview properly cleared when document closed
+- **Settings Persistence**: User preferences correctly saved and restored across sessions
+
+##### Technical Improvements
+- **Print System**: Hidden iframe method, Tauri integration attempts, graceful fallbacks
+- **Settings Storage**: localStorage-based persistence with fallback defaults
+- **Button Management**: Enhanced updateModeButtons() with comprehensive state control
+- **CSS Enhancements**: Print media queries, transparent backgrounds, optimized layouts
+- **Error Handling**: User-friendly messages and recovery instructions
+
+**Status**: Phase 4 Major Features COMPLETE ✅ - Print system, settings, and UI polish implemented
 
 ---
 

@@ -500,24 +500,14 @@ class MarkdownViewer {
     console.log('[Close] isDirty:', this.isDirty);
     if (this.isDirty) {
       try {
-        // Try ask dialog first, fallback to confirm if not available
-        let result;
-        try {
-          result = await window.__TAURI__.dialog.ask(
-            'You have unsaved changes. Do you want to save before closing?',
-            { title: 'Unsaved Changes', type: 'warning' }
-          );
-        } catch (askError) {
-          console.log('[Close] ask dialog not available, using confirm:', askError.message);
-          result = await window.__TAURI__.dialog.confirm(
-            'You have unsaved changes. Click OK to save and close, Cancel to close without saving.',
-            { title: 'Unsaved Changes' }
-          );
-        }
+        const result = await window.__TAURI__.dialog.confirm(
+          'You have unsaved changes. Click OK to save and close, Cancel to close without saving.',
+          { title: 'Unsaved Changes' }
+        );
         
         console.log('[Close] User choice:', result);
         if (result === true) {
-          // Yes/OK - save and close
+          // OK - save and close
           try {
             await this.saveFile();
             this.doClose();
@@ -525,11 +515,10 @@ class MarkdownViewer {
             console.error('[Close] Error saving file:', error);
             // Don't close if save failed
           }
-        } else if (result === false) {
-          // No/Cancel - close without saving (for ask) or don't close (for confirm)
+        } else {
+          // Cancel - close without saving
           this.doClose();
         }
-        // Cancel (result === null) - do nothing
       } catch (error) {
         console.error('[Close] Error showing dialog:', error);
         // Don't close on dialog error

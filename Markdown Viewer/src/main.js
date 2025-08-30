@@ -1,5 +1,5 @@
-// Phase 3: Advanced Features - Mermaid, Math, Interactive Elements, Export
-console.log('Phase 3: Advanced Features Loading...');
+// Phase 4: Polish & OS Integration - Complete Implementation
+console.log('Phase 4: Polish & OS Integration Loading...');
 
 class MarkdownViewer {
   constructor() {
@@ -28,25 +28,37 @@ class MarkdownViewer {
       updateCount: 0,
       averageUpdateTime: 0
     };
+    this.startupTime = 0;
+    this.lastFileOpenTime = 0;
+    this.lastModeSwitchTime = 0;
     
-    console.log('[MarkdownViewer] Phase 3 Constructor started');
+    const startupStartTime = performance.now();
+    console.log('[MarkdownViewer] Phase 4 Constructor started');
     this.initializeElements();
-    console.log('[MarkdownViewer] Elements initialized:', {
-      openBtn: !!this.openBtn,
-      saveBtn: !!this.saveBtn,
-      closeBtn: !!this.closeBtn
-    });
     this.setupEventListeners();
     this.initializeMonacoEditor();
     this.setMode('preview');
-    this.showWelcomePage(); // Show welcome page initially
+    this.showWelcomePage();
     this.updateCursorPosition();
-    this.updateModeButtons(); // Initialize mode button states
-    this.applyDefaultTheme(); // Apply saved theme
+    this.updateModeButtons();
+    this.applyDefaultTheme();
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
-    this.checkStartupFile(); // Check for file passed via command line
-    console.log('[MarkdownViewer] Phase 3 Constructor completed');
+    this.checkStartupFile();
+    
+    this.startupTime = performance.now() - startupStartTime;
+    console.log(`[MarkdownViewer] Phase 4 Constructor completed in ${this.startupTime.toFixed(2)}ms`);
+    
+    // Verify performance targets
+    if (this.startupTime > 2000) {
+      console.warn(`[Performance] Startup time exceeded target: ${this.startupTime.toFixed(2)}ms > 2000ms`);
+    }
+    
+    // Start periodic memory optimization
+    this.startMemoryOptimization();
+    
+    console.log('[Phase4] All Phase 4 features initialized successfully');
+    console.log('[Phase4] File associations, keyboard shortcuts, performance monitoring, and error handling active');
   }
 
   initializeElements() {
@@ -471,16 +483,13 @@ class MarkdownViewer {
   }
 
   async openFile() {
+    const startTime = performance.now();
     try {
       console.log('[File] Opening file dialog...');
-      console.log('[File] window.__TAURI__:', window.__TAURI__);
       
       if (!window.__TAURI__) {
         throw new Error('Tauri API not available');
       }
-      
-      console.log('[File] dialog API:', window.__TAURI__.dialog);
-      console.log('[File] fs API:', window.__TAURI__.fs);
       
       const selected = await window.__TAURI__.dialog.open({
         multiple: false,
@@ -490,28 +499,22 @@ class MarkdownViewer {
         }]
       });
       
-      console.log('[File] Dialog result:', selected);
-      
       if (selected) {
-        console.log('[File] Reading file:', selected);
         const content = await window.__TAURI__.fs.readTextFile(selected);
-        console.log('[File] File content length:', content.length);
         
         this.isLoadingFile = true;
         this.setEditorContent(content);
         this.isLoadingFile = false;
         this.showEditor();
-        console.log('[File] Content set, updating preview with content length:', content.length);
         this.updatePreview();
         this.currentFile = selected;
         this.isDirty = false;
         this.updateFilename();
         this.updateModeButtons();
-        this.setMode(this.defaultMode); // Use default mode for opened files
+        this.setMode(this.defaultMode);
         
+        this.benchmarkOperation('File Open', startTime);
         console.log('[File] File opened successfully');
-      } else {
-        console.log('[File] No file selected');
       }
     } catch (error) {
       this.handleError(error, 'File Opening');
@@ -838,6 +841,7 @@ class MarkdownViewer {
   }
 
   setMode(mode) {
+    const startTime = performance.now();
     console.log(`[Mode] Switching to ${mode} mode`);
     
     // Check if mode switching is allowed
@@ -877,14 +881,15 @@ class MarkdownViewer {
     if (this.isMonacoLoaded && this.monacoEditor) {
       setTimeout(() => {
         this.monacoEditor.layout();
-        // Wait a bit more for layout to complete
         setTimeout(() => {
           this.restoreScrollPositions();
+          this.benchmarkOperation('Mode Switch', startTime);
         }, 50);
       }, 100);
     } else {
       setTimeout(() => {
         this.restoreScrollPositions();
+        this.benchmarkOperation('Mode Switch', startTime);
       }, 150);
     }
   }
@@ -1693,10 +1698,16 @@ Tip: You can also use HTML Export and then print from your browser.`;
       `• Current Mode: ${this.currentMode}`,
       `• Mermaid: ${this.mermaidInitialized ? 'Loaded' : 'Not Loaded'}`,
       `• KaTeX: ${this.katexInitialized ? 'Loaded' : 'Not Loaded'}`,
+      `• Monaco Editor: ${this.isMonacoLoaded ? 'Loaded' : 'Not Loaded'}`,
+      ``,
+      `PERFORMANCE BENCHMARKS:`,
+      `• Startup Time: ${performanceStats.benchmarks.startupTime.toFixed(2)}ms`,
+      `• File Open Time: ${performanceStats.benchmarks.fileOpenTime.toFixed(2)}ms`,
+      `• Mode Switch Time: ${performanceStats.benchmarks.modeSwitchTime.toFixed(2)}ms`,
+      `• Preview Update Time: ${performanceStats.benchmarks.previewUpdateTime.toFixed(2)}ms`,
       ``,
       `PERFORMANCE STATS:`,
       `• Updates: ${performanceStats.updateCount}`,
-      `• Last Update: ${performanceStats.lastUpdateTime.toFixed(2)}ms`,
       `• Average Update: ${performanceStats.averageUpdateTime.toFixed(2)}ms`
     ];
     
@@ -1709,7 +1720,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const settingsText = currentSettings.join('\n');
     
     // Show settings and ask what to change
-    const choice = prompt(`${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n\nEnter 1, 2, or 3:`);
+    const choice = prompt(`${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n4 - Clear Error Logs\n5 - Performance Report\n\nEnter 1-5:`);
     
     switch (choice) {
       case '1':
@@ -1721,12 +1732,52 @@ Tip: You can also use HTML Export and then print from your browser.`;
       case '3':
         this.changeTextSuggestions();
         break;
+      case '4':
+        this.clearErrorLogs();
+        alert('Error logs cleared successfully.');
+        break;
+      case '5':
+        this.showPerformanceReport();
+        break;
       default:
         if (choice !== null) {
-          alert('Invalid choice. Please enter:\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions');
+          alert('Invalid choice. Please enter 1-5.');
         }
         break;
     }
+  }
+
+  showPerformanceReport() {
+    const stats = this.getPerformanceStats();
+    const targets = {
+      startupTime: 2000,
+      fileOpenTime: 500,
+      modeSwitchTime: 100,
+      previewUpdateTime: 300
+    };
+    
+    const report = [
+      'PERFORMANCE REPORT:',
+      '',
+      'Benchmark Results:'
+    ];
+    
+    Object.entries(stats.benchmarks).forEach(([key, value]) => {
+      const target = targets[key];
+      const status = target && value > target ? '❌ SLOW' : '✅ GOOD';
+      const targetText = target ? ` (target: <${target}ms)` : '';
+      report.push(`• ${key}: ${value.toFixed(2)}ms ${status}${targetText}`);
+    });
+    
+    if (stats.memoryUsage) {
+      report.push('');
+      report.push('Memory Usage:');
+      report.push(`• Used: ${stats.memoryUsage.used}MB`);
+      report.push(`• Total: ${stats.memoryUsage.total}MB`);
+      report.push(`• Limit: ${stats.memoryUsage.limit}MB`);
+    }
+    
+    alert(report.join('\n'));
   }
   
   changeDefaultTheme() {
@@ -1884,15 +1935,69 @@ Other:
         used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
         total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
         limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
-      } : null
+      } : null,
+      benchmarks: this.getBenchmarkResults()
     };
   }
 
+  getBenchmarkResults() {
+    return {
+      startupTime: this.startupTime || 0,
+      fileOpenTime: this.lastFileOpenTime || 0,
+      modeSwitchTime: this.lastModeSwitchTime || 0,
+      previewUpdateTime: this.performanceMetrics.lastUpdateTime || 0
+    };
+  }
+
+  benchmarkOperation(operation, startTime) {
+    const duration = performance.now() - startTime;
+    console.log(`[Benchmark] ${operation}: ${duration.toFixed(2)}ms`);
+    
+    // Store benchmark results
+    switch (operation) {
+      case 'File Open':
+        this.lastFileOpenTime = duration;
+        break;
+      case 'Mode Switch':
+        this.lastModeSwitchTime = duration;
+        break;
+    }
+    
+    // Warn if performance targets are not met
+    const targets = {
+      'File Open': 500,
+      'Mode Switch': 100,
+      'Preview Update': 300
+    };
+    
+    if (targets[operation] && duration > targets[operation]) {
+      console.warn(`[Performance] ${operation} exceeded target: ${duration.toFixed(2)}ms > ${targets[operation]}ms`);
+    }
+    
+    return duration;
+  }
+
   optimizeMemory() {
+    console.log('[Performance] Starting memory optimization...');
+    
     // Clear any cached data that's no longer needed
     if (this.taskListStates.size > 100) {
       this.taskListStates.clear();
       console.log('[Performance] Cleared task list states cache');
+    }
+    
+    // Clear old error logs
+    const errors = this.getErrorLogs();
+    if (errors.length > 10) {
+      this.clearErrorLogs();
+      console.log('[Performance] Cleared old error logs');
+    }
+    
+    // Clear performance metrics if too many
+    if (this.performanceMetrics.updateCount > 1000) {
+      this.performanceMetrics.updateCount = 0;
+      this.performanceMetrics.averageUpdateTime = 0;
+      console.log('[Performance] Reset performance metrics');
     }
     
     // Force garbage collection if available
@@ -1900,6 +2005,15 @@ Other:
       window.gc();
       console.log('[Performance] Forced garbage collection');
     }
+    
+    console.log('[Performance] Memory optimization completed');
+  }
+
+  // Auto-optimize memory periodically
+  startMemoryOptimization() {
+    setInterval(() => {
+      this.optimizeMemory();
+    }, 300000); // Every 5 minutes
   }
 
   handleError(error, context = 'Unknown', showUser = true) {
@@ -1909,18 +2023,93 @@ Other:
       context: context,
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      url: window.location.href
+      url: window.location.href,
+      appState: {
+        currentFile: this.currentFile,
+        isDirty: this.isDirty,
+        currentMode: this.currentMode,
+        theme: this.theme
+      }
     };
     
     console.error(`[Error] ${context}:`, errorInfo);
     
     if (showUser) {
       const userMessage = this.getUserFriendlyErrorMessage(error, context);
-      alert(userMessage);
+      this.showErrorDialog(userMessage, error, context);
     }
     
-    // Optional: Send error to logging service
     this.logError(errorInfo);
+    this.attemptErrorRecovery(error, context);
+  }
+
+  showErrorDialog(message, error, context) {
+    // Enhanced error dialog with recovery options
+    const recoveryOptions = this.getRecoveryOptions(error, context);
+    const fullMessage = `${message}\n\n${recoveryOptions}`;
+    
+    if (window.__TAURI__) {
+      window.__TAURI__.dialog.message(fullMessage, { title: 'Error', type: 'error' })
+        .catch(() => alert(fullMessage));
+    } else {
+      alert(fullMessage);
+    }
+  }
+
+  getRecoveryOptions(error, context) {
+    const options = [];
+    
+    if (context === 'File Opening' || context === 'File Saving') {
+      options.push('• Try selecting a different file location');
+      options.push('• Check file permissions');
+      options.push('• Ensure the file is not open in another application');
+    }
+    
+    if (context === 'Preview Update' || context === 'Advanced Features') {
+      options.push('• Try refreshing the preview (F5)');
+      options.push('• Check your internet connection for external libraries');
+      options.push('• Try switching to a different view mode');
+    }
+    
+    options.push('• Restart the application if problems persist');
+    options.push('• Check the console (F12) for technical details');
+    
+    return 'Recovery Options:\n' + options.join('\n');
+  }
+
+  attemptErrorRecovery(error, context) {
+    console.log(`[Recovery] Attempting recovery for ${context}`);
+    
+    // Automatic recovery strategies
+    switch (context) {
+      case 'Preview Update':
+        // Clear preview and try basic markdown rendering
+        setTimeout(() => {
+          try {
+            this.preview.innerHTML = '<p>Preview temporarily unavailable. Try refreshing (F5).</p>';
+          } catch (e) {
+            console.error('[Recovery] Preview recovery failed:', e);
+          }
+        }, 1000);
+        break;
+        
+      case 'Advanced Features':
+        // Disable advanced features temporarily
+        this.mermaidInitialized = false;
+        this.katexInitialized = false;
+        console.log('[Recovery] Advanced features disabled temporarily');
+        break;
+        
+      case 'Monaco Editor':
+        // Fall back to textarea editor
+        if (this.editor) {
+          this.editor.style.display = 'block';
+          this.monacoContainer.style.display = 'none';
+          this.isMonacoLoaded = false;
+          console.log('[Recovery] Fell back to textarea editor');
+        }
+        break;
+    }
   }
 
   getUserFriendlyErrorMessage(error, context) {
@@ -1989,8 +2178,8 @@ Other:
   }
 }
 
-// Simple Phase 3 implementation without external library conflicts
-console.log('[Phase3] Implementing Phase 3 features without external libraries');
+// Phase 4 Complete Implementation with OS Integration
+console.log('[Phase4] Phase 4 complete with OS integration and performance optimization');
 
 // Initialize the app when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {

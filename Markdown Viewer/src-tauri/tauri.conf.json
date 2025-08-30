@@ -34,11 +34,18 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["md", "markdown"],
+        "ext": ["md", "markdown", "txt"],
         "name": "Markdown Document",
         "description": "Markdown text document",
-        "role": "Editor"
+        "role": "Editor",
+        "mimeType": "text/markdown"
       }
-    ]
+    ],
+    "windows": {
+      "allowDowngrades": false,
+      "wix": {
+        "language": "en-US"
+      }
+    }
   }
 }

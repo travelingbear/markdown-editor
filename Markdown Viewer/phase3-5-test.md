@@ -9,7 +9,7 @@ This document tests all the critical fixes implemented in Phase 3.5.
 ## 2. Dash-prefixed Checkbox Test
 
 ### These checkboxes should ALL be clickable:
-- [ ] Unchecked dash-prefixed task (click to check)
+- [x] Unchecked dash-prefixed task (click to check)
 - [x] Checked dash-prefixed task (click to uncheck)
 - [ ] Another unchecked task
 - [ ] Test task with longer text content that spans multiple lines to ensure the clickable area works properly
@@ -23,7 +23,7 @@ This document tests all the critical fixes implemented in Phase 3.5.
 
 ## 3. Standalone Checkbox Test
 
-[ ] Standalone unchecked task (should be clickable)
+[x] Standalone unchecked task (should be clickable)
 
 [x] Standalone checked task (should be clickable)
 

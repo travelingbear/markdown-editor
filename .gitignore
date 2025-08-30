@@ -1,0 +1,19 @@
+EXAMPLE_markdown-previewer/
+GENERIC_AI_DEVELOPMENT_PROMPT.md
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+
+# Electron
+out/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+AI_ASSISTANT_PROMPT.md

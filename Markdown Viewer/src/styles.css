@@ -632,8 +632,186 @@ body {
   margin-top: 0;
 }
 
+/* Welcome Page Styles */
+.welcome-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.welcome-content {
+  max-width: 600px;
+  text-align: center;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-content h1 {
+  font-size: 3em;
+  margin-bottom: 16px;
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+
+.welcome-subtitle {
+  font-size: 1.2em;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+  line-height: 1.4;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 50px;
+  flex-wrap: wrap;
+}
+
+.welcome-btn {
+  padding: 12px 24px;
+  border: 2px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.welcome-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--accent-primary);
+}
+
+.welcome-btn.primary {
+  background-color: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.welcome-btn.primary:hover {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.welcome-features {
+  text-align: left;
+  margin-bottom: 40px;
+}
+
+.welcome-features h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 1.4em;
+}
+
+.welcome-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.welcome-features li {
+  padding: 8px 0;
+  font-size: 1.1em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welcome-shortcuts {
+  text-align: left;
+}
+
+.welcome-shortcuts h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 1.4em;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+}
+
+kbd {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme adjustments for welcome page */
+[data-theme="dark"] .welcome-page {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+[data-theme="dark"] .welcome-btn:hover {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
 /* Responsive Design for Advanced Features */
 @media (max-width: 768px) {
+  .welcome-content {
+    padding: 20px;
+  }
+  
+  .welcome-content h1 {
+    font-size: 2.2em;
+  }
+  
+  .welcome-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .welcome-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+  
   .mermaid-diagram {
     margin: 10px 0;
     padding: 8px;

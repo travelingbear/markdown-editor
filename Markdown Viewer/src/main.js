@@ -32,7 +32,7 @@ class MarkdownViewer {
     this.setupEventListeners();
     this.initializeMonacoEditor();
     this.setMode('preview');
-    this.updatePreview();
+    this.showWelcomePage(); // Show welcome page initially
     this.updateCursorPosition();
     this.initializeAdvancedFeatures();
     console.log('[MarkdownViewer] Phase 3 Constructor completed');
@@ -42,6 +42,8 @@ class MarkdownViewer {
     this.editor = document.getElementById('editor');
     this.monacoContainer = document.getElementById('monaco-editor');
     this.preview = document.getElementById('preview');
+    this.welcomePage = document.getElementById('welcome-page');
+    this.newBtn = document.getElementById('new-btn');
     this.openBtn = document.getElementById('open-btn');
     this.saveBtn = document.getElementById('save-btn');
     this.closeBtn = document.getElementById('close-btn');
@@ -55,6 +57,8 @@ class MarkdownViewer {
     this.splitter = document.getElementById('splitter');
     this.exportHtmlBtn = document.getElementById('export-html-btn');
     this.exportPdfBtn = document.getElementById('export-pdf-btn');
+    this.welcomeNewBtn = document.getElementById('welcome-new-btn');
+    this.welcomeOpenBtn = document.getElementById('welcome-open-btn');
   }
 
   async initializeAdvancedFeatures() {
@@ -201,6 +205,10 @@ class MarkdownViewer {
 
   setupEventListeners() {
     // File operations
+    this.newBtn.addEventListener('click', () => {
+      console.log('[Event] New button clicked');
+      this.newFile();
+    });
     this.openBtn.addEventListener('click', () => {
       console.log('[Event] Open button clicked');
       this.openFile();
@@ -213,6 +221,20 @@ class MarkdownViewer {
       console.log('[Event] Close button clicked');
       this.closeFile();
     });
+    
+    // Welcome page buttons
+    if (this.welcomeNewBtn) {
+      this.welcomeNewBtn.addEventListener('click', () => {
+        console.log('[Event] Welcome new button clicked');
+        this.newFile();
+      });
+    }
+    if (this.welcomeOpenBtn) {
+      this.welcomeOpenBtn.addEventListener('click', () => {
+        console.log('[Event] Welcome open button clicked');
+        this.openFile();
+      });
+    }
     
     // Theme toggle
     this.themeBtn.addEventListener('click', () => this.toggleTheme());
@@ -251,6 +273,10 @@ class MarkdownViewer {
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key) {
+          case 'n':
+            e.preventDefault();
+            this.newFile();
+            break;
           case 'o':
             e.preventDefault();
             this.openFile();
@@ -375,6 +401,7 @@ class MarkdownViewer {
         this.isLoadingFile = true;
         this.setEditorContent(content);
         this.isLoadingFile = false;
+        this.showEditor();
         console.log('[File] Content set, updating preview with content length:', content.length);
         this.updatePreview();
         this.currentFile = selected;
@@ -493,16 +520,53 @@ class MarkdownViewer {
     }
   }
 
-  doClose() {
+  newFile() {
+    console.log('[File] Creating new file');
+    if (this.isDirty) {
+      // Ask to save current file first
+      this.closeFile().then(() => {
+        this.doNewFile();
+      });
+    } else {
+      this.doNewFile();
+    }
+  }
+  
+  doNewFile() {
     this.currentFile = null;
-    const defaultContent = '# Welcome to Markdown Viewer\n\nStart typing your markdown here...';
+    const defaultContent = '# New Document\n\nStart typing your markdown here...';
     this.isLoadingFile = true;
     this.setEditorContent(defaultContent);
     this.isLoadingFile = false;
+    this.showEditor();
     this.updatePreview();
     this.updateFilename();
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
+    console.log('[File] New file created');
+  }
+  
+  doClose() {
+    this.currentFile = null;
+    this.showWelcomePage();
+    this.isDirty = false;
+    this.saveBtn.classList.remove('dirty');
+    console.log('[File] File closed, showing welcome page');
+  }
+  
+  showWelcomePage() {
+    if (this.welcomePage && this.preview) {
+      this.welcomePage.style.display = 'flex';
+      this.preview.style.display = 'none';
+      this.updateFilename();
+    }
+  }
+  
+  showEditor() {
+    if (this.welcomePage && this.preview) {
+      this.welcomePage.style.display = 'none';
+      this.preview.style.display = 'block';
+    }
   }
 
   async updatePreview() {
@@ -558,6 +622,9 @@ class MarkdownViewer {
       // Setup task list interactions
       this.setupTaskListInteractions();
       
+      // Apply syntax highlighting to code blocks
+      this.applySyntaxHighlighting();
+      
       console.log('[Preview] Preview update completed');
       
     } catch (error) {
@@ -593,6 +660,8 @@ class MarkdownViewer {
     if (this.currentFile) {
       const filename = this.currentFile.split(/[\\\/]/).pop();
       this.filename.textContent = filename + (this.isDirty ? ' *' : '');
+    } else if (this.welcomePage && this.welcomePage.style.display !== 'none') {
+      this.filename.textContent = 'Welcome';
     } else {
       this.filename.textContent = 'untitled.md' + (this.isDirty ? ' *' : '');
     }

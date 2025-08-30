@@ -771,6 +771,37 @@ Uncaught Error: Can only have one anonymous define call per script file
 
 **Git Status**: Phase 3.5 committed (db90218) - Ready for Phase 4
 
+---
+
+## Phase 4: Polish & OS Integration
+
+### Day 1 - Phase 4 Kickoff
+
+**Date**: [Current Date]
+**Branch**: `feature/phase-4-polish-integration`
+**Status**: STARTED
+
+#### Phase 4 Objectives:
+- **Core OS Integration**: File associations, context menus, keyboard shortcuts
+- **User-Requested Features**: Welcome page, New file button, Enhanced Save As
+- **Critical Fixes**: Code syntax highlighting in preview mode, PDF export
+- **Performance & Polish**: Final optimizations and error handling
+
+#### Priority Order:
+1. **Code Syntax Highlighting Fix** (user-reported issue)
+2. **Welcome/Front Page** (user-requested feature)
+3. **New File Button** (user-requested feature)
+4. **PDF Export Resolution** (moved from Phase 3.5)
+5. **File Association Registration**
+6. **Context Menu Integration**
+7. **Enhanced Keyboard Shortcuts**
+8. **Performance Optimization**
+
+#### Starting with Code Syntax Highlighting Fix
+**Problem**: Syntax highlighting works in code mode but not in preview mode
+**Expected**: Code blocks should have proper syntax highlighting in preview
+**Current Status**: Investigating highlight.js integration in preview rendering
+
 #### Handoff Notes for Next AI Assistant
 1. **Priority 1**: Fix dash-prefixed checkbox clickability
 2. **Priority 2**: Resolve PDF export library issues

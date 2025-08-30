@@ -19,6 +19,7 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
+          <button id="new-btn" class="toolbar-btn">📄 New</button>
           <button id="open-btn" class="toolbar-btn">📁 Open</button>
           <button id="save-btn" class="toolbar-btn">💾 Save</button>
           <button id="close-btn" class="toolbar-btn">❌ Close</button>
@@ -48,7 +49,40 @@
         
         <!-- Preview Pane -->
         <div class="preview-pane">
-          <div id="preview" class="preview-content">
+          <div id="welcome-page" class="welcome-page">
+            <div class="welcome-content">
+              <h1>📝 Markdown Viewer</h1>
+              <p class="welcome-subtitle">A powerful native markdown editor with live preview</p>
+              
+              <div class="welcome-actions">
+                <button id="welcome-new-btn" class="welcome-btn primary">📄 Create New File</button>
+                <button id="welcome-open-btn" class="welcome-btn">📁 Open Existing File</button>
+              </div>
+              
+              <div class="welcome-features">
+                <h3>Features</h3>
+                <ul>
+                  <li>✨ Live markdown preview with syntax highlighting</li>
+                  <li>📊 Math expressions with KaTeX rendering</li>
+                  <li>📈 Mermaid diagrams support</li>
+                  <li>✅ Interactive task lists</li>
+                  <li>🎨 Light and dark themes</li>
+                  <li>📎 Export to HTML and PDF</li>
+                </ul>
+              </div>
+              
+              <div class="welcome-shortcuts">
+                <h3>Keyboard Shortcuts</h3>
+                <div class="shortcut-grid">
+                  <div class="shortcut"><kbd>Ctrl+N</kbd> New file</div>
+                  <div class="shortcut"><kbd>Ctrl+O</kbd> Open file</div>
+                  <div class="shortcut"><kbd>Ctrl+S</kbd> Save file</div>
+                  <div class="shortcut"><kbd>Ctrl+1/2/3</kbd> Switch modes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="preview" class="preview-content" style="display: none;">
             <h1>Welcome to Markdown Viewer</h1>
             <p>Start typing your markdown here...</p>
           </div>

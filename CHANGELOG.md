@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Phase 4 - Polish & OS Integration
+
+#### Phase 4 Day 1 - User Experience Enhancements (COMPLETE ✅)
+
+##### Added
+- **Welcome/Front Page**: Professional landing page displayed when no document is open
+  - Clean gradient background with animations
+  - Feature showcase and keyboard shortcuts reference
+  - Action buttons for New File and Open File
+  - Responsive design with dark theme support
+- **New File Button**: Create new markdown documents
+  - Added to toolbar with 📄 New icon
+  - Keyboard shortcut: Ctrl+N
+  - Smart workflow with unsaved changes detection
+- **Save As Button**: Added to toolbar between Save and Close
+  - Uses existing saveAsFile() functionality
+  - Consistent with other toolbar buttons
+- **Enhanced Close Dialog**: Proper Yes/No/Cancel behavior
+  - Two-step dialog approach for three-button functionality
+  - Yes: Save file and close document
+  - No: Close document without saving
+  - Cancel: Stay in document (no action)
+- **Mode Button Management**: Smart enabling/disabling based on document state
+  - Disabled when no document loaded (welcome page)
+  - Enabled when document is opened or created
+  - Visual indicators with reduced opacity for disabled state
+
+##### Enhanced
+- **Code Syntax Highlighting**: Fixed to work correctly in preview mode
+  - Added applySyntaxHighlighting() call to updatePreview() method
+  - Proper highlight.js integration with theme switching
+- **File State Management**: Improved document lifecycle handling
+  - Clear editor content when document is closed
+  - Proper state transitions between welcome and editor modes
+  - Enhanced filename display for different states
+- **PDF Export**: Temporary user-friendly messaging
+  - Shows informative message about future availability
+  - Suggests HTML export + browser print-to-PDF as alternative
+
+##### Fixed
+- **Welcome Page Layout**: Removed features section to prevent overflow
+- **Editor Clearing**: Clear Monaco editor content after closing document
+- **Mode Switching**: Prevent switching to Code/Split modes without document
+- **Tauri Configuration**: Resolved dialog permissions and config format issues
+
+##### Technical Improvements
+- **CSS Enhancements**: Added comprehensive styling for welcome page and disabled states
+- **JavaScript Architecture**: Enhanced state management and event handling
+- **User Experience**: Consistent behavior across all application states
+
+**Status**: Phase 4 Day 1 COMPLETE ✅ - All features tested, approved, and committed
+
+---
+
 ### Phase 3 - Advanced Features
 
 #### Added

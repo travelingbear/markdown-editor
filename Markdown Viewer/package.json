@@ -10,6 +10,7 @@
     "@tauri-apps/cli": "^2"
   },
   "dependencies": {
-    "marked": "^16.2.1"
+    "marked": "^16.2.1",
+    "monaco-editor": "^0.45.0"
   }
 }

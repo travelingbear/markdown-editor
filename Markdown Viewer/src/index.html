@@ -7,6 +7,9 @@
     <title>Markdown Viewer</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <link rel="stylesheet" href="assets/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="/main.js" defer></script>
   </head>
 
@@ -25,6 +28,8 @@
           <button id="split-btn" class="mode-btn">Split</button>
         </div>
         <div class="toolbar-right">
+          <button id="export-html-btn" class="toolbar-btn">📄 HTML</button>
+          <button id="export-pdf-btn" class="toolbar-btn">📑 PDF</button>
           <button id="theme-btn" class="toolbar-btn">🌙</button>
         </div>
       </div>

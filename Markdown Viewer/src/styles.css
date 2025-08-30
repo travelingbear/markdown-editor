@@ -322,4 +322,174 @@ body {
   background-color: var(--bg-tertiary);
 }
 
+/* Phase 3: Advanced Features Styles */
+
+/* Mermaid Diagram Placeholders */
+.mermaid-placeholder {
+  margin: 20px 0;
+  padding: 16px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border: 2px dashed var(--border-primary);
+  text-align: center;
+}
+
+.placeholder-header {
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.diagram-code {
+  background-color: var(--bg-tertiary);
+  padding: 12px;
+  border-radius: 4px;
+  margin: 12px 0;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  text-align: left;
+  overflow-x: auto;
+}
+
+.placeholder-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* Task Lists */
+.preview-content .task-list-item {
+  list-style: none;
+  margin-left: -1.5em;
+  padding-left: 0;
+}
+
+.preview-content .task-list-item input[type="checkbox"] {
+  margin-right: 8px;
+  margin-left: 0;
+  cursor: pointer;
+}
+
+.preview-content .task-list-item label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.preview-content .task-list-item input[type="checkbox"]:checked + label {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+/* Simple Math Expressions */
+.math-display {
+  margin: 16px 0;
+  text-align: center;
+  padding: 12px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border-left: 4px solid var(--accent-primary);
+}
+
+.math-display code {
+  font-size: 1.1em;
+  background-color: transparent;
+  padding: 0;
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.math-inline {
+  display: inline;
+  background-color: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 2px;
+}
+
+.math-inline code {
+  background-color: transparent;
+  padding: 0;
+  color: var(--accent-primary);
+  font-size: 0.95em;
+}
+
+/* Enhanced Tables */
+.preview-content table {
+  border-spacing: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.preview-content th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+  text-align: left;
+}
+
+.preview-content tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+.preview-content tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Export Buttons */
+.toolbar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Enhanced Code Blocks */
+.preview-content pre {
+  position: relative;
+  border: 1px solid var(--border-primary);
+}
+
+.preview-content pre code {
+  display: block;
+  overflow-x: auto;
+  padding: 0;
+}
+
+/* Improved Blockquotes */
+.preview-content blockquote {
+  background-color: var(--bg-secondary);
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+  padding: 16px 20px;
+}
+
+.preview-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Enhanced Lists */
+.preview-content ul ul,
+.preview-content ol ol,
+.preview-content ul ol,
+.preview-content ol ul {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+/* Responsive Design for Advanced Features */
+@media (max-width: 768px) {
+  .mermaid-diagram {
+    margin: 10px 0;
+    padding: 8px;
+  }
+  
+  .katex {
+    font-size: 1em;
+  }
+  
+  .preview-content table {
+    font-size: 12px;
+  }
+}
+
 

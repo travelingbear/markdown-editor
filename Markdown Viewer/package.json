@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "marked": "^16.2.1",
-    "monaco-editor": "^0.45.0"
+    "monaco-editor": "^0.45.0",
+    "mermaid": "^10.6.1",
+    "katex": "^0.16.9",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1"
   }
 }

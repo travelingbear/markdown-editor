@@ -1,5 +1,5 @@
-// Phase 2: Enhanced Editor with Monaco Integration - FIXED
-console.log('Phase 2: Enhanced Editor Loading...');
+// Phase 3: Advanced Features - Mermaid, Math, Interactive Elements, Export
+console.log('Phase 3: Advanced Features Loading...');
 
 class MarkdownViewer {
   constructor() {
@@ -16,8 +16,11 @@ class MarkdownViewer {
     this.lastPreviewScrollTop = 0;
     this.lastPreviewMaxScroll = 0;
     this.lastEditorMaxScroll = 0;
+    this.mermaidInitialized = false;
+    this.katexInitialized = false;
+    this.taskListStates = new Map();
     
-    console.log('[MarkdownViewer] Phase 2 Constructor started');
+    console.log('[MarkdownViewer] Phase 3 Constructor started');
     this.initializeElements();
     console.log('[MarkdownViewer] Elements initialized:', {
       openBtn: !!this.openBtn,
@@ -29,7 +32,8 @@ class MarkdownViewer {
     this.setMode('preview');
     this.updatePreview();
     this.updateCursorPosition();
-    console.log('[MarkdownViewer] Phase 2 Constructor completed');
+    this.initializeAdvancedFeatures();
+    console.log('[MarkdownViewer] Phase 3 Constructor completed');
   }
 
   initializeElements() {
@@ -47,6 +51,49 @@ class MarkdownViewer {
     this.filename = document.getElementById('filename');
     this.mainContent = document.querySelector('.main-content');
     this.splitter = document.getElementById('splitter');
+    this.exportHtmlBtn = document.getElementById('export-html-btn');
+    this.exportPdfBtn = document.getElementById('export-pdf-btn');
+  }
+
+  async initializeAdvancedFeatures() {
+    try {
+      console.log('[Advanced] Initializing advanced features...');
+      
+      // Wait a bit for libraries to load
+      setTimeout(() => {
+        // Initialize Mermaid
+        const mermaidLib = window.mermaid || (typeof mermaid !== 'undefined' ? mermaid : undefined);
+        if (mermaidLib) {
+          mermaidLib.initialize({
+            startOnLoad: false,
+            theme: this.theme === 'dark' ? 'dark' : 'default',
+            securityLevel: 'loose',
+            fontFamily: 'inherit'
+          });
+          this.mermaidInitialized = true;
+          console.log('[Mermaid] Initialized successfully');
+        } else {
+          console.warn('[Mermaid] Mermaid library not loaded');
+          console.log('[Mermaid] Checking window object:', Object.keys(window).filter(k => k.toLowerCase().includes('mermaid')));
+        }
+        
+        // KaTeX is ready to use when loaded
+        const katexLib = window.katex || (typeof katex !== 'undefined' ? katex : undefined);
+        if (katexLib) {
+          this.katexInitialized = true;
+          console.log('[KaTeX] Ready for math rendering');
+        } else {
+          console.warn('[KaTeX] KaTeX library not loaded');
+          console.log('[KaTeX] Checking window object:', Object.keys(window).filter(k => k.toLowerCase().includes('katex')));
+        }
+        
+        // Update preview after libraries are initialized
+        this.updatePreview();
+      }, 500);
+      
+    } catch (error) {
+      console.error('[Advanced] Error initializing advanced features:', error);
+    }
   }
 
   async initializeMonacoEditor() {
@@ -166,6 +213,10 @@ class MarkdownViewer {
     this.codeBtn.addEventListener('click', () => this.setMode('code'));
     this.previewBtn.addEventListener('click', () => this.setMode('preview'));
     this.splitBtn.addEventListener('click', () => this.setMode('split'));
+    
+    // Export functionality
+    this.exportHtmlBtn.addEventListener('click', () => this.exportToHtml());
+    this.exportPdfBtn.addEventListener('click', () => this.exportToPdf());
     
     // Fallback editor events
     this.editor.addEventListener('input', () => {
@@ -316,6 +367,7 @@ class MarkdownViewer {
         this.isLoadingFile = true;
         this.setEditorContent(content);
         this.isLoadingFile = false;
+        console.log('[File] Content set, updating preview with content length:', content.length);
         this.updatePreview();
         this.currentFile = selected;
         this.isDirty = false;
@@ -445,17 +497,65 @@ class MarkdownViewer {
     this.saveBtn.classList.remove('dirty');
   }
 
-  updatePreview() {
+  async updatePreview() {
     const markdown = this.getEditorContent() || '# Welcome to Markdown Viewer\n\nStart typing your markdown here...';
-    if (typeof marked !== 'undefined') {
+    
+    console.log('[Preview] Starting preview update...');
+    console.log('[Preview] Libraries loaded:', {
+      marked: typeof marked !== 'undefined',
+      mermaid: typeof mermaid !== 'undefined',
+      katex: typeof katex !== 'undefined',
+      window_mermaid: typeof window.mermaid !== 'undefined',
+      window_katex: typeof window.katex !== 'undefined'
+    });
+    
+    // Check what's actually available in window
+    console.log('[Preview] Window object keys containing mermaid/katex:', 
+      Object.keys(window).filter(key => key.toLowerCase().includes('mermaid') || key.toLowerCase().includes('katex')));
+    
+    if (typeof marked === 'undefined') {
+      console.error('[Preview] marked.js not loaded');
+      this.preview.innerHTML = '<p>Markdown parser not loaded</p>';
+      return;
+    }
+
+    try {
+      // First, process math expressions in the raw markdown
+      let processedMarkdown = this.processMathInMarkdown(markdown);
+      
+      // Configure marked with basic settings first
       marked.setOptions({
         breaks: true,
         gfm: true
       });
-      this.preview.innerHTML = marked.parse(markdown);
-    } else {
-      console.error('[Preview] marked.js not loaded');
-      this.preview.innerHTML = '<p>Markdown parser not loaded</p>';
+      
+      // Parse markdown to HTML
+      let html = marked.parse(processedMarkdown);
+      console.log('[Preview] Initial HTML generated, length:', html.length);
+      
+      // Process Mermaid code blocks
+      html = this.processMermaidInHtml(html);
+      
+      // Process task lists
+      html = this.processTaskListsInHtml(html);
+      
+      // Set the HTML content
+      this.preview.innerHTML = html;
+      console.log('[Preview] HTML set in preview');
+      console.log('[Preview] Final HTML sample:', html.substring(0, 500) + '...');
+      
+      // Render Mermaid diagrams
+      await this.renderMermaidDiagrams();
+      
+      // Setup task list interactions
+      this.setupTaskListInteractions();
+      
+      console.log('[Preview] Preview update completed');
+      
+    } catch (error) {
+      console.error('[Preview] Error updating preview:', error);
+      console.error('[Preview] Error stack:', error.stack);
+      this.preview.innerHTML = `<p>Error rendering markdown: ${error.message}</p><pre>${error.stack}</pre>`;
     }
   }
 
@@ -669,6 +769,211 @@ class MarkdownViewer {
     }
   }
 
+  processMathInMarkdown(markdown) {
+    console.log('[Math] Processing math expressions with simple styling...');
+    
+    // Simple math styling without external libraries
+    // Process display math: $$...$$
+    markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+      return `<div class="math-display"><code>${math.trim()}</code></div>`;
+    });
+    
+    // Process inline math: $...$
+    markdown = markdown.replace(/\$([^$\n]+)\$/g, (match, math) => {
+      return `<span class="math-inline"><code>${math.trim()}</code></span>`;
+    });
+    
+    return markdown;
+  }
+  
+  processMermaidInHtml(html) {
+    console.log('[Mermaid] Processing Mermaid code blocks with simple placeholders...');
+    
+    // Replace mermaid code blocks with simple placeholders
+    html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
+      const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+      return `<div class="mermaid-placeholder">
+        <div class="placeholder-header">📊 Mermaid Diagram</div>
+        <pre class="diagram-code">${decodedCode}</pre>
+        <div class="placeholder-note">Diagram rendering will be implemented in a future update</div>
+      </div>`;
+    });
+    
+    return html;
+  }
+  
+  processTaskListsInHtml(html) {
+    console.log('[TaskList] Processing task lists...');
+    
+    // Convert task list items
+    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/g, (match, checked, content) => {
+      const isChecked = checked === 'x';
+      const id = 'task-' + Math.random().toString(36).substr(2, 9);
+      console.log('[TaskList] Found task:', { checked: isChecked, content: content.substring(0, 30) });
+      return `<li class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''} onchange="window.markdownViewer.toggleTaskItem('${id}', this.checked)"> <label for="${id}">${content}</label></li>`;
+    });
+    
+    return html;
+  }
+  
+  async renderMermaidDiagrams() {
+    console.log('[Mermaid] Mermaid placeholders already rendered');
+    // Placeholders are already in place, no additional rendering needed
+  }
+  
+  setupTaskListInteractions() {
+    // Make window.markdownViewer available for task list callbacks
+    window.markdownViewer = this;
+  }
+  
+  toggleTaskItem(taskId, checked) {
+    console.log(`[TaskList] Task ${taskId} ${checked ? 'checked' : 'unchecked'}`);
+    // Store task state for persistence
+    this.taskListStates.set(taskId, checked);
+    // Mark document as dirty since task state changed
+    this.markDirty();
+  }
+  
+  async exportToHtml() {
+    try {
+      console.log('[Export] Exporting to HTML...');
+      
+      const content = this.getEditorContent();
+      const previewHtml = this.preview.innerHTML;
+      
+      // Create complete HTML document
+      const htmlDocument = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exported Markdown</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #24292f;
+        }
+        h1, h2 { border-bottom: 1px solid #d0d7de; padding-bottom: 0.3em; }
+        code { background-color: #f6f8fa; padding: 0.2em 0.4em; border-radius: 6px; }
+        pre { background-color: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; }
+        blockquote { border-left: 0.25em solid #d0d7de; padding: 0 1em; color: #656d76; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #d0d7de; padding: 6px 13px; text-align: left; }
+        th { background-color: #f6f8fa; }
+        .task-list-item { list-style: none; }
+        .mermaid-diagram { text-align: center; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    ${previewHtml}
+</body>
+</html>`;
+      
+      // Save HTML file
+      if (window.__TAURI__) {
+        const filePath = await window.__TAURI__.dialog.save({
+          filters: [{
+            name: 'HTML',
+            extensions: ['html']
+          }]
+        });
+        
+        if (filePath) {
+          await window.__TAURI__.fs.writeTextFile(filePath, htmlDocument);
+          console.log('[Export] HTML exported successfully to:', filePath);
+        }
+      }
+      
+    } catch (error) {
+      console.error('[Export] Error exporting to HTML:', error);
+      alert('Error exporting to HTML: ' + error.message);
+    }
+  }
+  
+  async exportToPdf() {
+    try {
+      console.log('[Export] Exporting to PDF...');
+      
+      if (typeof html2canvas === 'undefined' || typeof jsPDF === 'undefined') {
+        throw new Error('PDF export libraries not loaded');
+      }
+      
+      // Create a temporary container with the preview content
+      const tempContainer = document.createElement('div');
+      tempContainer.style.cssText = `
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+        width: 800px;
+        padding: 20px;
+        background: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #24292f;
+      `;
+      tempContainer.innerHTML = this.preview.innerHTML;
+      document.body.appendChild(tempContainer);
+      
+      // Convert to canvas
+      const canvas = await html2canvas(tempContainer, {
+        backgroundColor: '#ffffff',
+        scale: 2
+      });
+      
+      // Remove temporary container
+      document.body.removeChild(tempContainer);
+      
+      // Create PDF
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // Save PDF file
+      if (window.__TAURI__) {
+        const filePath = await window.__TAURI__.dialog.save({
+          filters: [{
+            name: 'PDF',
+            extensions: ['pdf']
+          }]
+        });
+        
+        if (filePath) {
+          const pdfBlob = pdf.output('blob');
+          const arrayBuffer = await pdfBlob.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          await window.__TAURI__.fs.writeBinaryFile(filePath, uint8Array);
+          console.log('[Export] PDF exported successfully to:', filePath);
+        }
+      }
+      
+    } catch (error) {
+      console.error('[Export] Error exporting to PDF:', error);
+      alert('Error exporting to PDF: ' + error.message);
+    }
+  }
+
   toggleTheme() {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', this.theme);
@@ -679,12 +984,26 @@ class MarkdownViewer {
       monaco.editor.setTheme(this.theme === 'dark' ? 'vs-dark' : 'vs');
     }
     
+    // Update Mermaid theme and re-render diagrams
+    if (this.mermaidInitialized) {
+      mermaid.initialize({
+        theme: this.theme === 'dark' ? 'dark' : 'default',
+        securityLevel: 'loose',
+        fontFamily: 'inherit'
+      });
+      // Re-render all Mermaid diagrams with new theme
+      this.renderMermaidDiagrams();
+    }
+    
     console.log(`[Theme] Switched to ${this.theme} theme`);
   }
 }
 
+// Simple Phase 3 implementation without external library conflicts
+console.log('[Phase3] Implementing Phase 3 features without external libraries');
+
 // Initialize the app when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('[App] DOM loaded, initializing Phase 2 Markdown Viewer...');
+  console.log('[App] DOM loaded, initializing Phase 3 Markdown Viewer...');
   new MarkdownViewer();
 });

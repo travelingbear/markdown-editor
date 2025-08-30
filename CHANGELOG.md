@@ -7,42 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial project setup with Tauri + Rust architecture
-- Basic application window with native menus and controls
-- File operations with native system dialogs (Open, Save, Close)
-- Simple text editor with textarea for markdown editing
-- Real-time markdown preview using Marked.js
-- Three viewing modes: Code, Preview, and Split View
-- GitHub-style light and dark themes with perfect synchronization
-- Theme persistence across application sessions
-- Cursor position tracking in status bar
-- Unsaved changes detection and user warnings
-- Cross-platform support (Windows, macOS, Linux)
-- Responsive UI layout with proper window resizing
-- Secure file system access through Tauri's sandboxed model
+### Phase 1 - Core Foundation
 
-### Technical Implementation
-- Rust backend with async file operations and error handling
-- Frontend built with vanilla HTML/CSS/JavaScript for optimal performance
-- CSS custom properties for synchronized theme management
-- Tauri invoke system for secure frontend-backend communication
-- Marked.js integration for fast markdown parsing and rendering
-- Local storage for theme preference persistence
+#### Added
+- Basic application window with native Tauri interface
+- File operations with native dialogs:
+  - Open markdown files (.md, .markdown)
+  - Save files with proper file handling
+  - Close files with unsaved changes detection
+- Simple text editor with markdown support
+- Real-time markdown preview using marked.js
+- GitHub-style theming system:
+  - Light theme (default)
+  - Dark theme with proper contrast
+  - Smooth theme switching
+- Status bar with:
+  - Cursor position tracking (line, column)
+  - Current filename display
+  - Unsaved changes indicator (*)
+- Keyboard shortcuts:
+  - Ctrl+O: Open file
+  - Ctrl+S: Save file
+  - Ctrl+W: Close file
+- Cross-platform compatibility (Windows, macOS, Linux)
+- Project documentation:
+  - README.md with setup instructions
+  - Development log tracking
+  - Changelog maintenance
 
-### Documentation
-- Comprehensive README.md with setup and usage instructions
-- Development log tracking technical decisions and progress
-- Project architecture documentation
-- Installation and build instructions
+#### Technical Implementation
+- Tauri + Rust backend for native performance
+- TypeScript/JavaScript frontend with vanilla approach
+- CSS custom properties for theme management
+- Modular JavaScript architecture with MarkdownViewer class
+- Proper error handling for file operations
+- Performance optimizations for real-time preview
 
-## [0.1.0] - Phase 1 Complete
+#### Dependencies Added
+- Frontend: marked (markdown parsing)
+- Backend: tauri-plugin-dialog, tauri-plugin-fs (file operations)
 
-### Phase 1: Core Foundation
-- ✅ Basic application window with native menus
-- ✅ File open/save operations with native dialogs  
-- ✅ Simple text editor (textarea fallback)
-- ✅ Basic markdown preview rendering
-- ✅ Project documentation setup
-
-**Status**: Ready for user validation and testing
+## [0.1.0] - Phase 1 Foundation
+- Initial release with core markdown viewing functionality
+- Basic file operations and theme support
+- Real-time preview rendering
+- Native desktop application with Tauri

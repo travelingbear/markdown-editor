@@ -450,6 +450,12 @@ markdown-viewer/
 - **PDF Export Functionality**: Complete implementation with proper library loading
 - **Advanced Export Options**: Enhanced HTML and PDF export with formatting options
 
+#### Additional Features (Added from User Feedback):
+- **Code Syntax Highlighting Fix**: Fix preview mode syntax highlighting
+- **Welcome/Front Page**: Landing page when no file is open
+- **New File Button**: Create new markdown file functionality
+- **Enhanced Save As**: Improve Save As workflow and user experience
+
 **Tests Required:**
 - File association tests
 - Context menu integration tests

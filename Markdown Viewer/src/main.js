@@ -34,6 +34,14 @@ class MarkdownViewer {
     this.closeHandlerUnlisten = null;
     this.isDistractionFree = false;
     this.preDistractionMode = null;
+    this.centeredLayoutEnabled = localStorage.getItem('markdownViewer_centeredLayout') === 'true';
+    this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
+    this.pageMargins = {
+      top: localStorage.getItem('markdownViewer_marginTop') || '1in',
+      bottom: localStorage.getItem('markdownViewer_marginBottom') || '1in',
+      left: localStorage.getItem('markdownViewer_marginLeft') || '1in',
+      right: localStorage.getItem('markdownViewer_marginRight') || '1in'
+    };
     
     const startupStartTime = performance.now();
     console.log('[MarkdownViewer] Phase 4 Constructor started');
@@ -44,6 +52,7 @@ class MarkdownViewer {
     this.updateCursorPosition();
     this.updateModeButtons();
     this.applyDefaultTheme();
+    this.applyCenteredLayout();
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
     
@@ -392,6 +401,13 @@ class MarkdownViewer {
             // Toggle theme (Ctrl+/)
             e.preventDefault();
             this.toggleTheme();
+            break;
+          case 'l':
+            if (e.shiftKey) {
+              // Toggle centered layout (Ctrl+Shift+L)
+              e.preventDefault();
+              this.toggleCenteredLayout();
+            }
             break;
           case 'f':
             // Find in editor (handled by Monaco)
@@ -2033,6 +2049,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
       `• Theme: ${this.theme}`,
       `• Default Mode: ${this.defaultMode}`,
       `• Text Suggestions: ${this.suggestionsEnabled ? 'Enabled' : 'Disabled'}`,
+      `• Centered Layout: ${this.centeredLayoutEnabled ? 'Enabled' : 'Disabled'}`,
+      `• Page Size: ${this.currentPageSize.toUpperCase()}`,
+      `• Margins: T:${this.pageMargins.top} B:${this.pageMargins.bottom} L:${this.pageMargins.left} R:${this.pageMargins.right}`,
       ``,
       `SYSTEM INFO:`,
       `• Current Mode: ${this.currentMode}`,
@@ -2060,7 +2079,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const settingsText = currentSettings.join('\n');
     
     // Show settings and ask what to change
-    const choice = prompt(`${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n4 - Clear Error Logs\n5 - Performance Report\n\nEnter 1-5:`);
+    const choice = prompt(`${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n4 - Centered Layout\n5 - Page Size\n6 - Page Margins\n7 - Clear Error Logs\n8 - Performance Report\n\nEnter 1-8:`);
     
     switch (choice) {
       case '1':
@@ -2073,15 +2092,24 @@ Tip: You can also use HTML Export and then print from your browser.`;
         this.changeTextSuggestions();
         break;
       case '4':
+        this.changeCenteredLayout();
+        break;
+      case '5':
+        this.changePageSize();
+        break;
+      case '6':
+        this.changePageMargins();
+        break;
+      case '7':
         this.clearErrorLogs();
         alert('Error logs cleared successfully.');
         break;
-      case '5':
+      case '8':
         this.showPerformanceReport();
         break;
       default:
         if (choice !== null) {
-          alert('Invalid choice. Please enter 1-5.');
+          alert('Invalid choice. Please enter 1-8.');
         }
         break;
     }
@@ -2177,6 +2205,86 @@ Tip: You can also use HTML Export and then print from your browser.`;
     }
   }
 
+  changeCenteredLayout() {
+    const newLayout = prompt(`Current centered layout: ${this.centeredLayoutEnabled ? 'Enabled' : 'Disabled'}\n\nEnable centered layout? (true/false):`, this.centeredLayoutEnabled.toString());
+    
+    if (newLayout !== null) {
+      const enabled = newLayout.toLowerCase() === 'true';
+      this.centeredLayoutEnabled = enabled;
+      localStorage.setItem('markdownViewer_centeredLayout', enabled.toString());
+      this.applyCenteredLayout();
+      
+      console.log(`[Settings] Centered layout changed to: ${enabled}`);
+      alert(`Centered layout ${enabled ? 'enabled' : 'disabled'}`);
+    }
+  }
+
+  changePageSize() {
+    const newSize = prompt(`Current page size: ${this.currentPageSize.toUpperCase()}\n\nEnter new page size (a4/letter/legal):`, this.currentPageSize);
+    
+    if (newSize && ['a4', 'letter', 'legal'].includes(newSize.toLowerCase())) {
+      this.setPageSize(newSize.toLowerCase());
+      alert(`Page size changed to: ${newSize.toUpperCase()}`);
+    } else if (newSize !== null) {
+      alert('Invalid page size. Please enter "a4", "letter", or "legal".');
+    }
+  }
+
+  changePageMargins() {
+    const currentMargins = `Top: ${this.pageMargins.top}, Bottom: ${this.pageMargins.bottom}, Left: ${this.pageMargins.left}, Right: ${this.pageMargins.right}`;
+    const marginChoice = prompt(`Current margins: ${currentMargins}\n\nWhich margin to change?\n\n1 - Top\n2 - Bottom\n3 - Left\n4 - Right\n5 - All margins\n\nEnter 1-5:`);
+    
+    switch (marginChoice) {
+      case '1':
+        this.changeSpecificMargin('top');
+        break;
+      case '2':
+        this.changeSpecificMargin('bottom');
+        break;
+      case '3':
+        this.changeSpecificMargin('left');
+        break;
+      case '4':
+        this.changeSpecificMargin('right');
+        break;
+      case '5':
+        this.changeAllMargins();
+        break;
+      default:
+        if (marginChoice !== null) {
+          alert('Invalid choice. Please enter 1-5.');
+        }
+        break;
+    }
+  }
+
+  changeSpecificMargin(side) {
+    const currentValue = this.pageMargins[side];
+    const newValue = prompt(`Current ${side} margin: ${currentValue}\n\nEnter new ${side} margin (e.g., 1in, 2.5cm, 72pt):`, currentValue);
+    
+    if (newValue !== null && newValue.trim()) {
+      const margins = {};
+      margins[side] = newValue.trim();
+      this.setPageMargins(margins);
+      alert(`${side.charAt(0).toUpperCase() + side.slice(1)} margin changed to: ${newValue}`);
+    }
+  }
+
+  changeAllMargins() {
+    const newMargin = prompt(`Enter margin for all sides (e.g., 1in, 2.5cm, 72pt):`, this.pageMargins.top);
+    
+    if (newMargin !== null && newMargin.trim()) {
+      const margins = {
+        top: newMargin.trim(),
+        bottom: newMargin.trim(),
+        left: newMargin.trim(),
+        right: newMargin.trim()
+      };
+      this.setPageMargins(margins);
+      alert(`All margins changed to: ${newMargin}`);
+    }
+  }
+
   showHelp() {
     console.log('[Help] Help dialog requested');
     const helpText = `Markdown Viewer - Keyboard Shortcuts
@@ -2208,6 +2316,7 @@ Editor:
 
 Other:
 • Ctrl+/ - Toggle theme
+• Ctrl+Shift+L - Toggle centered layout
 • Ctrl+, - Settings
 • F1 - This help
 • F5 - Refresh preview
@@ -2631,6 +2740,70 @@ Other:
     document.documentElement.setAttribute('data-theme', this.theme);
     this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
     console.log(`[Theme] Applied default theme: ${this.theme}`);
+  }
+
+  applyCenteredLayout() {
+    // Apply centered layout class
+    if (this.centeredLayoutEnabled) {
+      document.body.classList.add('centered-layout');
+    } else {
+      document.body.classList.remove('centered-layout');
+    }
+    
+    // Apply page size and margins
+    this.updatePageLayout();
+    
+    console.log(`[Layout] Applied centered layout: ${this.centeredLayoutEnabled ? 'enabled' : 'disabled'}`);
+  }
+
+  updatePageLayout() {
+    const root = document.documentElement;
+    
+    // Set page width based on current page size
+    const pageWidths = {
+      'a4': 'var(--page-width-a4)',
+      'letter': 'var(--page-width-letter)',
+      'legal': 'var(--page-width-legal)'
+    };
+    
+    root.style.setProperty('--current-page-width', pageWidths[this.currentPageSize] || pageWidths['a4']);
+    
+    // Set margins
+    root.style.setProperty('--page-margin-top', this.pageMargins.top);
+    root.style.setProperty('--page-margin-bottom', this.pageMargins.bottom);
+    root.style.setProperty('--page-margin-left', this.pageMargins.left);
+    root.style.setProperty('--page-margin-right', this.pageMargins.right);
+    
+    console.log(`[Layout] Updated page layout: ${this.currentPageSize}, margins: ${JSON.stringify(this.pageMargins)}`);
+  }
+
+  toggleCenteredLayout() {
+    this.centeredLayoutEnabled = !this.centeredLayoutEnabled;
+    localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
+    this.applyCenteredLayout();
+    
+    console.log(`[Layout] Toggled centered layout: ${this.centeredLayoutEnabled ? 'enabled' : 'disabled'}`);
+  }
+
+  setPageSize(size) {
+    if (['a4', 'letter', 'legal'].includes(size)) {
+      this.currentPageSize = size;
+      localStorage.setItem('markdownViewer_pageSize', size);
+      this.updatePageLayout();
+      console.log(`[Layout] Changed page size to: ${size}`);
+    }
+  }
+
+  setPageMargins(margins) {
+    this.pageMargins = { ...this.pageMargins, ...margins };
+    
+    // Save to localStorage
+    Object.keys(margins).forEach(key => {
+      localStorage.setItem(`markdownViewer_margin${key.charAt(0).toUpperCase() + key.slice(1)}`, margins[key]);
+    });
+    
+    this.updatePageLayout();
+    console.log(`[Layout] Updated margins:`, margins);
   }
 }
 

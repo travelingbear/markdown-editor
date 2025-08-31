@@ -9,6 +9,17 @@
   --accent-primary: #0969da;
   --accent-hover: #0550ae;
   
+  /* Centered Layout Variables */
+  --page-width-a4: 210mm;
+  --page-width-letter: 8.5in;
+  --page-width-legal: 8.5in;
+  --page-margin-top: 1in;
+  --page-margin-bottom: 1in;
+  --page-margin-left: 1in;
+  --page-margin-right: 1in;
+  --current-page-width: var(--page-width-a4);
+  --centered-layout-enabled: 0;
+  
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
@@ -206,6 +217,46 @@ body {
   line-height: 1.6;
 }
 
+/* Centered Layout for Preview Mode */
+body.centered-layout .preview-content {
+  max-width: var(--current-page-width);
+  margin: 0 auto;
+  padding: var(--page-margin-top) var(--page-margin-left) var(--page-margin-bottom) var(--page-margin-right);
+  background: var(--bg-primary);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+  min-height: calc(100vh - 64px);
+}
+
+/* Centered Layout for Code Mode */
+body.centered-layout.code-mode .monaco-editor-container,
+body.centered-layout.code-mode #editor {
+  max-width: var(--current-page-width);
+  margin: 0 auto;
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Centered Layout for Split Mode */
+body.centered-layout.split-mode .main-content {
+  max-width: calc(var(--current-page-width) * 2 + 4px);
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+}
+
+/* Adjust editor pane background for centered layout */
+body.centered-layout .editor-pane {
+  background: var(--bg-primary);
+}
+
+body.centered-layout .preview-pane {
+  background: var(--bg-primary);
+}
+
 .preview-content h1,
 .preview-content h2,
 .preview-content h3,
@@ -328,6 +379,14 @@ body {
   --border-secondary: #484f58;
   --accent-primary: #2f81f7;
   --accent-hover: #1c7ed6;
+}
+
+/* Dark theme adjustments for centered layout */
+[data-theme="dark"] body.centered-layout .preview-content,
+[data-theme="dark"] body.centered-layout .monaco-editor-container,
+[data-theme="dark"] body.centered-layout #editor,
+[data-theme="dark"] body.centered-layout.split-mode .main-content {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="dark"] .preview-content code {
@@ -988,6 +1047,35 @@ kbd {
   .hljs-title { color: #6f42c1 !important; }
   .hljs-attr { color: #e36209 !important; }
   .hljs-built_in { color: #005cc5 !important; }
+  
+  /* Centered layout print styles */
+  body.centered-layout .preview-content,
+  body.centered-layout .monaco-editor-container,
+  body.centered-layout #editor {
+    max-width: var(--current-page-width) !important;
+    margin: 0 auto !important;
+    padding: var(--page-margin-top) var(--page-margin-left) var(--page-margin-bottom) var(--page-margin-right) !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  body.centered-layout.split-mode .main-content {
+    max-width: var(--current-page-width) !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  /* Ensure page size is respected in print */
+  @page {
+    margin: 0;
+  }
+  
+  body.centered-layout {
+    --page-width-a4: 210mm;
+    --page-width-letter: 8.5in;
+    --page-width-legal: 8.5in;
+  }
 }
 
 /* Responsive Design for Advanced Features */
@@ -1040,6 +1128,42 @@ kbd {
   .diagram-code {
     font-size: 11px;
     padding: 8px;
+  }
+  
+  /* Responsive centered layout adjustments */
+  body.centered-layout .preview-content,
+  body.centered-layout .monaco-editor-container,
+  body.centered-layout #editor {
+    max-width: 95vw;
+    margin: 0 auto;
+    box-shadow: none;
+    border-left: none;
+    border-right: none;
+  }
+  
+  body.centered-layout.split-mode .main-content {
+    max-width: 95vw;
+    box-shadow: none;
+    border-left: none;
+    border-right: none;
+  }
+  
+  body.centered-layout .preview-content {
+    padding: 16px;
+  }
+}
+
+/* Extra responsive adjustments for very small screens */
+@media (max-width: 480px) {
+  body.centered-layout .preview-content {
+    padding: 12px;
+  }
+  
+  :root {
+    --page-margin-top: 0.5in;
+    --page-margin-bottom: 0.5in;
+    --page-margin-left: 0.5in;
+    --page-margin-right: 0.5in;
   }
 }
 
@@ -1318,6 +1442,23 @@ body.distraction-free.preview-mode .preview-content {
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   position: relative;
+}
+
+/* Centered layout in distraction-free mode */
+body.distraction-free.centered-layout.preview-mode .preview-content {
+  max-width: var(--current-page-width);
+  padding: var(--page-margin-top) var(--page-margin-left) var(--page-margin-bottom) var(--page-margin-right);
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+  border-radius: 0;
+}
+
+body.distraction-free.centered-layout.code-mode .monaco-editor-container,
+body.distraction-free.centered-layout.code-mode #editor {
+  max-width: var(--current-page-width);
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+  border-radius: 0;
 }
 
 /* Distraction-free content styling for Code mode */

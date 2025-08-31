@@ -1,154 +1,219 @@
-# AI Assistant Development Prompt - Markdown Viewer
+# AI Assistant Development Prompt - Markdown Viewer v2.0
 
 ## 🎯 Project Overview
-**Native Markdown Viewer** - Tauri + Rust + TypeScript/JavaScript desktop application
+**Native Markdown Viewer v2.0** - Tauri + Rust + TypeScript/JavaScript desktop application
 
-**Current Phase**: Phase 6 - Distribution & Release  
-**Branch**: `feature/phase-6-distribution`
+**Current Status**: v1.0.0 COMPLETE - Ready for v2.0 Enhancements  
+**Current Branch**: `main`  
+**Next Phase**: Phase 7 - UI/UX Enhancements
 
-## 📋 Status Summary
+## 📋 Current Status Summary
 
-### ✅ **COMPLETED**: All Core Features Working
+### ✅ **v1.0.0 COMPLETED**: All Core Features Working
 - Three-mode interface (Code/Preview/Split) with Monaco Editor
 - Real-time markdown rendering with KaTeX math and Mermaid diagrams  
 - Interactive task lists with state persistence
 - GitHub-style themes with perfect synchronization
 - File operations, HTML/PDF export, keyboard shortcuts
 - Performance monitoring and error handling
-- **Image & GIF Support**: ✅ COMPLETE - All formats working
-- **Window Close Handler**: ✅ COMPLETE - Properly prompts for unsaved changes
-- **Save Functionality**: ✅ COMPLETE - Working without crashes
+- Image & GIF support for all formats
+- Window close handler with unsaved changes confirmation
+- Native drag-drop with absolute file paths
+- Cross-platform distribution system (MSI, NSIS, DMG, AppImage, DEB)
 
-### 🔄 **CURRENT ISSUES**: Final Polish Items
-- ✅ Welcome screen drag-drop: Works correctly
-- ✅ Code mode drag-drop: Inserts filenames (simplified)
-- ✅ **Window close**: Working with proper confirmation dialogs
+### 🚀 **v2.0 ENHANCEMENT GOALS**
+Based on **FUTURE_IMPROVEMENTS_PLAN.md**, implement the following improvements:
 
-## 🚨 **URGENT TECHNICAL CHALLENGES**
+**Phase 7 - UI/UX Enhancements (4-6 weeks)**:
+1. **Distraction-Free Mode** (Priority: HIGH)
+2. **Centered A4 Layout with Configurable Margins** (Priority: MEDIUM)
+3. **Enhanced Settings Window** (Priority: MEDIUM)
 
-### **Issue 1: Window Close Handler** ✅ **RESOLVED**
-- **Problem**: X button closes app without asking about unsaved changes
-- **Solution**: Implemented proper Tauri v2 onCloseRequested with confirmation dialogs
-- **Status**: COMPLETE - Window close handler working correctly
-- **Implementation**: Uses event.preventDefault() and manual close() after user confirmation
+**Phase 8 - Branding & Legal (2-3 weeks)**:
+4. **Custom Icon & Favicon** (Priority: LOW)
+5. **MIT License Implementation** (Priority: HIGH)
+6. **User-Only MSI Installer** (Priority: MEDIUM)
 
-### **Issue 2: Drag-Drop File Path Resolution** 🔄 **FUTURE ENHANCEMENT**  
-- **Problem**: Drag-dropped files don't retain original file paths for saving
-- **Current**: Files opened via drag-drop require "Save As" (browser security limitation)
-- **Status**: WORKING - Basic functionality complete, enhancement needed
-- **Future Goal**: Implement native Tauri drag-drop to get absolute file paths
-- **Implementation**: Currently uses browser events, needs Tauri native events
+## 🎯 **CURRENT PHASE: Phase 7 - UI/UX Enhancements**
 
-### **Issue 3: Drag-Drop Configuration** 📋 **DOCUMENTED**
-- **Current**: `dragDropEnabled: false` (enables browser events but limits functionality)
-- **Trade-off**: Browser events work but can't provide absolute paths for saving
-- **Status**: ACCEPTABLE - Documented limitation, future enhancement opportunity
-- **Alternative**: Users can use File > Open for full save functionality
+### **Priority 1: Distraction-Free Mode** ✅ COMPLETED
+- **Goal**: Clean, minimal interface hiding all UI elements except content
+- **Features**: F11 toggle, hidden toolbar/status bar, ESC to exit, mode memory
+- **Status**: ✅ COMPLETED & MERGED TO MAIN
+- **Branch**: `feature/phase-7-distraction-free-mode` (merged)
+
+### **Priority 2: Centered A4 Layout**
+- **Goal**: Center content within A4 page width with configurable margins
+- **Features**: A4/Letter/Legal page sizes, adjustable margins, print consistency
+- **Status**: PENDING - Start after Priority 1 completion
+- **Branch**: Create `feature/phase-7-centered-layout`
+
+### **Priority 3: Home Screen showing a history the last three opened markdown files ###
+- **Goal**: Shows only on the Home Screen
+- **Features**: Has a button to clear history and shows the last three last used markdown files
+- **Status**: PENDING - Start after Priority 2 completion
+- **Branch**: Create `feature/phase-7-files-history`
+
+### **Priority 4: Enhanced Settings Window**
+- **Goal**: Replace text-based settings with modern clickable interface
+- **Features**: Tabbed interface, visual controls, live preview, import/export
+- **Status**: PENDING - Start after Priority 2 completion
+- **Branch**: Create `feature/phase-7-enhanced-settings`
 
 ## 📁 **Key Files**
 - `main.js` - Application logic
 - `lib.rs` - Rust backend  
 - `tauri.conf.json` - Configuration
-- `PROJECT_PLAN.md` - Full specification
-- `DEVELOPMENT_LOG.md` - Detailed progress
-
-**📖 For complete details, see PROJECT_PLAN.md and DEVELOPMENT_LOG.md**
-
-## 🎯 **CURRENT STATUS**
-
-### **Phase 5.1**: Native Drag-Drop Absolute Paths ✅ **COMMITTED**
-- **Goal**: Implement native Tauri drag-drop with absolute file paths
-- **Solution**: `tauri://drag-drop` event with `dragDropEnabled: true`
-- **Status**: COMMITTED - Code mode inserts full paths like `C:\Users\...\file.md`
-- **Branch**: Merged to main (commit 3050d08)
-- **Validation**: USER APPROVED & COMMITTED
-
-### **Phase 6**: Distribution & Release ✅ **COMPLETE**
-- **Goal**: Cross-platform build system and installation packages
-- **Status**: COMPLETE - All distribution features implemented
-- **Branch**: `feature/phase-6-distribution`
-- **Deliverables**: Build system, installers, documentation, automation
-
-## 🏗️ **Architecture**
-**Frontend**: Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js  
-**Backend**: Rust/Tauri for native file operations
-
-**📊 Performance**: All targets met (< 2s startup, < 500ms file ops)
-
-## 🚀 **Phase 5 Success Criteria**
-- ✅ Images/GIFs working
-- ✅ Drag-drop functionality (COMPLETE - basic functionality)
-- ✅ Final polish & testing
-
-**🎯 PHASE 6 COMPLETE - Ready for Release**
+- `PROJECT_PLAN.md` - Original specification
+- `FUTURE_IMPROVEMENTS_PLAN.md` - v2.0 enhancement roadmap
+- `LESSONS_LEARNED.md` - Technical knowledge base
 
 ## ⚠️ **CRITICAL DEVELOPMENT RULES - STRICTLY ENFORCED**
 
 ### **GIT WORKFLOW - MANDATORY**
 - ❌ **NEVER work directly on main branch**
 - ❌ **NEVER commit without explicit user approval**
-- ✅ **ALWAYS create feature branches for each phase/enhancement**
+- ✅ **ALWAYS create feature branches for each improvement**
 - ✅ **ALWAYS request user validation before any commits**
 - ✅ **ONLY update documentation AFTER user approval**
 - ✅ **ONLY stage and commit AFTER user approval**
 
 ### **PHASE WORKFLOW - MANDATORY**
-1. **Create feature branch** for new phase/enhancement
-2. **Implement changes** on feature branch
-3. **Request user testing** and validation
+1. **Create feature branch** for specific improvement (e.g., `feature/phase-7-distraction-free-mode`)
+2. **Implement single improvement** completely on feature branch
+3. **Request user testing** and validation of the specific improvement
 4. **Wait for user approval** - DO NOT PROCEED WITHOUT IT
 5. **Update documentation** only after approval
 6. **Stage and commit** only after approval
 7. **Merge to main** only after approval
+8. **Start next improvement** on new feature branch
 
-**Current Branch**: `feature/phase-6-distribution`
-**Status**: PHASE 6 COMPLETE - AWAITING USER APPROVAL FOR COMMIT
+### **IMPROVEMENT-SPECIFIC WORKFLOW**
+- **One improvement per branch** - No mixing of features
+- **Complete implementation** before requesting validation
+- **Comprehensive testing** of the specific improvement
+- **User validation required** for each improvement individually
+- **Documentation updates** for each completed improvement
+
+## 🧪 **Testing Requirements for Each Improvement**
+
+### **Distraction-Free Mode Testing**
+- [ ] F11 toggles distraction-free mode correctly
+- [ ] All UI elements hidden except content area
+- [ ] ESC key exits distraction-free mode
+- [ ] Mouse movement shows exit options
+- [ ] No regressions in existing functionality
+- [ ] Performance remains acceptable
+
+### **Centered A4 Layout for Preview and Code mode and Distraction-Free mode Testing**
+- [ ] Content centers correctly in all window sizes
+- [ ] A4 page width constraint works (210mm/8.27")
+- [ ] Configurable margins function properly
+- [ ] Multiple page sizes available (A4, Letter, Legal)
+- [ ] Print output matches screen layout
+- [ ] Settings persist across sessions
+- [ ] No impact on existing themes
+
+### **Home Screen showing a history the last three opened markdown files**
+- [ ] Shows only on the Home Screen
+- [ ] Has a button to clear history
+- [ ] No regressions in existing functionality
+- [ ] Performance remains acceptable
+- [ ] Responsive design on different screen sizes
+
+### **Enhanced Settings Testing**
+- [ ] All visual controls function correctly
+- [ ] Live preview updates immediately
+- [ ] Settings import/export works
+- [ ] Reset options function properly
+- [ ] All existing settings preserved
+- [ ] Responsive design on different screen sizes
+
+## 📊 **Success Criteria for Phase 7**
+
+### **Functionality**
+- ✅ All four improvements implemented and working
+- ✅ No regressions in existing v1.0.0 functionality
+- ✅ User interface remains intuitive and responsive
+- ✅ Settings persistence works correctly
+
+### **Performance**
+- ✅ Startup time remains < 2 seconds
+- ✅ Mode switching remains < 100ms
+- ✅ Memory usage stays < 200MB
+- ✅ No performance degradation with new features
+
+### **User Experience**
+- ✅ Distraction-free mode enhances focus
+- ✅ Centered layout improves document presentation
+- ✅ Enhanced settings are more accessible
+- ✅ All improvements feel integrated and polished
+
+## 🚦 **VALIDATION CHECKPOINTS**
+
+### **After Each Improvement**
+**User must validate:**
+- ✅ Improvement works as specified
+- ✅ No existing functionality broken
+- ✅ Performance remains acceptable
+- ✅ User interface changes are intuitive
+- ✅ Ready to commit and merge
+
+**AI Assistant must:**
+- ✅ Request explicit user approval
+- ✅ Wait for confirmation before committing
+- ✅ Update documentation after approval
+- ✅ Merge to main only after approval
+- ✅ Create new branch for next improvement
+
+### **After Phase 7 Completion**
+**User must validate:**
+- ✅ All Phase 7 improvements working together
+- ✅ Complete application stability
+- ✅ Ready to proceed to Phase 8
+- ✅ Version increment to v1.1.0 or v2.0.0
+
+## 📝 **IMPLEMENTATION NOTES**
+
+### **Current v1.0.0 Status**
+- ✅ All core functionality working perfectly
+- ✅ Cross-platform distribution system ready
+- ✅ Performance targets met
+- ✅ No critical issues or regressions
+- ✅ Ready for enhancement development
+
+### **Development Approach**
+- **Incremental Enhancement**: Add features without breaking existing functionality
+- **User-Centric**: Each improvement must provide clear user value
+- **Performance Conscious**: Monitor impact of new features
+- **Backward Compatible**: Ensure all improvements are optional
+
+### **Technical Considerations**
+- **Settings Migration**: Handle existing user preferences
+- **CSS Architecture**: Maintain existing theme system
+- **JavaScript Modularity**: Keep code organized and maintainable
+- **Tauri Integration**: Leverage native capabilities where beneficial
+
+## 🎯 **IMMEDIATE NEXT STEPS**
+
+1. **✅ COMPLETED**: Distraction-free mode implemented and merged
+2. **Create feature branch**: `feature/phase-7-centered-layout`
+3. **Implement centered A4 layout**: A4 page width, configurable margins
+4. **Test thoroughly**: All centered layout requirements
+5. **Request user validation**: Complete testing and approval
+6. **Commit and merge**: Only after user approval
+7. **Move to Priority 3**: File history on home screen
+
+## 📚 **Reference Documents**
+- **FUTURE_IMPROVEMENTS_PLAN.md** - Complete v2.0 roadmap and specifications
+- **LESSONS_LEARNED.md** - Technical knowledge and best practices
+- **PROJECT_PLAN.md** - Original project architecture and patterns
+- **DEVELOPMENT_LOG.md** - Complete development history and solutions
 
 ---
 
-**📖 For complete project details, architecture, and development history, refer to:**
-- `PROJECT_PLAN.md` - Full specification and requirements
-- `DEVELOPMENT_LOG.md` - Detailed progress and technical decisions
-- `CHANGELOG.md` - Version history and feature timeline or mode-specific handling
+**🎯 READY TO START PHASE 7: UI/UX ENHANCEMENTS**
 
-## 📝 **IMPLEMENTATION NOTES FOR NEXT AGENT**
-
-### **Working Features**
-- ✅ Welcome screen drag-drop: Opens .md files correctly
-- ✅ Code mode drag-drop: Inserts filenames (simplified)
-- ✅ Drag-drop visual feedback: Blue overlay with context messages
-- ✅ File opening via drag-drop: No longer marks as dirty (fixed)
-- ✅ Browser drag-drop events: Properly registered and working
-- ✅ Window close handler: Proper confirmation dialogs working
-- ✅ Save functionality: Working without crashes (drag-drop files use Save As)
-
-### **Future Enhancements**
-- 🔄 **Native Drag-Drop**: Implement Tauri native drag-drop for absolute file paths
-- **Goal**: Allow drag-dropped files to save to original location
-- **Current Limitation**: Browser drag-drop can't access full file paths
-- **Solution**: Enable `dragDropEnabled: true` and use Tauri file-drop events
-
-### **Configuration Status**
-- **Tauri Config**: `dragDropEnabled: false` in `tauri.conf.json`
-- **Event Handlers**: Browser drag-drop events working
-- **Window Close**: Multiple approaches attempted, none working in Tauri v2
-
-### **Code Locations**
-- **Main Logic**: `main.js` - `setupDragAndDrop()` (simplified) and `setupWindowCloseHandler()` (broken)
-- **Tauri Config**: `src-tauri/tauri.conf.json` - `dragDropEnabled: false` setting
-- **Rust Backend**: `src-tauri/src/lib.rs` - `get_dropped_file_absolute_path` command (unused)
-- **Styling**: `styles.css` - Enhanced drag-drop visual feedback
-
-### **Next Steps for New Agent**
-1. ✅ **COMPLETE**: Window close handler working correctly
-2. ✅ **COMPLETE**: Save functionality working without crashes
-3. ✅ **VALIDATED**: User confirmed all fixes working
-4. **READY**: Phase 5 complete, ready for Phase 6 (Distribution)
-5. **FUTURE**: Consider implementing native Tauri drag-drop for full file paths
-
-### **Phase 6 Preparation**
-- All core functionality working
-- Window close handler implemented
-- Save functionality stable
-- Drag-drop working (with documented limitations)
-- Ready for distribution and packaging
+**Current Focus**: Implement distraction-free mode as Priority 1 improvement  
+**Branch Strategy**: One improvement per feature branch with user validation  
+**Success Metric**: Enhanced user experience without compromising existing functionality

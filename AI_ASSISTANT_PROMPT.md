@@ -3,9 +3,9 @@
 ## 🎯 Project Overview
 **Native Markdown Viewer v2.0** - Tauri + Rust + TypeScript/JavaScript desktop application
 
-**Current Status**: v1.0.0 COMPLETE + Phase 7 ALL PRIORITIES COMPLETED + Phase 8 Priority 1 IN PROGRESS  
-**Current Branch**: `feature/phase-8-app-shortcuts`  
-**Next Phase**: Phase 8 - Keyboard Shortcuts (Priority 1 debugging needed)
+**Current Status**: v1.0.0 COMPLETE + Phase 7 ALL PRIORITIES COMPLETED + Phase 8 ALL PRIORITIES COMPLETED  
+**Current Branch**: `main`  
+**Next Phase**: Phase 8.5 - Help, About & Splash Screen
 
 ## 📋 Current Status Summary
 
@@ -45,10 +45,15 @@ Based on **FUTURE_IMPROVEMENTS_PLAN.md**, implement the following improvements:
 7. **Save Dropdown Button** ✅ COMPLETED
 8. **Distraction-Free Mode Button** ✅ COMPLETED
 
-**Phase 8 - Keyboard Shortcuts (1-2 weeks)**: 🔄 IN PROGRESS
-1. **Application Shortcuts** 🔄 IN PROGRESS - Ctrl+Shift+M for toolbar toggle (debugging needed)
-2. **Editor Shortcuts** 🎯 PENDING - Ctrl+B/I for bold/italic, Ctrl+Shift+1-3 for headers
-3. **Cross-Platform Support** 🎯 PENDING - Cmd on macOS, Ctrl on Windows/Linux
+**Phase 8 - Keyboard Shortcuts (1-2 weeks)**: ✅ COMPLETED
+1. **Application Shortcuts** ✅ COMPLETED - Ctrl+Shift+M for toolbar toggle
+2. **Editor Shortcuts** ✅ COMPLETED - Ctrl+B/I for bold/italic, Ctrl+Shift+1-3 for headers
+3. **Cross-Platform Support** ✅ COMPLETED - Cmd on macOS, Ctrl on Windows/Linux
+
+**Phase 8.5 - Help, About & Splash Screen (1-2 weeks)**:
+1. **Help Screen** (Priority: HIGH) - Comprehensive help modal with shortcuts and features
+2. **About Screen** (Priority: HIGH) - Application info, version, credits, and links
+3. **Splash Screen** (Priority: MEDIUM) - Optional startup splash with user image, settings toggle
 
 **Phase 9 - Branding & Legal (2-3 weeks)**:
 1. **Custom Icon & Favicon** (Priority: LOW)
@@ -315,6 +320,33 @@ Based on **FUTURE_IMPROVEMENTS_PLAN.md**, implement the following improvements:
 - [x] F11 shortcut still works
 - [x] Custom tooltips without overflow
 - [x] Button hidden in distraction-free mode itself
+
+## 🧪 **Phase 8.5 Testing Requirements**
+
+### **Help Screen Testing** 🎯 READY
+- [ ] Help modal opens with F1 or menu button
+- [ ] Comprehensive keyboard shortcuts list
+- [ ] Feature explanations and usage tips
+- [ ] Responsive design and proper styling
+- [ ] Easy navigation and close functionality
+- [ ] No conflicts with existing shortcuts
+
+### **About Screen Testing** 🎯 READY
+- [ ] About modal shows application information
+- [ ] Version number and build info displayed
+- [ ] Credits and acknowledgments section
+- [ ] Links to documentation and support
+- [ ] Professional appearance and branding
+- [ ] Proper modal behavior and closing
+
+### **Splash Screen Testing** 🎯 READY
+- [ ] Splash screen appears on startup (when enabled)
+- [ ] Custom image displays correctly
+- [ ] 1-2 second display duration
+- [ ] Settings toggle for enable/disable works
+- [ ] Smooth fade in/out animations
+- [ ] No impact on startup performance
+- [ ] Proper theme integration
 
 ## 🧪 **Phase 8 Testing Requirements**
 

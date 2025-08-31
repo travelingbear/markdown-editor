@@ -1217,3 +1217,325 @@ body.drag-over .main-content.split-mode::after {
   border: 1px solid var(--border-primary);
 }
 
+/* Distraction-Free Mode Styles */
+body.distraction-free .toolbar,
+body.distraction-free .status-bar {
+  display: none !important;
+}
+
+body.distraction-free .app {
+  height: 100vh;
+}
+
+body.distraction-free .main-content {
+  height: 100vh;
+  background: var(--distraction-bg);
+  padding: 0;
+}
+
+/* Theme adjustments for distraction-free mode */
+:root {
+  --distraction-bg: #f8f9fa;
+}
+
+[data-theme="dark"] {
+  --distraction-bg: #0a0c10;
+}
+
+/* Light theme - slightly darker margins */
+[data-theme="light"] body.distraction-free .main-content {
+  background: #f0f2f5;
+}
+
+[data-theme="light"] body.distraction-free .preview-content,
+[data-theme="light"] body.distraction-free .monaco-editor-container,
+[data-theme="light"] body.distraction-free #editor {
+  background: #ffffff;
+  border-color: #e1e4e8;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark theme - darker margins, brighter content */
+[data-theme="dark"] body.distraction-free .main-content {
+  background: #0a0c10;
+}
+
+[data-theme="dark"] body.distraction-free .preview-content,
+[data-theme="dark"] body.distraction-free .monaco-editor-container,
+[data-theme="dark"] body.distraction-free #editor {
+  background: #161b22;
+  border-color: #30363d;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Improved link colors for dark mode */
+[data-theme="dark"] .preview-content a {
+  color: #58a6ff;
+}
+
+[data-theme="dark"] .preview-content a:hover {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .preview-content a:visited {
+  color: #bc8cff;
+}
+
+/* Distraction-free mode for Preview mode */
+body.distraction-free.preview-mode .preview-pane {
+  width: 100% !important;
+}
+
+body.distraction-free.preview-mode .editor-pane,
+body.distraction-free.preview-mode .splitter {
+  display: none !important;
+}
+
+/* Distraction-free mode for Code mode */
+body.distraction-free.code-mode .editor-pane {
+  width: 100% !important;
+}
+
+body.distraction-free.code-mode .preview-pane,
+body.distraction-free.code-mode .splitter {
+  display: none !important;
+}
+
+/* Distraction-free mode for Split mode (hide splitter, keep both panes) */
+body.distraction-free.split-mode .splitter {
+  display: none !important;
+}
+
+/* Distraction-free content styling for Preview mode */
+body.distraction-free.preview-mode .preview-content {
+  padding: 60px;
+  max-width: 800px;
+  margin: 0 auto;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* Distraction-free content styling for Code mode */
+body.distraction-free.code-mode .main-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  height: 100vh;
+}
+
+body.distraction-free.code-mode .editor-pane {
+  width: 100%;
+  max-width: 800px;
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+body.distraction-free.code-mode .monaco-editor-container,
+body.distraction-free.code-mode #editor {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Dynamic responsive borders based on window size */
+@media (min-width: 1400px) {
+  body.distraction-free.code-mode .main-content {
+    padding: 60px;
+  }
+  body.distraction-free.code-mode .editor-pane {
+    height: calc(100vh - 120px);
+  }
+}
+
+@media (max-width: 1200px) {
+  body.distraction-free.preview-mode .preview-content {
+    margin: 60px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 900px) {
+  body.distraction-free.preview-mode .preview-content {
+    margin: 40px;
+    padding: 50px 40px;
+  }
+  body.distraction-free.code-mode .main-content {
+    padding: 30px;
+  }
+  body.distraction-free.code-mode .editor-pane {
+    height: calc(100vh - 60px);
+  }
+}
+
+@media (max-width: 768px) {
+  body.distraction-free.preview-mode .preview-content {
+    margin: 30px;
+    padding: 40px 30px;
+  }
+  body.distraction-free.code-mode .main-content {
+    padding: 20px;
+  }
+  body.distraction-free.code-mode .editor-pane {
+    height: calc(100vh - 40px);
+  }
+}
+
+@media (max-width: 600px) {
+  body.distraction-free.preview-mode .preview-content {
+    margin: 20px;
+    padding: 30px 25px;
+  }
+  body.distraction-free.code-mode .main-content {
+    padding: 15px;
+  }
+  body.distraction-free.code-mode .editor-pane {
+    height: calc(100vh - 30px);
+  }
+}
+
+@media (max-width: 480px) {
+  body.distraction-free.preview-mode .preview-content {
+    margin: 15px;
+    padding: 25px 20px;
+  }
+  body.distraction-free.code-mode .main-content {
+    padding: 10px;
+  }
+  body.distraction-free.code-mode .editor-pane {
+    height: calc(100vh - 20px);
+  }
+}
+
+@media (max-width: 360px) {
+  body.distraction-free.preview-mode .preview-content {
+    margin: 10px;
+    padding: 20px 15px;
+  }
+  body.distraction-free.code-mode .main-content {
+    padding: 5px;
+  }
+  body.distraction-free.code-mode .editor-pane {
+    height: calc(100vh - 10px);
+  }
+}
+
+/* Ultra-minimal scrollbar for distraction-free mode */
+body.distraction-free .preview-content::-webkit-scrollbar,
+body.distraction-free .monaco-editor-container::-webkit-scrollbar {
+  width: 3px;
+}
+
+body.distraction-free .preview-content::-webkit-scrollbar-track,
+body.distraction-free .monaco-editor-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body.distraction-free .preview-content::-webkit-scrollbar-thumb,
+body.distraction-free .monaco-editor-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+body.distraction-free .preview-content:hover::-webkit-scrollbar-thumb,
+body.distraction-free .monaco-editor-container:hover::-webkit-scrollbar-thumb {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark theme scrollbar */
+[data-theme="dark"] body.distraction-free .preview-content::-webkit-scrollbar-thumb,
+[data-theme="dark"] body.distraction-free .monaco-editor-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] body.distraction-free .preview-content:hover::-webkit-scrollbar-thumb,
+[data-theme="dark"] body.distraction-free .monaco-editor-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Firefox scrollbar */
+body.distraction-free .preview-content,
+body.distraction-free .monaco-editor-container {
+  scrollbar-width: none;
+}
+
+body.distraction-free .preview-content:hover,
+body.distraction-free .monaco-editor-container:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+[data-theme="dark"] body.distraction-free .preview-content:hover,
+[data-theme="dark"] body.distraction-free .monaco-editor-container:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Distraction-free exit hint - only show on top hover */
+body.distraction-free::before {
+  content: "Press ESC or F11 to exit distraction-free mode";
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 0 0 12px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Show hint only when JavaScript adds the class */
+body.distraction-free.show-exit-hint::before {
+  opacity: 1;
+}
+
+/* Dark theme adjustments for distraction-free mode */
+[data-theme="dark"] body.distraction-free::before {
+  background: rgba(30, 30, 30, 0.95);
+  color: #f0f6fc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Smooth transitions for distraction-free mode */
+.toolbar,
+.status-bar,
+.main-content {
+  transition: all 0.3s ease;
+}
+
+body.distraction-free .preview-content {
+  animation: fadeInContent 0.5s ease-out;
+}
+
+
+
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

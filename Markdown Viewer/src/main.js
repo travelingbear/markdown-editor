@@ -32,6 +32,8 @@ class MarkdownViewer {
     this.lastFileOpenTime = 0;
     this.lastModeSwitchTime = 0;
     this.closeHandlerUnlisten = null;
+    this.isDistractionFree = false;
+    this.preDistractionMode = null;
     
     const startupStartTime = performance.now();
     console.log('[MarkdownViewer] Phase 4 Constructor started');
@@ -433,11 +435,13 @@ class MarkdownViewer {
           break;
         case 'F11':
           e.preventDefault();
-          this.toggleFullscreen();
+          this.toggleDistractionFree();
           break;
         case 'Escape':
-          // Close dialogs or exit fullscreen
-          if (document.fullscreenElement) {
+          // Exit distraction-free mode first, then fullscreen
+          if (this.isDistractionFree) {
+            this.exitDistractionFree();
+          } else if (document.fullscreenElement) {
             document.exitFullscreen();
           }
           break;
@@ -946,6 +950,11 @@ class MarkdownViewer {
     // Update main content class - remove all mode classes first
     this.mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
     this.mainContent.classList.add(`${mode}-mode`);
+    
+    // Also update body class for distraction-free mode CSS selectors
+    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+    document.body.classList.add(`${mode}-mode`);
+    
     this.currentMode = mode;
     
     // Trigger Monaco layout update and restore scroll positions
@@ -2202,8 +2211,8 @@ Other:
 • Ctrl+, - Settings
 • F1 - This help
 • F5 - Refresh preview
-• F11 - Toggle fullscreen
-• Esc - Exit fullscreen`;
+• F11 - Distraction-free mode
+• Esc - Exit distraction-free mode`;
     
     alert(helpText);
   }
@@ -2224,6 +2233,66 @@ Other:
         console.error('[UI] Error exiting fullscreen:', err);
       });
     }
+  }
+
+  toggleDistractionFree() {
+    console.log('[UI] Toggle distraction-free mode requested');
+    if (this.isDistractionFree) {
+      this.exitDistractionFree();
+    } else {
+      this.enterDistractionFree();
+    }
+  }
+
+  enterDistractionFree() {
+    console.log('[UI] Entering distraction-free mode');
+    this.isDistractionFree = true;
+    document.body.classList.add('distraction-free');
+    
+    // Ensure current mode class is on body for CSS selectors
+    document.body.classList.add(`${this.currentMode}-mode`);
+    
+    // Setup hover detection for exit hint
+    this.setupDistractionFreeHover();
+    
+    console.log('[UI] Distraction-free mode activated - Press ESC or F11 to exit');
+  }
+
+  exitDistractionFree() {
+    console.log('[UI] Exiting distraction-free mode');
+    this.isDistractionFree = false;
+    document.body.classList.remove('distraction-free');
+    
+    // Remove hover detection
+    this.removeDistractionFreeHover();
+    
+    console.log('[UI] Distraction-free mode deactivated');
+  }
+
+  setupDistractionFreeHover() {
+    // Remove any existing hover handler
+    this.removeDistractionFreeHover();
+    
+    this.distractionFreeMouseHandler = (e) => {
+      if (this.isDistractionFree) {
+        // Show hint only when mouse is in top 60px of screen
+        if (e.clientY <= 60) {
+          document.body.classList.add('show-exit-hint');
+        } else {
+          document.body.classList.remove('show-exit-hint');
+        }
+      }
+    };
+    
+    document.addEventListener('mousemove', this.distractionFreeMouseHandler);
+  }
+
+  removeDistractionFreeHover() {
+    if (this.distractionFreeMouseHandler) {
+      document.removeEventListener('mousemove', this.distractionFreeMouseHandler);
+      this.distractionFreeMouseHandler = null;
+    }
+    document.body.classList.remove('show-exit-hint');
   }
 
   debouncedUpdatePreview() {

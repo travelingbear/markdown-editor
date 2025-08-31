@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Markdown Viewer</title>
+    <title>Markdown Editor</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
@@ -100,7 +100,7 @@
         <div class="preview-pane">
           <div id="welcome-page" class="welcome-page">
             <div class="welcome-content">
-              <h1>📝 Markdown Viewer</h1>
+              <h1>📝 Markdown Editor</h1>
               <p class="welcome-subtitle">A powerful native markdown editor with live preview</p>
               
               <div class="welcome-actions">
@@ -114,17 +114,12 @@
                 <button id="clear-history-btn" class="welcome-btn clear-btn">🗑️ Clear History</button>
               </div>
               
-              <div class="welcome-shortcuts">
-                <h3>Keyboard Shortcuts</h3>
-                <div class="shortcut-grid">
-                  <div class="shortcut"><kbd>Ctrl+N</kbd> New file</div>
-                  <div class="shortcut"><kbd>Ctrl+O</kbd> Open file</div>
-                  <div class="shortcut"><kbd>Ctrl+S</kbd> Save file</div>
-                  <div class="shortcut"><kbd>Ctrl+1/2/3</kbd> Switch modes</div>
-                  <div class="shortcut"><kbd>Ctrl+T</kbd> Toggle theme</div>
-                  <div class="shortcut"><kbd>F11</kbd> Distraction-free</div>
-                  <div class="shortcut"><kbd>Ctrl+,</kbd> Settings</div>
-                  <div class="shortcut"><kbd>F1</kbd> Help menu</div>
+              <div class="welcome-actions-grid">
+                <h3>Quick Actions</h3>
+                <div class="action-buttons">
+                  <button id="welcome-help-btn" class="welcome-btn action-btn">Help & Shortcuts</button>
+                  <button id="welcome-about-btn" class="welcome-btn action-btn">About</button>
+                  <button id="welcome-settings-btn" class="welcome-btn action-btn">Settings</button>
                 </div>
               </div>
             </div>
@@ -140,6 +135,9 @@
       <div class="status-bar">
         <div class="status-left">
           <span id="cursor-pos">Line 1, Col 1</span>
+        </div>
+        <div class="status-center">
+          <button id="help-status-btn" class="status-btn" title="Help (F1)">Help</button>
         </div>
         <div class="status-right">
           <span id="filename">untitled.md</span>
@@ -265,6 +263,152 @@
                   <span id="perf-update-count">0</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Help Modal -->
+      <div id="help-modal" class="help-modal" style="display: none;">
+        <div class="help-overlay"></div>
+        <div class="help-window">
+          <div class="help-header">
+            <h2>📖 Help & Shortcuts</h2>
+            <button id="help-close-btn" class="help-close-btn">×</button>
+          </div>
+          <div class="help-content">
+            <div class="help-section">
+              <h3>File Operations</h3>
+              <div class="shortcut-list">
+                <div class="shortcut-item"><kbd>Ctrl+N</kbd><span>New file</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+O</kbd><span>Open file</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+S</kbd><span>Save file</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+S</kbd><span>Save as</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+W</kbd><span>Close file</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Q</kbd><span>Quit application</span></div>
+              </div>
+            </div>
+            
+            <div class="help-section">
+              <h3>View Modes</h3>
+              <div class="shortcut-list">
+                <div class="shortcut-item"><kbd>Ctrl+1</kbd><span>Code mode</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+2</kbd><span>Preview mode</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+3</kbd><span>Split mode</span></div>
+                <div class="shortcut-item"><kbd>F11</kbd><span>Distraction-free mode</span></div>
+                <div class="shortcut-item"><kbd>Esc</kbd><span>Exit distraction-free</span></div>
+              </div>
+            </div>
+            
+            <div class="help-section">
+              <h3>Editor Shortcuts</h3>
+              <div class="shortcut-list">
+                <div class="shortcut-item"><kbd>Ctrl+B</kbd><span>Bold text</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+I</kbd><span>Italic text</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+1-3</kbd><span>Headers H1-H3</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+M</kbd><span>Toggle toolbar</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+F</kbd><span>Find</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+H</kbd><span>Find & replace</span></div>
+              </div>
+            </div>
+            
+            <div class="help-section">
+              <h3>Export & Print</h3>
+              <div class="shortcut-list">
+                <div class="shortcut-item"><kbd>Ctrl+Shift+E</kbd><span>Export to HTML</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+P</kbd><span>Print/Export PDF</span></div>
+              </div>
+            </div>
+            
+            <div class="help-section">
+              <h3>Application</h3>
+              <div class="shortcut-list">
+                <div class="shortcut-item"><kbd>Ctrl+T</kbd><span>Toggle theme</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+,</kbd><span>Settings</span></div>
+                <div class="shortcut-item"><kbd>F1</kbd><span>This help</span></div>
+                <div class="shortcut-item"><kbd>F5</kbd><span>Refresh preview</span></div>
+              </div>
+            </div>
+            
+            <div class="help-tips">
+              <h3>💡 Tips</h3>
+              <ul>
+                <li>Drag & drop .md files to open them</li>
+                <li>Drag files in Code mode to insert paths</li>
+                <li>Use markdown toolbar for quick formatting</li>
+                <li>Click task list checkboxes to toggle them</li>
+                <li>Math expressions: $inline$ and $$display$$</li>
+                <li>Mermaid diagrams in ```mermaid code blocks</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- About Modal -->
+      <div id="about-modal" class="about-modal" style="display: none;">
+        <div class="about-overlay"></div>
+        <div class="about-window">
+          <div class="about-header">
+            <h2>About Markdown Editor</h2>
+            <button id="about-close-btn" class="about-close-btn">×</button>
+          </div>
+          <div class="about-content">
+            <div class="about-logo">
+              <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
+              <h1>Markdown Editor</h1>
+              <p class="version">Version 2.0.0</p>
+            </div>
+            
+            <div class="about-description">
+              <p>A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript.</p>
+            </div>
+            
+            <div class="about-features">
+              <h3>Key Features</h3>
+              <ul>
+                <li>Three-mode interface (Code, Preview, Split)</li>
+                <li>Monaco Editor with syntax highlighting</li>
+                <li>Real-time preview with KaTeX math and Mermaid diagrams</li>
+                <li>Interactive task lists with state persistence</li>
+                <li>GitHub-style themes and export options</li>
+                <li>Native file operations and drag-drop support</li>
+              </ul>
+            </div>
+            
+            <div class="about-credits">
+              <h3>Built With</h3>
+              <div class="credits-grid">
+                <div class="credit-item">
+                  <strong>Tauri</strong> - Native app framework
+                </div>
+                <div class="credit-item">
+                  <strong>Monaco Editor</strong> - Code editor
+                </div>
+                <div class="credit-item">
+                  <strong>Marked.js</strong> - Markdown parser
+                </div>
+                <div class="credit-item">
+                  <strong>KaTeX</strong> - Math rendering
+                </div>
+                <div class="credit-item">
+                  <strong>Mermaid</strong> - Diagram rendering
+                </div>
+                <div class="credit-item">
+                  <strong>Highlight.js</strong> - Syntax highlighting
+                </div>
+              </div>
+            </div>
+            
+            <div class="about-links">
+              <h3>Links & Support</h3>
+              <div class="link-info">
+                <p>https://github.com/travelingbear/markdown-editor</p>
+              </div>
+            </div>
+            
+            <div class="about-footer">
+              <p>&copy; 2024 Markdown Editor. Licensed under MIT License.</p>
             </div>
           </div>
         </div>

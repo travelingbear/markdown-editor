@@ -127,6 +127,18 @@ class MarkdownViewer {
     this.markdownToolbar = document.getElementById('markdown-toolbar');
     this.toolbarContent = document.querySelector('.toolbar-content');
     this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
+    
+    // Phase 8.5 elements
+    this.helpStatusBtn = document.getElementById('help-status-btn');
+    this.welcomeHelpBtn = document.getElementById('welcome-help-btn');
+    this.welcomeAboutBtn = document.getElementById('welcome-about-btn');
+    this.welcomeSettingsBtn = document.getElementById('welcome-settings-btn');
+    this.helpModal = document.getElementById('help-modal');
+    this.helpCloseBtn = document.getElementById('help-close-btn');
+    this.helpOverlay = document.querySelector('.help-overlay');
+    this.aboutModal = document.getElementById('about-modal');
+    this.aboutCloseBtn = document.getElementById('about-close-btn');
+    this.aboutOverlay = document.querySelector('.about-overlay');
   }
 
   async initializeAdvancedFeatures() {
@@ -351,6 +363,55 @@ class MarkdownViewer {
       });
     }
     
+    // Phase 8.5 event listeners
+    if (this.helpStatusBtn) {
+      this.helpStatusBtn.addEventListener('click', () => {
+        console.log('[Event] Help status button clicked');
+        this.showHelp();
+      });
+    }
+    
+    if (this.welcomeHelpBtn) {
+      this.welcomeHelpBtn.addEventListener('click', () => {
+        console.log('[Event] Welcome help button clicked');
+        this.showHelp();
+      });
+    }
+    
+    if (this.welcomeAboutBtn) {
+      this.welcomeAboutBtn.addEventListener('click', () => {
+        console.log('[Event] Welcome about button clicked');
+        this.showAbout();
+      });
+    }
+    
+    if (this.welcomeSettingsBtn) {
+      this.welcomeSettingsBtn.addEventListener('click', () => {
+        console.log('[Event] Welcome settings button clicked');
+        this.showEnhancedSettings();
+      });
+    }
+    
+    // Help modal events
+    if (this.helpCloseBtn) {
+      this.helpCloseBtn.addEventListener('click', () => this.hideHelp());
+    }
+    if (this.helpOverlay) {
+      this.helpOverlay.addEventListener('click', () => this.hideHelp());
+    }
+    
+    // About modal events
+    if (this.aboutCloseBtn) {
+      this.aboutCloseBtn.addEventListener('click', () => this.hideAbout());
+    }
+    if (this.aboutOverlay) {
+      this.aboutOverlay.addEventListener('click', () => this.hideAbout());
+    }
+    
+
+    
+
+    
     // Enhanced settings modal events
     if (this.settingsCloseBtn) {
       this.settingsCloseBtn.addEventListener('click', () => this.hideEnhancedSettings());
@@ -571,8 +632,12 @@ class MarkdownViewer {
           this.toggleDistractionFree();
           break;
         case 'Escape':
-          // Close settings modal first, then exit distraction-free mode, then fullscreen
-          if (this.settingsModal && this.settingsModal.style.display === 'flex') {
+          // Close modals first, then exit distraction-free mode, then fullscreen
+          if (this.helpModal && this.helpModal.style.display === 'flex') {
+            this.hideHelp();
+          } else if (this.aboutModal && this.aboutModal.style.display === 'flex') {
+            this.hideAbout();
+          } else if (this.settingsModal && this.settingsModal.style.display === 'flex') {
             this.hideEnhancedSettings();
           } else if (this.isDistractionFree) {
             this.exitDistractionFree();
@@ -2181,6 +2246,19 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.settingsModal.style.display = 'none';
   }
 
+  showAbout() {
+    console.log('[About] About modal requested');
+    this.aboutModal.style.display = 'flex';
+  }
+
+  hideAbout() {
+    this.aboutModal.style.display = 'none';
+  }
+
+
+
+
+
   updateSettingsDisplay() {
     // Update theme buttons
     document.getElementById('theme-light-btn').classList.toggle('active', this.theme === 'light');
@@ -2594,44 +2672,12 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   showHelp() {
-    console.log('[Help] Help dialog requested');
-    const helpText = `Markdown Viewer - Keyboard Shortcuts
+    console.log('[Help] Help modal requested');
+    this.helpModal.style.display = 'flex';
+  }
 
-File Operations:
-• Ctrl+N - New file
-• Ctrl+O - Open file
-• Ctrl+S - Save file
-• Ctrl+Shift+S - Save as
-• Ctrl+W - Close file
-• Ctrl+Q - Quit application
-
-View Modes:
-• Ctrl+1 - Code mode
-• Ctrl+2 - Preview mode
-• Ctrl+3 - Split mode
-
-Export & Print:
-• Ctrl+Shift+E - Export to HTML
-• Ctrl+P - Print current view
-• Ctrl+Shift+P - Print current view
-
-Editor:
-• Ctrl+Shift+I - Toggle suggestions
-• Ctrl+F - Find
-• Ctrl+Shift+H - Find and replace
-• Ctrl+Z - Undo
-• Ctrl+Y - Redo
-
-Other:
-• Ctrl+/ or Ctrl+T - Toggle theme
-• Ctrl+Shift+L - Toggle centered layout
-• Ctrl+, - Settings
-• F1 - This help
-• F5 - Refresh preview
-• F11 - Distraction-free mode
-• Esc - Exit distraction-free mode`;
-    
-    alert(helpText);
+  hideHelp() {
+    this.helpModal.style.display = 'none';
   }
 
   refreshPreview() {

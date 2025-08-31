@@ -21,8 +21,13 @@
         <div class="toolbar-left">
           <button id="new-btn" class="toolbar-btn">📄 New</button>
           <button id="open-btn" class="toolbar-btn">📁 Open</button>
-          <button id="save-btn" class="toolbar-btn">💾 Save</button>
-          <button id="save-as-btn" class="toolbar-btn">💾 Save As</button>
+          <div class="dropdown-container">
+            <button id="save-btn" class="toolbar-btn dropdown-main">💾 Save</button>
+            <button id="save-dropdown-arrow" class="toolbar-btn dropdown-arrow">▼</button>
+            <div id="save-dropdown-menu" class="dropdown-menu">
+              <button id="save-as-btn" class="dropdown-item">Save As</button>
+            </div>
+          </div>
           <button id="close-btn" class="toolbar-btn">❌ Close</button>
         </div>
         <div class="toolbar-center">

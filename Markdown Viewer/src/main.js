@@ -99,6 +99,8 @@ class MarkdownViewer {
     this.newBtn = document.getElementById('new-btn');
     this.openBtn = document.getElementById('open-btn');
     this.saveBtn = document.getElementById('save-btn');
+    this.saveDropdownArrow = document.getElementById('save-dropdown-arrow');
+    this.saveDropdownMenu = document.getElementById('save-dropdown-menu');
     this.saveAsBtn = document.getElementById('save-as-btn');
     this.closeBtn = document.getElementById('close-btn');
     this.themeBtn = document.getElementById('theme-btn');
@@ -305,11 +307,17 @@ class MarkdownViewer {
       console.log('[Event] Open button clicked');
       this.openFile();
     });
+    // Save functionality with dropdown
     this.saveBtn.addEventListener('click', () => {
       console.log('[Event] Save button clicked');
       this.saveFile();
     });
+    this.saveDropdownArrow.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleSaveDropdown();
+    });
     this.saveAsBtn.addEventListener('click', () => {
+      this.hideSaveDropdown();
       console.log('[Event] Save As button clicked');
       this.saveAsFile();
     });
@@ -377,10 +385,11 @@ class MarkdownViewer {
       this.exportToPdf();
     });
     
-    // Close dropdown when clicking outside
+    // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.dropdown-container')) {
         this.hideExportDropdown();
+        this.hideSaveDropdown();
       }
     });
     
@@ -3628,6 +3637,25 @@ Other:
   hideExportDropdown() {
     this.exportDropdownMenu.classList.remove('show');
     this.exportBtn.textContent = 'Export ▼';
+  }
+
+  // Save Dropdown Methods
+  toggleSaveDropdown() {
+    if (this.saveDropdownMenu.classList.contains('show')) {
+      this.hideSaveDropdown();
+    } else {
+      this.showSaveDropdown();
+    }
+  }
+
+  showSaveDropdown() {
+    this.saveDropdownMenu.classList.add('show');
+    this.saveDropdownArrow.textContent = '▲';
+  }
+
+  hideSaveDropdown() {
+    this.saveDropdownMenu.classList.remove('show');
+    this.saveDropdownArrow.textContent = '▼';
   }
 }
 

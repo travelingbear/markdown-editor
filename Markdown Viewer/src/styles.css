@@ -1468,7 +1468,8 @@ body.drag-over .main-content.split-mode::after {
 /* Dropdown Button Styles */
 .dropdown-container {
   position: relative;
-  display: inline-block;
+  display: flex;
+  align-items: center;
 }
 
 .dropdown-toggle {
@@ -1527,6 +1528,37 @@ body.drag-over .main-content.split-mode::after {
 .dropdown-item:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Save dropdown specific styling */
+.dropdown-main {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+.dropdown-arrow {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  padding: 6px 4px !important;
+  font-size: 8px;
+  min-width: 16px;
+  width: 16px;
+  height: 28px;
+  margin-left: -1px;
+  border-left: 1px solid var(--border-secondary) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-arrow:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+#save-dropdown-menu {
+  min-width: 80px;
+  width: auto;
 }
 
 /* Dark theme adjustments */

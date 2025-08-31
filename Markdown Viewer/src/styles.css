@@ -1561,9 +1561,54 @@ body.drag-over .main-content.split-mode::after {
   width: auto;
 }
 
+/* Tooltip Styles */
+#distraction-btn,
+#theme-btn {
+  position: relative;
+}
+
+#distraction-btn:hover::after {
+  content: "Toggle Distraction-Free Mode (F11)";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+  border: 1px solid var(--border-primary);
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+#theme-btn:hover::after {
+  content: "Toggle Theme (Ctrl+T)";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+  border: 1px solid var(--border-primary);
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
 /* Dark theme adjustments */
 [data-theme="dark"] .dropdown-menu {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] #distraction-btn:hover::after,
+[data-theme="dark"] #theme-btn:hover::after {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* Print button styling */

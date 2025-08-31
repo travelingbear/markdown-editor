@@ -103,6 +103,7 @@ class MarkdownViewer {
     this.saveDropdownMenu = document.getElementById('save-dropdown-menu');
     this.saveAsBtn = document.getElementById('save-as-btn');
     this.closeBtn = document.getElementById('close-btn');
+    this.distractionBtn = document.getElementById('distraction-btn');
     this.themeBtn = document.getElementById('theme-btn');
     this.codeBtn = document.getElementById('code-btn');
     this.previewBtn = document.getElementById('preview-btn');
@@ -362,6 +363,9 @@ class MarkdownViewer {
     this.setupMarkdownToolbarEvents();
     
 
+    
+    // Distraction-free mode toggle
+    this.distractionBtn.addEventListener('click', () => this.toggleDistractionFree());
     
     // Theme toggle
     this.themeBtn.addEventListener('click', () => this.toggleTheme());
@@ -2648,6 +2652,9 @@ Other:
     // Ensure current mode class is on body for CSS selectors
     document.body.classList.add(`${this.currentMode}-mode`);
     
+    // Update button state
+    this.distractionBtn.textContent = '■';
+    
     // Update toolbar visibility
     this.updateToolbarVisibility();
     
@@ -2661,6 +2668,9 @@ Other:
     console.log('[UI] Exiting distraction-free mode');
     this.isDistractionFree = false;
     document.body.classList.remove('distraction-free');
+    
+    // Update button state
+    this.distractionBtn.textContent = '☐';
     
     // Update toolbar visibility
     this.updateToolbarVisibility();

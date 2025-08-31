@@ -72,7 +72,7 @@ Built with:
 - [Mermaid](https://mermaid.js.org/) - Diagram rendering
 - [Highlight.js](https://highlightjs.org/) - Syntax highlighting
 
-## 🙏 Buy me a coffee page
+## 🙏 Buy me a coffee?
 
 [buymeacoffee.com/travelingbear](https://buymeacoffee.com/travelingbear)
 

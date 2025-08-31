@@ -36,17 +36,17 @@ A powerful native desktop markdown viewer and editor built with Tauri + Rust + T
 ### Download & Install
 
 #### Windows
-- **MSI Installer**: `Markdown Viewer_1.0.0_x64_en-US.msi` (Recommended)
-- **NSIS Installer**: `Markdown Viewer_1.0.0_x64-setup.exe`
+- **MSI Installer**: `Markdown Viewer_2.0.0_x64_en-US.msi` (Recommended)
+- **NSIS Installer**: `Markdown Viewer_2.0.0_x64-setup.exe`
 - **Portable**: `markdown-viewer.exe`
 
 #### macOS
-- **DMG Package**: `Markdown Viewer_1.0.0_x64.dmg`
+- **DMG Package**: `Markdown Viewer_2.0.0_x64.dmg`
 - **App Bundle**: `Markdown Viewer.app`
 
 #### Linux
-- **AppImage**: `markdown-viewer_1.0.0_amd64.AppImage`
-- **DEB Package**: `markdown-viewer_1.0.0_amd64.deb`
+- **AppImage**: `markdown-viewer_2.0.0_amd64.AppImage`
+- **DEB Package**: `markdown-viewer_2.0.0_amd64.deb`
 
 ### System Requirements
 - **Windows**: Windows 10 (1903) or later

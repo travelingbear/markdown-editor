@@ -51,3 +51,17 @@ Cargo.lock
 # *.dmg
 # *.deb
 # *.AppImage
+
+AI_ASSISTANT_PROMPT.md
+CURRENT_CHALLENGES.md
+DEVELOPMENT_LOG.md
+FUTURE_IMPROVEMENTS_PLAN.md
+LESSONS_LEARNED.md
+manual-file-association.reg
+PROJECT_PLAN.md
+PROJECT_STATUS.md
+RELEASE_CHECKLIST.md
+test-drag-drop.md
+test-export-dropdown.md
+test-images-gifs.md
+vscode_extension.gif

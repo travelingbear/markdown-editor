@@ -42,6 +42,7 @@ class MarkdownViewer {
       left: localStorage.getItem('markdownViewer_marginLeft') || '1in',
       right: localStorage.getItem('markdownViewer_marginRight') || '1in'
     };
+    this.fileHistory = JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]');
     
     const startupStartTime = performance.now();
     console.log('[MarkdownViewer] Phase 4 Constructor started');
@@ -53,6 +54,7 @@ class MarkdownViewer {
     this.updateModeButtons();
     this.applyDefaultTheme();
     this.applyCenteredLayout();
+    this.updateFileHistoryDisplay();
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
     
@@ -103,6 +105,9 @@ class MarkdownViewer {
     this.exportPdfBtn = document.getElementById('export-pdf-btn');
     this.welcomeNewBtn = document.getElementById('welcome-new-btn');
     this.welcomeOpenBtn = document.getElementById('welcome-open-btn');
+    this.fileHistorySection = document.getElementById('file-history-section');
+    this.fileHistoryList = document.getElementById('file-history-list');
+    this.clearHistoryBtn = document.getElementById('clear-history-btn');
   }
 
   async initializeAdvancedFeatures() {
@@ -291,6 +296,13 @@ class MarkdownViewer {
       });
     }
     
+    if (this.clearHistoryBtn) {
+      this.clearHistoryBtn.addEventListener('click', () => {
+        console.log('[Event] Clear history button clicked');
+        this.clearFileHistory();
+      });
+    }
+    
 
     
     // Theme toggle
@@ -399,6 +411,11 @@ class MarkdownViewer {
             break;
           case '/':
             // Toggle theme (Ctrl+/)
+            e.preventDefault();
+            this.toggleTheme();
+            break;
+          case 't':
+            // Toggle theme (Ctrl+T)
             e.preventDefault();
             this.toggleTheme();
             break;
@@ -549,6 +566,7 @@ class MarkdownViewer {
         this.updatePreview();
         this.currentFile = selected;
         this.isDirty = false;
+        this.addToFileHistory(selected);
         this.updateFilename();
         this.updateModeButtons();
         this.setMode(this.defaultMode);
@@ -1077,6 +1095,7 @@ class MarkdownViewer {
             this.updatePreview();
             this.currentFile = null; // No save path for drag-dropped files
             this.isDirty = false; // Don't mark as dirty for successful file open
+            // Note: Don't add to history for drag-dropped files without save path
             this.updateFilename();
             this.updateModeButtons();
             this.setMode(this.defaultMode);
@@ -1963,6 +1982,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
           this.setEditorContent(content);
           this.isLoadingFile = false;
           this.isDirty = false;
+          this.addToFileHistory(startupFile);
           this.showEditor();
           this.updatePreview();
           this.updateFilename();
@@ -1995,6 +2015,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.updatePreview();
       this.currentFile = filePath;
       this.isDirty = false;
+      this.addToFileHistory(filePath);
       this.updateFilename();
       this.updateModeButtons();
       this.setMode(this.defaultMode);
@@ -2315,7 +2336,7 @@ Editor:
 • Ctrl+Y - Redo
 
 Other:
-• Ctrl+/ - Toggle theme
+• Ctrl+/ or Ctrl+T - Toggle theme
 • Ctrl+Shift+L - Toggle centered layout
 • Ctrl+, - Settings
 • F1 - This help
@@ -2542,7 +2563,7 @@ Other:
         if (this.welcomePage && this.welcomePage.style.display !== 'none') {
           const mdFile = filePaths.find(f => /\.(md|markdown|txt)$/i.test(f));
           if (mdFile) {
-            await this.openSpecificFile(mdFile);
+            await this.openSpecificFile(mdFile); // This will add to history
           }
           return;
         }
@@ -2804,6 +2825,86 @@ Other:
     
     this.updatePageLayout();
     console.log(`[Layout] Updated margins:`, margins);
+  }
+
+  addToFileHistory(filePath) {
+    if (!filePath) return;
+    
+    // Remove if already exists
+    this.fileHistory = this.fileHistory.filter(item => item.path !== filePath);
+    
+    // Add to beginning
+    this.fileHistory.unshift({
+      path: filePath,
+      name: filePath.split(/[\\\/]/).pop(),
+      date: new Date().toISOString()
+    });
+    
+    // Keep only last 3
+    this.fileHistory = this.fileHistory.slice(0, 3);
+    
+    // Save to localStorage
+    localStorage.setItem('markdownViewer_fileHistory', JSON.stringify(this.fileHistory));
+    
+    // Update display
+    this.updateFileHistoryDisplay();
+    
+    console.log('[History] Added file to history:', filePath);
+  }
+
+  updateFileHistoryDisplay() {
+    if (!this.fileHistorySection || !this.fileHistoryList) return;
+    
+    if (this.fileHistory.length === 0) {
+      this.fileHistorySection.style.display = 'none';
+      return;
+    }
+    
+    this.fileHistorySection.style.display = 'block';
+    this.fileHistoryList.innerHTML = '';
+    
+    this.fileHistory.forEach(file => {
+      const item = document.createElement('div');
+      item.className = 'file-history-item';
+      item.innerHTML = `
+        <div class="file-info">
+          <div class="file-name">${file.name}</div>
+          <div class="file-path">${file.path}</div>
+        </div>
+        <div class="file-date">${this.formatDate(file.date)}</div>
+      `;
+      
+      item.addEventListener('click', () => {
+        this.openSpecificFile(file.path);
+      });
+      
+      this.fileHistoryList.appendChild(item);
+    });
+    
+    console.log('[History] Updated file history display');
+  }
+
+  formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+  }
+
+  clearFileHistory() {
+    this.fileHistory = [];
+    localStorage.removeItem('markdownViewer_fileHistory');
+    this.updateFileHistoryDisplay();
+    console.log('[History] File history cleared');
   }
 }
 

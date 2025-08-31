@@ -815,7 +815,7 @@ body.centered-layout .preview-pane {
 
 .welcome-content h1 {
   font-size: 3em;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: var(--accent-primary);
   font-weight: 700;
 }
@@ -823,7 +823,7 @@ body.centered-layout .preview-pane {
 .welcome-subtitle {
   font-size: 1.2em;
   color: var(--text-secondary);
-  margin-bottom: 40px;
+  margin-bottom: 30px;
   line-height: 1.4;
 }
 
@@ -831,7 +831,7 @@ body.centered-layout .preview-pane {
   display: flex;
   gap: 16px;
   justify-content: center;
-  margin-bottom: 50px;
+  margin-bottom: 35px;
   flex-wrap: wrap;
 }
 
@@ -901,36 +901,173 @@ body.centered-layout .preview-pane {
 
 .welcome-shortcuts h3 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   color: var(--text-primary);
-  font-size: 1.4em;
+  font-size: 1.3em;
+}
+
+/* File History Styles */
+.file-history {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.file-history h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-size: 1.3em;
+}
+
+.file-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.file-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.file-history-item:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+.file-path {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-date {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .file-history-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.welcome-btn.clear-btn {
+  font-size: 12px;
+  padding: 8px 16px;
+  opacity: 0.8;
+}
+
+.welcome-btn.clear-btn:hover {
+  opacity: 1;
 }
 
 .shortcut-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  font-size: 13px;
 }
 
 .shortcut {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background-color: var(--bg-secondary);
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid var(--border-primary);
+}
+
+/* Responsive shortcuts based on file history */
+#file-history-section:not([style*="none"]) ~ .welcome-shortcuts .shortcut-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+  font-size: 12px;
+}
+
+#file-history-section:not([style*="none"]) ~ .welcome-shortcuts .shortcut {
+  padding: 5px 8px;
+}
+
+/* Window size responsive adjustments */
+@media (max-width: 900px) {
+  .shortcut-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 6px;
+    font-size: 12px;
+  }
+  
+  .shortcut {
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .shortcut-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    font-size: 11px;
+  }
+  
+  .shortcut {
+    padding: 4px 6px;
+  }
 }
 
 kbd {
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border-secondary);
-  border-radius: 4px;
-  padding: 2px 6px;
+  border-radius: 3px;
+  padding: 2px 5px;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 12px;
   color: var(--text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Smaller kbd when file history is present */
+#file-history-section:not([style*="none"]) ~ .welcome-shortcuts kbd {
+  font-size: 10px;
+  padding: 1px 3px;
+}
+
+@media (max-width: 600px) {
+  kbd {
+    font-size: 10px;
+    padding: 1px 3px;
+  }
 }
 
 /* Dark theme adjustments for welcome page */

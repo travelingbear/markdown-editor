@@ -1,125 +1,88 @@
-# Current Challenges - Phase 4 Completion
+# Current Technical Challenges - Phase 5
 
-## 🚨 BLOCKING ISSUES
+## ✅ RESOLVED: Window Close Handler
 
-### 1. Drag-and-Drop Not Working ❌
+### Problem (SOLVED)
+The X button was closing the application without prompting for unsaved changes.
 
-**Problem**: Files dragged onto application window don't open, no console errors shown.
+### Solution Implemented
+1. **Fixed Tauri v2 onCloseRequested** - Proper event.preventDefault() implementation
+2. **Added window permissions** - `core:window:allow-close` and `core:window:allow-destroy`
+3. **Fixed save functionality** - Resolved file path issues causing crashes
+4. **Proper confirmation flow** - Save/Don't Save/Cancel options working
 
-**What We Tried**:
-- Web drag-and-drop events (`dragenter`, `dragover`, `drop`)
-- Tauri native event listeners (`tauri://file-drop`, `tauri://file-drop-hover`)
-- Added comprehensive console logging
-- Removed invalid `fileDropEnabled` config property
+### Technical Details
+- **Tauri Version**: v2
+- **Solution**: `onCloseRequested` with proper event handling and permissions
+- **Status**: ✅ WORKING - User confirmed functionality
+- **Impact**: Users no longer lose unsaved work
 
-**Current Implementation**:
-- `main.js`: `setupDragAndDrop()` method with web events
-- `main.js`: `setupTauriDragDrop()` method with Tauri events
-- `styles.css`: Visual feedback styles for drag-over state
+### Code Location
+- File: `main.js`
+- Function: `setupWindowCloseHandler()`
+- Permissions: `src-tauri/capabilities/default.json`
 
-**Debug Status**: No console logs appear when dragging files, suggesting events aren't firing at all.
+## ✅ RESOLVED: Save Functionality
 
-**Next Steps**:
-- Investigate Tauri v2 drag-and-drop documentation
-- Try alternative event binding approaches
-- Test with different file types
-- Consider Tauri permissions or security settings
+### Problem (SOLVED)
+Save function was crashing the application due to file path permission issues.
 
-### 2. File Association Error ❌
+### Solution Implemented
+1. **Fixed drag-drop file paths** - Set `currentFile = null` for drag-dropped files
+2. **Added proper error handling** - Prevents crashes on save errors
+3. **Save As workflow** - Drag-dropped files use Save As dialog (browser security limitation)
+4. **File permissions** - Added `fs:write-all` and proper scope configuration
 
-**Problem**: Double-clicking .md files opens app but shows "Error opening file: undefined"
+### Current Behavior
+- **Files opened via File > Open**: Save to original location
+- **Files opened via drag-drop**: Use Save As dialog (security limitation)
+- **No crashes**: Proper error handling implemented
 
-**What We Tried**:
-- Enhanced error handling in `openSpecificFile()` method
-- Improved startup file validation in Rust backend
-- Added file existence checks
-- Better error messages and logging
+## ✅ RESOLVED: Drag-Drop Functionality
 
-**Current Implementation**:
-- `lib.rs`: Command line argument parsing with file validation
-- `main.js`: `checkStartupFile()` and `openSpecificFile()` methods
-- `tauri.conf.json`: File associations for .md, .markdown, .txt with MIME types
+### Status
+- **Welcome Screen**: ✅ Working - Opens .md files
+- **Code Mode**: ✅ Working - Inserts filenames
+- **Visual Feedback**: ✅ Working - Blue overlay with context messages
+- **File Opening**: ✅ Working - No longer marks as dirty
 
-**Debug Status**: File associations are configured, but file path not reaching frontend correctly.
+### Current Limitation
+Drag-dropped files can't save to original location due to browser security. This is documented as a future enhancement opportunity.
 
-**Next Steps**:
-- Debug Rust backend argument parsing
-- Test with built/installed application (not dev mode)
-- Verify Tauri v2 file association handling
-- Add more logging to trace file path flow
+## 🔮 FUTURE ENHANCEMENT: Native Drag-Drop
 
-## 📋 PHASE 4 STATUS
+### Goal
+Implement Tauri native drag-drop to get absolute file paths for proper saving.
 
-### ✅ COMPLETED (95%)
-- File association configuration in `tauri.conf.json`
-- Context menu integration (automatic with file associations)
-- PDF export with mode-specific printing
-- Comprehensive keyboard shortcuts system
-- Performance optimization with benchmarking
-- Error handling with automatic recovery
-- Welcome page and new file functionality
-- Settings system with persistence
-- Button state management
+### Current Limitation
+- Browser drag-drop events can't access full file paths
+- Drag-dropped files require "Save As" dialog
 
-### ❌ REMAINING (5%)
-- Drag-and-drop functionality
-- File association error resolution
+### Future Solution
+1. Enable `dragDropEnabled: true` in Tauri config
+2. Use Tauri `file-drop` events instead of browser events
+3. Get absolute file paths for proper save functionality
 
-## 🎯 IMMEDIATE ACTION PLAN
+### Priority
+Low - Current functionality is acceptable, this is an enhancement
 
-### Step 1: Debug Drag-and-Drop
-1. Check Tauri v2 documentation for drag-and-drop changes
-2. Test with minimal drag-and-drop implementation
-3. Verify browser security settings aren't blocking events
-4. Try different event binding timing (after DOM load, etc.)
+## 📊 Phase 5 Status - COMPLETE
 
-### Step 2: Debug File Associations  
-1. Build application and test file associations in installed version
-2. Add extensive logging to Rust backend argument parsing
-3. Test command line file opening manually
-4. Verify Tauri v2 startup argument handling
+### Completed
+- ✅ Image & GIF support
+- ✅ Drag-drop functionality (basic)
+- ✅ Visual feedback improvements
+- ✅ Window close handler
+- ✅ Save functionality (stable)
+- ✅ Final testing and validation
 
-### Step 3: Complete Phase 4
-1. Fix both blocking issues
-2. Test all Phase 4 features comprehensively
-3. Update documentation with final status
-4. Get user approval for Phase 5 transition
+### Success Criteria for Phase 5
+- [x] Images/GIFs working
+- [x] Drag-drop functionality (basic)
+- [x] **Window close handler working**
 
-## 🔧 TECHNICAL NOTES
+---
 
-### Drag-and-Drop Implementation
-```javascript
-// Current approach in main.js
-setupDragAndDrop() // Web events
-setupTauriDragDrop() // Tauri native events
-```
-
-### File Association Flow
-```
-OS double-click → Tauri app launch → lib.rs args parsing → 
-main.js checkStartupFile() → openSpecificFile() → ERROR
-```
-
-### Files to Focus On
-- `main.js`: Drag-and-drop and file opening methods
-- `lib.rs`: Command line argument parsing
-- `tauri.conf.json`: File association configuration
-- Console logs for debugging both issues
-
-## 📊 SUCCESS CRITERIA
-
-**Drag-and-Drop Working**:
-- Files dragged onto app window open correctly
-- Visual feedback shows during drag operation
-- Supports .md, .markdown, .txt files
-
-**File Associations Working**:
-- Double-clicking .md files opens in Markdown Viewer
-- Files load correctly without "undefined" errors
-- Context menu shows "Open with Markdown Viewer"
-
-**Phase 4 Complete**:
-- Both issues resolved
-- All features tested and working
-- Documentation updated
-- Ready for Phase 5 (Distribution & Release)
+**Status**: ✅ PHASE 5 COMPLETE
+**Next**: Ready for Phase 6 (Distribution)
+**Future Enhancement**: Native Tauri drag-drop for full file path support

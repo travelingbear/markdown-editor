@@ -627,6 +627,79 @@ body {
   padding: 0;
 }
 
+/* Image Support - Including GIFs */
+.preview-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 16px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.3s ease;
+}
+
+[data-theme="dark"] .preview-content img {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+/* Image Loading States */
+.preview-content img.markdown-image {
+  opacity: 0.8;
+}
+
+.preview-content img.local-image {
+  opacity: 1;
+  border: 2px solid var(--accent-primary);
+}
+
+.preview-content img.remote-image {
+  opacity: 1;
+  border: 2px solid #28a745;
+}
+
+.preview-content img.image-error {
+  opacity: 0.5;
+  border: 2px solid #f85149;
+  background-color: rgba(248, 81, 73, 0.1);
+  position: relative;
+}
+
+.preview-content img.image-error::after {
+  content: "⚠️ Image not found";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(248, 81, 73, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Image hover effects */
+.preview-content img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .preview-content img:hover {
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+}
+
+/* GIF specific styling */
+.preview-content img[src$=".gif"],
+.preview-content img[src*=".gif?"] {
+  border: 2px solid #ff6b35;
+}
+
+.preview-content img[src$=".gif"]:hover,
+.preview-content img[src*=".gif?"]:hover {
+  border-color: #e55a2b;
+}
+
 /* Improved Blockquotes */
 .preview-content blockquote {
   background-color: var(--bg-secondary);
@@ -970,28 +1043,155 @@ kbd {
   }
 }
 
-/* Drag and Drop Styles */
+/* Enhanced Drag and Drop Styles */
 body.drag-over {
-  background-color: var(--bg-secondary);
+  position: relative;
 }
 
-body.drag-over::after {
-  content: "Drop .md file here to open";
+body.drag-over::before {
+  content: '';
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(9, 105, 218, 0.1);
-  border: 3px dashed var(--accent-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--accent-primary);
-  z-index: 9999;
+  border: 4px dashed var(--accent-primary);
+  z-index: 10000;
   pointer-events: none;
+  animation: dragPulse 1s ease-in-out infinite alternate;
+}
+
+/* Context-specific drag messages */
+body.drag-over .welcome-page[style*="flex"]::after {
+  content: "📄 Drop .md files to open";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(9, 105, 218, 0.95);
+  color: white;
+  padding: 24px 48px;
+  border-radius: 16px;
+  font-size: 28px;
+  font-weight: 700;
+  z-index: 10001;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+body.drag-over .main-content.code-mode::after {
+  content: "📁 Drop files to insert absolute paths";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(9, 105, 218, 0.95);
+  color: white;
+  padding: 24px 48px;
+  border-radius: 16px;
+  font-size: 28px;
+  font-weight: 700;
+  z-index: 10001;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+body.drag-over .main-content.preview-mode::after,
+body.drag-over .main-content.split-mode::after {
+  content: "⚠️ Switch to Code mode to insert file paths";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(248, 81, 73, 0.95);
+  color: white;
+  padding: 24px 48px;
+  border-radius: 16px;
+  font-size: 24px;
+  font-weight: 700;
+  z-index: 10001;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+
+
+@keyframes dragPulse {
+  from {
+    opacity: 0.6;
+    border-color: var(--accent-primary);
+  }
+  to {
+    opacity: 0.9;
+    border-color: var(--accent-hover);
+  }
+}
+
+[data-theme="dark"] body.drag-over::before {
+  background: rgba(47, 129, 247, 0.15);
+  border-color: var(--accent-primary);
+}
+
+[data-theme="dark"] body.drag-over .welcome-page[style*="flex"]::after,
+[data-theme="dark"] body.drag-over .main-content::after {
+  background: rgba(47, 129, 247, 0.95);
+  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+}
+
+/* Debug Drop Zone */
+.debug-drop-zone {
+  margin: 30px 0;
+  padding: 40px;
+  border: 3px dashed var(--border-primary);
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.debug-drop-zone:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.debug-drop-zone.drag-over {
+  border-color: var(--accent-primary);
+  background-color: rgba(9, 105, 218, 0.1);
+  transform: scale(1.02);
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.drop-icon {
+  font-size: 48px;
+  opacity: 0.7;
+}
+
+.drop-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drop-status {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.debug-drop-zone.drag-over .drop-status {
+  color: var(--accent-primary);
+  font-weight: 600;
 }
 
 /* Print button styling */

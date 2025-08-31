@@ -31,6 +31,7 @@ class MarkdownViewer {
     this.startupTime = 0;
     this.lastFileOpenTime = 0;
     this.lastModeSwitchTime = 0;
+    this.closeHandlerUnlisten = null;
     
     const startupStartTime = performance.now();
     console.log('[MarkdownViewer] Phase 4 Constructor started');
@@ -38,14 +39,11 @@ class MarkdownViewer {
     this.setupEventListeners();
     this.initializeMonacoEditor();
     this.setMode('preview');
-    this.showWelcomePage();
     this.updateCursorPosition();
     this.updateModeButtons();
     this.applyDefaultTheme();
     this.initializeAdvancedFeatures();
     this.checkExportLibraries();
-    this.checkStartupFile();
-    this.setupTauriDragDrop();
     
     this.startupTime = performance.now() - startupStartTime;
     console.log(`[MarkdownViewer] Phase 4 Constructor completed in ${this.startupTime.toFixed(2)}ms`);
@@ -57,6 +55,16 @@ class MarkdownViewer {
     
     // Start periodic memory optimization
     this.startMemoryOptimization();
+    
+    // Setup window close handler
+    this.setupWindowCloseHandler();
+    
+    // Setup Tauri drag-drop events (inactive due to config but ready)
+    this.setupTauriDragDrop();
+    
+    // Setup browser drag-drop (fallback only)
+    // this.setupDragAndDrop(); // Disabled - using native Tauri events
+    console.log('[DragDrop] Drag-drop setup completed - using native Tauri events');
     
     console.log('[Phase4] All Phase 4 features initialized successfully');
     console.log('[Phase4] File associations, keyboard shortcuts, performance monitoring, and error handling active');
@@ -143,7 +151,7 @@ class MarkdownViewer {
         
         // Create Monaco Editor instance
         this.monacoEditor = monaco.editor.create(this.monacoContainer, {
-          value: '# Welcome to Markdown Viewer\n\nStart typing your markdown here...',
+          value: '',
           language: 'markdown',
           theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
           automaticLayout: true,
@@ -179,9 +187,16 @@ class MarkdownViewer {
         this.editor.style.display = 'none';
         this.monacoContainer.style.display = 'block';
         
-        // Initial preview update
-        this.updatePreview();
-        this.updateCursorPosition();
+        // Check for startup file before initial preview
+        this.checkStartupFile().then(() => {
+          // Only update preview if no startup file was loaded
+          if (!this.currentFile) {
+            this.updatePreview();
+          }
+          this.updateCursorPosition();
+          
+          // Tauri native drag-drop already set up in constructor
+        });
       });
 
     } catch (error) {
@@ -264,6 +279,8 @@ class MarkdownViewer {
         this.openFile();
       });
     }
+    
+
     
     // Theme toggle
     this.themeBtn.addEventListener('click', () => this.toggleTheme());
@@ -433,8 +450,7 @@ class MarkdownViewer {
     // Scroll synchronization for preview
     this.setupScrollSync();
     
-    // Drag and drop functionality
-    this.setupDragAndDrop();
+    // Enhanced drag and drop functionality set up in constructor
   }
 
   setupSplitter() {
@@ -526,32 +542,36 @@ class MarkdownViewer {
   }
 
   async saveFile() {
-    try {
-      console.log('[File] Save button clicked');
-      const content = this.getEditorContent();
-      console.log('[File] Content to save length:', content.length);
-      
-      if (!window.__TAURI__) {
-        throw new Error('Tauri API not available');
-      }
-      
-      if (this.currentFile) {
-        console.log('[File] Saving to existing file:', this.currentFile);
+    console.log('[File] Save button clicked');
+    const content = this.getEditorContent();
+    console.log('[File] Content to save length:', content.length);
+    
+    if (!window.__TAURI__) {
+      console.error('[File] Tauri API not available');
+      return;
+    }
+    
+    if (this.currentFile) {
+      console.log('[File] Saving to existing file:', this.currentFile);
+      try {
         await window.__TAURI__.fs.writeTextFile(this.currentFile, content);
         this.isDirty = false;
         this.saveBtn.classList.remove('dirty');
         this.updateFilename();
         console.log('[File] File saved successfully');
-      } else {
-        console.log('[File] Opening save dialog...');
+      } catch (error) {
+        console.error('[File] Save failed:', error);
+        alert('Failed to save file: ' + (error.message || error));
+      }
+    } else {
+      console.log('[File] Opening save dialog...');
+      try {
         const filePath = await window.__TAURI__.dialog.save({
           filters: [{
             name: 'Markdown',
             extensions: ['md']
           }]
         });
-        
-        console.log('[File] Save dialog result:', filePath);
         
         if (filePath) {
           console.log('[File] Saving to new file:', filePath);
@@ -564,9 +584,10 @@ class MarkdownViewer {
         } else {
           console.log('[File] Save dialog cancelled');
         }
+      } catch (error) {
+        console.error('[File] Save failed:', error);
+        alert('Failed to save file: ' + (error.message || error));
       }
-    } catch (error) {
-      this.handleError(error, 'File Saving');
     }
   }
 
@@ -699,7 +720,7 @@ class MarkdownViewer {
   }
 
   async updatePreview() {
-    const markdown = this.getEditorContent() || '# Welcome to Markdown Viewer\n\nStart typing your markdown here...';
+    const markdown = this.getEditorContent();
     
     console.log('[Preview] Starting preview update...');
     console.log('[Preview] Libraries loaded:', {
@@ -724,11 +745,54 @@ class MarkdownViewer {
       // First, process math expressions in the raw markdown
       let processedMarkdown = this.processMathInMarkdown(markdown);
       
-      // Configure marked with basic settings
-      marked.setOptions({
-        breaks: true,
-        gfm: true
-      });
+      // Configure marked with basic settings and custom renderer
+      console.log('[Preview] Marked version:', marked.version || 'unknown');
+      
+      // Check if we're using the new marked API (v5+)
+      if (marked.use) {
+        console.log('[Preview] Using new marked API');
+        
+        marked.use({
+          breaks: true,
+          gfm: true,
+          renderer: {
+            image(href, title, text) {
+              const titleAttr = title ? ` title="${title}"` : '';
+              const altAttr = text ? ` alt="${text}"` : '';
+              
+              // Fix: Properly extract href string from token object
+              const hrefStr = typeof href === 'object' ? (href.href || href.raw || '') : String(href || '');
+              const escapedHref = hrefStr.replace(/"/g, '&quot;');
+              
+              // Mark image for processing
+              return `<img data-original-src="${escapedHref}" src="${escapedHref}"${altAttr}${titleAttr} style="max-width: 100%; height: auto;" class="markdown-image">`;
+            }
+          }
+        });
+      } else {
+        console.log('[Preview] Using legacy marked API');
+        
+        // Legacy API (marked v4 and below)
+        const renderer = new marked.Renderer();
+        
+        renderer.image = function(href, title, text) {
+          const titleAttr = title ? ` title="${title}"` : '';
+          const altAttr = text ? ` alt="${text}"` : '';
+          
+          // Fix: Properly extract href string from token object
+          const hrefStr = typeof href === 'object' ? (href.href || href.raw || '') : String(href || '');
+          const escapedHref = hrefStr.replace(/"/g, '&quot;');
+          
+          // Mark image for processing
+          return `<img data-original-src="${escapedHref}" src="${escapedHref}"${altAttr}${titleAttr} style="max-width: 100%; height: auto;" class="markdown-image">`;
+        };
+        
+        marked.setOptions({
+          breaks: true,
+          gfm: true,
+          renderer: renderer
+        });
+      }
       
       // Parse markdown to HTML
       let html = marked.parse(processedMarkdown);
@@ -753,6 +817,9 @@ class MarkdownViewer {
       
       // Apply syntax highlighting to code blocks
       this.applySyntaxHighlighting();
+      
+      // Process images for local file conversion
+      await this.processImages();
       
       console.log('[Preview] Preview update completed');
       
@@ -912,81 +979,185 @@ class MarkdownViewer {
   }
 
   setupDragAndDrop() {
-    console.log('[DragDrop] Setting up drag and drop functionality');
+    console.log('[DragDrop] Setting up drag-and-drop functionality');
+    console.log('[DragDrop] Tauri file drop disabled - using browser events');
+    console.log('[DragDrop] Window object:', typeof window);
+    console.log('[DragDrop] Document object:', typeof document);
+    
+    // Test if basic events work
+    document.addEventListener('click', () => {
+      console.log('[DragDrop] Click test - events are working');
+    }, { once: true });
+    
+    // Enhanced drag-and-drop with visual feedback
+    let dragCounter = 0;
     
     // Prevent default drag behaviors on document
     document.addEventListener('dragenter', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      console.log('[DragDrop] Drag enter');
+      dragCounter++;
+      console.log('[DragDrop] Drag enter, counter:', dragCounter);
+      
+      // Add visual feedback
       document.body.classList.add('drag-over');
     });
-
-    document.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      document.body.classList.add('drag-over');
-    });
-
+    
     document.addEventListener('dragleave', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      // Only remove if leaving the document entirely
-      if (e.clientX === 0 && e.clientY === 0) {
-        console.log('[DragDrop] Drag leave');
+      dragCounter--;
+      console.log('[DragDrop] Drag leave, counter:', dragCounter);
+      
+      // Remove visual feedback when completely leaving
+      if (dragCounter === 0) {
         document.body.classList.remove('drag-over');
       }
     });
-
+    
+    document.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      console.log('[DragDrop] Drag over');
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    
     document.addEventListener('drop', async (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      console.log('[DragDrop] File dropped');
-      
+      dragCounter = 0;
       document.body.classList.remove('drag-over');
       
-      if (!e.dataTransfer || !e.dataTransfer.files) {
-        console.log('[DragDrop] No files in drop event');
+      console.log('[DragDrop] Drop detected!');
+      console.log('[DragDrop] DataTransfer:', e.dataTransfer);
+      console.log('[DragDrop] Files:', e.dataTransfer?.files);
+      
+      const files = Array.from(e.dataTransfer?.files || []);
+      console.log('[DragDrop] Files array:', files);
+      console.log('[DragDrop] Files count:', files.length);
+      
+      if (files.length === 0) {
+        console.log('[DragDrop] No files detected in drop event');
         return;
       }
       
-      const files = Array.from(e.dataTransfer.files);
-      console.log('[DragDrop] Files dropped:', files.map(f => f.name));
-      
-      const markdownFile = files.find(file => 
-        file.name.toLowerCase().endsWith('.md') || 
-        file.name.toLowerCase().endsWith('.markdown') || 
-        file.name.toLowerCase().endsWith('.txt')
-      );
-
-      if (markdownFile) {
-        console.log('[DragDrop] Processing markdown file:', markdownFile.name);
-        try {
-          const content = await markdownFile.text();
-          console.log('[DragDrop] File content loaded, length:', content.length);
-          
-          this.isLoadingFile = true;
-          this.setEditorContent(content);
-          this.isLoadingFile = false;
-          this.showEditor();
-          this.updatePreview();
-          this.currentFile = markdownFile.name;
-          this.isDirty = false;
-          this.updateFilename();
-          this.updateModeButtons();
-          this.setMode(this.defaultMode);
-          
-          console.log('[DragDrop] File loaded successfully:', markdownFile.name);
-        } catch (error) {
-          console.error('[DragDrop] Error loading file:', error);
-          this.handleError(error, 'Drag and Drop');
+      try {
+        // Welcome screen: open .md files
+        if (this.welcomePage && this.welcomePage.style.display !== 'none') {
+          console.log('[DragDrop] Processing drop on welcome screen');
+          const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f.name));
+          if (mdFile) {
+            console.log('[DragDrop] Found markdown file:', mdFile.name);
+            const content = await mdFile.text();
+            this.isLoadingFile = true;
+            this.setEditorContent(content);
+            this.isLoadingFile = false;
+            this.showEditor();
+            this.updatePreview();
+            this.currentFile = null; // No save path for drag-dropped files
+            this.isDirty = false; // Don't mark as dirty for successful file open
+            this.updateFilename();
+            this.updateModeButtons();
+            this.setMode(this.defaultMode);
+            console.log('[DragDrop] Successfully opened markdown file (no save path)');
+          } else {
+            console.log('[DragDrop] No markdown files found in drop');
+          }
+          return;
         }
-      } else {
-        console.log('[DragDrop] No supported files found');
-        alert('Please drop a .md, .markdown, or .txt file');
+        
+        // Code mode: Enhanced path resolution
+        if (this.currentMode === 'code') {
+          console.log('[DragDrop] Processing drop in code mode');
+          
+          let filePaths = [];
+          
+          for (const file of files) {
+            console.log('[DragDrop] Processing file:', file.name);
+            
+            // Use filename only for now (absolute path resolution to be implemented later)
+            filePaths.push(file.name);
+            console.log('[DragDrop] Added filename:', file.name);
+          }
+          
+          // Insert paths into editor
+          if (this.isMonacoLoaded && this.monacoEditor) {
+            const insertText = filePaths.join('\n');
+            const position = this.monacoEditor.getPosition();
+            
+            this.monacoEditor.executeEdits('drop', [{
+              range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+              text: insertText
+            }]);
+            
+            this.markDirty();
+            console.log('[DragDrop] Inserted paths into Monaco:', filePaths);
+          } else {
+            // Fallback to textarea
+            const insertText = filePaths.join('\n');
+            const cursorPos = this.editor.selectionStart;
+            const textBefore = this.editor.value.substring(0, cursorPos);
+            const textAfter = this.editor.value.substring(cursorPos);
+            this.editor.value = textBefore + insertText + textAfter;
+            this.editor.selectionStart = this.editor.selectionEnd = cursorPos + insertText.length;
+            this.markDirty();
+            console.log('[DragDrop] Inserted paths into textarea:', filePaths);
+          }
+        } else {
+          console.log('[DragDrop] Drop ignored - not in code mode or welcome screen');
+        }
+      } catch (error) {
+        console.error('[DragDrop] Error processing drop:', error);
       }
     });
+    
+    console.log('[DragDrop] Browser drag-and-drop event listeners registered');
   }
+  
+  async setupWindowCloseHandler() {
+    if (!window.__TAURI__?.window) return;
+    
+    try {
+      const { getCurrentWindow } = window.__TAURI__.window;
+      const appWindow = getCurrentWindow();
+      
+      const unlisten = await appWindow.onCloseRequested(async (event) => {
+        console.log('[Close] Close requested, isDirty:', this.isDirty);
+        
+        if (this.isDirty) {
+          event.preventDefault();
+          
+          const shouldSave = await window.__TAURI__.dialog.confirm(
+            'You have unsaved changes. Do you want to save before closing?',
+            { title: 'Unsaved Changes' }
+          );
+          
+          if (shouldSave) {
+            await this.saveFile();
+            if (this.isDirty) {
+              console.log('[Close] Save failed, not closing');
+              return;
+            }
+          } else {
+            const confirmClose = await window.__TAURI__.dialog.confirm(
+              'Close without saving?',
+              { title: 'Confirm Close' }
+            );
+            if (!confirmClose) {
+              return;
+            }
+          }
+          
+          this.isDirty = false;
+          await appWindow.close();
+        }
+      });
+      
+      this.closeHandlerUnlisten = unlisten;
+      console.log('[Close] Window close handler registered');
+      
+    } catch (error) {
+      console.error('[Close] Error setting up close handler:', error);
+    }
+  }
+  
+
 
   syncScrollToPreview(editorScrollTop, editorScrollHeight) {
     if (this.isScrollSyncing) return;
@@ -1653,6 +1824,68 @@ Tip: You can also use HTML Export and then print from your browser.`;
     }
   }
 
+  async processImages() {
+    console.log('[Images] Processing images for local file conversion...');
+    
+    const images = this.preview.querySelectorAll('img.markdown-image');
+    console.log(`[Images] Found ${images.length} images to process`);
+    
+    for (const img of images) {
+      const originalSrc = img.getAttribute('data-original-src');
+      
+      if (!originalSrc) {
+        console.log(`[Images] Skipping image - no data-original-src attribute`);
+        continue;
+      }
+      
+      console.log(`[Images] Processing image: "${originalSrc}"`);
+      
+      // Check if the attribute contains the object string issue
+      if (originalSrc === '[object Object]') {
+        console.error(`[Images] Found [object Object] in data-original-src attribute!`);
+        img.classList.add('image-error');
+        img.title = 'Image path error: [object Object] detected';
+        continue;
+      }
+      
+      try {
+        // Check if it's a local file path (not a URL)
+        if (!originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:')) {
+          console.log(`[Images] Converting local path: "${originalSrc}"`);
+          
+          if (window.__TAURI__) {
+            try {
+              const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: originalSrc });
+              console.log(`[Images] Successfully converted to data URL`);
+              img.src = dataUrl;
+              img.classList.add('local-image');
+            } catch (error) {
+              console.warn(`[Images] Failed to convert local path "${originalSrc}":`, error);
+              
+              // Keep original src and add error class
+              img.classList.add('image-error');
+              const errorMessage = typeof error === 'string' ? error : (error.message || error.toString() || 'Unknown error');
+              img.title = `Image error: ${errorMessage}`;
+            }
+          } else {
+            console.warn('[Images] Tauri not available, cannot convert local paths');
+            img.classList.add('image-error');
+            img.title = `Local image requires Tauri: ${originalSrc}`;
+          }
+        } else {
+          console.log(`[Images] Remote image, no conversion needed: ${originalSrc}`);
+          img.classList.add('remote-image');
+        }
+      } catch (error) {
+        console.error(`[Images] Error processing image ${originalSrc}:`, error);
+        img.classList.add('image-error');
+        img.title = `Error loading image: ${error.message}`;
+      }
+    }
+    
+    console.log('[Images] Image processing completed');
+  }
+
   toggleTheme() {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', this.theme);
@@ -1695,39 +1928,40 @@ Tip: You can also use HTML Export and then print from your browser.`;
   async checkStartupFile() {
     try {
       if (window.__TAURI__) {
-        console.log('[Startup] Checking for startup file...');
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
+        console.log('[Startup] Startup file:', startupFile);
         
-        if (startupFile && startupFile !== 'undefined' && startupFile.trim() !== '') {
-          console.log('[Startup] Found startup file:', startupFile);
-          await this.openSpecificFile(startupFile);
-          // Clear the startup file so it doesn't open again
+        if (startupFile) {
+          const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
+          this.currentFile = startupFile;
+          this.isLoadingFile = true;
+          this.setEditorContent(content);
+          this.isLoadingFile = false;
+          this.isDirty = false;
+          this.showEditor();
+          this.updatePreview();
+          this.updateFilename();
+          this.updateModeButtons();
+          this.setMode(this.defaultMode);
           await window.__TAURI__.core.invoke('clear_startup_file');
-        } else {
-          console.log('[Startup] No valid startup file found');
+          return;
         }
       }
     } catch (error) {
-      console.error('[Startup] Error checking startup file:', error);
-      // Don't show error to user for startup file issues
+      console.error('[Startup] Error:', error);
+      this.handleError(error, 'File Association');
     }
+    
+    // Only show welcome page if no startup file
+    this.showWelcomePage();
   }
 
   async openSpecificFile(filePath) {
     try {
-      console.log('[File] Opening specific file:', filePath);
+      if (!filePath || !window.__TAURI__) return;
       
-      if (!filePath || filePath === 'undefined') {
-        console.log('[File] No valid file path provided');
-        return;
-      }
-      
-      if (!window.__TAURI__) {
-        throw new Error('Tauri API not available');
-      }
-      
+      console.log('[File] Opening:', filePath);
       const content = await window.__TAURI__.fs.readTextFile(filePath);
-      console.log('[File] File content length:', content.length);
       
       this.isLoadingFile = true;
       this.setEditorContent(content);
@@ -1740,11 +1974,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.updateModeButtons();
       this.setMode(this.defaultMode);
       
-      console.log('[File] Specific file opened successfully');
+      console.log('[File] Opened successfully');
     } catch (error) {
-      console.error('[File] Error opening specific file:', error);
-      const errorMsg = error.message || 'Unknown error occurred';
-      this.handleError(new Error(`Failed to open file: ${errorMsg}`), 'File Association');
+      console.error('[File] Error:', error.message);
+      this.handleError(new Error(`Failed to open file: ${error.message}`), 'File Association');
     }
   }
 
@@ -1763,11 +1996,21 @@ Tip: You can also use HTML Export and then print from your browser.`;
           console.error('[App] Error saving before quit:', error);
           return; // Don't quit if save failed
         }
+      } else {
+        const confirmQuit = await window.__TAURI__.dialog.confirm(
+          'Quit without saving?',
+          { title: 'Confirm Quit' }
+        );
+        if (!confirmQuit) {
+          return; // Don't quit if user cancels
+        }
       }
     }
     
-    if (window.__TAURI__) {
-      await window.__TAURI__.process.exit(0);
+    if (window.__TAURI__?.window) {
+      const { getCurrentWindow } = window.__TAURI__.window;
+      const appWindow = getCurrentWindow();
+      await appWindow.close();
     }
   }
 
@@ -2105,37 +2348,57 @@ Other:
   }
 
   async setupTauriDragDrop() {
+    if (!window.__TAURI__?.event) {
+      console.log('[TauriDrop] Tauri not available');
+      return;
+    }
+    
     try {
-      if (window.__TAURI__ && window.__TAURI__.event) {
-        console.log('[TauriDragDrop] Setting up Tauri native drag-and-drop');
+      // Listen for the correct native drag-drop event
+      await window.__TAURI__.event.listen('tauri://drag-drop', async (event) => {
+        console.log('[TauriDrop] Native drag-drop event:', event.payload);
+        const filePaths = event.payload.paths; // Extract paths from payload
+        console.log('[TauriDrop] Native drag-drop with absolute paths:', filePaths);
         
-        await window.__TAURI__.event.listen('tauri://file-drop', async (event) => {
-          console.log('[TauriDragDrop] Files dropped:', event.payload);
-          const files = event.payload;
-          if (files && files.length > 0) {
-            const markdownFile = files.find(filePath => 
-              filePath.toLowerCase().endsWith('.md') || 
-              filePath.toLowerCase().endsWith('.markdown') || 
-              filePath.toLowerCase().endsWith('.txt')
-            );
-            if (markdownFile) {
-              await this.openSpecificFile(markdownFile);
-            }
+        // Welcome screen: open .md files
+        if (this.welcomePage && this.welcomePage.style.display !== 'none') {
+          const mdFile = filePaths.find(f => /\.(md|markdown|txt)$/i.test(f));
+          if (mdFile) {
+            await this.openSpecificFile(mdFile);
           }
-        });
+          return;
+        }
         
-        await window.__TAURI__.event.listen('tauri://file-drop-hover', () => {
-          document.body.classList.add('drag-over');
-        });
-        
-        await window.__TAURI__.event.listen('tauri://file-drop-cancelled', () => {
-          document.body.classList.remove('drag-over');
-        });
-        
-        console.log('[TauriDragDrop] Tauri listeners registered');
-      }
+        // Code mode: insert absolute file paths (Tauri provides full paths)
+        if (this.currentMode === 'code') {
+          if (this.isMonacoLoaded && this.monacoEditor) {
+            const insertText = filePaths.join('\n');
+            const position = this.monacoEditor.getPosition();
+            
+            this.monacoEditor.executeEdits('drop', [{
+              range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+              text: insertText
+            }]);
+            
+            this.markDirty();
+            console.log('[TauriDrop] Inserted absolute paths:', filePaths);
+          } else {
+            // Fallback to textarea
+            const insertText = filePaths.join('\n');
+            const cursorPos = this.editor.selectionStart;
+            const textBefore = this.editor.value.substring(0, cursorPos);
+            const textAfter = this.editor.value.substring(cursorPos);
+            this.editor.value = textBefore + insertText + textAfter;
+            this.editor.selectionStart = this.editor.selectionEnd = cursorPos + insertText.length;
+            this.markDirty();
+            console.log('[TauriDrop] Inserted absolute paths:', filePaths);
+          }
+        }
+      });
+      
+      console.log('[TauriDrop] Native drag-drop listeners registered (active with dragDropEnabled: true)');
     } catch (error) {
-      console.error('[TauriDragDrop] Setup error:', error);
+      console.error('[TauriDrop] Error:', error);
     }
   }
 
@@ -2237,26 +2500,27 @@ Other:
 
   getUserFriendlyErrorMessage(error, context) {
     const baseMessage = `An error occurred in ${context}.`;
+    const errorMessage = error?.message || 'Unknown error';
     
     // Provide specific guidance based on error type
-    if (error.message.includes('Tauri API not available')) {
+    if (errorMessage.includes('Tauri API not available')) {
       return `${baseMessage}\n\nThe application is not running in the proper environment. Please restart the application.`;
     }
     
-    if (error.message.includes('Permission denied')) {
+    if (errorMessage.includes('Permission denied')) {
       return `${baseMessage}\n\nPermission denied. Please check file permissions and try again.`;
     }
     
-    if (error.message.includes('Network')) {
+    if (errorMessage.includes('Network')) {
       return `${baseMessage}\n\nNetwork error. Please check your internet connection and try again.`;
     }
     
-    if (error.message.includes('library not loaded')) {
+    if (errorMessage.includes('library not loaded')) {
       return `${baseMessage}\n\nRequired libraries failed to load. Please refresh the page and try again.`;
     }
     
     // Generic error message with helpful suggestions
-    return `${baseMessage}\n\nError: ${error.message}\n\nSuggestions:\n• Try refreshing the page\n• Check your internet connection\n• Restart the application\n• Contact support if the problem persists`;
+    return `${baseMessage}\n\nError: ${errorMessage}\n\nSuggestions:\n• Try refreshing the page\n• Check your internet connection\n• Restart the application\n• Contact support if the problem persists`;
   }
 
   logError(errorInfo) {

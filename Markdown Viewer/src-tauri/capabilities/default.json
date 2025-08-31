@@ -11,6 +11,15 @@
     "dialog:allow-message",
     "dialog:allow-confirm",
     "fs:allow-read-text-file",
-    "fs:allow-write-text-file"
+    "fs:allow-write-text-file",
+    "fs:allow-read-file",
+    "fs:read-all",
+    "fs:write-all",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    {
+      "identifier": "fs:scope",
+      "allow": ["**"]
+    }
   ]
 }

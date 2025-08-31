@@ -1,6 +1,6 @@
 # Markdown Editor
 
-![Markdown Editor Splash Screen](SplashScreen.fw.png)
+![Markdown Editor Splash Screen](SplashScreen.gif)
 
 A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.
 

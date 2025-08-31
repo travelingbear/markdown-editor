@@ -1,8 +1,17 @@
 {
   "name": "markdown-viewer",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.0.0",
   "type": "module",
+  "license": "MIT",
+  "description": "A powerful native desktop markdown viewer and editor with real-time preview",
+  "author": "Markdown Viewer Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markdown-viewer/markdown-viewer.git"
+  },
+  "homepage": "https://markdown-viewer.app",
+  "keywords": ["markdown", "editor", "viewer", "desktop", "tauri"],
   "scripts": {
     "tauri": "tauri",
     "dev": "npm run tauri dev",

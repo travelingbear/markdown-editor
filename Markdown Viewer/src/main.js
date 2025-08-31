@@ -17,6 +17,8 @@ class MarkdownViewer {
     this.lastPreviewScrollTop = 0;
     this.lastPreviewMaxScroll = 0;
     this.lastEditorMaxScroll = 0;
+    this.lastSelection = null;
+    this.lastSelectedText = '';
     this.mermaidInitialized = false;
     this.katexInitialized = false;
     this.taskListStates = new Map();
@@ -55,7 +57,13 @@ class MarkdownViewer {
     this.applyDefaultTheme();
     this.applyCenteredLayout();
     this.updateFileHistoryDisplay();
+    this.initializeMarkdownToolbar();
     this.initializeAdvancedFeatures();
+    
+    // Ensure toolbar visibility is set correctly after initialization
+    setTimeout(() => {
+      this.updateToolbarVisibility();
+    }, 100);
     this.checkExportLibraries();
     
     this.startupTime = performance.now() - startupStartTime;
@@ -101,6 +109,8 @@ class MarkdownViewer {
     this.filename = document.getElementById('filename');
     this.mainContent = document.querySelector('.main-content');
     this.splitter = document.getElementById('splitter');
+    this.exportBtn = document.getElementById('export-btn');
+    this.exportDropdownMenu = document.getElementById('export-dropdown-menu');
     this.exportHtmlBtn = document.getElementById('export-html-btn');
     this.exportPdfBtn = document.getElementById('export-pdf-btn');
     this.welcomeNewBtn = document.getElementById('welcome-new-btn');
@@ -111,6 +121,9 @@ class MarkdownViewer {
     this.settingsModal = document.getElementById('settings-modal');
     this.settingsCloseBtn = document.getElementById('settings-close-btn');
     this.settingsOverlay = document.querySelector('.settings-overlay');
+    this.markdownToolbar = document.getElementById('markdown-toolbar');
+    this.toolbarContent = document.querySelector('.toolbar-content');
+    this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
   }
 
   async initializeAdvancedFeatures() {
@@ -249,6 +262,15 @@ class MarkdownViewer {
       this.updateCursorPosition();
     });
 
+    // Selection change events - track current selection for toolbar
+    this.monacoEditor.onDidChangeCursorSelection((e) => {
+      // Only store non-empty selections
+      if (!e.selection.isEmpty()) {
+        this.lastSelection = e.selection;
+        this.lastSelectedText = this.monacoEditor.getModel().getValueInRange(e.selection);
+      }
+    });
+
     // Scroll synchronization
     this.monacoEditor.onDidScrollChange((e) => {
       if (this.currentMode === 'split' && !this.isTyping) {
@@ -259,6 +281,17 @@ class MarkdownViewer {
     // Focus events for better UX
     this.monacoEditor.onDidFocusEditorText(() => {
       console.log('[Monaco] Editor focused');
+    });
+
+    // Auto-continuation for lists and tasks
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      // Dummy command to prevent conflicts
+    });
+    
+    this.monacoEditor.onKeyDown((e) => {
+      if (e.keyCode === monaco.KeyCode.Enter && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+        this.handleEnterKeyForLists(e);
+      }
     });
   }
 
@@ -317,6 +350,9 @@ class MarkdownViewer {
     // Settings control buttons
     this.setupSettingsControls();
     
+    // Markdown toolbar events
+    this.setupMarkdownToolbarEvents();
+    
 
     
     // Theme toggle
@@ -327,9 +363,26 @@ class MarkdownViewer {
     this.previewBtn.addEventListener('click', () => this.setMode('preview'));
     this.splitBtn.addEventListener('click', () => this.setMode('split'));
     
-    // Export functionality
-    this.exportHtmlBtn.addEventListener('click', () => this.exportToHtml());
-    this.exportPdfBtn.addEventListener('click', () => this.exportToPdf());
+    // Export dropdown functionality
+    this.exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleExportDropdown();
+    });
+    this.exportHtmlBtn.addEventListener('click', () => {
+      this.hideExportDropdown();
+      this.exportToHtml();
+    });
+    this.exportPdfBtn.addEventListener('click', () => {
+      this.hideExportDropdown();
+      this.exportToPdf();
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.dropdown-container')) {
+        this.hideExportDropdown();
+      }
+    });
     
     // Fallback editor events
     this.editor.addEventListener('input', () => {
@@ -433,13 +486,16 @@ class MarkdownViewer {
             e.preventDefault();
             this.toggleTheme();
             break;
-          case 'l':
-            if (e.shiftKey) {
-              // Toggle centered layout (Ctrl+Shift+L)
-              e.preventDefault();
-              this.toggleCenteredLayout();
-            }
-            break;
+
+
+
+
+
+
+
+
+
+
           case 'f':
             // Find in editor (handled by Monaco)
             if (!e.shiftKey) {
@@ -933,6 +989,7 @@ class MarkdownViewer {
       this.saveBtn.disabled = false;
       this.saveAsBtn.disabled = false;
       this.closeBtn.disabled = false;
+      this.exportBtn.disabled = false;
       this.exportHtmlBtn.disabled = false;
       this.exportPdfBtn.disabled = false;
     } else {
@@ -948,6 +1005,7 @@ class MarkdownViewer {
       this.saveBtn.disabled = true;
       this.saveAsBtn.disabled = true;
       this.closeBtn.disabled = true;
+      this.exportBtn.disabled = true;
       this.exportHtmlBtn.disabled = true;
       this.exportPdfBtn.disabled = true;
       
@@ -1006,6 +1064,9 @@ class MarkdownViewer {
     document.body.classList.add(`${mode}-mode`);
     
     this.currentMode = mode;
+    
+    // Update toolbar visibility
+    this.updateToolbarVisibility();
     
     // Trigger Monaco layout update and restore scroll positions
     if (this.isMonacoLoaded && this.monacoEditor) {
@@ -1417,7 +1478,7 @@ class MarkdownViewer {
     html = html.replace(/<li><input[^>]*disabled[^>]*type="checkbox"[^>]*>\s*([^<]*)<\/li>/g, (match, content) => {
       // Check for checked attribute specifically as an attribute
       const isChecked = /\bchecked\b[="']?/.test(match);
-      const id = 'task-' + Math.random().toString(36).substr(2, 9);
+      const id = 'task-' + Date.now() + '-' + taskCount;
       taskCount++;
 
       return `<div class="task-list-item dash-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content.trim()}</label></div>`;
@@ -1426,7 +1487,7 @@ class MarkdownViewer {
     // Handle dash-prefixed task lists in li elements (markdown syntax)
     html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (match, checked, content) => {
       const isChecked = checked === 'x';
-      const id = 'task-' + Math.random().toString(36).substr(2, 9);
+      const id = 'task-' + Date.now() + '-' + taskCount;
       taskCount++;
 
       return `<div class="task-list-item dash-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
@@ -1436,7 +1497,7 @@ class MarkdownViewer {
     html = html.replace(/<p>\[([ x])\]\s*([^<]*?)<\/p>/g, (match, checked, content) => {
       const isChecked = checked === 'x';
       const cleanContent = content.trim();
-      const id = 'task-' + Math.random().toString(36).substr(2, 9);
+      const id = 'task-' + Date.now() + '-' + taskCount;
       taskCount++;
 
       return `<div class="task-list-item standalone-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
@@ -2113,6 +2174,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
     document.getElementById('page-letter-btn').classList.toggle('active', this.currentPageSize === 'letter');
     document.getElementById('page-legal-btn').classList.toggle('active', this.currentPageSize === 'legal');
     
+    // Update toolbar buttons
+    document.getElementById('toolbar-on-btn').classList.toggle('active', this.isToolbarEnabled);
+    document.getElementById('toolbar-off-btn').classList.toggle('active', !this.isToolbarEnabled);
+    
     // Update system info
     document.getElementById('info-default-mode').textContent = this.defaultMode;
     document.getElementById('info-current-mode').textContent = this.currentMode;
@@ -2234,6 +2299,20 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
     document.getElementById('page-legal-btn').addEventListener('click', () => {
       this.setPageSize('legal');
+      this.updateSettingsDisplay();
+    });
+    
+    // Toolbar controls
+    document.getElementById('toolbar-on-btn').addEventListener('click', () => {
+      this.isToolbarEnabled = true;
+      localStorage.setItem('markdownViewer_toolbarEnabled', 'true');
+      this.updateToolbarVisibility();
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('toolbar-off-btn').addEventListener('click', () => {
+      this.isToolbarEnabled = false;
+      localStorage.setItem('markdownViewer_toolbarEnabled', 'false');
+      this.updateToolbarVisibility();
       this.updateSettingsDisplay();
     });
   }
@@ -2560,6 +2639,9 @@ Other:
     // Ensure current mode class is on body for CSS selectors
     document.body.classList.add(`${this.currentMode}-mode`);
     
+    // Update toolbar visibility
+    this.updateToolbarVisibility();
+    
     // Setup hover detection for exit hint
     this.setupDistractionFreeHover();
     
@@ -2570,6 +2652,9 @@ Other:
     console.log('[UI] Exiting distraction-free mode');
     this.isDistractionFree = false;
     document.body.classList.remove('distraction-free');
+    
+    // Update toolbar visibility
+    this.updateToolbarVisibility();
     
     // Remove hover detection
     this.removeDistractionFreeHover();
@@ -3083,6 +3168,466 @@ Other:
     localStorage.removeItem('markdownViewer_fileHistory');
     this.updateFileHistoryDisplay();
     console.log('[History] File history cleared');
+  }
+
+  // Markdown Toolbar Methods
+  initializeMarkdownToolbar() {
+    console.log('[Toolbar] Initializing markdown toolbar...');
+    
+    if (!this.markdownToolbar) {
+      console.warn('[Toolbar] Toolbar elements not found');
+      return;
+    }
+    
+    // Update toolbar visibility based on current mode and setting
+    this.updateToolbarVisibility();
+    
+    console.log('[Toolbar] Markdown toolbar initialized');
+  }
+
+  setupMarkdownToolbarEvents() {
+    if (!this.markdownToolbar) return;
+    
+    // Markdown formatting buttons
+    const mdButtons = this.markdownToolbar.querySelectorAll('.md-btn');
+    mdButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Check target and parent for data-action attribute
+        let action = e.target.getAttribute('data-action');
+        if (!action && e.target.parentElement) {
+          action = e.target.parentElement.getAttribute('data-action');
+        }
+        if (!action) {
+          action = btn.getAttribute('data-action');
+        }
+        if (action) {
+          this.executeMarkdownAction(action);
+        }
+      });
+    });
+    
+    console.log(`[Toolbar] Event listeners set up for ${mdButtons.length} buttons`);
+  }
+
+
+
+  updateToolbarVisibility() {
+    if (!this.markdownToolbar) return;
+    
+    // Show only in code mode, not in distraction-free mode, and when enabled
+    const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && this.isToolbarEnabled;
+    
+    if (shouldShow) {
+      this.markdownToolbar.classList.add('visible');
+    } else {
+      this.markdownToolbar.classList.remove('visible');
+    }
+    
+    console.log(`[Toolbar] Visibility updated: ${shouldShow ? 'visible' : 'hidden'}`);
+  }
+
+  toggleMarkdownToolbar() {
+    this.isToolbarEnabled = !this.isToolbarEnabled;
+    localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
+    this.updateToolbarVisibility();
+    console.log(`[Toolbar] Toolbar ${this.isToolbarEnabled ? 'enabled' : 'disabled'}`);
+  }
+
+  executeMarkdownAction(action) {
+    if (!this.isMonacoLoaded || !this.monacoEditor) {
+      this.executeMarkdownActionFallback(action);
+      return;
+    }
+    
+    const model = this.monacoEditor.getModel();
+    let selection = this.monacoEditor.getSelection();
+    let selectedText = '';
+    
+    // Try current selection first
+    if (selection && !selection.isEmpty()) {
+      selectedText = model.getValueInRange(selection);
+    }
+    // Fall back to last stored selection
+    else if (this.lastSelection && !this.lastSelection.isEmpty()) {
+      selection = this.lastSelection;
+      selectedText = this.lastSelectedText;
+    }
+    
+    this.performMarkdownAction(action, selection, model, selectedText);
+  }
+
+  performMarkdownAction(action, selection, model, selectedText) {
+    // If no selectedText provided, try to get word at cursor
+    if (!selectedText && model) {
+      try {
+        const position = this.monacoEditor.getPosition();
+        if (position) {
+          const wordAtPosition = model.getWordAtPosition(position);
+          if (wordAtPosition) {
+            selectedText = wordAtPosition.word;
+            selection = new monaco.Selection(
+              position.lineNumber,
+              wordAtPosition.startColumn,
+              position.lineNumber,
+              wordAtPosition.endColumn
+            );
+          }
+        }
+      } catch (error) {
+        console.warn('[Toolbar] Word detection error:', error);
+      }
+    }
+    
+    let replacement = '';
+    let newSelection = null;
+    
+    switch (action) {
+      case 'h1':
+        replacement = this.wrapWithHeading(selectedText, 1);
+        break;
+      case 'h2':
+        replacement = this.wrapWithHeading(selectedText, 2);
+        break;
+      case 'h3':
+        replacement = this.wrapWithHeading(selectedText, 3);
+        break;
+      case 'bold':
+        replacement = this.wrapWithMarkers(selectedText, '**', '**');
+        break;
+      case 'italic':
+        replacement = this.wrapWithMarkers(selectedText, '*', '*');
+        break;
+      case 'strikethrough':
+        replacement = this.wrapWithMarkers(selectedText, '~~', '~~');
+        break;
+      case 'code':
+        replacement = this.wrapWithMarkers(selectedText, '`', '`');
+        break;
+      case 'link':
+        replacement = this.createLink(selectedText);
+        break;
+      case 'image':
+        replacement = this.createImage(selectedText);
+        break;
+      case 'ul':
+        replacement = this.createList(selectedText, 'ul');
+        break;
+      case 'ol':
+        replacement = this.createList(selectedText, 'ol');
+        break;
+      case 'task':
+        replacement = this.createTaskList(selectedText);
+        break;
+      case 'table':
+        replacement = this.createTable();
+        break;
+      case 'hr':
+        replacement = this.createHorizontalRule();
+        break;
+      case 'quote':
+        replacement = this.createBlockquote(selectedText);
+        break;
+      case 'underline':
+        replacement = this.wrapWithHtml(selectedText, 'u');
+        break;
+      default:
+        console.warn(`[Toolbar] Unknown action: ${action}`);
+        return;
+    }
+    
+    if (!replacement) {
+      return;
+    }
+    
+    // Apply the replacement - ensure we have a valid selection
+    if (!selection || selection.isEmpty()) {
+      const position = this.monacoEditor.getPosition();
+      if (position) {
+        this.monacoEditor.executeEdits('markdown-toolbar', [{
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          text: replacement
+        }]);
+      }
+    } else {
+      this.monacoEditor.executeEdits('markdown-toolbar', [{
+        range: selection,
+        text: replacement
+      }]);
+    }
+    
+    // Simple selection preservation - select the new text
+    setTimeout(() => {
+      if (selection && !selection.isEmpty()) {
+        const newSelection = new monaco.Selection(
+          selection.startLineNumber,
+          selection.startColumn,
+          selection.startLineNumber,
+          selection.startColumn + replacement.length
+        );
+        this.monacoEditor.setSelection(newSelection);
+      }
+      this.monacoEditor.focus();
+    }, 10);
+    
+    // Mark as dirty
+    this.markDirty();
+  }
+
+  executeMarkdownActionFallback(action) {
+    // Fallback for textarea editor
+    const textarea = this.editor;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    
+    let replacement = '';
+    
+    switch (action) {
+      case 'h1':
+        replacement = this.wrapWithHeading(selectedText, 1);
+        break;
+      case 'h2':
+        replacement = this.wrapWithHeading(selectedText, 2);
+        break;
+      case 'h3':
+        replacement = this.wrapWithHeading(selectedText, 3);
+        break;
+      case 'bold':
+        replacement = this.wrapWithMarkers(selectedText, '**', '**');
+        break;
+      case 'italic':
+        replacement = this.wrapWithMarkers(selectedText, '*', '*');
+        break;
+      case 'strikethrough':
+        replacement = this.wrapWithMarkers(selectedText, '~~', '~~');
+        break;
+      case 'code':
+        replacement = this.wrapWithMarkers(selectedText, '`', '`');
+        break;
+      case 'link':
+        replacement = this.createLink(selectedText);
+        break;
+      case 'image':
+        replacement = this.createImage(selectedText);
+        break;
+      case 'ul':
+        replacement = this.createList(selectedText, 'ul');
+        break;
+      case 'ol':
+        replacement = this.createList(selectedText, 'ol');
+        break;
+      case 'task':
+        replacement = this.createTaskList(selectedText);
+        break;
+      case 'table':
+        replacement = this.createTable();
+        break;
+      case 'hr':
+        replacement = this.createHorizontalRule();
+        break;
+      case 'quote':
+        replacement = this.createBlockquote(selectedText);
+        break;
+      case 'underline':
+        replacement = this.wrapWithHtml(selectedText, 'u');
+        break;
+      default:
+        return;
+    }
+    
+    // Replace text in textarea
+    const before = textarea.value.substring(0, start);
+    const after = textarea.value.substring(end);
+    textarea.value = before + replacement + after;
+    
+    // Set cursor position
+    const newPos = start + replacement.length;
+    textarea.selectionStart = textarea.selectionEnd = newPos;
+    
+    // Focus back to textarea
+    textarea.focus();
+    
+    // Mark as dirty
+    this.markDirty();
+  }
+
+  // Markdown formatting helper methods
+  wrapWithHeading(text, level) {
+    const prefix = '#'.repeat(level) + ' ';
+    if (text.trim()) {
+      // Remove existing heading markers if present
+      const cleanText = text.replace(/^#{1,6}\s*/, '');
+      return prefix + cleanText.trim();
+    }
+    return prefix + 'Heading ' + level;
+  }
+
+  wrapWithMarkers(text, startMarker, endMarker) {
+    if (text && text.length > 0) {
+      return startMarker + text + endMarker;
+    }
+    return startMarker + 'text' + endMarker;
+  }
+
+  createLink(text) {
+    if (text.trim()) {
+      return `[${text}](url)`;
+    }
+    return '[link text](url)';
+  }
+
+  createImage(text) {
+    if (text.trim()) {
+      return `![${text}](image-url)`;
+    }
+    return '![alt text](image-url)';
+  }
+
+  createList(text, type) {
+    const marker = type === 'ol' ? '1. ' : '- ';
+    if (text.trim()) {
+      const lines = text.split('\n').filter(line => line.trim());
+      if (lines.length > 1) {
+        return lines.map((line, index) => {
+          const itemMarker = type === 'ol' ? `${index + 1}. ` : '- ';
+          return itemMarker + line.trim();
+        }).join('\n');
+      }
+      return marker + text.trim();
+    }
+    return marker + 'List item';
+  }
+
+  createTaskList(text) {
+    if (text.trim()) {
+      const lines = text.split('\n').filter(line => line.trim());
+      if (lines.length > 1) {
+        return lines.map(line => '- [ ] ' + line.trim()).join('\n');
+      }
+      return '- [ ] ' + text.trim();
+    }
+    return '- [ ] Task item';
+  }
+
+  createTable() {
+    return '| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |';
+  }
+
+  createHorizontalRule() {
+    return '\n---\n';
+  }
+
+  createBlockquote(text) {
+    if (text.trim()) {
+      const lines = text.split('\n');
+      return lines.map(line => '> ' + line).join('\n');
+    }
+    return '> Blockquote text';
+  }
+
+  wrapWithHtml(text, tag) {
+    if (text && text.length > 0) {
+      return `<${tag}>${text}</${tag}>`;
+    }
+    return `<${tag}>text</${tag}>`;
+  }
+
+  handleEnterKeyForLists(e) {
+    if (!this.isMonacoLoaded || !this.monacoEditor) return;
+    
+    const position = this.monacoEditor.getPosition();
+    const model = this.monacoEditor.getModel();
+    const currentLine = model.getLineContent(position.lineNumber);
+    
+    // Only process if cursor is at end of line
+    if (position.column !== currentLine.length + 1) return;
+    
+    let shouldContinue = false;
+    let newLineText = '';
+    
+    // Check for bullet list with content
+    const bulletMatch = currentLine.match(/^(\s*)([-*+])\s+(.+)$/);
+    if (bulletMatch) {
+      const [, indent, bullet] = bulletMatch;
+      newLineText = `${indent}${bullet} `;
+      shouldContinue = true;
+    }
+    
+    // Check for empty bullet list
+    const emptyBulletMatch = currentLine.match(/^(\s*)([-*+])\s*$/);
+    if (emptyBulletMatch) {
+      const [, indent] = emptyBulletMatch;
+      e.preventDefault();
+      const range = new monaco.Range(position.lineNumber, 1, position.lineNumber, currentLine.length + 1);
+      this.monacoEditor.executeEdits('auto-list', [{ range, text: indent }]);
+      return;
+    }
+    
+    // Check for numbered list with content
+    const numberedMatch = currentLine.match(/^(\s*)(\d+)\. (.+)$/);
+    if (numberedMatch) {
+      const [, indent, num] = numberedMatch;
+      const nextNum = parseInt(num) + 1;
+      newLineText = `${indent}${nextNum}. `;
+      shouldContinue = true;
+    }
+    
+    // Check for empty numbered list
+    const emptyNumberedMatch = currentLine.match(/^(\s*)(\d+)\. \s*$/);
+    if (emptyNumberedMatch) {
+      const [, indent] = emptyNumberedMatch;
+      e.preventDefault();
+      const range = new monaco.Range(position.lineNumber, 1, position.lineNumber, currentLine.length + 1);
+      this.monacoEditor.executeEdits('auto-list', [{ range, text: indent }]);
+      return;
+    }
+    
+    // Check for task list with content
+    const taskMatch = currentLine.match(/^(\s*)- \[[ x]\] (.+)$/);
+    if (taskMatch) {
+      const [, indent] = taskMatch;
+      newLineText = `${indent}- [ ] `;
+      shouldContinue = true;
+    }
+    
+    // Check for empty task list
+    const emptyTaskMatch = currentLine.match(/^(\s*)- \[[ x]\] \s*$/);
+    if (emptyTaskMatch) {
+      const [, indent] = emptyTaskMatch;
+      e.preventDefault();
+      const range = new monaco.Range(position.lineNumber, 1, position.lineNumber, currentLine.length + 1);
+      this.monacoEditor.executeEdits('auto-list', [{ range, text: indent }]);
+      return;
+    }
+    
+    if (shouldContinue) {
+      e.preventDefault();
+      const insertPosition = new monaco.Position(position.lineNumber, position.column);
+      this.monacoEditor.executeEdits('auto-list', [{
+        range: new monaco.Range(insertPosition.lineNumber, insertPosition.column, insertPosition.lineNumber, insertPosition.column),
+        text: `\n${newLineText}`
+      }]);
+    }
+  }
+
+  // Export Dropdown Methods
+  toggleExportDropdown() {
+    if (this.exportDropdownMenu.classList.contains('show')) {
+      this.hideExportDropdown();
+    } else {
+      this.showExportDropdown();
+    }
+  }
+
+  showExportDropdown() {
+    this.exportDropdownMenu.classList.add('show');
+    this.exportBtn.textContent = 'Export ▲';
+  }
+
+  hideExportDropdown() {
+    this.exportDropdownMenu.classList.remove('show');
+    this.exportBtn.textContent = 'Export ▼';
   }
 }
 

@@ -125,6 +125,7 @@ body {
   width: var(--editor-width);
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .preview-pane {
@@ -188,6 +189,15 @@ body {
   flex: 1;
   width: 100%;
   height: 100%;
+}
+
+/* Monaco Editor strikethrough support */
+.monaco-editor .view-line .mtk1 {
+  text-decoration: inherit;
+}
+
+.monaco-editor .strikethrough {
+  text-decoration: line-through;
 }
 
 /* Fallback Editor */
@@ -1455,6 +1465,75 @@ body.drag-over .main-content.split-mode::after {
   font-weight: 600;
 }
 
+/* Dropdown Button Styles */
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-toggle {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  margin-top: 2px;
+  width: 100%;
+}
+
+.dropdown-menu.show {
+  display: flex;
+}
+
+.dropdown-item {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: background-color 0.2s;
+  border-radius: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-item:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.dropdown-item:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .dropdown-menu {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 /* Print button styling */
 .toolbar-btn[title*="PDF"],
 .toolbar-btn[title*="Print"] {
@@ -1817,6 +1896,193 @@ body.distraction-free .preview-content {
   }
 }
 
+/* Markdown Toolbar Styles - Simple toggle */
+.markdown-toolbar {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  padding: 0;
+  overflow: hidden;
+  height: 0;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.markdown-toolbar.visible {
+  height: auto;
+  opacity: 1;
+}
+
+/* Adjust main content when toolbar is pinned */
+body:has(.markdown-toolbar.pinned) .main-content {
+  height: calc(100vh - 104px);
+}
+
+/* Fallback for browsers without :has() */
+.toolbar-pinned .main-content {
+  height: calc(100vh - 104px);
+}
+
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--border-primary);
+  margin: 0 4px;
+}
+
+.md-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.md-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.md-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Special styling for text formatting buttons */
+.md-btn[data-action="bold"] strong {
+  font-weight: 900;
+}
+
+.md-btn[data-action="italic"] em {
+  font-style: italic;
+}
+
+.md-btn[data-action="strikethrough"] s {
+  text-decoration: line-through;
+}
+
+/* Pin button styling */
+.pin-btn {
+  background: var(--bg-tertiary) !important;
+}
+
+.pin-btn.pinned {
+  background: var(--accent-primary) !important;
+  color: white !important;
+  border-color: var(--accent-primary) !important;
+}
+
+/* Hide toolbar in non-code modes */
+.main-content.preview-mode .markdown-toolbar,
+.main-content.split-mode .markdown-toolbar {
+  display: none !important;
+}
+
+/* Show toolbar only in code mode */
+.main-content.code-mode .markdown-toolbar {
+  display: block;
+}
+
+/* Hide toolbar in distraction-free mode */
+body.distraction-free .markdown-toolbar {
+  display: none !important;
+}
+
+/* Adjust editor container height when toolbar is visible */
+.main-content.code-mode .editor-pane {
+  display: flex;
+  flex-direction: column;
+}
+
+.main-content.code-mode .monaco-editor-container,
+.main-content.code-mode #editor {
+  flex: 1;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .md-btn:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .md-btn:active {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive design for toolbar */
+@media (max-width: 768px) {
+  .toolbar-content {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  
+  .toolbar-group {
+    gap: 3px;
+  }
+  
+  .md-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+    min-width: 28px;
+    height: 26px;
+  }
+  
+  .toolbar-separator {
+    height: 20px;
+    margin: 0 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar-content {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+  
+  .md-btn {
+    padding: 4px 6px;
+    font-size: 9px;
+    min-width: 24px;
+    height: 24px;
+  }
+  
+  .toolbar-separator {
+    height: 18px;
+    margin: 0 2px;
+  }
+  
+  /* Extra small screen dropdown adjustments */
+  .dropdown-item {
+    padding: 4px 8px;
+    font-size: 10px;
+    height: 24px;
+  }
+}
+
 /* Enhanced Settings Modal */
 .settings-modal {
   position: fixed;
@@ -2007,6 +2273,13 @@ body.distraction-free .preview-content {
   .setting-control {
     width: 100%;
     justify-content: flex-start;
+  }
+  
+  /* Responsive dropdown adjustments */
+  .dropdown-item {
+    padding: 5px 10px;
+    font-size: 11px;
+    height: 26px;
   }
 }
 

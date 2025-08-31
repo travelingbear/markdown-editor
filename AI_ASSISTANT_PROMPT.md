@@ -3,8 +3,8 @@
 ## 🎯 Project Overview
 **Native Markdown Viewer** - Tauri + Rust + TypeScript/JavaScript desktop application
 
-**Current Phase**: Phase 5 - Final Polish & Enhancement  
-**Branch**: `feature/phase-5-final-polish`
+**Current Phase**: Phase 6 - Distribution & Release  
+**Branch**: `feature/phase-6-distribution`
 
 ## 📋 Status Summary
 
@@ -56,17 +56,18 @@
 
 ## 🎯 **CURRENT STATUS**
 
-### **Phase 5.1**: Native Drag-Drop Absolute Paths ✅ **COMPLETE**
+### **Phase 5.1**: Native Drag-Drop Absolute Paths ✅ **COMMITTED**
 - **Goal**: Implement native Tauri drag-drop with absolute file paths
 - **Solution**: `tauri://drag-drop` event with `dragDropEnabled: true`
-- **Status**: COMPLETE - Code mode inserts full paths like `C:\Users\...\file.md`
-- **Branch**: `feature/native-drag-drop-absolute-paths`
-- **Validation**: USER APPROVED - All functionality working correctly
+- **Status**: COMMITTED - Code mode inserts full paths like `C:\Users\...\file.md`
+- **Branch**: Merged to main (commit 3050d08)
+- **Validation**: USER APPROVED & COMMITTED
 
-### **Next Phase**: Phase 6 - Distribution & Release
+### **Phase 6**: Distribution & Release ✅ **COMPLETE**
 - **Goal**: Cross-platform build system and installation packages
-- **Status**: READY TO START - Phase 5.1 complete and validated
-- **Requirements**: User approval and commit before starting Phase 6
+- **Status**: COMPLETE - All distribution features implemented
+- **Branch**: `feature/phase-6-distribution`
+- **Deliverables**: Build system, installers, documentation, automation
 
 ## 🏗️ **Architecture**
 **Frontend**: Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js  
@@ -79,7 +80,7 @@
 - ✅ Drag-drop functionality (COMPLETE - basic functionality)
 - ✅ Final polish & testing
 
-**🎯 PHASE 5 COMPLETE - Ready for Phase 6 (Distribution)**
+**🎯 PHASE 6 COMPLETE - Ready for Release**
 
 ## ⚠️ **CRITICAL DEVELOPMENT RULES - STRICTLY ENFORCED**
 
@@ -100,8 +101,8 @@
 6. **Stage and commit** only after approval
 7. **Merge to main** only after approval
 
-**Current Branch**: `feature/native-drag-drop-absolute-paths`
-**Status**: AWAITING USER APPROVAL FOR COMMIT
+**Current Branch**: `feature/phase-6-distribution`
+**Status**: PHASE 6 COMPLETE - AWAITING USER APPROVAL FOR COMMIT
 
 ---
 

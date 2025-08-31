@@ -4,7 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev": "npm run tauri dev",
+    "build": "npm run tauri build",
+    "build:debug": "npm run tauri build -- --debug",
+    "build:windows": "npm run tauri build -- --target x86_64-pc-windows-msvc",
+    "build:macos": "npm run tauri build -- --target x86_64-apple-darwin",
+    "build:linux": "npm run tauri build -- --target x86_64-unknown-linux-gnu",
+    "build:all": "npm run build:windows && npm run build:macos && npm run build:linux",
+    "clean": "npm run tauri build -- --clean",
+    "version": "npm run tauri -- --version",
+    "info": "npm run tauri info"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

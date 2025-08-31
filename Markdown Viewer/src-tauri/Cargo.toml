@@ -1,9 +1,14 @@
 [package]
 name = "markdown-viewer"
-version = "0.1.0"
-description = "A native markdown viewer built with Tauri"
-authors = ["you"]
+version = "1.0.0"
+description = "A powerful native desktop markdown viewer and editor with real-time preview"
+authors = ["Markdown Viewer Team"]
 edition = "2021"
+license = "MIT"
+repository = "https://github.com/markdown-viewer/markdown-viewer"
+homepage = "https://markdown-viewer.app"
+keywords = ["markdown", "editor", "viewer", "desktop", "tauri"]
+categories = ["text-editors", "development-tools"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

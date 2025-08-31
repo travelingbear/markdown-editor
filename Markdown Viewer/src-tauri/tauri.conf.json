@@ -33,7 +33,7 @@
     "shortDescription": "Professional markdown viewer and editor",
     "longDescription": "A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript. Features three-mode interface, Monaco Editor, real-time preview, KaTeX math, Mermaid diagrams, and advanced export options.",
     "icon": [
-      "../src/favicons/favicon-96x96.png",
+      "../src/favicons/icon.png",
       "../src/favicons/favicon.ico"
     ],
     "fileAssociations": [

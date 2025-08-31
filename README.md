@@ -1,5 +1,7 @@
 # Markdown Viewer
 
+![Markdown Editor Box](MarkdownEditorBox2.jpg)
+
 A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.
 
 ## ✨ Features

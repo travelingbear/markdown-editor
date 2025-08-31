@@ -108,6 +108,9 @@ class MarkdownViewer {
     this.fileHistorySection = document.getElementById('file-history-section');
     this.fileHistoryList = document.getElementById('file-history-list');
     this.clearHistoryBtn = document.getElementById('clear-history-btn');
+    this.settingsModal = document.getElementById('settings-modal');
+    this.settingsCloseBtn = document.getElementById('settings-close-btn');
+    this.settingsOverlay = document.querySelector('.settings-overlay');
   }
 
   async initializeAdvancedFeatures() {
@@ -303,6 +306,17 @@ class MarkdownViewer {
       });
     }
     
+    // Enhanced settings modal events
+    if (this.settingsCloseBtn) {
+      this.settingsCloseBtn.addEventListener('click', () => this.hideEnhancedSettings());
+    }
+    if (this.settingsOverlay) {
+      this.settingsOverlay.addEventListener('click', () => this.hideEnhancedSettings());
+    }
+    
+    // Settings control buttons
+    this.setupSettingsControls();
+    
 
     
     // Theme toggle
@@ -471,8 +485,10 @@ class MarkdownViewer {
           this.toggleDistractionFree();
           break;
         case 'Escape':
-          // Exit distraction-free mode first, then fullscreen
-          if (this.isDistractionFree) {
+          // Close settings modal first, then exit distraction-free mode, then fullscreen
+          if (this.settingsModal && this.settingsModal.style.display === 'flex') {
+            this.hideEnhancedSettings();
+          } else if (this.isDistractionFree) {
             this.exitDistractionFree();
           } else if (document.fullscreenElement) {
             document.exitFullscreen();
@@ -2061,7 +2077,169 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   showSettings() {
-    console.log('[Settings] Settings dialog requested');
+    this.showEnhancedSettings();
+  }
+
+  showEnhancedSettings() {
+    console.log('[Settings] Enhanced settings modal requested');
+    this.updateSettingsDisplay();
+    this.settingsModal.style.display = 'flex';
+  }
+
+  hideEnhancedSettings() {
+    this.settingsModal.style.display = 'none';
+  }
+
+  updateSettingsDisplay() {
+    // Update theme buttons
+    document.getElementById('theme-light-btn').classList.toggle('active', this.theme === 'light');
+    document.getElementById('theme-dark-btn').classList.toggle('active', this.theme === 'dark');
+    
+    // Update mode buttons
+    document.getElementById('mode-code-btn').classList.toggle('active', this.defaultMode === 'code');
+    document.getElementById('mode-preview-btn').classList.toggle('active', this.defaultMode === 'preview');
+    document.getElementById('mode-split-btn').classList.toggle('active', this.defaultMode === 'split');
+    
+    // Update suggestions buttons
+    document.getElementById('suggestions-on-btn').classList.toggle('active', this.suggestionsEnabled);
+    document.getElementById('suggestions-off-btn').classList.toggle('active', !this.suggestionsEnabled);
+    
+    // Update layout buttons
+    document.getElementById('layout-on-btn').classList.toggle('active', this.centeredLayoutEnabled);
+    document.getElementById('layout-off-btn').classList.toggle('active', !this.centeredLayoutEnabled);
+    
+    // Update page size buttons
+    document.getElementById('page-a4-btn').classList.toggle('active', this.currentPageSize === 'a4');
+    document.getElementById('page-letter-btn').classList.toggle('active', this.currentPageSize === 'letter');
+    document.getElementById('page-legal-btn').classList.toggle('active', this.currentPageSize === 'legal');
+    
+    // Update system info
+    document.getElementById('info-default-mode').textContent = this.defaultMode;
+    document.getElementById('info-current-mode').textContent = this.currentMode;
+    document.getElementById('info-monaco').textContent = this.isMonacoLoaded ? 'Loaded' : 'Not Loaded';
+    document.getElementById('info-mermaid').textContent = this.mermaidInitialized ? 'Loaded' : 'Not Loaded';
+    document.getElementById('info-katex').textContent = this.katexInitialized ? 'Loaded' : 'Not Loaded';
+    
+    // Update performance stats
+    const performanceStats = this.getPerformanceStats();
+    document.getElementById('perf-startup').textContent = `${performanceStats.benchmarks.startupTime.toFixed(2)}ms`;
+    document.getElementById('perf-file-open').textContent = `${performanceStats.benchmarks.fileOpenTime.toFixed(2)}ms`;
+    document.getElementById('perf-mode-switch').textContent = `${performanceStats.benchmarks.modeSwitchTime.toFixed(2)}ms`;
+    document.getElementById('perf-preview-update').textContent = `${performanceStats.benchmarks.previewUpdateTime.toFixed(2)}ms`;
+    document.getElementById('perf-update-count').textContent = performanceStats.updateCount.toString();
+    
+    if (performanceStats.memoryUsage) {
+      document.getElementById('perf-memory').textContent = `${performanceStats.memoryUsage.used}MB / ${performanceStats.memoryUsage.total}MB`;
+    } else {
+      document.getElementById('perf-memory').textContent = 'N/A';
+    }
+  }
+
+  setupSettingsControls() {
+    // Theme controls
+    document.getElementById('theme-light-btn').addEventListener('click', () => {
+      if (this.theme !== 'light') {
+        this.theme = 'light';
+        localStorage.setItem('markdownViewer_defaultTheme', this.theme);
+        this.applyDefaultTheme();
+        if (this.isMonacoLoaded && this.monacoEditor) {
+          monaco.editor.setTheme('vs');
+        }
+        if (this.mermaidInitialized && this.mermaid) {
+          this.mermaid.initialize({ theme: 'default', securityLevel: 'loose', fontFamily: 'inherit' });
+          this.updatePreview();
+        }
+      }
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('theme-dark-btn').addEventListener('click', () => {
+      if (this.theme !== 'dark') {
+        this.theme = 'dark';
+        localStorage.setItem('markdownViewer_defaultTheme', this.theme);
+        this.applyDefaultTheme();
+        if (this.isMonacoLoaded && this.monacoEditor) {
+          monaco.editor.setTheme('vs-dark');
+        }
+        if (this.mermaidInitialized && this.mermaid) {
+          this.mermaid.initialize({ theme: 'dark', securityLevel: 'loose', fontFamily: 'inherit' });
+          this.updatePreview();
+        }
+      }
+      this.updateSettingsDisplay();
+    });
+    
+    // Mode controls
+    document.getElementById('mode-code-btn').addEventListener('click', () => {
+      this.defaultMode = 'code';
+      localStorage.setItem('markdownViewer_defaultMode', this.defaultMode);
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('mode-preview-btn').addEventListener('click', () => {
+      this.defaultMode = 'preview';
+      localStorage.setItem('markdownViewer_defaultMode', this.defaultMode);
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('mode-split-btn').addEventListener('click', () => {
+      this.defaultMode = 'split';
+      localStorage.setItem('markdownViewer_defaultMode', this.defaultMode);
+      this.updateSettingsDisplay();
+    });
+    
+    // Suggestions controls
+    document.getElementById('suggestions-on-btn').addEventListener('click', () => {
+      this.suggestionsEnabled = true;
+      localStorage.setItem('markdownViewer_suggestionsEnabled', 'true');
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        this.monacoEditor.updateOptions({
+          suggest: { showKeywords: true, showSnippets: true, showWords: true },
+          quickSuggestions: true
+        });
+      }
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('suggestions-off-btn').addEventListener('click', () => {
+      this.suggestionsEnabled = false;
+      localStorage.setItem('markdownViewer_suggestionsEnabled', 'false');
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        this.monacoEditor.updateOptions({
+          suggest: { showKeywords: false, showSnippets: false, showWords: false },
+          quickSuggestions: false
+        });
+      }
+      this.updateSettingsDisplay();
+    });
+    
+    // Layout controls
+    document.getElementById('layout-on-btn').addEventListener('click', () => {
+      this.centeredLayoutEnabled = true;
+      localStorage.setItem('markdownViewer_centeredLayout', 'true');
+      this.applyCenteredLayout();
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('layout-off-btn').addEventListener('click', () => {
+      this.centeredLayoutEnabled = false;
+      localStorage.setItem('markdownViewer_centeredLayout', 'false');
+      this.applyCenteredLayout();
+      this.updateSettingsDisplay();
+    });
+    
+    // Page size controls
+    document.getElementById('page-a4-btn').addEventListener('click', () => {
+      this.setPageSize('a4');
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('page-letter-btn').addEventListener('click', () => {
+      this.setPageSize('letter');
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('page-legal-btn').addEventListener('click', () => {
+      this.setPageSize('legal');
+      this.updateSettingsDisplay();
+    });
+  }
+
+  showLegacySettings() {
+    console.log('[Settings] Legacy settings dialog requested');
     const performanceStats = this.getPerformanceStats();
     
     // Show current settings and stats

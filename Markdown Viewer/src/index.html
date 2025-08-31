@@ -98,6 +98,122 @@
         </div>
       </div>
 
+      <!-- Enhanced Settings Modal -->
+      <div id="settings-modal" class="settings-modal" style="display: none;">
+        <div class="settings-overlay"></div>
+        <div class="settings-window">
+          <div class="settings-header">
+            <h2>Settings</h2>
+            <button id="settings-close-btn" class="settings-close-btn">×</button>
+          </div>
+          <div class="settings-content">
+            <div class="settings-section">
+              <h3>Appearance</h3>
+              <div class="setting-item">
+                <label>Theme</label>
+                <div class="setting-control">
+                  <button id="theme-light-btn" class="setting-btn">Light</button>
+                  <button id="theme-dark-btn" class="setting-btn">Dark</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3>Editor</h3>
+              <div class="setting-item">
+                <label>Default Mode</label>
+                <div class="setting-control">
+                  <button id="mode-code-btn" class="setting-btn">Code</button>
+                  <button id="mode-preview-btn" class="setting-btn">Preview</button>
+                  <button id="mode-split-btn" class="setting-btn">Split</button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <label>Text Suggestions</label>
+                <div class="setting-control">
+                  <button id="suggestions-on-btn" class="setting-btn">Enabled</button>
+                  <button id="suggestions-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3>Layout</h3>
+              <div class="setting-item">
+                <label>Centered Layout</label>
+                <div class="setting-control">
+                  <button id="layout-on-btn" class="setting-btn">Enabled</button>
+                  <button id="layout-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <label>Page Size</label>
+                <div class="setting-control">
+                  <button id="page-a4-btn" class="setting-btn">A4</button>
+                  <button id="page-letter-btn" class="setting-btn">Letter</button>
+                  <button id="page-legal-btn" class="setting-btn">Legal</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3>System Info</h3>
+              <div class="system-info">
+                <div class="info-item">
+                  <span class="info-label">Default Mode:</span>
+                  <span id="info-default-mode">Preview</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Current Mode:</span>
+                  <span id="info-current-mode">Preview</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Monaco Editor:</span>
+                  <span id="info-monaco">Loaded</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Mermaid:</span>
+                  <span id="info-mermaid">Loaded</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">KaTeX:</span>
+                  <span id="info-katex">Loaded</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3>Performance</h3>
+              <div class="system-info">
+                <div class="info-item">
+                  <span class="info-label">Startup Time:</span>
+                  <span id="perf-startup">0ms</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">File Open Time:</span>
+                  <span id="perf-file-open">0ms</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Mode Switch Time:</span>
+                  <span id="perf-mode-switch">0ms</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Preview Update Time:</span>
+                  <span id="perf-preview-update">0ms</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Memory Usage:</span>
+                  <span id="perf-memory">N/A</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Update Count:</span>
+                  <span id="perf-update-count">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
     </div>
     <script src="/main.js"></script>

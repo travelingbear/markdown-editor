@@ -69,6 +69,11 @@ class MarkdownViewer {
     this.startupTime = performance.now() - startupStartTime;
     console.log(`[MarkdownViewer] Phase 4 Constructor completed in ${this.startupTime.toFixed(2)}ms`);
     
+    // Show splash screen if enabled
+    if (this.isSplashEnabled) {
+      this.showSplashScreen();
+    }
+    
     // Verify performance targets
     if (this.startupTime > 2000) {
       console.warn(`[Performance] Startup time exceeded target: ${this.startupTime.toFixed(2)}ms > 2000ms`);
@@ -127,8 +132,10 @@ class MarkdownViewer {
     this.markdownToolbar = document.getElementById('markdown-toolbar');
     this.toolbarContent = document.querySelector('.toolbar-content');
     this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
+    this.isSplashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
     
     // Phase 8.5 elements
+    this.splashScreen = document.getElementById('splash-screen');
     this.helpStatusBtn = document.getElementById('help-status-btn');
     this.welcomeHelpBtn = document.getElementById('welcome-help-btn');
     this.welcomeAboutBtn = document.getElementById('welcome-about-btn');
@@ -2255,6 +2262,31 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.aboutModal.style.display = 'none';
   }
 
+  showSplashScreen() {
+    if (!this.splashScreen) return;
+    
+    console.log('[Splash] Showing splash screen');
+    this.splashScreen.style.display = 'flex';
+    
+    // Hide splash screen after 2.5 seconds
+    setTimeout(() => {
+      this.hideSplashScreen();
+    }, 2500);
+  }
+
+  hideSplashScreen() {
+    if (!this.splashScreen) return;
+    
+    console.log('[Splash] Hiding splash screen');
+    this.splashScreen.classList.add('fade-out');
+    
+    // Remove from DOM after fade animation
+    setTimeout(() => {
+      this.splashScreen.style.display = 'none';
+      this.splashScreen.classList.remove('fade-out');
+    }, 500);
+  }
+
 
 
 
@@ -2285,6 +2317,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Update toolbar buttons
     document.getElementById('toolbar-on-btn').classList.toggle('active', this.isToolbarEnabled);
     document.getElementById('toolbar-off-btn').classList.toggle('active', !this.isToolbarEnabled);
+    
+    // Update splash screen buttons
+    document.getElementById('splash-on-btn').classList.toggle('active', this.isSplashEnabled);
+    document.getElementById('splash-off-btn').classList.toggle('active', !this.isSplashEnabled);
     
     // Update system info
     document.getElementById('info-default-mode').textContent = this.defaultMode;
@@ -2421,6 +2457,18 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.isToolbarEnabled = false;
       localStorage.setItem('markdownViewer_toolbarEnabled', 'false');
       this.updateToolbarVisibility();
+      this.updateSettingsDisplay();
+    });
+    
+    // Splash screen controls
+    document.getElementById('splash-on-btn').addEventListener('click', () => {
+      this.isSplashEnabled = true;
+      localStorage.setItem('markdownViewer_splashEnabled', 'true');
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('splash-off-btn').addEventListener('click', () => {
+      this.isSplashEnabled = false;
+      localStorage.setItem('markdownViewer_splashEnabled', 'false');
       this.updateSettingsDisplay();
     });
   }

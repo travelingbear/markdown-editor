@@ -2842,8 +2842,65 @@ body.distraction-free .markdown-toolbar {
   background: rgba(0, 0, 0, 0.7);
 }
 
+/* Splash Screen */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+}
+
+.splash-content {
+  text-align: center;
+  animation: splashFadeIn 0.8s ease-out;
+}
+
+.splash-image {
+  width: 500px;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes splashFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+
+[data-theme="dark"] .splash-screen {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+[data-theme="dark"] .splash-image {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
+  .splash-image {
+    width: 400px;
+  }
+  
   .help-window,
   .about-window {
     width: 95%;

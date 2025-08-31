@@ -291,6 +291,9 @@ class MarkdownViewer {
       // Dummy command to prevent conflicts
     });
     
+    // Add markdown formatting shortcuts
+    this.setupMonacoMarkdownShortcuts();
+    
     this.monacoEditor.onKeyDown((e) => {
       if (e.keyCode === monaco.KeyCode.Enter && !e.ctrlKey && !e.shiftKey && !e.altKey) {
         this.handleEnterKeyForLists(e);
@@ -3203,6 +3206,33 @@ Other:
     console.log('[History] File history cleared');
   }
 
+  setupMonacoMarkdownShortcuts() {
+    if (!this.monacoEditor) return;
+    
+    // Bold - Ctrl+B
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB, () => {
+      this.executeMarkdownAction('bold');
+    });
+    
+    // Italic - Ctrl+I
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => {
+      this.executeMarkdownAction('italic');
+    });
+    
+    // Headers - Ctrl+Shift+1/2/3
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit1, () => {
+      this.executeMarkdownAction('h1');
+    });
+    
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit2, () => {
+      this.executeMarkdownAction('h2');
+    });
+    
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit3, () => {
+      this.executeMarkdownAction('h3');
+    });
+  }
+
   // Markdown Toolbar Methods
   initializeMarkdownToolbar() {
     console.log('[Toolbar] Initializing markdown toolbar...');
@@ -3277,14 +3307,9 @@ Other:
     let selection = this.monacoEditor.getSelection();
     let selectedText = '';
     
-    // Try current selection first
+    // Always use current selection/cursor position
     if (selection && !selection.isEmpty()) {
       selectedText = model.getValueInRange(selection);
-    }
-    // Fall back to last stored selection
-    else if (this.lastSelection && !this.lastSelection.isEmpty()) {
-      selection = this.lastSelection;
-      selectedText = this.lastSelectedText;
     }
     
     this.performMarkdownAction(action, selection, model, selectedText);

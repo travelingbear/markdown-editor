@@ -1,4 +1,4 @@
-# Markdown Viewer
+# Markdown Editor
 
 ![Markdown Editor Box](MarkdownEditorBox2.jpg)
 

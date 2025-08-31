@@ -46,9 +46,6 @@ A powerful native desktop markdown viewer and editor built with Tauri + Rust + T
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 100MB free space
 
-### Essential Keyboard Shortcuts
-- `F1` - Help :D
-
 ### Getting Started
 1. **Launch the app** - See the welcome screen with quick start guide
 2. **Open a file** - Use Ctrl+O or drag-drop a .md file

@@ -135,7 +135,7 @@ markdown-viewer/
 
 ## 🔄 Version History
 
-### v1.0.0 (Current)
+### v2.0.0 (Current)
 - ✅ Complete three-mode interface with Monaco Editor
 - ✅ Real-time markdown rendering with advanced features
 - ✅ Native drag-drop with absolute file paths
@@ -145,6 +145,15 @@ markdown-viewer/
 - ✅ File associations and system integration
 - ✅ Performance optimization and error handling
 - ✅ Cross-platform distribution packages
+- ✅ Distraction-free mode with F11 toggle
+- ✅ Centered A4 layout with configurable page sizes
+- ✅ Enhanced settings window with visual controls
+- ✅ File history on welcome screen
+- ✅ Markdown formatting toolbar
+- ✅ Comprehensive keyboard shortcuts
+- ✅ Help and About modals
+- ✅ Splash screen with settings toggle
+- ✅ Professional branding and MIT license
 
 ### Development Phases Completed
 - **Phase 1**: Core Foundation ✅
@@ -155,6 +164,10 @@ markdown-viewer/
 - **Phase 5**: Final Polish & Enhancement ✅
 - **Phase 5.1**: Native Drag-Drop Absolute Paths ✅
 - **Phase 6**: Distribution & Release ✅
+- **Phase 7**: UI/UX Enhancements ✅
+- **Phase 8**: Keyboard Shortcuts ✅
+- **Phase 8.5**: Help, About & Splash Screen ✅
+- **Phase 9**: Branding & Legal ✅
 
 ## 🤝 Contributing
 

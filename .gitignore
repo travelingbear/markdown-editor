@@ -1,19 +1,53 @@
-EXAMPLE_markdown-previewer/
-GENERIC_AI_DEVELOPMENT_PROMPT.md
-
-# Dependencies
-node_modules/
-package-lock.json
-
 # Build outputs
-dist/
-build/
+/Markdown Viewer/src-tauri/target/
+/Markdown Viewer/node_modules/
+/Markdown Viewer/dist/
 
-# Electron
-out/
-*.log
-
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-AI_ASSISTANT_PROMPT.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary files
+*.tmp
+*.temp
+
+# Windows specific
+desktop.ini
+
+# Rust specific
+**/*.rs.bk
+Cargo.lock
+
+# Tauri specific
+/Markdown Viewer/src-tauri/gen/
+
+# Distribution packages (optional - uncomment if you don't want to track built installers)
+# *.msi
+# *.exe
+# *.dmg
+# *.deb
+# *.AppImage

@@ -418,10 +418,17 @@ class MarkdownViewer {
       }
     });
     
-    // Enhanced keyboard shortcuts - OS compliant
+    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       // Handle Ctrl/Cmd shortcuts
       if (e.ctrlKey || e.metaKey) {
+        // Special handling for Ctrl+Shift+M (toolbar toggle)
+        if (e.key === 'M' && e.shiftKey) {
+          e.preventDefault();
+          this.toggleMarkdownToolbar();
+          return;
+        }
+        
         switch (e.key) {
           case 'n':
             e.preventDefault();
@@ -498,6 +505,13 @@ class MarkdownViewer {
             // Toggle theme (Ctrl+T)
             e.preventDefault();
             this.toggleTheme();
+            break;
+          case 'm':
+            if (e.shiftKey) {
+              // Toggle markdown toolbar (Ctrl+Shift+M)
+              e.preventDefault();
+              this.toggleMarkdownToolbar();
+            }
             break;
 
 

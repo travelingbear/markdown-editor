@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Markdown Editor
+Comment=Professional markdown viewer and editor
+Exec=markdown-editor %f
+Icon=markdown-editor
+Terminal=false
+Categories=Office;TextEditor;Development;
+MimeType=text/markdown;text/x-markdown;
+StartupNotify=true
+StartupWMClass=markdown-editor
+Keywords=markdown;editor;viewer;text;

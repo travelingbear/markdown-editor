@@ -221,68 +221,24 @@ pub fn run() {
     }
     
     let startup_file = if args.len() > 1 {
-        // Look for the first file argument (skip program name)
-        let mut found_file = None;
+        // Take the last argument as the file (most reliable for file associations)
+        let file_arg = &args[args.len() - 1];
+        println!("[Rust] Checking file argument: '{}'", file_arg);
         
-        for arg in args.iter().skip(1) {
-            println!("[Rust] Processing argument: '{}'", arg);
-            
-            // Skip common flags and options
-            if arg.starts_with("-") || arg.starts_with("/") {
-                println!("[Rust] Skipping flag/option: {}", arg);
-                continue;
-            }
-            
-            // Check if it's a supported file extension
-            let arg_lower = arg.to_lowercase();
-            if arg_lower.ends_with(".md") || arg_lower.ends_with(".markdown") || arg_lower.ends_with(".txt") {
-                println!("[Rust] Found potential file: {}", arg);
-                
-                // Try to resolve the path
-                let path = std::path::Path::new(arg);
-                
-                if path.exists() {
-                    println!("[Rust] File exists: {}", arg);
-                    found_file = Some(arg.clone());
-                    break;
-                } else {
-                    println!("[Rust] File does not exist, trying absolute path resolution");
-                    
-                    // Try to resolve as absolute path
-                    match path.canonicalize() {
-                        Ok(canonical_path) => {
-                            let canonical_str = canonical_path.to_string_lossy().to_string();
-                            println!("[Rust] Resolved to canonical path: {}", canonical_str);
-                            found_file = Some(canonical_str);
-                            break;
-                        }
-                        Err(_) => {
-                            // Try relative to current directory
-                            match std::env::current_dir() {
-                                Ok(current_dir) => {
-                                    let full_path = current_dir.join(arg);
-                                    if full_path.exists() {
-                                        let full_path_str = full_path.to_string_lossy().to_string();
-                                        println!("[Rust] Found file relative to current dir: {}", full_path_str);
-                                        found_file = Some(full_path_str);
-                                        break;
-                                    } else {
-                                        println!("[Rust] File not found relative to current dir either");
-                                    }
-                                }
-                                Err(e) => {
-                                    println!("[Rust] Could not get current directory: {}", e);
-                                }
-                            }
-                        }
-                    }
-                }
+        // Skip if it's a flag
+        if file_arg.starts_with("-") {
+            println!("[Rust] Argument is a flag, ignoring");
+            None
+        } else {
+            let path = std::path::Path::new(file_arg);
+            if path.exists() {
+                println!("[Rust] File exists: {}", file_arg);
+                Some(file_arg.clone())
             } else {
-                println!("[Rust] Unsupported file extension: {}", arg);
+                println!("[Rust] File does not exist: {}", file_arg);
+                None
             }
         }
-        
-        found_file
     } else {
         println!("[Rust] No command line arguments provided");
         None

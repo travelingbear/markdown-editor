@@ -5,6 +5,29 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-01-02
+
+### Fixed
+- **Linux Application Category**: Changed from DeveloperTool to Productivity for proper OS recognition
+- **Linux Icon Display**: Fixed icon configuration to use correct paths for Linux builds
+- **Application Name**: Updated from markdown-viewer to markdown-editor throughout codebase
+- **File Associations**: Simplified command line argument parsing for reliable file associations
+- **Desktop Integration**: Created proper desktop entry for Linux system integration
+- **Anchor Links**: Added internal anchor navigation for markdown headers
+- **Tauri API Calls**: Fixed startup file handling for proper file association support
+
+### Enhanced
+- **Cross-Platform File Associations**: Improved reliability across Windows, macOS, and Linux
+- **Desktop Entry**: Added proper MIME type associations and application categories
+- **Icon System**: Multiple icon sizes for better Linux compatibility
+- **Internal Navigation**: Smooth scrolling to anchor links within documents
+
+### Technical
+- **Package Name**: Consistent markdown-editor naming across all platforms
+- **Desktop File**: Proper Linux desktop integration with correct categories
+- **Command Line**: Simplified argument parsing for better file association handling
+- **API Compatibility**: Updated Tauri v2 API calls for startup file functionality
+
 ## [2.0.0] - 2024-12-31
 
 ### Added

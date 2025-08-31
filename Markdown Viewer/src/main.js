@@ -1027,6 +1027,9 @@ class MarkdownViewer {
       // Setup task list interactions
       this.setupTaskListInteractions();
       
+      // Setup anchor link navigation
+      this.setupAnchorLinks();
+      
       // Apply syntax highlighting to code blocks
       this.applySyntaxHighlighting();
       
@@ -1673,6 +1676,42 @@ class MarkdownViewer {
     const checkboxes = this.preview.querySelectorAll('.task-list-item input[type="checkbox"]');
     console.log(`[TaskList] Set up event handling for ${checkboxes.length} checkboxes`);
 
+  }
+
+  setupAnchorLinks() {
+    console.log('[Anchors] Setting up anchor link navigation...');
+    
+    // Add IDs to headers for anchor navigation
+    const headers = this.preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    headers.forEach(header => {
+      if (!header.id) {
+        const id = header.textContent.toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .trim();
+        header.id = id;
+      }
+    });
+    
+    // Handle anchor link clicks
+    if (this.anchorClickHandler) {
+      this.preview.removeEventListener('click', this.anchorClickHandler);
+    }
+    
+    this.anchorClickHandler = (e) => {
+      if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
+        e.preventDefault();
+        const targetId = e.target.getAttribute('href').substring(1);
+        const targetElement = this.preview.querySelector(`#${targetId}`);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    };
+    
+    this.preview.addEventListener('click', this.anchorClickHandler);
+    
+    console.log(`[Anchors] Set up anchor navigation for ${headers.length} headers`);
   }
   
   updateTaskInMarkdown(taskText, checked) {

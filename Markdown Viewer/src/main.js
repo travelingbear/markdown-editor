@@ -3,6 +3,7 @@ console.log('Phase 4: Polish & OS Integration Loading...');
 
 class MarkdownViewer {
   constructor() {
+    // Essential properties only
     this.currentFile = null;
     this.isDirty = false;
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
@@ -10,6 +11,23 @@ class MarkdownViewer {
     this.currentMode = 'preview';
     this.monacoEditor = null;
     this.isMonacoLoaded = false;
+    this.isInitialized = false;
+    
+    // Initialize performance optimizer for multi-tab preparation
+    this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.detectOlderHardware();
+      this.performanceOptimizer.optimizeForMultiTabs();
+    }
+    
+    // Start async initialization
+    this.init();
+  }
+  
+  async init() {
+    const startupStartTime = performance.now();
+    
+    // Initialize remaining properties
     this.isScrollSyncing = false;
     this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false';
     this.isLoadingFile = false;
@@ -46,16 +64,6 @@ class MarkdownViewer {
     };
     this.fileHistory = JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]');
     
-    // Initialize performance optimizer for multi-tab preparation
-    this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
-    if (this.performanceOptimizer) {
-      this.performanceOptimizer.detectOlderHardware();
-      this.performanceOptimizer.optimizeForMultiTabs();
-    }
-    
-    const startupStartTime = performance.now();
-    console.log('[MarkdownViewer] Phase 4 Constructor started');
-    
     // Update splash screen progress
     if (window.splashScreen) {
       window.splashScreen.updateProgress(10, 'Initializing interface...');
@@ -70,13 +78,7 @@ class MarkdownViewer {
     this.setupEventListeners();
     
     if (window.splashScreen) {
-      window.splashScreen.updateProgress(40, 'Loading Monaco Editor...');
-    }
-    
-    this.initializeMonacoEditor();
-    
-    if (window.splashScreen) {
-      window.splashScreen.updateProgress(60, 'Configuring interface...');
+      window.splashScreen.updateProgress(40, 'Configuring interface...');
     }
     
     this.setMode('preview');
@@ -88,19 +90,26 @@ class MarkdownViewer {
     this.initializeMarkdownToolbar();
     
     if (window.splashScreen) {
-      window.splashScreen.updateProgress(80, 'Loading advanced features...');
+      window.splashScreen.updateProgress(60, 'Loading advanced features...');
     }
     
-    this.initializeAdvancedFeatures();
+    await this.initializeAdvancedFeatures();
+    
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(80, 'Finalizing...');
+    }
     
     // Ensure toolbar visibility is set correctly after initialization
-    setTimeout(() => {
-      this.updateToolbarVisibility();
-    }, 100);
+    this.updateToolbarVisibility();
     this.checkExportLibraries();
     
+    // Setup async operations
+    await this.setupWindowCloseHandler();
+    await this.setupTauriDragDrop();
+    this.startMemoryOptimization();
+    
     this.startupTime = performance.now() - startupStartTime;
-    console.log(`[MarkdownViewer] Phase 4 Constructor completed in ${this.startupTime.toFixed(2)}ms`);
+    this.isInitialized = true;
     
     // Update splash screen to completion and hide
     if (window.splashScreen) {
@@ -110,7 +119,7 @@ class MarkdownViewer {
       }, 500);
     }
     
-    // Verify performance targets (updated for older computers)
+    // Verify performance targets
     const target = this.performanceOptimizer ? this.performanceOptimizer.performanceTargets.startupTime : 2000;
     if (this.startupTime > target) {
       console.warn(`[Performance] Startup time exceeded target: ${this.startupTime.toFixed(2)}ms > ${target}ms`);
@@ -121,21 +130,8 @@ class MarkdownViewer {
       this.performanceOptimizer.benchmarkTabOperation('App Startup', startupStartTime);
     }
     
-    // Start periodic memory optimization
-    this.startMemoryOptimization();
-    
-    // Setup window close handler
-    this.setupWindowCloseHandler();
-    
-    // Setup Tauri drag-drop events (inactive due to config but ready)
-    this.setupTauriDragDrop();
-    
-    // Setup browser drag-drop (fallback only)
-    // this.setupDragAndDrop(); // Disabled - using native Tauri events
-    console.log('[DragDrop] Drag-drop setup completed - using native Tauri events');
-    
-    console.log('[Phase4] All Phase 4 features initialized successfully');
-    console.log('[Phase4] File associations, keyboard shortcuts, performance monitoring, and error handling active');
+    // Initialize Monaco Editor lazily when needed
+    await this.initializeMonacoEditorLazy();
   }
 
   initializeElements() {
@@ -230,77 +226,90 @@ class MarkdownViewer {
     }
   }
 
-  async initializeMonacoEditor() {
-    try {
-      console.log('[Monaco] Initializing Monaco Editor...');
-      
-      // Configure Monaco loader for CDN
-      require.config({ 
-        paths: { 
-          'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+  async initializeMonacoEditorLazy() {
+    // Monaco Editor lazy loading - only load when switching to code mode
+    return new Promise((resolve) => {
+      // Check for startup file first
+      this.checkStartupFile().then(() => {
+        // Only update preview if no startup file was loaded
+        if (!this.currentFile) {
+          this.updatePreview();
         }
+        this.updateCursorPosition();
+        resolve();
       });
-
-      // Load Monaco Editor
-      require(['vs/editor/editor.main'], () => {
-        console.log('[Monaco] Monaco Editor loaded successfully');
-        
-        // Create Monaco Editor instance
-        this.monacoEditor = monaco.editor.create(this.monacoContainer, {
-          value: '',
-          language: 'markdown',
-          theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
-          automaticLayout: true,
-          wordWrap: 'on',
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          fontSize: 14,
-          lineHeight: 1.45,
-          fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
-          renderWhitespace: 'selection',
-          folding: true,
-          lineNumbers: 'on',
-          glyphMargin: false,
-          scrollbar: {
-            vertical: 'auto',
-            horizontal: 'auto'
-          },
-          suggest: {
-            showKeywords: this.suggestionsEnabled,
-            showSnippets: this.suggestionsEnabled,
-            showWords: this.suggestionsEnabled
-          },
-          quickSuggestions: this.suggestionsEnabled
-        });
-
-        this.isMonacoLoaded = true;
-        console.log('[Monaco] Editor instance created');
-
-        // Setup Monaco event listeners
-        this.setupMonacoEventListeners();
-        
-        // Hide fallback textarea and show Monaco
-        this.editor.style.display = 'none';
-        this.monacoContainer.style.display = 'block';
-        
-        // Check for startup file before initial preview
-        this.checkStartupFile().then(() => {
-          // Only update preview if no startup file was loaded
-          if (!this.currentFile) {
-            this.updatePreview();
+    });
+  }
+  
+  async loadMonacoEditor() {
+    if (this.isMonacoLoaded) return;
+    
+    try {
+      // Configure Monaco loader for CDN - only once
+      if (!window.require || !window.require.defined) {
+        require.config({ 
+          paths: { 
+            'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
           }
-          this.updateCursorPosition();
-          
-          // Tauri native drag-drop already set up in constructor
+        });
+      }
+
+      return new Promise((resolve, reject) => {
+        // Load Monaco Editor
+        require(['vs/editor/editor.main'], () => {
+          try {
+            // Create Monaco Editor instance
+            this.monacoEditor = monaco.editor.create(this.monacoContainer, {
+              value: this.getEditorContent(),
+              language: 'markdown',
+              theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
+              automaticLayout: true,
+              wordWrap: 'on',
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              fontSize: 14,
+              lineHeight: 1.45,
+              fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+              renderWhitespace: 'selection',
+              folding: true,
+              lineNumbers: 'on',
+              glyphMargin: false,
+              scrollbar: {
+                vertical: 'auto',
+                horizontal: 'auto'
+              },
+              suggest: {
+                showKeywords: this.suggestionsEnabled,
+                showSnippets: this.suggestionsEnabled,
+                showWords: this.suggestionsEnabled
+              },
+              quickSuggestions: this.suggestionsEnabled
+            });
+
+            this.isMonacoLoaded = true;
+
+            // Setup Monaco event listeners
+            this.setupMonacoEventListeners();
+            
+            // Hide fallback textarea and show Monaco
+            this.editor.style.display = 'none';
+            this.monacoContainer.style.display = 'block';
+            
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        }, (error) => {
+          reject(error);
         });
       });
 
     } catch (error) {
       console.error('[Monaco] Failed to load Monaco Editor:', error);
-      console.log('[Monaco] Falling back to textarea editor');
       this.monacoContainer.style.display = 'none';
       this.editor.style.display = 'block';
       this.isMonacoLoaded = false;
+      throw error;
     }
   }
 
@@ -1116,11 +1125,11 @@ class MarkdownViewer {
   updateFilename() {
     if (this.currentFile) {
       const filename = this.currentFile.split(/[\\\/]/).pop();
-      this.filename.textContent = filename + (this.isDirty ? ' *' : '');
+      this.filename.textContent = `${filename}${this.isDirty ? ' *' : ''}`;
     } else if (this.welcomePage && this.welcomePage.style.display !== 'none') {
       this.filename.textContent = 'Welcome';
     } else {
-      this.filename.textContent = 'untitled.md' + (this.isDirty ? ' *' : '');
+      this.filename.textContent = `untitled.md${this.isDirty ? ' *' : ''}`;
     }
   }
   
@@ -1174,15 +1183,24 @@ class MarkdownViewer {
     }
   }
 
-  setMode(mode) {
+  async setMode(mode) {
     const startTime = performance.now();
-    console.log(`[Mode] Switching to ${mode} mode`);
     
     // Check if mode switching is allowed
     const hasDocument = this.currentFile || (this.welcomePage && this.welcomePage.style.display === 'none');
     if (!hasDocument && (mode === 'code' || mode === 'split')) {
-      console.log('[Mode] Mode switching disabled - no document loaded');
       return;
+    }
+    
+    // Load Monaco Editor lazily when switching to code or split mode
+    if ((mode === 'code' || mode === 'split') && !this.isMonacoLoaded) {
+      try {
+        await this.loadMonacoEditor();
+      } catch (error) {
+        console.error('[Monaco] Failed to load Monaco Editor for mode switch:', error);
+        // Fall back to preview mode if Monaco fails to load
+        mode = 'preview';
+      }
     }
     
     // Store current scroll positions before switching
@@ -1221,18 +1239,18 @@ class MarkdownViewer {
     
     // Trigger Monaco layout update and restore scroll positions
     if (this.isMonacoLoaded && this.monacoEditor) {
-      setTimeout(() => {
+      // Use requestAnimationFrame instead of setTimeout for better performance
+      requestAnimationFrame(() => {
         this.monacoEditor.layout();
-        setTimeout(() => {
-          this.restoreScrollPositions();
-          this.benchmarkOperation('Mode Switch', startTime);
-        }, 50);
-      }, 100);
-    } else {
-      setTimeout(() => {
         this.restoreScrollPositions();
         this.benchmarkOperation('Mode Switch', startTime);
-      }, 150);
+      });
+    } else {
+      // Use requestAnimationFrame for better performance
+      requestAnimationFrame(() => {
+        this.restoreScrollPositions();
+        this.benchmarkOperation('Mode Switch', startTime);
+      });
     }
   }
 
@@ -2122,65 +2140,72 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   async processImages() {
-    console.log('[Images] Processing images for local file conversion...');
-    
     const images = this.preview.querySelectorAll('img.markdown-image');
-    console.log(`[Images] Found ${images.length} images to process`);
     
-    for (const img of images) {
+    // Process all images concurrently using Promise.all
+    const imagePromises = Array.from(images).map(async (img) => {
       const originalSrc = img.getAttribute('data-original-src');
       
       if (!originalSrc) {
-        console.log(`[Images] Skipping image - no data-original-src attribute`);
-        continue;
+        return;
       }
       
-      console.log(`[Images] Processing image: "${originalSrc}"`);
-      
-      // Check if the attribute contains the object string issue
-      if (originalSrc === '[object Object]') {
-        console.error(`[Images] Found [object Object] in data-original-src attribute!`);
-        img.classList.add('image-error');
-        img.title = 'Image path error: [object Object] detected';
-        continue;
+      // Decode URL-encoded paths
+      if (originalSrc.includes('%')) {
+        try {
+          originalSrc = decodeURIComponent(originalSrc);
+        } catch (e) {
+          return;
+        }
       }
       
       try {
-        // Check if it's a local file path (not a URL)
-        if (!originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:')) {
-          console.log(`[Images] Converting local path: "${originalSrc}"`);
-          
+        // Check if it's a Tauri dev server URL that should be converted
+        const isTauriDevUrl = originalSrc.startsWith('http://127.0.0.1:') || originalSrc.startsWith('http://localhost:');
+        const isLocalFile = !originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:');
+        
+        if (isLocalFile || isTauriDevUrl) {
           if (window.__TAURI__) {
             try {
-              const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: originalSrc });
-              console.log(`[Images] Successfully converted to data URL`);
+              let resolvedPath = originalSrc;
+              
+              // Handle Tauri dev server URLs - extract the filename
+              if (isTauriDevUrl) {
+                resolvedPath = this.improveDevServerPathResolution(originalSrc);
+              }
+              
+              // Skip path resolution for dev server - just use the filename
+              if (!isTauriDevUrl && this.currentFile && !this.isAbsolutePath(resolvedPath)) {
+                const currentDir = this.currentFile.substring(0, Math.max(this.currentFile.lastIndexOf('/'), this.currentFile.lastIndexOf('\\')));
+                if (currentDir) {
+                  resolvedPath = this.joinPaths(currentDir, resolvedPath);
+                }
+              }
+              
+              const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath });
               img.src = dataUrl;
               img.classList.add('local-image');
             } catch (error) {
-              console.warn(`[Images] Failed to convert local path "${originalSrc}":`, error);
-              
               // Keep original src and add error class
               img.classList.add('image-error');
               const errorMessage = typeof error === 'string' ? error : (error.message || error.toString() || 'Unknown error');
-              img.title = `Image error: ${errorMessage}`;
+              img.title = `Image not found: ${originalSrc}\nError: ${errorMessage}`;
             }
           } else {
-            console.warn('[Images] Tauri not available, cannot convert local paths');
             img.classList.add('image-error');
             img.title = `Local image requires Tauri: ${originalSrc}`;
           }
         } else {
-          console.log(`[Images] Remote image, no conversion needed: ${originalSrc}`);
           img.classList.add('remote-image');
         }
       } catch (error) {
-        console.error(`[Images] Error processing image ${originalSrc}:`, error);
         img.classList.add('image-error');
         img.title = `Error loading image: ${error.message}`;
       }
-    }
+    });
     
-    console.log('[Images] Image processing completed');
+    // Wait for all images to process concurrently
+    await Promise.all(imagePromises);
   }
 
   toggleTheme() {
@@ -2208,18 +2233,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
   
   checkExportLibraries() {
-    console.log('[Libraries] Checking export libraries availability...');
-    console.log('[Libraries] html2canvas:', typeof html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
-    console.log('[Libraries] window.html2canvas:', typeof window.html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
-    console.log('[Libraries] jsPDF:', typeof jsPDF !== 'undefined' ? 'loaded' : 'not loaded');
-    console.log('[Libraries] window.jspdf:', typeof window.jspdf !== 'undefined' ? 'loaded' : 'not loaded');
-    
-    // Wait a bit for libraries to fully initialize
-    setTimeout(() => {
-      console.log('[Libraries] Delayed check:');
-      console.log('[Libraries] html2canvas:', typeof html2canvas !== 'undefined' ? 'loaded' : 'not loaded');
-      console.log('[Libraries] jsPDF:', typeof jsPDF !== 'undefined' ? 'loaded' : 'not loaded');
-    }, 2000);
+    // Performance monitoring for export libraries
+    this.exportLibrariesStatus = {
+      katex: this.katexInitialized,
+      mermaid: this.mermaidInitialized,
+      hljs: typeof hljs !== 'undefined',
+      marked: typeof marked !== 'undefined'
+    };
   }
 
   async checkStartupFile() {
@@ -3009,42 +3029,129 @@ Tip: You can also use HTML Export and then print from your browser.`;
     }
     
     // Fallback to original implementation
-    console.log('[Performance] Starting memory optimization...');
-    
     // Clear any cached data that's no longer needed
     if (this.taskListStates.size > 100) {
       this.taskListStates.clear();
-      console.log('[Performance] Cleared task list states cache');
+    }
+    
+    // Clear path cache if too large
+    if (this.pathCache && this.pathCache.size > 50) {
+      this.pathCache.clear();
     }
     
     // Clear old error logs
     const errors = this.getErrorLogs();
     if (errors.length > 10) {
       this.clearErrorLogs();
-      console.log('[Performance] Cleared old error logs');
     }
     
     // Clear performance metrics if too many
     if (this.performanceMetrics.updateCount > 1000) {
       this.performanceMetrics.updateCount = 0;
       this.performanceMetrics.averageUpdateTime = 0;
-      console.log('[Performance] Reset performance metrics');
     }
     
     // Force garbage collection if available
     if (window.gc) {
       window.gc();
-      console.log('[Performance] Forced garbage collection');
     }
-    
-    console.log('[Performance] Memory optimization completed');
   }
 
   // Auto-optimize memory periodically
   startMemoryOptimization() {
-    setInterval(() => {
+    // Store interval ID for proper cleanup
+    this.memoryOptimizationInterval = setInterval(() => {
       this.optimizeMemory();
     }, 300000); // Every 5 minutes
+  }
+  
+  stopMemoryOptimization() {
+    if (this.memoryOptimizationInterval) {
+      clearInterval(this.memoryOptimizationInterval);
+      this.memoryOptimizationInterval = null;
+    }
+  }
+  
+  cleanupEventListeners() {
+    // Cleanup Tauri event listeners
+    if (this.tauriDropUnlisten) {
+      this.tauriDropUnlisten();
+      this.tauriDropUnlisten = null;
+    }
+    
+    if (this.closeHandlerUnlisten) {
+      this.closeHandlerUnlisten();
+      this.closeHandlerUnlisten = null;
+    }
+    
+    // Cleanup other event handlers
+    if (this.taskChangeHandler) {
+      this.preview.removeEventListener('change', this.taskChangeHandler);
+      this.taskChangeHandler = null;
+    }
+    
+    if (this.anchorClickHandler) {
+      this.preview.removeEventListener('click', this.anchorClickHandler);
+      this.anchorClickHandler = null;
+    }
+    
+    this.removeDistractionFreeHover();
+    this.stopMemoryOptimization();
+  }
+  
+  improveDevServerPathResolution(originalSrc) {
+    // Cache filename extraction results
+    if (!this.pathCache) {
+      this.pathCache = new Map();
+    }
+    
+    if (this.pathCache.has(originalSrc)) {
+      return this.pathCache.get(originalSrc);
+    }
+    
+    let result = originalSrc;
+    
+    // Handle Tauri dev server URLs more robustly
+    if (originalSrc.startsWith('http://127.0.0.1:') || originalSrc.startsWith('http://localhost:')) {
+      try {
+        const url = new URL(originalSrc);
+        let pathname = url.pathname;
+        
+        // Remove leading slash and handle nested paths
+        if (pathname.startsWith('/')) {
+          pathname = pathname.substring(1);
+        }
+        
+        // If it's just a filename, assume it's in project root
+        if (!pathname.includes('/') && !pathname.includes('\\')) {
+          result = pathname; // Just the filename for project root
+        } else {
+          result = pathname;
+        }
+      } catch (error) {
+        result = originalSrc;
+      }
+    }
+    
+    // Cache the result (limit cache size to prevent memory leaks)
+    if (this.pathCache.size > 100) {
+      const firstKey = this.pathCache.keys().next().value;
+      this.pathCache.delete(firstKey);
+    }
+    this.pathCache.set(originalSrc, result);
+    
+    return result;
+  }
+  
+  isAbsolutePath(path) {
+    // Check for Windows absolute paths (C:\, D:\, etc.) or Unix absolute paths (/)
+    return /^[A-Za-z]:\\/.test(path) || path.startsWith('/');
+  }
+  
+  joinPaths(dir, file) {
+    // Simple path joining that works for both Windows and Unix
+    const separator = dir.includes('\\') ? '\\' : '/';
+    return dir + separator + file;
   }
 
   async setupTauriDragDrop() {

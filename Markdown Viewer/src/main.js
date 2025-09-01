@@ -1071,6 +1071,9 @@ class MarkdownViewer {
       // Process task lists
       html = this.processTaskListsInHtml(html);
       
+      // Post-process HTML to handle img tags that bypass markdown renderer
+      html = this.postProcessHtmlImages(html);
+      
       // Set the HTML content
       this.preview.innerHTML = html;
       console.log('[Preview] HTML set in preview');
@@ -2206,6 +2209,30 @@ Tip: You can also use HTML Export and then print from your browser.`;
     
     // Wait for all images to process concurrently
     await Promise.all(imagePromises);
+  }
+  
+  postProcessHtmlImages(html) {
+    // Post-process HTML to add markdown-image class to all img tags
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    const allImages = tempDiv.querySelectorAll('img');
+    allImages.forEach(img => {
+      if (!img.classList.contains('markdown-image')) {
+        img.classList.add('markdown-image');
+        // Ensure data-original-src is set with proper src value
+        let srcValue = img.getAttribute('src') || img.src;
+        // Don't encode the src value when setting data-original-src
+        img.setAttribute('data-original-src', srcValue);
+        // Add proper styling
+        if (!img.style.maxWidth) {
+          img.style.maxWidth = '100%';
+          img.style.height = 'auto';
+        }
+      }
+    });
+    
+    return tempDiv.innerHTML;
   }
 
   toggleTheme() {

@@ -1,5 +1,4 @@
 // Phase 4: Polish & OS Integration - Complete Implementation
-console.log('Phase 4: Polish & OS Integration Loading...');
 
 class MarkdownViewer {
   constructor() {
@@ -188,7 +187,7 @@ class MarkdownViewer {
 
   async initializeAdvancedFeatures() {
     try {
-      console.log('[Advanced] Initializing advanced features with dynamic imports...');
+      // Initializing advanced features with dynamic imports
       
       // Load Mermaid using dynamic import to avoid AMD conflicts
       try {
@@ -201,7 +200,7 @@ class MarkdownViewer {
           fontFamily: 'inherit'
         });
         this.mermaidInitialized = true;
-        console.log('[Mermaid] Loaded and initialized successfully via ES module');
+        // Mermaid loaded successfully
       } catch (error) {
         console.warn('[Mermaid] Failed to load via ES module:', error);
         this.mermaidInitialized = false;
@@ -212,7 +211,7 @@ class MarkdownViewer {
         const katexModule = await import('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.mjs');
         this.katex = katexModule.default;
         this.katexInitialized = true;
-        console.log('[KaTeX] Loaded successfully via ES module');
+        // KaTeX loaded successfully
       } catch (error) {
         console.warn('[KaTeX] Failed to load via ES module:', error);
         this.katexInitialized = false;
@@ -1059,7 +1058,7 @@ class MarkdownViewer {
       
       // Parse markdown to HTML
       let html = marked.parse(processedMarkdown);
-      console.log('[Preview] Initial HTML generated, length:', html.length);
+      // HTML generated
       
       // Process Mermaid code blocks
       html = this.processMermaidInHtml(html);
@@ -1072,8 +1071,6 @@ class MarkdownViewer {
       
       // Set the HTML content
       this.preview.innerHTML = html;
-      console.log('[Preview] HTML set in preview');
-      console.log('[Preview] Final HTML sample:', html.substring(0, 500) + '...');
       
       // Render Mermaid diagrams
       await this.renderMermaidDiagrams();
@@ -1087,10 +1084,10 @@ class MarkdownViewer {
       // Apply syntax highlighting to code blocks
       this.applySyntaxHighlighting();
       
-      // Process images for local file conversion
+      // Process images for local file conversion (may cause brief flicker on first load)
       await this.processImages();
       
-      console.log('[Preview] Preview update completed');
+      // Preview update completed
       
     } catch (error) {
       console.error('[Preview] Error updating preview:', error);
@@ -1569,10 +1566,7 @@ class MarkdownViewer {
   }
 
   processMathInMarkdown(markdown) {
-    console.log('[Math] Processing math expressions...');
-    
     if (this.katexInitialized && this.katex) {
-      console.log('[Math] Using KaTeX for rendering');
       
       // Process display math: $$...$$
       markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
@@ -1602,7 +1596,6 @@ class MarkdownViewer {
         }
       });
     } else {
-      console.log('[Math] KaTeX not available, using fallback styling');
       
       // Fallback styling without external libraries
       markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
@@ -1618,10 +1611,7 @@ class MarkdownViewer {
   }
   
   processMermaidInHtml(html) {
-    console.log('[Mermaid] Processing Mermaid code blocks...');
-    
     if (this.mermaidInitialized && this.mermaid) {
-      console.log('[Mermaid] Using Mermaid.js for rendering');
       
       // Replace mermaid code blocks with containers for rendering
       html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
@@ -1630,7 +1620,6 @@ class MarkdownViewer {
         return `<div class="mermaid-diagram" id="${id}" data-mermaid-code="${encodeURIComponent(decodedCode.trim())}"></div>`;
       });
     } else {
-      console.log('[Mermaid] Mermaid not available, using fallback placeholders');
       
       // Fallback placeholders
       html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
@@ -1647,7 +1636,6 @@ class MarkdownViewer {
   }
   
   processTaskListsInHtml(html) {
-    console.log('[TaskList] Processing task lists...');
     let taskCount = 0;
     
     // First, handle any existing disabled checkboxes in li elements
@@ -1679,36 +1667,27 @@ class MarkdownViewer {
       return `<div class="task-list-item standalone-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
     });
     
-    console.log(`[TaskList] Processed ${taskCount} total tasks`);
     return html;
   }
   
   async renderMermaidDiagrams() {
     if (!this.mermaidInitialized || !this.mermaid) {
-      console.log('[Mermaid] Mermaid not initialized, skipping diagram rendering');
       return;
     }
     
-    console.log('[Mermaid] Rendering Mermaid diagrams...');
-    
     const diagrams = document.querySelectorAll('.mermaid-diagram');
-    console.log(`[Mermaid] Found ${diagrams.length} diagrams to render`);
     
     for (let i = 0; i < diagrams.length; i++) {
       const diagram = diagrams[i];
       const code = decodeURIComponent(diagram.getAttribute('data-mermaid-code'));
       
       try {
-        console.log(`[Mermaid] Rendering diagram ${i + 1}/${diagrams.length}`);
-        
         // Clear any existing content
         diagram.innerHTML = '';
         
         // Render the diagram
         const { svg } = await this.mermaid.render(diagram.id + '-svg', code);
         diagram.innerHTML = svg;
-        
-        console.log(`[Mermaid] Successfully rendered diagram ${i + 1}`);
       } catch (error) {
         console.error(`[Mermaid] Error rendering diagram ${i + 1}:`, error);
         diagram.innerHTML = `
@@ -1720,12 +1699,10 @@ class MarkdownViewer {
         `;
       }
     }
-    
-    console.log('[Mermaid] Finished rendering all diagrams');
+
   }
   
   setupTaskListInteractions() {
-    console.log('[TaskList] Setting up task list interactions...');
     
     if (this.taskChangeHandler) {
       this.preview.removeEventListener('change', this.taskChangeHandler);
@@ -1745,12 +1722,9 @@ class MarkdownViewer {
     this.preview.addEventListener('change', this.taskChangeHandler);
     
     const checkboxes = this.preview.querySelectorAll('.task-list-item input[type="checkbox"]');
-    console.log(`[TaskList] Set up event handling for ${checkboxes.length} checkboxes`);
-
   }
 
   setupAnchorLinks() {
-    console.log('[Anchors] Setting up anchor link navigation...');
     
     // Add IDs to headers for anchor navigation
     const headers = this.preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -1781,8 +1755,7 @@ class MarkdownViewer {
     };
     
     this.preview.addEventListener('click', this.anchorClickHandler);
-    
-    console.log(`[Anchors] Set up anchor navigation for ${headers.length} headers`);
+
   }
   
   updateTaskInMarkdown(taskText, checked) {
@@ -2151,7 +2124,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   applySyntaxHighlighting() {
     // Apply highlight.js syntax highlighting to code blocks
     if (typeof hljs !== 'undefined') {
-      console.log('[Syntax] Applying highlight.js highlighting');
       this.preview.querySelectorAll('pre code').forEach((block) => {
         hljs.highlightElement(block);
       });
@@ -3589,7 +3561,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   // Markdown Toolbar Methods
   initializeMarkdownToolbar() {
-    console.log('[Toolbar] Initializing markdown toolbar...');
+
     
     if (!this.markdownToolbar) {
       console.warn('[Toolbar] Toolbar elements not found');
@@ -3599,7 +3571,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Update toolbar visibility based on current mode and setting
     this.updateToolbarVisibility();
     
-    console.log('[Toolbar] Markdown toolbar initialized');
+
   }
 
   setupMarkdownToolbarEvents() {
@@ -3624,7 +3596,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       });
     });
     
-    console.log(`[Toolbar] Event listeners set up for ${mdButtons.length} buttons`);
+
   }
 
 
@@ -3641,7 +3613,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.markdownToolbar.classList.remove('visible');
     }
     
-    console.log(`[Toolbar] Visibility updated: ${shouldShow ? 'visible' : 'hidden'}`);
+
   }
 
   toggleMarkdownToolbar() {
@@ -4063,10 +4035,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
 }
 
 // Phase 4 Complete Implementation with OS Integration
-console.log('[Phase4] Phase 4 complete with OS integration and performance optimization');
-
 // Initialize the app when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
-  console.log('[App] DOM loaded, initializing Phase 3 Markdown Viewer...');
   new MarkdownViewer();
 });

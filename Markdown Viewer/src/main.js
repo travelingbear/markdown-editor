@@ -887,43 +887,39 @@ class MarkdownViewer {
   }
 
   async closeFile() {
-    console.log('[Close] isDirty:', this.isDirty);
     if (this.isDirty) {
-      try {
-        // Create custom 3-button dialog using browser confirm and additional logic
-        const saveFirst = await window.__TAURI__.dialog.confirm(
-          'You have unsaved changes. Do you want to save before closing?',
-          { title: 'Unsaved Changes' }
-        );
-        
-        if (saveFirst) {
-          // User chose to save - try to save first
-          try {
-            await this.saveFile();
-            this.doClose();
-          } catch (error) {
-            console.error('[Close] Error saving file:', error);
-            // Don't close if save failed
-          }
-        } else {
-          // User chose not to save - ask if they want to close without saving
-          const closeWithoutSaving = await window.__TAURI__.dialog.confirm(
-            'Close without saving changes?',
-            { title: 'Confirm Close' }
-          );
-          
-          if (closeWithoutSaving) {
-            this.doClose();
-          }
-          // If they cancel the second dialog, do nothing (stay in document)
-        }
-      } catch (error) {
-        console.error('[Close] Error showing dialog:', error);
-        // Don't close on dialog error
+      const shouldClose = await this.handleUnsavedChanges();
+      if (shouldClose) {
+        this.doClose();
       }
     } else {
-      console.log('[Close] No unsaved changes, closing directly');
       this.doClose();
+    }
+  }
+  
+  async handleUnsavedChanges() {
+    try {
+      const saveFirst = await window.__TAURI__.dialog.confirm(
+        'You have unsaved changes. Do you want to save before closing?',
+        { title: 'Unsaved Changes' }
+      );
+      
+      if (saveFirst) {
+        try {
+          await this.saveFile();
+          return !this.isDirty; // Only close if save succeeded
+        } catch (error) {
+          return false; // Don't close if save failed
+        }
+      } else {
+        const closeWithoutSaving = await window.__TAURI__.dialog.confirm(
+          'Close without saving changes?',
+          { title: 'Confirm Close' }
+        );
+        return closeWithoutSaving;
+      }
+    } catch (error) {
+      return false; // Don't close on dialog error
     }
   }
 
@@ -1139,42 +1135,35 @@ class MarkdownViewer {
   updateModeButtons() {
     const hasDocument = this.currentFile || (this.welcomePage && this.welcomePage.style.display === 'none');
     
-    if (hasDocument) {
-      // Enable mode buttons
-      this.codeBtn.disabled = false;
-      this.previewBtn.disabled = false;
-      this.splitBtn.disabled = false;
-      this.codeBtn.classList.remove('disabled');
-      this.previewBtn.classList.remove('disabled');
-      this.splitBtn.classList.remove('disabled');
-      
-      // Enable export, save, and close buttons
-      this.saveBtn.disabled = false;
-      this.saveAsBtn.disabled = false;
-      this.closeBtn.disabled = false;
-      this.exportBtn.disabled = false;
-      this.exportHtmlBtn.disabled = false;
-      this.exportPdfBtn.disabled = false;
-    } else {
-      // Disable all mode buttons when no document
-      this.codeBtn.disabled = true;
-      this.previewBtn.disabled = true;
-      this.splitBtn.disabled = true;
-      this.codeBtn.classList.add('disabled');
-      this.previewBtn.classList.add('disabled');
-      this.splitBtn.classList.add('disabled');
-      
-      // Disable export, save, and close buttons
-      this.saveBtn.disabled = true;
-      this.saveAsBtn.disabled = true;
-      this.closeBtn.disabled = true;
-      this.exportBtn.disabled = true;
-      this.exportHtmlBtn.disabled = true;
-      this.exportPdfBtn.disabled = true;
-      
-      // Force preview mode
+    // Use CSS-based approach with data attribute for better performance
+    document.body.setAttribute('data-has-document', hasDocument.toString());
+    
+    // Batch DOM operations for better performance
+    this.setBatchButtonState(hasDocument);
+    
+    if (!hasDocument) {
+      // Force preview mode when no document
       this.setMode('preview');
     }
+  }
+  
+  setBatchButtonState(hasDocument) {
+    // Batch all button state changes to minimize DOM manipulation
+    const buttons = [
+      this.codeBtn, this.previewBtn, this.splitBtn,
+      this.saveBtn, this.saveAsBtn, this.closeBtn,
+      this.exportBtn, this.exportHtmlBtn, this.exportPdfBtn
+    ];
+    
+    // Use requestAnimationFrame to batch DOM updates
+    requestAnimationFrame(() => {
+      buttons.forEach(btn => {
+        if (btn) {
+          btn.disabled = !hasDocument;
+          btn.classList.toggle('disabled', !hasDocument);
+        }
+      });
+    });
   }
 
   markDirty() {
@@ -1457,21 +1446,36 @@ class MarkdownViewer {
     
     this.isScrollSyncing = true;
     
-    // Calculate scroll percentage
-    const editorElement = this.monacoEditor.getDomNode();
-    const editorViewHeight = editorElement.clientHeight;
-    const maxEditorScroll = Math.max(0, editorScrollHeight - editorViewHeight);
+    // Use cached scroll info or calculate if needed
+    this.updateCachedScrollInfo();
+    
+    // Calculate scroll percentage using cached values
+    const maxEditorScroll = Math.max(0, editorScrollHeight - this.cachedScrollInfo.editorViewHeight);
     const scrollPercentage = maxEditorScroll > 0 ? editorScrollTop / maxEditorScroll : 0;
     
-    // Apply to preview
-    const previewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
-    const previewScrollTop = scrollPercentage * previewMaxScroll;
-    
+    // Apply to preview using cached values
+    const previewScrollTop = scrollPercentage * this.cachedScrollInfo.previewMaxScroll;
     this.preview.scrollTop = previewScrollTop;
     
-    setTimeout(() => {
+    // Use requestAnimationFrame instead of setTimeout
+    requestAnimationFrame(() => {
       this.isScrollSyncing = false;
-    }, 100);
+    });
+  }
+  
+  updateCachedScrollInfo() {
+    const now = performance.now();
+    
+    // Only update cache if it's stale (older than 100ms) or doesn't exist
+    if (!this.cachedScrollInfo || (now - this.cachedScrollInfo.timestamp) > 100) {
+      const editorElement = this.monacoEditor?.getDomNode();
+      
+      this.cachedScrollInfo = {
+        editorViewHeight: editorElement ? editorElement.clientHeight : 0,
+        previewMaxScroll: Math.max(0, this.preview.scrollHeight - this.preview.clientHeight),
+        timestamp: now
+      };
+    }
   }
 
   syncScrollToEditor() {
@@ -1820,13 +1824,22 @@ class MarkdownViewer {
   
   async exportToHtml() {
     try {
-      console.log('[Export] Exporting to HTML...');
-      
       const content = this.getEditorContent();
       const previewHtml = this.preview.innerHTML;
       
-      // Create complete HTML document
-      const htmlDocument = `<!DOCTYPE html>
+      // Use extracted template method
+      const htmlDocument = this.createExportHtmlDocument(previewHtml);
+      
+      // Save HTML file using helper method
+      await this.saveHtmlFile(htmlDocument);
+      
+    } catch (error) {
+      this.handleExportError(error, 'HTML');
+    }
+  }
+  
+  createExportHtmlDocument(previewHtml) {
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1834,7 +1847,17 @@ class MarkdownViewer {
     <title>Exported Markdown</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <style>
-        body {
+        ${this.getExportHtmlStyles()}
+    </style>
+</head>
+<body>
+    ${previewHtml}
+</body>
+</html>`;
+  }
+  
+  getExportHtmlStyles() {
+    return `body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
             line-height: 1.6;
             max-width: 800px;
@@ -1850,32 +1873,29 @@ class MarkdownViewer {
         th, td { border: 1px solid #d0d7de; padding: 6px 13px; text-align: left; }
         th { background-color: #f6f8fa; }
         .task-list-item { list-style: none; }
-        .mermaid-diagram { text-align: center; margin: 20px 0; }
-    </style>
-</head>
-<body>
-    ${previewHtml}
-</body>
-</html>`;
+        .mermaid-diagram { text-align: center; margin: 20px 0; }`;
+  }
+  
+  async saveHtmlFile(htmlDocument) {
+    if (window.__TAURI__) {
+      const filePath = await window.__TAURI__.dialog.save({
+        filters: [{
+          name: 'HTML',
+          extensions: ['html']
+        }]
+      });
       
-      // Save HTML file
-      if (window.__TAURI__) {
-        const filePath = await window.__TAURI__.dialog.save({
-          filters: [{
-            name: 'HTML',
-            extensions: ['html']
-          }]
-        });
-        
-        if (filePath) {
-          await window.__TAURI__.fs.writeTextFile(filePath, htmlDocument);
-          console.log('[Export] HTML exported successfully to:', filePath);
-        }
+      if (filePath) {
+        await window.__TAURI__.fs.writeTextFile(filePath, htmlDocument);
       }
-      
-    } catch (error) {
-      console.error('[Export] Error exporting to HTML:', error);
-      alert('Error exporting to HTML: ' + error.message);
+    }
+  }
+  
+  handleExportError(error, type) {
+    if (window.__TAURI__) {
+      window.__TAURI__.dialog.message(`Error exporting to ${type}: ${error.message}`, { title: 'Export Error', type: 'error' });
+    } else {
+      alert(`Error exporting to ${type}: ${error.message}`);
     }
   }
   
@@ -1937,6 +1957,10 @@ class MarkdownViewer {
   }
   
   createPrintHtml(content, title) {
+    return this.getPrintHtmlTemplate(content, title);
+  }
+  
+  getPrintHtmlTemplate(content, title) {
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -1946,7 +1970,20 @@ class MarkdownViewer {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
-    body {
+    ${this.getPrintStyles()}
+  </style>
+</head>
+<body>
+  ${content}
+  <script>
+    ${this.getPrintScript()}
+  </script>
+</body>
+</html>`;
+  }
+  
+  getPrintStyles() {
+    return `body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
       line-height: 1.6;
       max-width: none;
@@ -1972,21 +2009,17 @@ class MarkdownViewer {
       font-size: 14px;
       line-height: 1.4;
     }
-    /* Ensure syntax highlighting colors are preserved */
     .hljs { background: transparent !important; }
     .hljs-keyword { color: #d73a49 !important; }
     .hljs-string { color: #032f62 !important; }
     .hljs-comment { color: #6a737d !important; }
     .hljs-number { color: #005cc5 !important; }
     .hljs-title { color: #6f42c1 !important; }
-    
     blockquote { border-left: 0.25em solid #d0d7de; padding: 0 1em; color: #656d76; }
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #d0d7de; padding: 6px 13px; text-align: left; }
     th { background-color: #f6f8fa; }
     .task-list-item { list-style: none; margin-bottom: 4px; }
-    
-    /* Better Mermaid diagram handling for print */
     .mermaid-diagram { 
       text-align: center; 
       margin: 20px 0;
@@ -2000,14 +2033,10 @@ class MarkdownViewer {
       max-height: 600px !important;
       page-break-inside: avoid;
     }
-    
-    /* Print-specific styles */
     @media print {
       body { margin: 0; padding: 15px; }
       .no-print { display: none !important; }
       .toolbar, .status-bar, .welcome-page { display: none !important; }
-      
-      /* Better page break handling */
       pre, .mermaid-diagram, blockquote, table { 
         page-break-inside: avoid;
         break-inside: avoid;
@@ -2016,33 +2045,25 @@ class MarkdownViewer {
         page-break-after: avoid;
         break-after: avoid;
       }
-      
-      /* Optimize images and diagrams */
       img, svg { 
         max-width: 100% !important; 
         height: auto !important;
         page-break-inside: avoid;
       }
-      
-      /* Force syntax highlighting colors in print */
       * {
         color-adjust: exact !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
     }
-    
     @page {
       margin: 0.6in;
       size: letter;
-    }
-  </style>
-</head>
-<body>
-  ${content}
-  <script>
-    // Ensure syntax highlighting is applied after content loads
-    document.addEventListener('DOMContentLoaded', function() {
+    }`;
+  }
+  
+  getPrintScript() {
+    return `document.addEventListener('DOMContentLoaded', function() {
       if (typeof hljs !== 'undefined') {
         document.querySelectorAll('pre code').forEach(function(block) {
           if (!block.classList.contains('hljs')) {
@@ -2050,10 +2071,7 @@ class MarkdownViewer {
           }
         });
       }
-    });
-  </script>
-</body>
-</html>`;
+    });`;
   }
   
   async createTempPrintFile(htmlContent) {

@@ -5,6 +5,32 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-01-28
+
+### Fixed
+- **Local Image Display**: Fixed local images not displaying in markdown preview by properly handling Tauri's local server URLs
+- **External Link Opening**: Fixed external links not opening in default browser by using correct Tauri opener plugin API
+- **Preview Flickering**: Eliminated screen flickering when opening files in Preview mode by optimizing update sequence
+- **Image Path Resolution**: Improved image path detection to handle both relative paths and Tauri's HTTP URLs correctly
+- **File Loading Performance**: Optimized file opening process to reduce visual artifacts and improve user experience
+
+### Enhanced
+- **Image Processing Pipeline**: Streamlined local image conversion to data URLs for reliable display
+- **Link Handling**: Improved external link detection and opening with proper fallback mechanisms
+- **Preview Updates**: Optimized preview rendering to prevent unnecessary updates during file loading
+- **Error Handling**: Enhanced image loading error handling with better user feedback
+
+### Technical
+- **URL Detection**: Added smart detection for Tauri local server URLs vs actual remote URLs
+- **Path Extraction**: Implemented proper file path extraction from Tauri's development server URLs
+- **Loading States**: Improved loading state management to prevent UI flickering
+- **Debug Cleanup**: Removed verbose logging and debug functions for production release
+
+### Removed
+- **Debug Menu Items**: Removed "Debug Info" and "Open DevTools" from Help menu
+- **Verbose Logging**: Cleaned up console output by removing development logs
+- **Debug Functions**: Removed `window.debugMarkdown()`, `window.debugImages()`, and related debug utilities
+
 ## [2.1.0] - 2025-01-02
 
 ### Fixed

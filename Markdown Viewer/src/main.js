@@ -107,8 +107,45 @@ class MarkdownViewer {
       window.splashScreen.updateProgress(100, 'Ready!');
       setTimeout(() => {
         window.splashScreen.hideSplash();
+        // Check for startup file after everything is initialized
+        this.checkStartupFile();
       }, 500);
+    } else {
+      // If no splash screen, check startup file after a short delay
+      setTimeout(() => {
+        this.checkStartupFile();
+      }, 500); // Increased delay from 100ms to 500ms
     }
+    
+    // Also check periodically for delayed file associations
+    let checkCount = 0;
+    const periodicCheck = setInterval(async () => {
+      checkCount++;
+      console.log(`[DEBUG] Periodic check ${checkCount}/20 for startup file...`);
+      
+      if (checkCount > 20) { // Increased from 10 to 20 checks
+        console.log('[DEBUG] Periodic check completed, no startup file found');
+        clearInterval(periodicCheck);
+        return;
+      }
+      
+      try {
+        // Try both the regular and force check commands
+        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
+        const forceStartupFile = await window.__TAURI__.core.invoke('force_check_startup_file');
+        console.log(`[DEBUG] Periodic check ${checkCount}: startup file =`, startupFile);
+        console.log(`[DEBUG] Periodic check ${checkCount}: force startup file =`, forceStartupFile);
+        
+        const fileToOpen = startupFile || forceStartupFile;
+        if (fileToOpen && !this.currentFile) {
+          console.log('[DEBUG] Delayed startup file found:', fileToOpen);
+          clearInterval(periodicCheck);
+          this.openSpecificFile(fileToOpen);
+        }
+      } catch (error) {
+        console.log(`[DEBUG] Periodic check ${checkCount} error:`, error);
+      }
+    }, 250); // Reduced interval from 500ms to 250ms for faster detection
     
     // Verify performance targets (updated for older computers)
     const target = this.performanceOptimizer ? this.performanceOptimizer.performanceTargets.startupTime : 2000;
@@ -129,6 +166,9 @@ class MarkdownViewer {
     
     // Setup Tauri drag-drop events (inactive due to config but ready)
     this.setupTauriDragDrop();
+    
+    // Setup menu event listeners
+    this.setupMenuEventListeners();
     
     // Setup browser drag-drop (fallback only)
     // this.setupDragAndDrop(); // Disabled - using native Tauri events
@@ -270,7 +310,14 @@ class MarkdownViewer {
             showSnippets: this.suggestionsEnabled,
             showWords: this.suggestionsEnabled
           },
-          quickSuggestions: this.suggestionsEnabled
+          quickSuggestions: this.suggestionsEnabled,
+          // Enable system clipboard operations
+          contextmenu: true,
+          selectOnLineNumbers: true,
+          // Allow browser shortcuts to work
+          multiCursorModifier: 'ctrlCmd',
+          // Don't override system shortcuts
+          tabCompletion: 'on'
         });
 
         this.isMonacoLoaded = true;
@@ -283,16 +330,11 @@ class MarkdownViewer {
         this.editor.style.display = 'none';
         this.monacoContainer.style.display = 'block';
         
-        // Check for startup file before initial preview
-        this.checkStartupFile().then(() => {
-          // Only update preview if no startup file was loaded
-          if (!this.currentFile) {
-            this.updatePreview();
-          }
-          this.updateCursorPosition();
-          
-          // Tauri native drag-drop already set up in constructor
-        });
+        // Update preview and cursor position
+        this.updatePreview();
+        this.updateCursorPosition();
+        
+        // Tauri native drag-drop already set up in constructor
       });
 
     } catch (error) {
@@ -661,7 +703,7 @@ class MarkdownViewer {
           case 'c':
           case 'v':
           case 'x':
-            // Copy/Paste/Cut (handled by Monaco)
+            // Let Monaco and browser handle copy/paste/cut natively
             return;
         }
       }
@@ -683,6 +725,10 @@ class MarkdownViewer {
           } else {
             this.toggleFullscreen();
           }
+          break;
+        case 'F12':
+          e.preventDefault();
+          this.openDevTools();
           break;
         case 'Escape':
           // Close modals first, then exit distraction-free mode, then fullscreen
@@ -780,16 +826,16 @@ class MarkdownViewer {
         const content = await window.__TAURI__.fs.readTextFile(selected);
         
         this.isLoadingFile = true;
-        this.setEditorContent(content);
-        this.isLoadingFile = false;
-        this.showEditor();
-        this.updatePreview();
         this.currentFile = selected;
-        this.isDirty = false;
-        this.addToFileHistory(selected);
+        this.showEditor();
+        this.setEditorContent(content);
         this.updateFilename();
         this.updateModeButtons();
         this.setMode(this.defaultMode);
+        this.updatePreview();
+        this.isDirty = false;
+        this.addToFileHistory(selected);
+        this.isLoadingFile = false;
         
         this.benchmarkOperation('File Open', startTime);
         console.log('[File] File opened successfully');
@@ -980,18 +1026,7 @@ class MarkdownViewer {
   async updatePreview() {
     const markdown = this.getEditorContent();
     
-    console.log('[Preview] Starting preview update...');
-    console.log('[Preview] Libraries loaded:', {
-      marked: typeof marked !== 'undefined',
-      mermaid: typeof mermaid !== 'undefined',
-      katex: typeof katex !== 'undefined',
-      window_mermaid: typeof window.mermaid !== 'undefined',
-      window_katex: typeof window.katex !== 'undefined'
-    });
-    
-    // Check what's actually available in window
-    console.log('[Preview] Window object keys containing mermaid/katex:', 
-      Object.keys(window).filter(key => key.toLowerCase().includes('mermaid') || key.toLowerCase().includes('katex')));
+
     
     if (typeof marked === 'undefined') {
       console.error('[Preview] marked.js not loaded');
@@ -1004,57 +1039,28 @@ class MarkdownViewer {
       let processedMarkdown = this.processMathInMarkdown(markdown);
       
       // Configure marked with basic settings and custom renderer
-      console.log('[Preview] Marked version:', marked.version || 'unknown');
-      
       // Check if we're using the new marked API (v5+)
       if (marked.use) {
-        console.log('[Preview] Using new marked API');
         
+        // Reset marked to default state first
+        marked.setOptions(marked.getDefaults());
+        
+        // Use simple configuration without custom renderer first
         marked.use({
           breaks: true,
-          gfm: true,
-          renderer: {
-            image(href, title, text) {
-              const titleAttr = title ? ` title="${title}"` : '';
-              const altAttr = text ? ` alt="${text}"` : '';
-              
-              // Fix: Properly extract href string from token object
-              const hrefStr = typeof href === 'object' ? (href.href || href.raw || '') : String(href || '');
-              const escapedHref = hrefStr.replace(/"/g, '&quot;');
-              
-              // Mark image for processing
-              return `<img data-original-src="${escapedHref}" src="${escapedHref}"${altAttr}${titleAttr} style="max-width: 100%; height: auto;" class="markdown-image">`;
-            }
-          }
+          gfm: true
         });
       } else {
-        console.log('[Preview] Using legacy marked API');
         
         // Legacy API (marked v4 and below)
-        const renderer = new marked.Renderer();
-        
-        renderer.image = function(href, title, text) {
-          const titleAttr = title ? ` title="${title}"` : '';
-          const altAttr = text ? ` alt="${text}"` : '';
-          
-          // Fix: Properly extract href string from token object
-          const hrefStr = typeof href === 'object' ? (href.href || href.raw || '') : String(href || '');
-          const escapedHref = hrefStr.replace(/"/g, '&quot;');
-          
-          // Mark image for processing
-          return `<img data-original-src="${escapedHref}" src="${escapedHref}"${altAttr}${titleAttr} style="max-width: 100%; height: auto;" class="markdown-image">`;
-        };
-        
         marked.setOptions({
           breaks: true,
-          gfm: true,
-          renderer: renderer
+          gfm: true
         });
       }
       
       // Parse markdown to HTML
       let html = marked.parse(processedMarkdown);
-      console.log('[Preview] Initial HTML generated, length:', html.length);
       
       // Process Mermaid code blocks
       html = this.processMermaidInHtml(html);
@@ -1064,8 +1070,6 @@ class MarkdownViewer {
       
       // Set the HTML content
       this.preview.innerHTML = html;
-      console.log('[Preview] HTML set in preview');
-      console.log('[Preview] Final HTML sample:', html.substring(0, 500) + '...');
       
       // Render Mermaid diagrams
       await this.renderMermaidDiagrams();
@@ -1082,7 +1086,7 @@ class MarkdownViewer {
       // Process images for local file conversion
       await this.processImages();
       
-      console.log('[Preview] Preview update completed');
+
       
     } catch (error) {
       console.error('[Preview] Error updating preview:', error);
@@ -1223,6 +1227,8 @@ class MarkdownViewer {
     if (this.isMonacoLoaded && this.monacoEditor) {
       setTimeout(() => {
         this.monacoEditor.layout();
+        // Ensure Monaco theme matches current theme
+        monaco.editor.setTheme(this.theme === 'dark' ? 'vs-dark' : 'vs');
         setTimeout(() => {
           this.restoreScrollPositions();
           this.benchmarkOperation('Mode Switch', startTime);
@@ -1744,13 +1750,34 @@ class MarkdownViewer {
       this.preview.removeEventListener('click', this.anchorClickHandler);
     }
     
-    this.anchorClickHandler = (e) => {
-      if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
-        e.preventDefault();
-        const targetId = e.target.getAttribute('href').substring(1);
-        const targetElement = this.preview.querySelector(`#${targetId}`);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.anchorClickHandler = async (e) => {
+      if (e.target.tagName === 'A') {
+        const href = e.target.getAttribute('href');
+        console.log('[Links] Link clicked:', href);
+        
+        if (href?.startsWith('#')) {
+          // Internal anchor link
+          e.preventDefault();
+          const targetId = href.substring(1);
+          const targetElement = this.preview.querySelector(`#${targetId}`);
+          if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        } else if (href?.startsWith('http://') || href?.startsWith('https://')) {
+          // External link - open in browser
+          e.preventDefault();
+          if (window.__TAURI__) {
+            try {
+              await window.__TAURI__.core.invoke('plugin:opener|open_url', { url: href });
+              console.log('[Links] Opened external link:', href);
+            } catch (error) {
+              console.error('[Links] Failed to open external link:', error);
+              // Fallback to window.open
+              window.open(href, '_blank');
+            }
+          } else {
+            window.open(href, '_blank');
+          }
         }
       }
     };
@@ -2133,65 +2160,82 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   async processImages() {
-    console.log('[Images] Processing images for local file conversion...');
+    // Find all img tags in the preview
+    const allImages = this.preview.querySelectorAll('img');
     
-    const images = this.preview.querySelectorAll('img.markdown-image');
-    console.log(`[Images] Found ${images.length} images to process`);
-    
-    for (const img of images) {
-      const originalSrc = img.getAttribute('data-original-src');
+    for (const img of allImages) {
+      const originalSrc = img.src || img.getAttribute('src') || '';
       
       if (!originalSrc) {
-        console.log(`[Images] Skipping image - no data-original-src attribute`);
         continue;
       }
       
-      console.log(`[Images] Processing image: "${originalSrc}"`);
-      
-      // Check if the attribute contains the object string issue
-      if (originalSrc === '[object Object]') {
-        console.error(`[Images] Found [object Object] in data-original-src attribute!`);
-        img.classList.add('image-error');
-        img.title = 'Image path error: [object Object] detected';
+      // Skip if already processed or is a data URL
+      if (originalSrc.startsWith('data:') || img.classList.contains('processed')) {
         continue;
       }
+      
+      img.classList.add('processed');
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
       
       try {
-        // Check if it's a local file path (not a URL)
-        if (!originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:')) {
-          console.log(`[Images] Converting local path: "${originalSrc}"`);
+        // Extract the actual file path from the src attribute
+        let actualPath = originalSrc;
+        
+        // Check if it's a Tauri local server URL and extract the path
+        if (originalSrc.startsWith('http://127.0.0.1:') || originalSrc.startsWith('http://localhost:')) {
+          const url = new URL(originalSrc);
+          actualPath = url.pathname;
+          if (actualPath.startsWith('/')) {
+            actualPath = actualPath.substring(1); // Remove leading slash
+          }
+        }
+        
+        // Check if it's a local file path (not a remote URL)
+        if (!originalSrc.startsWith('https://') && !originalSrc.startsWith('data:') && 
+            !originalSrc.match(/^https?:\/\/(?!127\.0\.0\.1|localhost)/)) {
+          
+          // For relative paths, try to resolve them relative to the current file
+          let resolvedPath = actualPath;
+          if (this.currentFile && !actualPath.startsWith('/')) {
+            const currentDir = this.currentFile.substring(0, this.currentFile.lastIndexOf('/'));
+            resolvedPath = `${currentDir}/${actualPath}`;
+          }
           
           if (window.__TAURI__) {
             try {
-              const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: originalSrc });
-              console.log(`[Images] Successfully converted to data URL`);
+              const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath });
               img.src = dataUrl;
               img.classList.add('local-image');
             } catch (error) {
-              console.warn(`[Images] Failed to convert local path "${originalSrc}":`, error);
-              
-              // Keep original src and add error class
-              img.classList.add('image-error');
-              const errorMessage = typeof error === 'string' ? error : (error.message || error.toString() || 'Unknown error');
-              img.title = `Image error: ${errorMessage}`;
+              // Try original path if resolved path failed
+              if (resolvedPath !== actualPath) {
+                try {
+                  const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: actualPath });
+                  img.src = dataUrl;
+                  img.classList.add('local-image');
+                } catch (error2) {
+                  img.classList.add('image-error');
+                  img.title = `Image not found: ${actualPath}`;
+                }
+              } else {
+                img.classList.add('image-error');
+                img.title = `Image not found: ${actualPath}`;
+              }
             }
           } else {
-            console.warn('[Images] Tauri not available, cannot convert local paths');
             img.classList.add('image-error');
-            img.title = `Local image requires Tauri: ${originalSrc}`;
+            img.title = `Local image requires Tauri: ${actualPath}`;
           }
         } else {
-          console.log(`[Images] Remote image, no conversion needed: ${originalSrc}`);
           img.classList.add('remote-image');
         }
       } catch (error) {
-        console.error(`[Images] Error processing image ${originalSrc}:`, error);
         img.classList.add('image-error');
         img.title = `Error loading image: ${error.message}`;
       }
     }
-    
-    console.log('[Images] Image processing completed');
   }
 
   toggleTheme() {
@@ -2234,34 +2278,93 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   async checkStartupFile() {
+    console.log('[DEBUG] checkStartupFile called');
     try {
+      console.log('[DEBUG] window.__TAURI__ available:', !!window.__TAURI__);
       if (window.__TAURI__) {
-        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
-        console.log('[Startup] Startup file:', startupFile);
+        // Debug both command line and file open events
+        const cmdLineArgs = await window.__TAURI__.core.invoke('debug_command_line');
+        const fileOpenStatus = await window.__TAURI__.core.invoke('debug_file_open_status');
+        console.log('[DEBUG] Command line args:', cmdLineArgs);
+        console.log('[DEBUG] File open status:', fileOpenStatus);
         
-        if (startupFile) {
-          const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
-          this.currentFile = startupFile;
+        console.log('[DEBUG] Calling get_startup_file...');
+        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
+        console.log('[DEBUG] get_startup_file result:', startupFile);
+        console.log('[DEBUG] get_startup_file type:', typeof startupFile);
+        console.log('[DEBUG] get_startup_file length:', startupFile ? startupFile.length : 'N/A');
+        
+        // Also try the force check
+        const forceStartupFile = await window.__TAURI__.core.invoke('force_check_startup_file');
+        console.log('[DEBUG] force_check_startup_file result:', forceStartupFile);
+        console.log('[DEBUG] force_check_startup_file type:', typeof forceStartupFile);
+        
+        const fileToOpen = startupFile || forceStartupFile;
+        if (fileToOpen) {
+          console.log('[DEBUG] Startup file found, loading content...');
+          const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: fileToOpen });
+          console.log('[DEBUG] Content loaded, length:', content.length);
+          console.log('[DEBUG] Content preview:', content.substring(0, 100) + '...');
+          
+          // Wait for Monaco Editor to be ready
+          let retries = 0;
+          while (!this.isMonacoLoaded && retries < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+          }
+          console.log('[DEBUG] Monaco ready after', retries * 100, 'ms');
+          
           this.isLoadingFile = true;
-          this.setEditorContent(content);
-          this.isLoadingFile = false;
-          this.isDirty = false;
-          this.addToFileHistory(startupFile);
+          this.currentFile = fileToOpen;
           this.showEditor();
+          
+          // Set content in both editors (Monaco might not be ready yet)
+          if (this.isMonacoLoaded && this.monacoEditor) {
+            console.log('[DEBUG] Setting content in Monaco Editor');
+            this.monacoEditor.setValue(content);
+          } else {
+            console.log('[DEBUG] Setting content in textarea editor');
+            this.editor.value = content;
+          }
+          
+          this.updateFilename();
+          this.updateModeButtons();
+          this.setMode(this.defaultMode);
           this.updatePreview();
+          this.isDirty = false;
+          this.addToFileHistory(fileToOpen);
+          this.isLoadingFile = false;
+          
+          // Debug: Force preview update after a delay
+          setTimeout(() => {
+            console.log('[DEBUG] Forcing preview update after delay...');
+            this.updatePreview();
+            
+            // Check if preview has content
+            setTimeout(() => {
+              console.log('[DEBUG] Preview innerHTML length:', this.preview.innerHTML.length);
+              console.log('[DEBUG] Preview content sample:', this.preview.innerHTML.substring(0, 200) + '...');
+            }, 500);
+          }, 1000);
+          
           this.updateFilename();
           this.updateModeButtons();
           this.setMode(this.defaultMode);
           await window.__TAURI__.core.invoke('clear_startup_file');
+          console.log('[DEBUG] File loaded successfully:', fileToOpen);
           return;
+        } else {
+          console.log('[DEBUG] No startup file found');
         }
+      } else {
+        console.log('[DEBUG] Tauri not available');
       }
     } catch (error) {
-      console.error('[Startup] Error:', error);
+      console.error('[DEBUG] Error in checkStartupFile:', error);
       this.handleError(error, 'File Association');
     }
     
-    // Only show welcome page if no startup file
+    console.log('[DEBUG] Showing welcome page');
     this.showWelcomePage();
   }
 
@@ -2273,16 +2376,16 @@ Tip: You can also use HTML Export and then print from your browser.`;
       const content = await window.__TAURI__.fs.readTextFile(filePath);
       
       this.isLoadingFile = true;
-      this.setEditorContent(content);
-      this.isLoadingFile = false;
-      this.showEditor();
-      this.updatePreview();
       this.currentFile = filePath;
-      this.isDirty = false;
-      this.addToFileHistory(filePath);
+      this.showEditor();
+      this.setEditorContent(content);
       this.updateFilename();
       this.updateModeButtons();
       this.setMode(this.defaultMode);
+      this.updatePreview();
+      this.isDirty = false;
+      this.addToFileHistory(filePath);
+      this.isLoadingFile = false;
       
       console.log('[File] Opened successfully');
     } catch (error) {
@@ -2346,6 +2449,8 @@ Tip: You can also use HTML Export and then print from your browser.`;
   hideAbout() {
     this.aboutModal.style.display = 'none';
   }
+
+
 
   showSplashScreen() {
     if (!this.splashScreen) return;
@@ -2913,6 +3018,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   debouncedUpdatePreview() {
+    // Skip updates during file loading to prevent flicker
+    if (this.isLoadingFile) {
+      return;
+    }
+    
     // Clear existing timeout
     clearTimeout(this.previewUpdateTimeout);
     
@@ -3056,6 +3166,127 @@ Tip: You can also use HTML Export and then print from your browser.`;
     setInterval(() => {
       this.optimizeMemory();
     }, 300000); // Every 5 minutes
+  }
+
+  async openDevTools() {
+    try {
+      if (window.__TAURI__?.window) {
+        const { getCurrentWindow } = window.__TAURI__.window;
+        const appWindow = getCurrentWindow();
+        await appWindow.openDevtools();
+        console.log('[DevTools] Developer tools opened');
+      }
+    } catch (error) {
+      console.error('[DevTools] Error opening dev tools:', error);
+    }
+  }
+
+  async setupMenuEventListeners() {
+    if (!window.__TAURI__?.event) return;
+    
+    try {
+      await window.__TAURI__.event.listen('menu-new', () => this.newFile());
+      await window.__TAURI__.event.listen('menu-open', () => this.openFile());
+      await window.__TAURI__.event.listen('menu-save', () => this.saveFile());
+      await window.__TAURI__.event.listen('menu-save-as', () => this.saveAsFile());
+      await window.__TAURI__.event.listen('menu-close', () => this.closeFile());
+      await window.__TAURI__.event.listen('menu-settings', () => this.showEnhancedSettings());
+      await window.__TAURI__.event.listen('menu-toggle-theme', () => this.toggleTheme());
+      await window.__TAURI__.event.listen('menu-mode-code', () => this.setMode('code'));
+      await window.__TAURI__.event.listen('menu-mode-preview', () => this.setMode('preview'));
+      await window.__TAURI__.event.listen('menu-mode-split', () => this.setMode('split'));
+      await window.__TAURI__.event.listen('menu-help', () => this.showHelp());
+      await window.__TAURI__.event.listen('menu-about', () => this.showAbout());
+      
+      // Edit menu events - trigger native browser/Monaco actions
+      await window.__TAURI__.event.listen('menu-undo', () => {
+        if (this.isMonacoLoaded && this.monacoEditor && this.monacoEditor.hasTextFocus()) {
+          this.monacoEditor.trigger('keyboard', 'undo', null);
+        } else {
+          document.execCommand('undo');
+        }
+      });
+      await window.__TAURI__.event.listen('menu-redo', () => {
+        if (this.isMonacoLoaded && this.monacoEditor && this.monacoEditor.hasTextFocus()) {
+          this.monacoEditor.trigger('keyboard', 'redo', null);
+        } else {
+          document.execCommand('redo');
+        }
+      });
+      await window.__TAURI__.event.listen('menu-cut', () => {
+        if (this.isMonacoLoaded && this.monacoEditor && this.monacoEditor.hasTextFocus()) {
+          this.monacoEditor.trigger('keyboard', 'editor.action.clipboardCutAction', null);
+        } else {
+          document.execCommand('cut');
+        }
+      });
+      await window.__TAURI__.event.listen('menu-copy', () => {
+        if (this.isMonacoLoaded && this.monacoEditor && this.monacoEditor.hasTextFocus()) {
+          this.monacoEditor.trigger('keyboard', 'editor.action.clipboardCopyAction', null);
+        } else {
+          document.execCommand('copy');
+        }
+      });
+      await window.__TAURI__.event.listen('menu-paste', () => {
+        if (this.isMonacoLoaded && this.monacoEditor && this.monacoEditor.hasTextFocus()) {
+          this.monacoEditor.trigger('keyboard', 'editor.action.clipboardPasteAction', null);
+        } else {
+          document.execCommand('paste');
+        }
+      });
+      await window.__TAURI__.event.listen('menu-select-all', () => {
+        if (this.isMonacoLoaded && this.monacoEditor && this.monacoEditor.hasTextFocus()) {
+          this.monacoEditor.trigger('keyboard', 'editor.action.selectAll', null);
+        } else {
+          document.execCommand('selectAll');
+        }
+      });
+      
+      // Debug: Add a test event listener
+      await window.__TAURI__.event.listen('test-file-association', (event) => {
+        console.log('[DEBUG] Test file association event:', event.payload);
+        this.openSpecificFile('/Users/juniorfr/Documents/PROJECTS/markdown-editor/INSTALLATION_GUIDE.md');
+      });
+      
+      // Listen for file association events from Finder
+      await window.__TAURI__.event.listen('file-association', (event) => {
+        console.log('[FileAssoc] File association event received:', event.payload);
+        console.log('[FileAssoc] Event type:', typeof event.payload);
+        console.log('[FileAssoc] Current file before opening:', this.currentFile);
+        this.openSpecificFile(event.payload);
+      });
+      
+      // Also listen for the single instance event directly
+      await window.__TAURI__.event.listen('single-instance', (event) => {
+        console.log('[SingleInstance] Single instance event received:', event.payload);
+        if (event.payload && event.payload.args && event.payload.args.length > 1) {
+          const filePath = event.payload.args[event.payload.args.length - 1];
+          if (!filePath.startsWith('-') && !filePath.includes('markdown-editor')) {
+            console.log('[SingleInstance] Opening file from single instance:', filePath);
+            this.openSpecificFile(filePath);
+          }
+        }
+      });
+      
+      // Add a manual test function to window for debugging
+      window.testFileAssociation = async () => {
+        console.log('[DEBUG] Manual test file association triggered');
+        try {
+          const result = await window.__TAURI__.core.invoke('test_manual_file_association', {
+            testFile: '/Users/juniorfr/Documents/PROJECTS/markdown-editor/INSTALLATION_GUIDE.md'
+          });
+          console.log('[DEBUG] Manual test result:', result);
+        } catch (error) {
+          console.error('[DEBUG] Manual test error:', error);
+        }
+      };
+      
+
+      
+      console.log('[Menu] Menu and file association event listeners registered');
+    } catch (error) {
+      console.error('[Menu] Error setting up menu listeners:', error);
+    }
   }
 
   async setupTauriDragDrop() {

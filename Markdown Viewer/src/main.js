@@ -46,11 +46,39 @@ class MarkdownViewer {
     };
     this.fileHistory = JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]');
     
+    // Initialize performance optimizer for multi-tab preparation
+    this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.detectOlderHardware();
+      this.performanceOptimizer.optimizeForMultiTabs();
+    }
+    
     const startupStartTime = performance.now();
     console.log('[MarkdownViewer] Phase 4 Constructor started');
+    
+    // Update splash screen progress
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(10, 'Initializing interface...');
+    }
+    
     this.initializeElements();
+    
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(25, 'Setting up event listeners...');
+    }
+    
     this.setupEventListeners();
+    
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(40, 'Loading Monaco Editor...');
+    }
+    
     this.initializeMonacoEditor();
+    
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(60, 'Configuring interface...');
+    }
+    
     this.setMode('preview');
     this.updateCursorPosition();
     this.updateModeButtons();
@@ -58,6 +86,11 @@ class MarkdownViewer {
     this.applyCenteredLayout();
     this.updateFileHistoryDisplay();
     this.initializeMarkdownToolbar();
+    
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(80, 'Loading advanced features...');
+    }
+    
     this.initializeAdvancedFeatures();
     
     // Ensure toolbar visibility is set correctly after initialization
@@ -69,14 +102,23 @@ class MarkdownViewer {
     this.startupTime = performance.now() - startupStartTime;
     console.log(`[MarkdownViewer] Phase 4 Constructor completed in ${this.startupTime.toFixed(2)}ms`);
     
-    // Show splash screen if enabled
-    if (this.isSplashEnabled) {
-      this.showSplashScreen();
+    // Update splash screen to completion and hide
+    if (window.splashScreen) {
+      window.splashScreen.updateProgress(100, 'Ready!');
+      setTimeout(() => {
+        window.splashScreen.hideSplash();
+      }, 500);
     }
     
-    // Verify performance targets
-    if (this.startupTime > 2000) {
-      console.warn(`[Performance] Startup time exceeded target: ${this.startupTime.toFixed(2)}ms > 2000ms`);
+    // Verify performance targets (updated for older computers)
+    const target = this.performanceOptimizer ? this.performanceOptimizer.performanceTargets.startupTime : 2000;
+    if (this.startupTime > target) {
+      console.warn(`[Performance] Startup time exceeded target: ${this.startupTime.toFixed(2)}ms > ${target}ms`);
+    }
+    
+    // Benchmark startup with performance optimizer
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.benchmarkTabOperation('App Startup', startupStartTime);
     }
     
     // Start periodic memory optimization
@@ -636,7 +678,11 @@ class MarkdownViewer {
           break;
         case 'F11':
           e.preventDefault();
-          this.toggleDistractionFree();
+          if (e.shiftKey) {
+            this.toggleDistractionFree();
+          } else {
+            this.toggleFullscreen();
+          }
           break;
         case 'Escape':
           // Close modals first, then exit distraction-free mode, then fullscreen
@@ -2772,16 +2818,25 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.updatePreview();
   }
 
-  toggleFullscreen() {
+  async toggleFullscreen() {
     console.log('[UI] Toggle fullscreen requested');
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.error('[UI] Error entering fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen().catch(err => {
-        console.error('[UI] Error exiting fullscreen:', err);
-      });
+    try {
+      if (window.__TAURI__?.window) {
+        const { getCurrentWindow } = window.__TAURI__.window;
+        const appWindow = getCurrentWindow();
+        const isFullscreen = await appWindow.isFullscreen();
+        await appWindow.setFullscreen(!isFullscreen);
+        console.log(`[UI] Fullscreen ${!isFullscreen ? 'enabled' : 'disabled'}`);
+      } else {
+        // Fallback to browser fullscreen
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (error) {
+      console.error('[UI] Error toggling fullscreen:', error);
     }
   }
 
@@ -2891,6 +2946,17 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   getPerformanceStats() {
+    // Use performance optimizer if available
+    if (this.performanceOptimizer) {
+      const report = this.performanceOptimizer.getPerformanceReport();
+      return {
+        ...this.performanceMetrics,
+        ...report,
+        benchmarks: this.getBenchmarkResults()
+      };
+    }
+    
+    // Fallback to original implementation
     return {
       ...this.performanceMetrics,
       memoryUsage: performance.memory ? {
@@ -2913,6 +2979,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   benchmarkOperation(operation, startTime) {
     const duration = performance.now() - startTime;
+    
+    // Use performance optimizer if available
+    if (this.performanceOptimizer) {
+      return this.performanceOptimizer.benchmarkTabOperation(operation, startTime);
+    }
+    
+    // Fallback to original implementation
     console.log(`[Benchmark] ${operation}: ${duration.toFixed(2)}ms`);
     
     // Store benchmark results
@@ -2940,6 +3013,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   optimizeMemory() {
+    // Use performance optimizer if available
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.performMemoryCleanup();
+      return;
+    }
+    
+    // Fallback to original implementation
     console.log('[Performance] Starting memory optimization...');
     
     // Clear any cached data that's no longer needed

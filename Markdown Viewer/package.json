@@ -11,7 +11,13 @@
     "url": "https://github.com/markdown-viewer/markdown-viewer.git"
   },
   "homepage": "https://markdown-viewer.app",
-  "keywords": ["markdown", "editor", "viewer", "desktop", "tauri"],
+  "keywords": [
+    "markdown",
+    "editor",
+    "viewer",
+    "desktop",
+    "tauri"
+  ],
   "scripts": {
     "tauri": "tauri",
     "dev": "npm run tauri dev",
@@ -26,7 +32,7 @@
     "info": "npm run tauri info"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2"
+    "@tauri-apps/cli": "^2.8.3"
   },
   "dependencies": {
     "@tauri-apps/plugin-opener": "^2.2.3",

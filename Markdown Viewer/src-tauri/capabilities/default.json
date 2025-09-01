@@ -18,6 +18,8 @@
     "fs:write-all",
     "core:window:allow-close",
     "core:window:allow-destroy",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
     {
       "identifier": "fs:scope",
       "allow": ["**"]

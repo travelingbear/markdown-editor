@@ -1,8 +1,10 @@
 # Markdown Editor
 
-![Markdown Editor Box](MarkdownEditorBox2.jpg)
+<p align="center">
+  <img src="SplashScreen.gif" alt="Markdown Editor Splash Screen">
+</p>
 
-A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.
+<p align="center">A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.</p>
 
 ## ✨ Features
 
@@ -16,19 +18,10 @@ A powerful native desktop markdown viewer and editor built with Tauri + Rust + T
 ### User Experience
 - **GitHub-Style Themes**: Light and dark themes with perfect synchronization
 - **Drag & Drop**: Native file drag-drop with absolute path support
-- **File Operations**: Open, Save, Save As, New file with native dialogs
 - **Export Options**: HTML export and PDF printing
-- **Keyboard Shortcuts**: Complete OS-compliant shortcut system
-
-### Media Support
-- **Image Formats**: PNG, JPG, GIF, WebP, SVG with local and remote support
-- **Visual Feedback**: Color-coded borders for different image states
-- **Asset Management**: Automatic path resolution and error handling
 
 ### System Integration
 - **File Associations**: Double-click .md files to open
-- **Window Management**: Proper close confirmation for unsaved changes
-- **Settings Persistence**: Theme, mode, and editor preferences saved
 - **Performance Monitoring**: Built-in performance tracking and optimization
 
 ## 🚀 Quick Start
@@ -36,17 +29,17 @@ A powerful native desktop markdown viewer and editor built with Tauri + Rust + T
 ### Download & Install
 
 #### Windows
-- **MSI Installer**: `Markdown Viewer_2.0.0_x64_en-US.msi` (Recommended)
-- **NSIS Installer**: `Markdown Viewer_2.0.0_x64-setup.exe`
-- **Portable**: `markdown-viewer.exe`
+- **EXE Installer**: `Markdown Viewer_***_x64-setup.exe`
+- **MSI Installer**: `Markdown Viewer_***_x64_en-US.msi`
+- **Portable**: `portable-win-markdown-viewer.exe`
 
-#### macOS
-- **DMG Package**: `Markdown Viewer_2.0.0_x64.dmg`
+#### macOS (I still need to build this one)
+- **DMG Package**: `Markdown Viewer_***_x64.dmg`
 - **App Bundle**: `Markdown Viewer.app`
 
 #### Linux
-- **AppImage**: `markdown-viewer_2.0.0_amd64.AppImage`
-- **DEB Package**: `markdown-viewer_2.0.0_amd64.deb`
+- **RPM**: `markdown-viewer_***_amd64.rpm`
+- **DEB**: `markdown-viewer_***_amd64.deb`
 
 ### System Requirements
 - **Windows**: Windows 10 (1903) or later
@@ -55,29 +48,11 @@ A powerful native desktop markdown viewer and editor built with Tauri + Rust + T
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 100MB free space
 
-### Essential Keyboard Shortcuts
-- `Ctrl+O` - Open file
-- `Ctrl+N` - New file
-- `Ctrl+S` - Save file
-- `Ctrl+Shift+S` - Save As
-- `Ctrl+1/2/3` - Switch between Code/Preview/Split modes
-- `Ctrl+/` - Toggle theme (Light/Dark)
-- `Ctrl+,` - Open settings
-- `Ctrl+P` - Print/Export to PDF
-- `Ctrl+Shift+E` - Export to HTML
-
 ### Getting Started
 1. **Launch the app** - See the welcome screen with quick start guide
 2. **Open a file** - Use Ctrl+O or drag-drop a .md file
 3. **Choose your mode** - Code for editing, Preview for reading, Split for both
 4. **Customize settings** - Press Ctrl+, to configure theme and preferences
-
-### Build from Source
-
-#### Prerequisites
-- **Rust**: Install from [rustup.rs](https://rustup.rs/)
-- **Node.js**: Version 18+ from [nodejs.org](https://nodejs.org/)
-- **Platform Dependencies**: See BUILD_GUIDE.md for details
 
 ### Architecture
 - **Frontend**: Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js
@@ -99,7 +74,7 @@ Built with:
 - [Mermaid](https://mermaid.js.org/) - Diagram rendering
 - [Highlight.js](https://highlightjs.org/) - Syntax highlighting
 
-## 🙏 Buy me a coffee page
+## 🙏 Buy me a coffee?
 
 [buymeacoffee.com/travelingbear](https://buymeacoffee.com/travelingbear)
 

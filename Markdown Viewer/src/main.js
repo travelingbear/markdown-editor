@@ -599,9 +599,9 @@ class MarkdownViewer {
               e.preventDefault();
               this.exportToPdf();
             } else {
-              // Print (Ctrl+P)
+              // Print (Ctrl+P) - use direct browser print
               e.preventDefault();
-              this.exportToPdf();
+              this.directPrint();
             }
             break;
           case ',':
@@ -1862,8 +1862,8 @@ class MarkdownViewer {
     try {
       console.log('[Export] Starting PDF export...');
       
-      // Use Tauri's native print functionality or browser print
-      await this.printContent();
+      // Create a print-optimized version and open print dialog
+      await this.openPrintDialog();
       
     } catch (error) {
       console.error('[Export] PDF export failed:', error);
@@ -2042,43 +2042,32 @@ class MarkdownViewer {
     return tempFile;
   }
   
-  printViaBrowserDirect(htmlContent) {
-    // Create a hidden iframe for printing to avoid popup blockers
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.left = '-9999px';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    
-    document.body.appendChild(iframe);
-    
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-    
-    // Wait for content to load, then print
-    iframe.onload = () => {
-      setTimeout(() => {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          
-          // Clean up after printing
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-          }, 1000);
-        } catch (error) {
-          console.error('[Export] Iframe print failed:', error);
-          document.body.removeChild(iframe);
-          
-          // Final fallback: direct browser print
-          this.showPrintInstructions();
-        }
-      }, 500);
-    };
-    
-    console.log('[Export] Print iframe created and content loaded');
+  async openPrintDialog() {
+    try {
+      console.log('[Export] Opening print dialog...');
+      
+      // Simply use the browser's native print dialog
+      this.directPrint();
+      
+    } catch (error) {
+      console.error('[Export] Print dialog failed:', error);
+      this.showPrintInstructions();
+    }
+  }
+  
+
+  
+  directPrint() {
+    try {
+      console.log('[Export] Direct print requested');
+      
+      // Simply trigger the browser's print dialog
+      window.print();
+      
+    } catch (error) {
+      console.error('[Export] Direct print failed:', error);
+      this.showPrintInstructions();
+    }
   }
   
   showPrintInstructions() {

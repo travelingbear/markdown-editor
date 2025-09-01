@@ -5,6 +5,19 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-01-02
+
+### Fixed
+- **PDF Export**: Fixed PDF export functionality by implementing direct browser print method
+- **Print Styles**: Enhanced print CSS with proper page breaks, typography, and color preservation
+- **CSP Compatibility**: Removed iframe-based print method that was blocked by Content Security Policy
+- **Export Shortcuts**: Updated Ctrl+P keyboard shortcut to trigger PDF export directly
+
+### Technical
+- **Print Method**: Replaced complex popup/iframe approach with reliable `window.print()` method
+- **CSS Media Queries**: Comprehensive `@media print` styles for professional PDF output
+- **User Experience**: Simplified export process - users can now press Ctrl+P or use Export→PDF button
+
 ## [2.1.0] - 2025-01-02
 
 ### Fixed

@@ -73,7 +73,9 @@ class MarkdownViewer {
       
       // Complete initialization
       this.updateSplashProgress(100, 'Ready!');
-      setTimeout(() => this.hideSplash(), 500);
+      // Use Promise-based approach instead of nested setTimeout
+      await new Promise(resolve => setTimeout(resolve, 500));
+      this.hideSplash();
       
       // Performance validation
       this.validatePerformance(startupStartTime);
@@ -848,11 +850,12 @@ class MarkdownViewer {
         this.mainContent.style.setProperty('--editor-width', `${percentage}%`);
         this.mainContent.style.setProperty('--preview-width', `${100 - percentage}%`);
         
-        // Trigger Monaco layout update
+        // Trigger Monaco layout update with Promise-based approach
         if (this.isMonacoLoaded && this.monacoEditor) {
-          setTimeout(() => {
+          // Use Promise.resolve for immediate async execution
+          Promise.resolve().then(() => {
             this.monacoEditor.layout();
-          }, 10);
+          });
         }
       }
     });
@@ -2201,9 +2204,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
   async processImages() {
     const images = this.preview.querySelectorAll('img.markdown-image');
     
-    // Process all images concurrently using Promise.all
+    // Process all images concurrently using Promise.all for better performance
     const imagePromises = Array.from(images).map(async (img) => {
-      const originalSrc = img.getAttribute('data-original-src');
+      let originalSrc = img.getAttribute('data-original-src');
       
       if (!originalSrc) {
         return;
@@ -2263,7 +2266,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       }
     });
     
-    // Wait for all images to process concurrently
+    // Wait for all images to process concurrently - already optimized with Promise.all
     await Promise.all(imagePromises);
   }
   
@@ -3014,10 +3017,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Clear existing timeout
     clearTimeout(this.previewUpdateTimeout);
     
-    // Set new timeout for debounced update
+    // Set new timeout for debounced update with optimized delay
     this.previewUpdateTimeout = setTimeout(() => {
       this.updatePreviewWithMetrics();
-    }, 300); // 300ms debounce
+    }, 250); // Reduced debounce from 300ms to 250ms for better responsiveness
   }
 
   updatePreviewWithMetrics() {
@@ -3811,8 +3814,8 @@ Tip: You can also use HTML Export and then print from your browser.`;
       }]);
     }
     
-    // Simple selection preservation - select the new text
-    setTimeout(() => {
+    // Simple selection preservation - select the new text with Promise-based approach
+    Promise.resolve().then(() => {
       if (selection && !selection.isEmpty()) {
         const newSelection = new monaco.Selection(
           selection.startLineNumber,
@@ -3823,7 +3826,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         this.monacoEditor.setSelection(newSelection);
       }
       this.monacoEditor.focus();
-    }, 10);
+    });
     
     // Mark as dirty
     this.markDirty();

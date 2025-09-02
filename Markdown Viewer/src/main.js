@@ -107,7 +107,7 @@ class MarkdownViewer {
       isScrollSyncing: false,
       suggestionsEnabled: localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false',
       fontSize: parseInt(localStorage.getItem('markdownViewer_fontSize') || '14'),
-      previewZoom: parseFloat(localStorage.getItem('markdownViewer_previewZoom') || '1.0'),
+      previewZoom: 1.0,
       mainToolbarSize: localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium',
       mdToolbarSize: localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium',
       isLoadingFile: false,
@@ -978,6 +978,7 @@ class MarkdownViewer {
         this.updateFilename();
         this.updateModeButtons();
         this.setMode(this.defaultMode);
+        this.resetZoom();
         
         this.benchmarkOperation('File Open', startTime);
       }
@@ -1099,6 +1100,7 @@ class MarkdownViewer {
     this.setMode(this.defaultMode); // Use default mode for new files
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
+    this.resetZoom();
   }
   
   doClose() {
@@ -2447,6 +2449,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.updateFilename();
       this.updateModeButtons();
       this.setMode(this.defaultMode);
+      this.resetZoom();
     } catch (error) {
       const errorMessage = error?.message || 'Unknown error';
       console.error('[File] Error opening file:', filePath, errorMessage);
@@ -3819,14 +3822,12 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const newZoom = Math.max(0.5, Math.min(3.0, this.previewZoom + delta));
     if (newZoom !== this.previewZoom) {
       this.previewZoom = newZoom;
-      localStorage.setItem('markdownViewer_previewZoom', this.previewZoom.toString());
       this.applyZoom();
     }
   }
   
   resetZoom() {
     this.previewZoom = 1.0;
-    localStorage.setItem('markdownViewer_previewZoom', this.previewZoom.toString());
     this.applyZoom();
   }
   
@@ -3838,11 +3839,18 @@ Tip: You can also use HTML Export and then print from your browser.`;
     if (this.zoomDisplay) {
       this.zoomDisplay.textContent = `${Math.round(this.previewZoom * 100)}%`;
     }
+    
+    // Hide scrollbars when zoomed above 100%
+    const previewPane = document.querySelector('.preview-pane');
+    if (previewPane) {
+      previewPane.setAttribute('data-zoom-above-100', this.previewZoom > 1.0 ? 'true' : 'false');
+    }
   }
   
   updateZoomControlsVisibility() {
     if (this.zoomControls) {
-      const shouldShow = this.currentMode === 'preview' && !this.isDistractionFree;
+      const hasDocument = this.currentFile || (this.welcomePage && this.welcomePage.style.display === 'none');
+      const shouldShow = this.currentMode === 'preview' && !this.isDistractionFree && hasDocument;
       this.zoomControls.style.display = shouldShow ? 'flex' : 'none';
     }
   }

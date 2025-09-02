@@ -2588,6 +2588,32 @@ body.distraction-free .markdown-toolbar {
   transition: transform 0.1s ease;
 }
 
+/* Zoom transform-origin adjustment for non-centered layout */
+body:not(.centered-layout) .preview-content {
+  transform-origin: top left;
+}
+
+/* Add horizontal scrollbar when zoomed */
+.preview-pane {
+  overflow-x: auto;
+}
+
+/* Hide horizontal scrollbar for centered layout at 100% zoom */
+body.centered-layout .preview-pane[data-zoom-above-100="false"] {
+  overflow-x: hidden;
+}
+
+/* Hide scrollbars when zoomed above 100% */
+.preview-pane[data-zoom-above-100="true"]::-webkit-scrollbar {
+  display: none;
+}
+
+.preview-pane[data-zoom-above-100="true"] {
+  scrollbar-width: none;
+}
+
+
+
 /* Toolbar Size Variations */
 /* Main Toolbar Sizes */
 [data-main-toolbar-size="small"] .toolbar {

@@ -5,6 +5,17 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2025-01-02
+
+### Fixed
+- **Zoom Controls Visibility**: Zoom controls now only appear in Preview mode when a document is loaded (not on welcome screen)
+- **Zoom Centering**: Fixed zoom behavior to anchor to left when centered layout is disabled
+- **Scrollbar Issues**: Resolved double vertical scrollbar issue when zooming in preview mode
+
+### Enhanced
+- **Horizontal Scrolling**: Added horizontal scrollbar support when zoomed content extends beyond viewport
+- **Zoom Transform Origin**: Improved zoom centering behavior based on layout settings
+
 ## [2.1.2] - 2025-01-02
 
 ### Added

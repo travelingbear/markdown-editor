@@ -1197,7 +1197,7 @@ class MarkdownViewer {
 
   updateFilename() {
     if (this.currentFile) {
-      const filename = this.currentFile.split(/[\\\/]/).pop();
+      const filename = this.getFilenameFromPath(this.currentFile);
       this.filename.textContent = `${filename}${this.isDirty ? ' *' : ''}`;
     } else if (this.welcomePage && this.welcomePage.style.display !== 'none') {
       this.filename.textContent = 'Welcome';
@@ -3130,6 +3130,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.pathCache.clear();
     }
     
+    // Clear filename cache if too large
+    if (this.filenameCache && this.filenameCache.size > 50) {
+      this.filenameCache.clear();
+    }
+    
     // Clear old error logs
     const errors = this.getErrorLogs();
     if (errors.length > 10) {
@@ -3186,6 +3191,22 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.anchorClickHandler = null;
     }
     
+    // Cleanup Monaco event listeners
+    if (this.monacoEditor && this.monacoEditor.dispose) {
+      this.monacoEditor.dispose();
+    }
+    
+    // Cleanup timeout handlers
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = null;
+    }
+    
+    if (this.previewUpdateTimeout) {
+      clearTimeout(this.previewUpdateTimeout);
+      this.previewUpdateTimeout = null;
+    }
+    
     this.removeDistractionFreeHover();
     this.stopMemoryOptimization();
   }
@@ -3232,6 +3253,28 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.pathCache.set(originalSrc, result);
     
     return result;
+  }
+  
+  getFilenameFromPath(filePath) {
+    // Cache filename extraction results for better performance
+    if (!this.filenameCache) {
+      this.filenameCache = new Map();
+    }
+    
+    if (this.filenameCache.has(filePath)) {
+      return this.filenameCache.get(filePath);
+    }
+    
+    const filename = filePath.split(/[\\\/]/).pop();
+    
+    // Cache the result (limit cache size to prevent memory leaks)
+    if (this.filenameCache.size > 50) {
+      const firstKey = this.filenameCache.keys().next().value;
+      this.filenameCache.delete(firstKey);
+    }
+    this.filenameCache.set(filePath, filename);
+    
+    return filename;
   }
   
   isAbsolutePath(path) {
@@ -3534,10 +3577,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Remove if already exists
     this.fileHistory = this.fileHistory.filter(item => item.path !== filePath);
     
-    // Add to beginning
+    // Add to beginning with cached filename
     this.fileHistory.unshift({
       path: filePath,
-      name: filePath.split(/[\\\/]/).pop(),
+      name: this.getFilenameFromPath(filePath),
       date: new Date().toISOString()
     });
     

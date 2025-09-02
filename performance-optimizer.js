@@ -156,8 +156,8 @@ class PerformanceOptimizer {
     // Release unused Monaco instances
     this.cleanupMonacoPool();
     
-    // Force garbage collection if available
-    if (window.gc) {
+    // Force garbage collection if available and authorized
+    if (window.gc && this.isPerformanceMonitoringAllowed()) {
       window.gc();
     }
     
@@ -213,7 +213,8 @@ class PerformanceOptimizer {
   }
 
   checkMemoryUsage() {
-    if (!performance.memory) return;
+    // Check authorization before accessing sensitive memory info
+    if (!performance.memory || !this.isPerformanceMonitoringAllowed()) return;
     
     const memoryInfo = {
       used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
@@ -223,7 +224,9 @@ class PerformanceOptimizer {
     
     // Warn if memory usage is high
     if (memoryInfo.used > this.performanceTargets.maxTotalMemory) {
-      console.warn(`[Performance] High memory usage: ${memoryInfo.used}MB`);
+      // Sanitize memory value to prevent log injection
+      const used = Math.max(0, Math.floor(memoryInfo.used)) || 0;
+      console.warn(`[Performance] High memory usage: ${used}MB`);
       this.performMemoryCleanup();
     }
     
@@ -233,7 +236,11 @@ class PerformanceOptimizer {
   logMemoryUsage() {
     const memoryInfo = this.checkMemoryUsage();
     if (memoryInfo) {
-      console.log(`[Performance] Memory: ${memoryInfo.used}MB / ${memoryInfo.total}MB (limit: ${memoryInfo.limit}MB)`);
+      // Sanitize memory values to prevent log injection
+      const used = Math.max(0, Math.floor(memoryInfo.used)) || 0;
+      const total = Math.max(0, Math.floor(memoryInfo.total)) || 0;
+      const limit = Math.max(0, Math.floor(memoryInfo.limit)) || 0;
+      console.log(`[Performance] Memory: ${used}MB / ${total}MB (limit: ${limit}MB)`);
     }
   }
 
@@ -324,6 +331,11 @@ class PerformanceOptimizer {
 
   // Detect if running on older hardware
   detectOlderHardware() {
+    // Check if performance monitoring is authorized (basic check)
+    if (!this.isPerformanceMonitoringAllowed()) {
+      return false;
+    }
+    
     const memoryInfo = this.checkMemoryUsage();
     const cores = navigator.hardwareConcurrency || 2;
     
@@ -341,6 +353,14 @@ class PerformanceOptimizer {
     }
     
     return isOlderHardware;
+  }
+
+  // Basic authorization check for performance monitoring
+  isPerformanceMonitoringAllowed() {
+    // Simple check - only allow in development or if explicitly enabled
+    return window.location.hostname === 'localhost' || 
+           window.location.protocol === 'tauri:' ||
+           localStorage.getItem('enablePerformanceMonitoring') === 'true';
   }
 }
 

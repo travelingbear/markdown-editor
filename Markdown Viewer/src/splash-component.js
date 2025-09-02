@@ -3,7 +3,8 @@ class SplashScreenComponent {
   constructor() {
     this.splashElement = null;
     this.isEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
-    this.minDisplayTime = 2000; // Minimum 2 seconds
+    this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
+    this.minDisplayTime = this.splashDuration * 1000; // Convert to milliseconds
     this.startTime = performance.now();
     
     if (this.isEnabled) {
@@ -93,7 +94,7 @@ class SplashScreenComponent {
         background: #007acc;
         border-radius: 2px;
         width: 0%;
-        animation: progressAnimation 2s ease-out forwards;
+        animation: progressAnimation 1.3s ease-out forwards;
       }
       
       @keyframes progressAnimation {

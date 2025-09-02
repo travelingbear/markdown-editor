@@ -24,6 +24,10 @@ fi
 
 echo
 echo "[3/6] Cleaning previous builds..."
+# Remove literal carriage returns from package.json if present
+if [ -f package.json ]; then
+    tr -d '\r' < package.json > package.json.tmp && mv package.json.tmp package.json
+fi
 npm run clean
 if [ $? -ne 0 ]; then
     echo "WARNING: Clean command failed, continuing..."

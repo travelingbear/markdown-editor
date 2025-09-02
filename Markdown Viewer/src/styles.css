@@ -12,7 +12,7 @@
   /* Centered Layout Variables */
   --page-width-a4: 210mm;
   --page-width-letter: 8.5in;
-  --page-width-legal: 8.5in;
+  --page-width-a3: 297mm;
   --page-margin-top: 1in;
   --page-margin-bottom: 1in;
   --page-margin-left: 1in;
@@ -1869,6 +1869,15 @@ body.distraction-free.preview-mode .splitter {
   display: none !important;
 }
 
+body.distraction-free.preview-mode .main-content {
+  padding: 8px 0;
+  height: 100vh;
+}
+
+body.distraction-free.preview-mode .preview-pane {
+  height: calc(100vh - 16px);
+}
+
 /* Distraction-free mode for Code mode */
 body.distraction-free.code-mode .editor-pane {
   width: 100% !important;
@@ -1882,6 +1891,16 @@ body.distraction-free.code-mode .splitter {
 /* Distraction-free mode for Split mode (hide splitter, keep both panes) */
 body.distraction-free.split-mode .splitter {
   display: none !important;
+}
+
+body.distraction-free.split-mode .main-content {
+  padding: 8px 0;
+  height: 100vh;
+}
+
+body.distraction-free.split-mode .editor-pane,
+body.distraction-free.split-mode .preview-pane {
+  height: calc(100vh - 16px);
 }
 
 /* Distraction-free content styling for Preview mode */
@@ -1919,17 +1938,18 @@ body.distraction-free.centered-layout.code-mode #editor {
 body.distraction-free.code-mode .main-content {
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 20px;
+  align-items: stretch;
+  padding: 8px 0;
   height: 100vh;
 }
 
 body.distraction-free.code-mode .editor-pane {
   width: 100%;
-  max-width: 800px;
-  height: calc(100vh - 40px);
+  max-width: var(--current-page-width);
+  height: calc(100vh - 16px);
   display: flex;
   flex-direction: column;
+  margin: 0 auto;
 }
 
 body.distraction-free.code-mode .monaco-editor-container,
@@ -1946,82 +1966,82 @@ body.distraction-free.code-mode #editor {
 /* Dynamic responsive borders based on window size */
 @media (min-width: 1400px) {
   body.distraction-free.code-mode .main-content {
-    padding: 60px;
+    padding: 8px 0;
   }
   body.distraction-free.code-mode .editor-pane {
-    height: calc(100vh - 120px);
+    height: calc(100vh - 16px);
   }
 }
 
 @media (max-width: 1200px) {
   body.distraction-free.preview-mode .preview-content {
-    margin: 60px;
+    margin: 60px 60px 52px 60px;
     max-width: none;
   }
 }
 
 @media (max-width: 900px) {
   body.distraction-free.preview-mode .preview-content {
-    margin: 40px;
+    margin: 40px 40px 32px 40px;
     padding: 50px 40px;
   }
   body.distraction-free.code-mode .main-content {
-    padding: 30px;
+    padding: 8px 0;
   }
   body.distraction-free.code-mode .editor-pane {
-    height: calc(100vh - 60px);
+    height: calc(100vh - 16px);
   }
 }
 
 @media (max-width: 768px) {
   body.distraction-free.preview-mode .preview-content {
-    margin: 30px;
+    margin: 30px 30px 22px 30px;
     padding: 40px 30px;
   }
   body.distraction-free.code-mode .main-content {
-    padding: 20px;
+    padding: 8px 0;
   }
   body.distraction-free.code-mode .editor-pane {
-    height: calc(100vh - 40px);
+    height: calc(100vh - 16px);
   }
 }
 
 @media (max-width: 600px) {
   body.distraction-free.preview-mode .preview-content {
-    margin: 20px;
+    margin: 20px 20px 12px 20px;
     padding: 30px 25px;
   }
   body.distraction-free.code-mode .main-content {
-    padding: 15px;
+    padding: 8px 0;
   }
   body.distraction-free.code-mode .editor-pane {
-    height: calc(100vh - 30px);
+    height: calc(100vh - 16px);
   }
 }
 
 @media (max-width: 480px) {
   body.distraction-free.preview-mode .preview-content {
-    margin: 15px;
+    margin: 15px 15px 7px 15px;
     padding: 25px 20px;
   }
   body.distraction-free.code-mode .main-content {
-    padding: 10px;
+    padding: 8px 0;
   }
   body.distraction-free.code-mode .editor-pane {
-    height: calc(100vh - 20px);
+    height: calc(100vh - 16px);
   }
 }
 
 @media (max-width: 360px) {
   body.distraction-free.preview-mode .preview-content {
-    margin: 10px;
+    margin: 10px 10px 2px 10px;
     padding: 20px 15px;
   }
   body.distraction-free.code-mode .main-content {
-    padding: 5px;
+    padding: 8px 0;
   }
   body.distraction-free.code-mode .editor-pane {
-    height: calc(100vh - 10px);
+    height: calc(100vh - 16px);
   }
 }
 
@@ -2441,6 +2461,13 @@ body.distraction-free .markdown-toolbar {
   min-width: 70px;
 }
 
+/* Smaller buttons for splash duration */
+#splash-duration-setting .setting-btn {
+  padding: 6px 10px;
+  min-width: 30px;
+  font-size: 12px;
+}
+
 .setting-btn:hover {
   background: var(--bg-tertiary);
   border-color: var(--accent-primary);
@@ -2450,6 +2477,15 @@ body.distraction-free .markdown-toolbar {
   background: var(--accent-primary);
   color: white;
   border-color: var(--accent-primary);
+}
+
+/* Splash duration setting visibility */
+#splash-duration-setting {
+  display: none;
+}
+
+#splash-duration-setting.visible {
+  display: flex;
 }
 
 .system-info {

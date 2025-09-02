@@ -206,6 +206,7 @@ class MarkdownViewer {
     this.toolbarContent = document.querySelector('.toolbar-content');
     this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
     this.isSplashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
+    this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
     
     // Phase 8.5 elements
     this.splashScreen = document.getElementById('splash-screen');
@@ -997,25 +998,11 @@ class MarkdownViewer {
   
   async handleUnsavedChanges() {
     try {
-      const saveFirst = await window.__TAURI__.dialog.confirm(
-        'You have unsaved changes. Do you want to save before closing?',
+      const closeWithoutSaving = await window.__TAURI__.dialog.confirm(
+        'Close without saving changes?',
         { title: 'Unsaved Changes' }
       );
-      
-      if (saveFirst) {
-        try {
-          await this.saveFile();
-          return !this.isDirty; // Only close if save succeeded
-        } catch (error) {
-          return false; // Don't close if save failed
-        }
-      } else {
-        const closeWithoutSaving = await window.__TAURI__.dialog.confirm(
-          'Close without saving changes?',
-          { title: 'Confirm Close' }
-        );
-        return closeWithoutSaving;
-      }
+      return closeWithoutSaving;
     } catch (error) {
       return false; // Don't close on dialog error
     }
@@ -1472,28 +1459,11 @@ class MarkdownViewer {
         if (this.isDirty) {
           event.preventDefault();
           
-          const shouldSave = await window.__TAURI__.dialog.confirm(
-            'You have unsaved changes. Do you want to save before closing?',
-            { title: 'Unsaved Changes' }
-          );
-          
-          if (shouldSave) {
-            await this.saveFile();
-            if (this.isDirty) {
-              return;
-            }
-          } else {
-            const confirmClose = await window.__TAURI__.dialog.confirm(
-              'Close without saving?',
-              { title: 'Confirm Close' }
-            );
-            if (!confirmClose) {
-              return;
-            }
+          const shouldClose = await this.handleUnsavedChanges();
+          if (shouldClose) {
+            this.isDirty = false;
+            await appWindow.close();
           }
-          
-          this.isDirty = false;
-          await appWindow.close();
         }
       });
       
@@ -2347,7 +2317,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       if (window.__TAURI__) {
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
         
-        if (startupFile) {
+        if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
           const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
           this.currentFile = startupFile;
           this.isLoadingFile = true;
@@ -2365,8 +2335,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
         }
       }
     } catch (error) {
-      console.error('[Startup] Error:', encodeURIComponent(error.message || error));
-      this.handleError(error, 'File Association');
+      const errorMessage = error?.message || 'Unknown startup file error';
+      console.error('[Startup] Error:', errorMessage);
+      // Don't show error dialog for startup file issues, just log and continue
+      console.warn('[Startup] Continuing with welcome page due to startup file error');
     }
     
     // Only show welcome page if no startup file
@@ -2375,7 +2347,15 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   async openSpecificFile(filePath) {
     try {
-      if (!filePath || !window.__TAURI__) return;
+      if (!filePath) {
+        console.warn('[File] No file path provided');
+        return;
+      }
+      
+      if (!window.__TAURI__) {
+        console.error('[File] Tauri API not available');
+        return;
+      }
       
       const content = await window.__TAURI__.fs.readTextFile(filePath);
       
@@ -2391,8 +2371,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.updateModeButtons();
       this.setMode(this.defaultMode);
     } catch (error) {
-      console.error('[File] Error:', encodeURIComponent(error.message || error));
-      this.handleError(new Error(`Failed to open file: ${error.message}`), 'File Association');
+      const errorMessage = error?.message || 'Unknown error';
+      console.error('[File] Error opening file:', filePath, errorMessage);
+      this.handleError(new Error(`Failed to open file: ${errorMessage}`), 'File Association');
     }
   }
 
@@ -2497,7 +2478,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Update page size buttons
     document.getElementById('page-a4-btn').classList.toggle('active', this.currentPageSize === 'a4');
     document.getElementById('page-letter-btn').classList.toggle('active', this.currentPageSize === 'letter');
-    document.getElementById('page-legal-btn').classList.toggle('active', this.currentPageSize === 'legal');
+    document.getElementById('page-a3-btn').classList.toggle('active', this.currentPageSize === 'a3');
     
     // Update toolbar buttons
     document.getElementById('toolbar-on-btn').classList.toggle('active', this.isToolbarEnabled);
@@ -2506,6 +2487,23 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Update splash screen buttons
     document.getElementById('splash-on-btn').classList.toggle('active', this.isSplashEnabled);
     document.getElementById('splash-off-btn').classList.toggle('active', !this.isSplashEnabled);
+    
+    // Update splash duration buttons
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById(`splash-${i}s-btn`).classList.toggle('active', this.splashDuration === i);
+    }
+    
+    // Show/hide duration setting based on splash enabled state
+    const durationSetting = document.getElementById('splash-duration-setting');
+    if (durationSetting) {
+      if (this.isSplashEnabled) {
+        durationSetting.classList.add('visible');
+        durationSetting.style.display = 'flex';
+      } else {
+        durationSetting.classList.remove('visible');
+        durationSetting.style.display = 'none';
+      }
+    }
     
     // Update system info
     document.getElementById('info-default-mode').textContent = this.defaultMode;
@@ -2626,8 +2624,8 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.setPageSize('letter');
       this.updateSettingsDisplay();
     });
-    document.getElementById('page-legal-btn').addEventListener('click', () => {
-      this.setPageSize('legal');
+    document.getElementById('page-a3-btn').addEventListener('click', () => {
+      this.setPageSize('a3');
       this.updateSettingsDisplay();
     });
     
@@ -2656,6 +2654,15 @@ Tip: You can also use HTML Export and then print from your browser.`;
       localStorage.setItem('markdownViewer_splashEnabled', 'false');
       this.updateSettingsDisplay();
     });
+    
+    // Splash duration controls
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById(`splash-${i}s-btn`).addEventListener('click', () => {
+        this.splashDuration = i;
+        localStorage.setItem('markdownViewer_splashDuration', i.toString());
+        this.updateSettingsDisplay();
+      });
+    }
   }
 
   async showLegacySettings() {
@@ -3313,7 +3320,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         
         // Welcome screen: open .md files
         if (this.welcomePage && this.welcomePage.style.display !== 'none') {
-          const mdFile = filePaths.find(f => /\.(md|markdown|txt)$/i.test(f));
+          const mdFile = filePaths.find(f => f && /\.(md|markdown|txt)$/i.test(f));
           if (mdFile) {
             await this.openSpecificFile(mdFile); // This will add to history
           }
@@ -3541,7 +3548,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const pageWidths = {
       'a4': 'var(--page-width-a4)',
       'letter': 'var(--page-width-letter)',
-      'legal': 'var(--page-width-legal)'
+      'a3': 'var(--page-width-a3)'
     };
     
     root.style.setProperty('--current-page-width', pageWidths[this.currentPageSize] || pageWidths['a4']);
@@ -3564,7 +3571,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   setPageSize(size) {
-    if (['a4', 'letter', 'legal'].includes(size)) {
+    if (['a4', 'letter', 'a3'].includes(size)) {
       this.currentPageSize = size;
       localStorage.setItem('markdownViewer_pageSize', size);
       this.updatePageLayout();

@@ -83,7 +83,17 @@ class MarkdownViewer {
       // Performance validation
       this.validatePerformance(startupStartTime);
       
-      // Monaco Editor will be loaded lazily when needed
+      // Check for startup file and load Monaco if needed
+      const hasStartupFile = await this.checkStartupFile();
+      
+      // Load Monaco Editor lazily when needed
+      if (hasStartupFile && (this.defaultMode === 'code' || this.defaultMode === 'split')) {
+        try {
+          await this.loadMonacoEditor();
+        } catch (error) {
+          console.warn('[Startup] Monaco loading failed, continuing with fallback editor');
+        }
+      }
       
     } catch (error) {
       console.error('[Init] Initialization failed:', encodeURIComponent(error.message || error));
@@ -289,10 +299,7 @@ class MarkdownViewer {
   async initializeMonacoEditorLazy() {
     // Monaco Editor lazy loading - defer until actually needed
     try {
-      // Check for startup file first
-      await this.checkStartupFile();
-      
-      // Only update preview if no startup file was loaded
+      // Update preview and cursor position
       if (!this.currentFile) {
         this.updatePreview();
       }
@@ -556,6 +563,8 @@ class MarkdownViewer {
       });
     }
     
+
+    
     if (this.clearHistoryBtn) {
       this.clearHistoryBtn.addEventListener('click', () => {
         this.clearFileHistory();
@@ -811,6 +820,7 @@ class MarkdownViewer {
               return;
             }
             break;
+
           case 'h':
             if (e.shiftKey) {
               // Find and replace (handled by Monaco)
@@ -950,7 +960,7 @@ class MarkdownViewer {
         multiple: false,
         filters: [{
           name: 'Markdown',
-          extensions: ['md', 'markdown', 'txt']
+          extensions: ['md', 'markdown']
         }]
       });
       
@@ -2381,31 +2391,35 @@ Tip: You can also use HTML Export and then print from your browser.`;
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
         
         if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
-          const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
-          this.currentFile = startupFile;
-          this.isLoadingFile = true;
-          this.setEditorContent(content);
-          this.isLoadingFile = false;
-          this.isDirty = false;
-          this.addToFileHistory(startupFile);
-          this.showEditor();
-          this.updatePreview();
-          this.updateFilename();
-          this.updateModeButtons();
-          this.setMode(this.defaultMode);
-          await window.__TAURI__.core.invoke('clear_startup_file');
-          return;
+          try {
+            const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
+            
+            this.currentFile = startupFile;
+            this.isLoadingFile = true;
+            this.setEditorContent(content);
+            this.isLoadingFile = false;
+            this.isDirty = false;
+            this.addToFileHistory(startupFile);
+            this.showEditor();
+            this.updatePreview();
+            this.updateFilename();
+            this.updateModeButtons();
+            this.setMode(this.defaultMode);
+            
+            await window.__TAURI__.core.invoke('clear_startup_file');
+            return true;
+          } catch (fileError) {
+            console.error('[Startup] Failed to load startup file:', fileError);
+            await window.__TAURI__.core.invoke('clear_startup_file');
+          }
         }
       }
     } catch (error) {
-      const errorMessage = error?.message || 'Unknown startup file error';
-      console.error('[Startup] Error:', errorMessage);
-      // Don't show error dialog for startup file issues, just log and continue
-      console.warn('[Startup] Continuing with welcome page due to startup file error');
+      console.error('[Startup] Error:', error?.message || 'Unknown startup file error');
     }
     
-    // Only show welcome page if no startup file
     this.showWelcomePage();
+    return false;
   }
 
   async openSpecificFile(filePath) {
@@ -3494,18 +3508,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
     }
   }
 
-  showErrorDialog(message, error, context) {
-    // Enhanced error dialog with recovery options
-    const recoveryOptions = this.getRecoveryOptions(error, context);
-    const fullMessage = `${message}\n\n${recoveryOptions}`;
-    
-    if (window.__TAURI__) {
-      window.__TAURI__.dialog.message(fullMessage, { title: 'Error', type: 'error' })
-        .catch(() => console.error('[Dialog] Error:', encodeURIComponent(fullMessage)));
-    } else {
-      console.error('[Dialog] Error:', encodeURIComponent(fullMessage));
-    }
-  }
+
+
+
 
   getRecoveryOptions(error, context) {
     const options = [];

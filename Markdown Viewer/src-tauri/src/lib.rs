@@ -225,17 +225,21 @@ pub fn run() {
         let file_arg = &args[args.len() - 1];
         println!("[Rust] Checking file argument: '{}'", file_arg);
         
-        // Skip if it's a flag
-        if file_arg.starts_with("-") {
-            println!("[Rust] Argument is a flag, ignoring");
+        // Skip if it's a flag or the executable path
+        if file_arg.starts_with("-") || file_arg.ends_with(".exe") {
             None
         } else {
             let path = std::path::Path::new(file_arg);
-            if path.exists() {
-                println!("[Rust] File exists: {}", file_arg);
+            
+            // Check if it's a markdown file
+            let is_markdown = path.extension()
+                .and_then(|ext| ext.to_str())
+                .map(|ext| matches!(ext.to_lowercase().as_str(), "md" | "markdown" | "txt"))
+                .unwrap_or(false);
+            
+            if path.exists() && is_markdown {
                 Some(file_arg.clone())
             } else {
-                println!("[Rust] File does not exist: {}", file_arg);
                 None
             }
         }
@@ -244,7 +248,7 @@ pub fn run() {
         None
     };
     
-    println!("[Rust] Final startup_file: {:?}", startup_file);
+
 
     let app_state = AppState {
         startup_file: Mutex::new(startup_file),

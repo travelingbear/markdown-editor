@@ -42,7 +42,7 @@
     ],
     "fileAssociations": [
       {
-        "ext": ["md", "markdown", "txt"],
+        "ext": ["md", "markdown"],
         "name": "Markdown Document",
         "description": "Markdown text document",
         "role": "Editor"

@@ -1327,14 +1327,15 @@ class MarkdownViewer {
   }
 
   setupScrollSync() {
-    // Sync from preview to editor
+    // Sync from preview to editor with optimized timing
     this.preview.addEventListener('scroll', () => {
       if (this.currentMode === 'split' && !this.isScrollSyncing && !this.isTyping) {
         this.isScrollSyncing = true;
         this.syncScrollToEditor();
-        setTimeout(() => {
+        // Use requestAnimationFrame for smooth scrolling at browser refresh rate
+        requestAnimationFrame(() => {
           this.isScrollSyncing = false;
-        }, 100);
+        });
       }
     });
   }

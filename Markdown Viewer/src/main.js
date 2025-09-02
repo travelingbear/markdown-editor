@@ -1890,19 +1890,23 @@ class MarkdownViewer {
   }
   
   createExportHtmlDocument(previewHtml) {
+    return this.getHtmlDocumentTemplate(previewHtml, 'Exported Markdown', this.getExportHtmlStyles());
+  }
+  
+  getHtmlDocumentTemplate(content, title, styles) {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exported Markdown</title>
+    <title>${title}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <style>
-        ${this.getExportHtmlStyles()}
+        ${styles}
     </style>
 </head>
 <body>
-    ${previewHtml}
+    ${content}
 </body>
 </html>`;
   }
@@ -1928,25 +1932,30 @@ class MarkdownViewer {
   }
   
   async saveHtmlFile(htmlDocument) {
-    if (window.__TAURI__) {
-      const filePath = await window.__TAURI__.dialog.save({
-        filters: [{
-          name: 'HTML',
-          extensions: ['html']
-        }]
-      });
-      
-      if (filePath) {
-        await window.__TAURI__.fs.writeTextFile(filePath, htmlDocument);
-      }
+    await this.saveFileWithDialog(htmlDocument, 'HTML', ['html']);
+  }
+  
+  async saveFileWithDialog(content, filterName, extensions) {
+    if (!window.__TAURI__) return;
+    
+    const filePath = await window.__TAURI__.dialog.save({
+      filters: [{ name: filterName, extensions }]
+    });
+    
+    if (filePath) {
+      await window.__TAURI__.fs.writeTextFile(filePath, content);
     }
   }
   
   handleExportError(error, type) {
+    this.showErrorMessage(`Error exporting to ${type}: ${error.message}`, 'Export Error');
+  }
+  
+  showErrorMessage(message, title = 'Error') {
     if (window.__TAURI__) {
-      window.__TAURI__.dialog.message(`Error exporting to ${type}: ${error.message}`, { title: 'Export Error', type: 'error' });
+      window.__TAURI__.dialog.message(message, { title, type: 'error' });
     } else {
-      alert(`Error exporting to ${type}: ${error.message}`);
+      alert(message);
     }
   }
   
@@ -2008,6 +2017,10 @@ class MarkdownViewer {
   }
   
   getPrintHtmlTemplate(content, title) {
+    return this.getPrintDocumentTemplate(content, title, this.getPrintStyles(), this.getPrintScript());
+  }
+  
+  getPrintDocumentTemplate(content, title, styles, script) {
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -2017,13 +2030,13 @@ class MarkdownViewer {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
-    ${this.getPrintStyles()}
+    ${styles}
   </style>
 </head>
 <body>
   ${content}
   <script>
-    ${this.getPrintScript()}
+    ${script}
   </script>
 </body>
 </html>`;

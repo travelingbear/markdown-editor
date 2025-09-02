@@ -2,7 +2,7 @@
 
 class MarkdownViewer {
   constructor() {
-    // Essential properties only
+    // Essential properties only - minimal constructor
     this.currentFile = null;
     this.isDirty = false;
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
@@ -12,125 +12,159 @@ class MarkdownViewer {
     this.isMonacoLoaded = false;
     this.isInitialized = false;
     
-    // Initialize performance optimizer for multi-tab preparation
+    // Initialize performance optimizer
     this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
-    if (this.performanceOptimizer) {
-      this.performanceOptimizer.detectOlderHardware();
-      this.performanceOptimizer.optimizeForMultiTabs();
-    }
     
-    // Start async initialization
-    this.init();
+    // Start async initialization immediately
+    this.initPromise = this.init();
   }
   
   async init() {
     const startupStartTime = performance.now();
     
-    // Initialize remaining properties
-    this.isScrollSyncing = false;
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false';
-    this.isLoadingFile = false;
-    this.lastEditorScrollTop = 0;
-    this.lastPreviewScrollTop = 0;
-    this.lastPreviewMaxScroll = 0;
-    this.lastEditorMaxScroll = 0;
-    this.lastSelection = null;
-    this.lastSelectedText = '';
-    this.mermaidInitialized = false;
-    this.katexInitialized = false;
-    this.taskListStates = new Map();
-    this.isTyping = false;
-    this.typingTimeout = null;
-    this.previewUpdateTimeout = null;
-    this.performanceMetrics = {
-      lastUpdateTime: 0,
-      updateCount: 0,
-      averageUpdateTime: 0
-    };
-    this.startupTime = 0;
-    this.lastFileOpenTime = 0;
-    this.lastModeSwitchTime = 0;
-    this.closeHandlerUnlisten = null;
-    this.isDistractionFree = false;
-    this.preDistractionMode = null;
-    this.centeredLayoutEnabled = localStorage.getItem('markdownViewer_centeredLayout') === 'true';
-    this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
-    this.pageMargins = {
-      top: localStorage.getItem('markdownViewer_marginTop') || '1in',
-      bottom: localStorage.getItem('markdownViewer_marginBottom') || '1in',
-      left: localStorage.getItem('markdownViewer_marginLeft') || '1in',
-      right: localStorage.getItem('markdownViewer_marginRight') || '1in'
-    };
-    this.fileHistory = JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]');
+    try {
+      // Initialize performance optimizer early
+      if (this.performanceOptimizer) {
+        this.performanceOptimizer.detectOlderHardware();
+        this.performanceOptimizer.optimizeForMultiTabs();
+      }
+      
+      // Initialize properties in batches for better performance
+      this.initializeProperties();
+      
+      // Update splash screen progress
+      this.updateSplashProgress(10, 'Initializing interface...');
     
-    // Update splash screen progress
-    if (window.splashScreen) {
-      window.splashScreen.updateProgress(10, 'Initializing interface...');
+      
+      this.initializeElements();
+      this.updateSplashProgress(25, 'Setting up event listeners...');
+      
+      this.setupEventListeners();
+      this.updateSplashProgress(40, 'Configuring interface...');
+      
+      // Basic UI setup
+      this.setMode('preview');
+      this.updateCursorPosition();
+      this.updateModeButtons();
+      this.applyDefaultTheme();
+      this.applyCenteredLayout();
+      this.updateFileHistoryDisplay();
+      this.initializeMarkdownToolbar();
+      
+      this.updateSplashProgress(60, 'Loading advanced features...');
+      await this.initializeAdvancedFeatures();
+      
+      this.updateSplashProgress(80, 'Finalizing...');
+      
+      // Finalize setup
+      this.updateToolbarVisibility();
+      this.checkExportLibraries();
+      
+      // Setup async operations
+      await Promise.all([
+        this.setupWindowCloseHandler(),
+        this.setupTauriDragDrop()
+      ]);
+      
+      this.startMemoryOptimization();
+      
+      this.startupTime = performance.now() - startupStartTime;
+      this.isInitialized = true;
+      
+      // Complete initialization
+      this.updateSplashProgress(100, 'Ready!');
+      setTimeout(() => this.hideSplash(), 500);
+      
+      // Performance validation
+      this.validatePerformance(startupStartTime);
+      
+      // Monaco Editor will be loaded lazily when needed
+      
+    } catch (error) {
+      console.error('[Init] Initialization failed:', encodeURIComponent(error.message || error));
+      this.handleInitializationError(error);
     }
-    
-    this.initializeElements();
-    
+  }
+  
+  initializeProperties() {
+    // Batch property initialization for better performance
+    Object.assign(this, {
+      isScrollSyncing: false,
+      suggestionsEnabled: localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false',
+      isLoadingFile: false,
+      lastEditorScrollTop: 0,
+      lastPreviewScrollTop: 0,
+      lastPreviewMaxScroll: 0,
+      lastEditorMaxScroll: 0,
+      lastSelection: null,
+      lastSelectedText: '',
+      mermaidInitialized: false,
+      katexInitialized: false,
+      taskListStates: new Map(),
+      isTyping: false,
+      typingTimeout: null,
+      previewUpdateTimeout: null,
+      performanceMetrics: {
+        lastUpdateTime: 0,
+        updateCount: 0,
+        averageUpdateTime: 0
+      },
+      startupTime: 0,
+      lastFileOpenTime: 0,
+      lastModeSwitchTime: 0,
+      closeHandlerUnlisten: null,
+      isDistractionFree: false,
+      preDistractionMode: null,
+      centeredLayoutEnabled: localStorage.getItem('markdownViewer_centeredLayout') === 'true',
+      currentPageSize: localStorage.getItem('markdownViewer_pageSize') || 'a4',
+      pageMargins: {
+        top: localStorage.getItem('markdownViewer_marginTop') || '1in',
+        bottom: localStorage.getItem('markdownViewer_marginBottom') || '1in',
+        left: localStorage.getItem('markdownViewer_marginLeft') || '1in',
+        right: localStorage.getItem('markdownViewer_marginRight') || '1in'
+      },
+      fileHistory: JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]')
+    });
+  }
+  
+  updateSplashProgress(progress, message) {
     if (window.splashScreen) {
-      window.splashScreen.updateProgress(25, 'Setting up event listeners...');
+      window.splashScreen.updateProgress(progress, message);
     }
-    
-    this.setupEventListeners();
-    
+  }
+  
+  hideSplash() {
     if (window.splashScreen) {
-      window.splashScreen.updateProgress(40, 'Configuring interface...');
+      window.splashScreen.hideSplash();
     }
-    
-    this.setMode('preview');
-    this.updateCursorPosition();
-    this.updateModeButtons();
-    this.applyDefaultTheme();
-    this.applyCenteredLayout();
-    this.updateFileHistoryDisplay();
-    this.initializeMarkdownToolbar();
-    
-    if (window.splashScreen) {
-      window.splashScreen.updateProgress(60, 'Loading advanced features...');
-    }
-    
-    await this.initializeAdvancedFeatures();
-    
-    if (window.splashScreen) {
-      window.splashScreen.updateProgress(80, 'Finalizing...');
-    }
-    
-    // Ensure toolbar visibility is set correctly after initialization
-    this.updateToolbarVisibility();
-    this.checkExportLibraries();
-    
-    // Setup async operations
-    await this.setupWindowCloseHandler();
-    await this.setupTauriDragDrop();
-    this.startMemoryOptimization();
-    
-    this.startupTime = performance.now() - startupStartTime;
-    this.isInitialized = true;
-    
-    // Update splash screen to completion and hide
-    if (window.splashScreen) {
-      window.splashScreen.updateProgress(100, 'Ready!');
-      setTimeout(() => {
-        window.splashScreen.hideSplash();
-      }, 500);
-    }
-    
-    // Verify performance targets
+  }
+  
+  validatePerformance(startupStartTime) {
     const target = this.performanceOptimizer ? this.performanceOptimizer.performanceTargets.startupTime : 2000;
     if (this.startupTime > target) {
       console.warn(`[Performance] Startup time exceeded target: ${this.startupTime.toFixed(2)}ms > ${target}ms`);
     }
     
-    // Benchmark startup with performance optimizer
     if (this.performanceOptimizer) {
       this.performanceOptimizer.benchmarkTabOperation('App Startup', startupStartTime);
     }
-    
-    // Initialize Monaco Editor lazily when needed
-    await this.initializeMonacoEditorLazy();
+  }
+  
+  handleInitializationError(error) {
+    // Graceful degradation on initialization failure
+    this.isInitialized = false;
+    if (window.splashScreen) {
+      window.splashScreen.hideSplash();
+    }
+    // Show basic interface even if advanced features fail
+    this.showBasicInterface();
+  }
+  
+  showBasicInterface() {
+    // Minimal interface for error recovery
+    if (this.welcomePage) {
+      this.welcomePage.style.display = 'flex';
+    }
   }
 
   initializeElements() {
@@ -226,97 +260,142 @@ class MarkdownViewer {
   }
 
   async initializeMonacoEditorLazy() {
-    // Monaco Editor lazy loading - only load when switching to code mode
-    return new Promise((resolve) => {
+    // Monaco Editor lazy loading - defer until actually needed
+    try {
       // Check for startup file first
-      this.checkStartupFile().then(() => {
-        // Only update preview if no startup file was loaded
-        if (!this.currentFile) {
-          this.updatePreview();
-        }
-        this.updateCursorPosition();
-        resolve();
-      });
-    });
+      await this.checkStartupFile();
+      
+      // Only update preview if no startup file was loaded
+      if (!this.currentFile) {
+        this.updatePreview();
+      }
+      this.updateCursorPosition();
+    } catch (error) {
+      console.error('[Monaco] Lazy initialization failed:', encodeURIComponent(error.message || error));
+    }
   }
   
   async loadMonacoEditor() {
-    if (this.isMonacoLoaded) return;
+    // If Monaco instance already exists, just show it
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      this.editor.style.display = 'none';
+      this.monacoContainer.style.display = 'block';
+      return;
+    }
     
-    // Check if Monaco is already available
-    if (window.monaco && window.monaco.editor) {
+    // If Monaco library is loaded but no instance, create one
+    if (window.monaco?.editor && !this.monacoEditor) {
       this.createMonacoInstance();
       return;
     }
     
-    // Check if Monaco is already being loaded
-    if (window.monacoLoading) {
-      await window.monacoLoading;
-      if (window.monaco && window.monaco.editor) {
-        this.createMonacoInstance();
-        return;
-      }
+    // Load Monaco library if not loaded
+    if (!window.MONACO_SINGLETON) {
+      window.MONACO_SINGLETON = this.loadMonacoSingleton();
     }
     
-    // Set loading flag to prevent duplicate loads
-    window.monacoLoading = this.loadMonacoSingleton();
-    
     try {
-      await window.monacoLoading;
+      await window.MONACO_SINGLETON;
       this.createMonacoInstance();
     } catch (error) {
       console.error('[Monaco] Failed to load Monaco Editor:', encodeURIComponent(error.message || error));
-      this.monacoContainer.style.display = 'none';
-      this.editor.style.display = 'block';
-      this.isMonacoLoaded = false;
+      this.fallbackToTextarea();
       throw error;
-    } finally {
-      window.monacoLoading = null;
     }
   }
   
-  async loadMonacoSingleton() {
+  loadMonacoSingleton() {
+    // Return immediately if Monaco is already loaded
+    if (window.monaco?.editor) {
+      return Promise.resolve();
+    }
+    
+    return this.createMonacoSingleton();
+  }
+  
+  createMonacoSingleton() {
     return new Promise((resolve, reject) => {
-      // Configure Monaco loader for CDN - only once
+      // Double-check Monaco isn't already loaded
+      if (window.monaco?.editor) {
+        resolve();
+        return;
+      }
+      
+      // Load require.js if not present
       if (!window.require) {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js';
-        script.onload = () => {
-          require.config({ 
-            paths: { 
-              'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
-            }
-          });
-          
-          require(['vs/editor/editor.main'], () => {
-            resolve();
-          }, reject);
-        };
+        script.onload = () => this.loadMonacoModule(resolve, reject);
         script.onerror = reject;
         document.head.appendChild(script);
       } else {
-        // Require is already loaded
-        if (!window.require.getConfig || !window.require.getConfig().paths?.vs) {
-          require.config({ 
-            paths: { 
-              'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
-            }
-          });
-        }
-        
-        require(['vs/editor/editor.main'], () => {
-          resolve();
-        }, reject);
+        this.loadMonacoModule(resolve, reject);
       }
     });
+  }
+  
+  loadMonacoModule(resolve, reject) {
+    // Configure require.js only once globally
+    if (!window.MONACO_CONFIGURED) {
+      require.config({ 
+        paths: { 
+          'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+        }
+      });
+      window.MONACO_CONFIGURED = true;
+    }
+    
+    // Check if Monaco is already available after config
+    if (window.monaco?.editor) {
+      resolve();
+      return;
+    }
+    
+    // Only load if not already defined to prevent duplicates
+    if (window.require.defined?.('vs/editor/editor.main')) {
+      // Module already loaded, Monaco should be available
+      if (window.monaco?.editor) {
+        resolve();
+      } else {
+        // Wait a bit for Monaco to initialize
+        setTimeout(() => {
+          if (window.monaco?.editor) {
+            resolve();
+          } else {
+            reject(new Error('Monaco loaded but not available'));
+          }
+        }, 100);
+      }
+      return;
+    }
+    
+    // Load Monaco main module for the first time
+    require(['vs/editor/editor.main'], () => {
+      // Ensure Monaco is actually available
+      if (window.monaco?.editor) {
+        resolve();
+      } else {
+        reject(new Error('Monaco module loaded but editor not available'));
+      }
+    }, reject);
+  }
+  
+  fallbackToTextarea() {
+    if (this.monacoContainer) {
+      this.monacoContainer.style.display = 'none';
+    }
+    if (this.editor) {
+      this.editor.style.display = 'block';
+    }
+    this.isMonacoLoaded = false;
   }
 
   createMonacoInstance() {
     if (this.isMonacoLoaded || !window.monaco) return;
     
     try {
-      // Create Monaco Editor instance
-      this.monacoEditor = monaco.editor.create(this.monacoContainer, {
+      // Optimized Monaco Editor configuration
+      const editorOptions = {
         value: this.getEditorContent(),
         language: 'markdown',
         theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
@@ -331,32 +410,28 @@ class MarkdownViewer {
         folding: true,
         lineNumbers: 'on',
         glyphMargin: false,
-        scrollbar: {
-          vertical: 'auto',
-          horizontal: 'auto'
-        },
+        scrollbar: { vertical: 'auto', horizontal: 'auto' },
         suggest: {
           showKeywords: this.suggestionsEnabled,
           showSnippets: this.suggestionsEnabled,
           showWords: this.suggestionsEnabled
         },
         quickSuggestions: this.suggestionsEnabled
-      });
-
+      };
+      
+      this.monacoEditor = monaco.editor.create(this.monacoContainer, editorOptions);
       this.isMonacoLoaded = true;
 
       // Setup Monaco event listeners
       this.setupMonacoEventListeners();
       
-      // Hide fallback textarea and show Monaco
+      // Switch to Monaco display
       this.editor.style.display = 'none';
       this.monacoContainer.style.display = 'block';
+      
     } catch (error) {
       console.error('[Monaco] Failed to create editor instance:', encodeURIComponent(error.message || error));
-      // Fall back to textarea
-      this.monacoContainer.style.display = 'none';
-      this.editor.style.display = 'block';
-      this.isMonacoLoaded = false;
+      this.fallbackToTextarea();
     }
   }
 
@@ -1171,6 +1246,11 @@ class MarkdownViewer {
   }
 
   async setMode(mode) {
+    // Ensure initialization is complete before mode switching
+    if (!this.isInitialized && this.initPromise) {
+      await this.initPromise;
+    }
+    
     const startTime = performance.now();
     
     // Check if mode switching is allowed
@@ -1184,7 +1264,7 @@ class MarkdownViewer {
       try {
         await this.loadMonacoEditor();
       } catch (error) {
-        console.error('[Monaco] Failed to load Monaco Editor for mode switch:', error);
+        console.error('[Monaco] Failed to load Monaco Editor for mode switch:', encodeURIComponent(error.message || error));
         // Fall back to preview mode if Monaco fails to load
         mode = 'preview';
       }
@@ -1230,12 +1310,14 @@ class MarkdownViewer {
       requestAnimationFrame(() => {
         this.monacoEditor.layout();
         this.restoreScrollPositions();
+        this.lastModeSwitchTime = performance.now() - startTime;
         this.benchmarkOperation('Mode Switch', startTime);
       });
     } else {
       // Use requestAnimationFrame for better performance
       requestAnimationFrame(() => {
         this.restoreScrollPositions();
+        this.lastModeSwitchTime = performance.now() - startTime;
         this.benchmarkOperation('Mode Switch', startTime);
       });
     }
@@ -1505,8 +1587,6 @@ class MarkdownViewer {
   }
   
   restoreScrollPositions() {
-
-    
     if (this.currentMode === 'code') {
       // When switching to code mode, sync preview scroll to editor
       if (this.isMonacoLoaded && this.monacoEditor) {
@@ -1528,11 +1608,34 @@ class MarkdownViewer {
         this.preview.scrollTop = previewScrollTop;
       }
     } else if (this.currentMode === 'split') {
-      // In split mode, restore both positions
+      // In split mode, sync both panels based on the most recent scroll position
       if (this.isMonacoLoaded && this.monacoEditor) {
-        this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
+        // Determine which scroll position to use as the reference
+        const hasEditorScroll = this.lastEditorScrollTop > 0;
+        const hasPreviewScroll = this.lastPreviewScrollTop > 0;
+        
+        if (hasPreviewScroll && !hasEditorScroll) {
+          // Use preview as reference, sync editor to it
+          const scrollPercentage = this.lastPreviewMaxScroll > 0 ? this.lastPreviewScrollTop / this.lastPreviewMaxScroll : 0;
+          const scrollHeight = this.monacoEditor.getScrollHeight();
+          const viewHeight = this.monacoEditor.getLayoutInfo().height;
+          const maxScroll = Math.max(0, scrollHeight - viewHeight);
+          const targetScrollTop = scrollPercentage * maxScroll;
+          this.monacoEditor.setScrollTop(targetScrollTop);
+          this.preview.scrollTop = this.lastPreviewScrollTop;
+        } else if (hasEditorScroll && !hasPreviewScroll) {
+          // Use editor as reference, sync preview to it
+          const scrollPercentage = this.lastEditorMaxScroll > 0 ? this.lastEditorScrollTop / this.lastEditorMaxScroll : 0;
+          const previewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
+          const previewScrollTop = scrollPercentage * previewMaxScroll;
+          this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
+          this.preview.scrollTop = previewScrollTop;
+        } else {
+          // Both have scroll or neither have scroll - restore both positions
+          this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
+          this.preview.scrollTop = this.lastPreviewScrollTop;
+        }
       }
-      this.preview.scrollTop = this.lastPreviewScrollTop;
     }
   }
 

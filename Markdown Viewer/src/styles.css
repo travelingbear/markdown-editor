@@ -2523,6 +2523,157 @@ body.distraction-free .markdown-toolbar {
   background: rgba(0, 0, 0, 0.7);
 }
 
+/* Font Size Control Styles in Toolbar */
+.font-size-group {
+  align-items: center;
+  gap: 4px;
+}
+
+.font-size-display {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: var(--bg-primary);
+  padding: 4px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-primary);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 10px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.font-btn {
+  min-width: 36px;
+  font-weight: bold;
+  font-size: 10px;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.zoom-display {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent-primary);
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-primary);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 10px;
+}
+
+.zoom-btn {
+  font-size: 10px;
+  padding: 2px 6px;
+  min-width: 32px;
+}
+
+/* Preview Zoom Styles */
+.preview-content {
+  --zoom-scale: 1;
+  transform: scale(var(--zoom-scale));
+  transform-origin: top center;
+  width: calc(100% / var(--zoom-scale));
+  transition: transform 0.1s ease;
+}
+
+/* Toolbar Size Variations */
+/* Main Toolbar Sizes */
+[data-main-toolbar-size="small"] .toolbar {
+  min-height: 32px;
+  padding: 4px 8px;
+}
+
+[data-main-toolbar-size="small"] .toolbar-btn,
+[data-main-toolbar-size="small"] .mode-btn {
+  padding: 4px 8px;
+  font-size: 10px;
+  height: 24px;
+}
+
+[data-main-toolbar-size="small"] .dropdown-arrow {
+  height: 24px;
+  padding: 4px 3px;
+  font-size: 7px;
+}
+
+[data-main-toolbar-size="large"] .toolbar {
+  min-height: 48px;
+  padding: 12px 16px;
+}
+
+[data-main-toolbar-size="large"] .toolbar-btn,
+[data-main-toolbar-size="large"] .mode-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  height: 36px;
+}
+
+[data-main-toolbar-size="large"] .dropdown-arrow {
+  height: 36px;
+  padding: 8px 6px;
+  font-size: 10px;
+}
+
+/* Markdown Toolbar Sizes */
+[data-md-toolbar-size="small"] .markdown-toolbar {
+  padding: 0;
+}
+
+[data-md-toolbar-size="small"] .toolbar-content {
+  padding: 4px 8px;
+  gap: 4px;
+}
+
+[data-md-toolbar-size="small"] .md-btn {
+  padding: 3px 6px;
+  font-size: 9px;
+  min-width: 24px;
+  height: 22px;
+}
+
+[data-md-toolbar-size="small"] .font-size-display {
+  font-size: 8px;
+  height: 22px;
+  padding: 2px 4px;
+  min-width: 32px;
+}
+
+[data-md-toolbar-size="large"] .toolbar-content {
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+[data-md-toolbar-size="large"] .md-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  min-width: 40px;
+  height: 36px;
+}
+
+[data-md-toolbar-size="large"] .font-size-display {
+  font-size: 12px;
+  height: 36px;
+  padding: 6px 10px;
+  min-width: 48px;
+}
+
+[data-md-toolbar-size="large"] .toolbar-separator {
+  height: 32px;
+  margin: 0 6px;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .settings-window {

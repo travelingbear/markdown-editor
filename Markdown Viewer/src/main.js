@@ -50,6 +50,9 @@ class MarkdownViewer {
       this.applyCenteredLayout();
       this.updateFileHistoryDisplay();
       this.initializeMarkdownToolbar();
+      this.applyFontSize();
+      this.applyZoom();
+      this.applyToolbarSizes();
       
       this.updateSplashProgress(60, 'Loading advanced features...');
       await this.initializeAdvancedFeatures();
@@ -93,6 +96,10 @@ class MarkdownViewer {
     Object.assign(this, {
       isScrollSyncing: false,
       suggestionsEnabled: localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false',
+      fontSize: parseInt(localStorage.getItem('markdownViewer_fontSize') || '14'),
+      previewZoom: parseFloat(localStorage.getItem('markdownViewer_previewZoom') || '1.0'),
+      mainToolbarSize: localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium',
+      mdToolbarSize: localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium',
       isLoadingFile: false,
       lastEditorScrollTop: 0,
       lastPreviewScrollTop: 0,
@@ -220,6 +227,23 @@ class MarkdownViewer {
     this.aboutModal = document.getElementById('about-modal');
     this.aboutCloseBtn = document.getElementById('about-close-btn');
     this.aboutOverlay = document.querySelector('.about-overlay');
+    
+    // Font size controls
+    this.fontSizeDisplay = document.getElementById('font-size-display');
+    this.fontSizeIncrease = document.getElementById('font-size-increase');
+    this.fontSizeDecrease = document.getElementById('font-size-decrease');
+    this.fontSizeReset = document.getElementById('font-size-reset');
+    
+    // Zoom controls
+    this.zoomControls = document.getElementById('zoom-controls');
+    this.zoomDisplay = document.getElementById('zoom-display');
+    this.zoomIn = document.getElementById('zoom-in');
+    this.zoomOut = document.getElementById('zoom-out');
+    this.zoomReset = document.getElementById('zoom-reset');
+    
+    // Undo/Redo controls
+    this.undoBtn = document.getElementById('undo-btn');
+    this.redoBtn = document.getElementById('redo-btn');
   }
 
   async initializeAdvancedFeatures() {
@@ -406,7 +430,7 @@ class MarkdownViewer {
         wordWrap: 'on',
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
-        fontSize: 14,
+        fontSize: this.fontSize,
         lineHeight: 1.45,
         fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
         renderWhitespace: 'selection',
@@ -748,6 +772,28 @@ class MarkdownViewer {
               this.toggleMarkdownToolbar();
             }
             break;
+          case '=':
+          case '+':
+            // Zoom in (Ctrl+=)
+            if (this.currentMode === 'preview') {
+              e.preventDefault();
+              this.changeZoom(0.1);
+            }
+            break;
+          case '-':
+            // Zoom out (Ctrl+-)
+            if (this.currentMode === 'preview') {
+              e.preventDefault();
+              this.changeZoom(-0.1);
+            }
+            break;
+          case '0':
+            // Reset zoom (Ctrl+0)
+            if (this.currentMode === 'preview') {
+              e.preventDefault();
+              this.resetZoom();
+            }
+            break;
 
 
 
@@ -830,6 +876,17 @@ class MarkdownViewer {
     this.setupScrollSync();
     
     // Enhanced drag and drop functionality set up in constructor
+    
+    // Zoom controls
+    if (this.zoomIn) {
+      this.zoomIn.addEventListener('click', () => this.changeZoom(0.1));
+    }
+    if (this.zoomOut) {
+      this.zoomOut.addEventListener('click', () => this.changeZoom(-0.1));
+    }
+    if (this.zoomReset) {
+      this.zoomReset.addEventListener('click', () => this.resetZoom());
+    }
   }
 
   setupSplitter() {
@@ -1206,6 +1263,9 @@ class MarkdownViewer {
       // Force preview mode when no document
       this.setMode('preview');
     }
+    
+    // Update zoom controls visibility
+    this.updateZoomControlsVisibility();
   }
   
   setBatchButtonState(hasDocument) {
@@ -1293,6 +1353,9 @@ class MarkdownViewer {
     
     // Update toolbar visibility
     this.updateToolbarVisibility();
+    
+    // Update zoom controls visibility
+    this.updateZoomControlsVisibility();
     
     // Trigger Monaco layout update and restore scroll positions
     if (this.isMonacoLoaded && this.monacoEditor) {
@@ -2493,6 +2556,17 @@ Tip: You can also use HTML Export and then print from your browser.`;
       document.getElementById(`splash-${i}s-btn`).classList.toggle('active', this.splashDuration === i);
     }
     
+    // Update toolbar size buttons
+    document.getElementById('main-toolbar-small').classList.toggle('active', this.mainToolbarSize === 'small');
+    document.getElementById('main-toolbar-medium').classList.toggle('active', this.mainToolbarSize === 'medium');
+    document.getElementById('main-toolbar-large').classList.toggle('active', this.mainToolbarSize === 'large');
+    
+    document.getElementById('md-toolbar-small').classList.toggle('active', this.mdToolbarSize === 'small');
+    document.getElementById('md-toolbar-medium').classList.toggle('active', this.mdToolbarSize === 'medium');
+    document.getElementById('md-toolbar-large').classList.toggle('active', this.mdToolbarSize === 'large');
+    
+
+    
     // Show/hide duration setting based on splash enabled state
     const durationSetting = document.getElementById('splash-duration-setting');
     if (durationSetting) {
@@ -2663,6 +2737,30 @@ Tip: You can also use HTML Export and then print from your browser.`;
         this.updateSettingsDisplay();
       });
     }
+    
+    // Main toolbar size controls
+    document.getElementById('main-toolbar-small').addEventListener('click', () => {
+      this.setMainToolbarSize('small');
+    });
+    document.getElementById('main-toolbar-medium').addEventListener('click', () => {
+      this.setMainToolbarSize('medium');
+    });
+    document.getElementById('main-toolbar-large').addEventListener('click', () => {
+      this.setMainToolbarSize('large');
+    });
+    
+    // Markdown toolbar size controls
+    document.getElementById('md-toolbar-small').addEventListener('click', () => {
+      this.setMdToolbarSize('small');
+    });
+    document.getElementById('md-toolbar-medium').addEventListener('click', () => {
+      this.setMdToolbarSize('medium');
+    });
+    document.getElementById('md-toolbar-large').addEventListener('click', () => {
+      this.setMdToolbarSize('large');
+    });
+    
+
   }
 
   async showLegacySettings() {
@@ -3670,6 +3768,114 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.updateFileHistoryDisplay();
     // File history cleared
   }
+  
+  changeFontSize(delta) {
+    const newSize = Math.max(10, Math.min(24, this.fontSize + delta));
+    if (newSize !== this.fontSize) {
+      this.fontSize = newSize;
+      localStorage.setItem('markdownViewer_fontSize', this.fontSize.toString());
+      this.applyFontSize();
+      this.updateSettingsDisplay();
+    }
+  }
+  
+  resetFontSize() {
+    this.fontSize = 14;
+    localStorage.setItem('markdownViewer_fontSize', this.fontSize.toString());
+    this.applyFontSize();
+    this.updateSettingsDisplay();
+  }
+  
+  applyFontSize() {
+    // Apply to Monaco Editor
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      this.monacoEditor.updateOptions({
+        fontSize: this.fontSize
+      });
+    }
+    
+    // Apply to fallback editor
+    if (this.editor) {
+      this.editor.style.fontSize = `${this.fontSize}px`;
+    }
+    
+    // Apply to preview content
+    if (this.preview) {
+      this.preview.style.fontSize = `${this.fontSize}px`;
+    }
+    
+    // Update display
+    if (this.fontSizeDisplay) {
+      this.fontSizeDisplay.textContent = `${this.fontSize}px`;
+    }
+  }
+  
+  changeZoom(delta) {
+    const newZoom = Math.max(0.5, Math.min(3.0, this.previewZoom + delta));
+    if (newZoom !== this.previewZoom) {
+      this.previewZoom = newZoom;
+      localStorage.setItem('markdownViewer_previewZoom', this.previewZoom.toString());
+      this.applyZoom();
+    }
+  }
+  
+  resetZoom() {
+    this.previewZoom = 1.0;
+    localStorage.setItem('markdownViewer_previewZoom', this.previewZoom.toString());
+    this.applyZoom();
+  }
+  
+  applyZoom() {
+    if (this.preview) {
+      this.preview.style.setProperty('--zoom-scale', this.previewZoom);
+    }
+    
+    if (this.zoomDisplay) {
+      this.zoomDisplay.textContent = `${Math.round(this.previewZoom * 100)}%`;
+    }
+  }
+  
+  updateZoomControlsVisibility() {
+    if (this.zoomControls) {
+      const shouldShow = this.currentMode === 'preview' && !this.isDistractionFree;
+      this.zoomControls.style.display = shouldShow ? 'flex' : 'none';
+    }
+  }
+  
+  executeUndo() {
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      this.monacoEditor.trigger('toolbar', 'undo', null);
+    } else if (this.editor && document.execCommand) {
+      document.execCommand('undo');
+    }
+  }
+  
+  executeRedo() {
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      this.monacoEditor.trigger('toolbar', 'redo', null);
+    } else if (this.editor && document.execCommand) {
+      document.execCommand('redo');
+    }
+  }
+  
+  setMainToolbarSize(size) {
+    this.mainToolbarSize = size;
+    localStorage.setItem('markdownViewer_mainToolbarSize', size);
+    this.applyToolbarSizes();
+    this.updateSettingsDisplay();
+  }
+  
+  setMdToolbarSize(size) {
+    this.mdToolbarSize = size;
+    localStorage.setItem('markdownViewer_mdToolbarSize', size);
+    this.applyToolbarSizes();
+    this.updateSettingsDisplay();
+  }
+  
+  applyToolbarSizes() {
+    document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
+    document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
+  }
 
   setupMonacoMarkdownShortcuts() {
     if (!this.monacoEditor) return;
@@ -3735,7 +3941,33 @@ Tip: You can also use HTML Export and then print from your browser.`;
       });
     });
     
-
+    // Font size controls
+    if (this.fontSizeIncrease) {
+      this.fontSizeIncrease.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.changeFontSize(2);
+      });
+    }
+    if (this.fontSizeDecrease) {
+      this.fontSizeDecrease.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.changeFontSize(-2);
+      });
+    }
+    
+    // Undo/Redo controls
+    if (this.undoBtn) {
+      this.undoBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.executeUndo();
+      });
+    }
+    if (this.redoBtn) {
+      this.redoBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.executeRedo();
+      });
+    }
   }
 
 

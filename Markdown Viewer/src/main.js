@@ -243,72 +243,120 @@ class MarkdownViewer {
   async loadMonacoEditor() {
     if (this.isMonacoLoaded) return;
     
-    try {
-      // Configure Monaco loader for CDN - only once
-      if (!window.require || !window.require.defined) {
-        require.config({ 
-          paths: { 
-            'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
-          }
-        });
+    // Check if Monaco is already available
+    if (window.monaco && window.monaco.editor) {
+      this.createMonacoInstance();
+      return;
+    }
+    
+    // Check if Monaco is already being loaded
+    if (window.monacoLoading) {
+      await window.monacoLoading;
+      if (window.monaco && window.monaco.editor) {
+        this.createMonacoInstance();
+        return;
       }
-
-      return new Promise((resolve, reject) => {
-        // Load Monaco Editor
-        require(['vs/editor/editor.main'], () => {
-          try {
-            // Create Monaco Editor instance
-            this.monacoEditor = monaco.editor.create(this.monacoContainer, {
-              value: this.getEditorContent(),
-              language: 'markdown',
-              theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
-              automaticLayout: true,
-              wordWrap: 'on',
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              fontSize: 14,
-              lineHeight: 1.45,
-              fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
-              renderWhitespace: 'selection',
-              folding: true,
-              lineNumbers: 'on',
-              glyphMargin: false,
-              scrollbar: {
-                vertical: 'auto',
-                horizontal: 'auto'
-              },
-              suggest: {
-                showKeywords: this.suggestionsEnabled,
-                showSnippets: this.suggestionsEnabled,
-                showWords: this.suggestionsEnabled
-              },
-              quickSuggestions: this.suggestionsEnabled
-            });
-
-            this.isMonacoLoaded = true;
-
-            // Setup Monaco event listeners
-            this.setupMonacoEventListeners();
-            
-            // Hide fallback textarea and show Monaco
-            this.editor.style.display = 'none';
-            this.monacoContainer.style.display = 'block';
-            
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        }, (error) => {
-          reject(error);
-        });
-      });
-
+    }
+    
+    // Set loading flag to prevent duplicate loads
+    window.monacoLoading = this.loadMonacoSingleton();
+    
+    try {
+      await window.monacoLoading;
+      this.createMonacoInstance();
     } catch (error) {
-      console.error('[Monaco] Failed to load Monaco Editor:', error);
+      console.error('[Monaco] Failed to load Monaco Editor:', encodeURIComponent(error.message || error));
       this.monacoContainer.style.display = 'none';
       this.editor.style.display = 'block';
       this.isMonacoLoaded = false;
       throw error;
+    } finally {
+      window.monacoLoading = null;
+    }
+  }
+  
+  async loadMonacoSingleton() {
+    return new Promise((resolve, reject) => {
+      // Configure Monaco loader for CDN - only once
+      if (!window.require) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js';
+        script.onload = () => {
+          require.config({ 
+            paths: { 
+              'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+            }
+          });
+          
+          require(['vs/editor/editor.main'], () => {
+            resolve();
+          }, reject);
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+      } else {
+        // Require is already loaded
+        if (!window.require.getConfig || !window.require.getConfig().paths?.vs) {
+          require.config({ 
+            paths: { 
+              'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+            }
+          });
+        }
+        
+        require(['vs/editor/editor.main'], () => {
+          resolve();
+        }, reject);
+      }
+    });
+  }
+
+  createMonacoInstance() {
+    if (this.isMonacoLoaded || !window.monaco) return;
+    
+    try {
+      // Create Monaco Editor instance
+      this.monacoEditor = monaco.editor.create(this.monacoContainer, {
+        value: this.getEditorContent(),
+        language: 'markdown',
+        theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
+        automaticLayout: true,
+        wordWrap: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        fontSize: 14,
+        lineHeight: 1.45,
+        fontFamily: "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace",
+        renderWhitespace: 'selection',
+        folding: true,
+        lineNumbers: 'on',
+        glyphMargin: false,
+        scrollbar: {
+          vertical: 'auto',
+          horizontal: 'auto'
+        },
+        suggest: {
+          showKeywords: this.suggestionsEnabled,
+          showSnippets: this.suggestionsEnabled,
+          showWords: this.suggestionsEnabled
+        },
+        quickSuggestions: this.suggestionsEnabled
+      });
+
+      this.isMonacoLoaded = true;
+
+      // Setup Monaco event listeners
+      this.setupMonacoEventListeners();
+      
+      // Hide fallback textarea and show Monaco
+      this.editor.style.display = 'none';
+      this.monacoContainer.style.display = 'block';
+    } catch (error) {
+      console.error('[Monaco] Failed to create editor instance:', encodeURIComponent(error.message || error));
+      // Fall back to textarea
+      this.monacoContainer.style.display = 'none';
+      this.editor.style.display = 'block';
+      this.isMonacoLoaded = false;
     }
   }
 

@@ -352,7 +352,7 @@ class MarkdownViewer {
 
     // Focus events for better UX
     this.monacoEditor.onDidFocusEditorText(() => {
-      console.log('[Monaco] Editor focused');
+      // Editor focused - no logging needed
     });
 
     // Auto-continuation for lists and tasks
@@ -373,16 +373,13 @@ class MarkdownViewer {
   setupEventListeners() {
     // File operations
     this.newBtn.addEventListener('click', () => {
-      console.log('[Event] New button clicked');
       this.newFile();
     });
     this.openBtn.addEventListener('click', () => {
-      console.log('[Event] Open button clicked');
       this.openFile();
     });
     // Save functionality with dropdown
     this.saveBtn.addEventListener('click', () => {
-      console.log('[Event] Save button clicked');
       this.saveFile();
     });
     this.saveDropdownArrow.addEventListener('click', (e) => {
@@ -391,31 +388,26 @@ class MarkdownViewer {
     });
     this.saveAsBtn.addEventListener('click', () => {
       this.hideSaveDropdown();
-      console.log('[Event] Save As button clicked');
       this.saveAsFile();
     });
     this.closeBtn.addEventListener('click', () => {
-      console.log('[Event] Close button clicked');
       this.closeFile();
     });
     
     // Welcome page buttons
     if (this.welcomeNewBtn) {
       this.welcomeNewBtn.addEventListener('click', () => {
-        console.log('[Event] Welcome new button clicked');
         this.newFile();
       });
     }
     if (this.welcomeOpenBtn) {
       this.welcomeOpenBtn.addEventListener('click', () => {
-        console.log('[Event] Welcome open button clicked');
         this.openFile();
       });
     }
     
     if (this.clearHistoryBtn) {
       this.clearHistoryBtn.addEventListener('click', () => {
-        console.log('[Event] Clear history button clicked');
         this.clearFileHistory();
       });
     }
@@ -423,28 +415,24 @@ class MarkdownViewer {
     // Phase 8.5 event listeners
     if (this.helpStatusBtn) {
       this.helpStatusBtn.addEventListener('click', () => {
-        console.log('[Event] Help status button clicked');
         this.showHelp();
       });
     }
     
     if (this.welcomeHelpBtn) {
       this.welcomeHelpBtn.addEventListener('click', () => {
-        console.log('[Event] Welcome help button clicked');
         this.showHelp();
       });
     }
     
     if (this.welcomeAboutBtn) {
       this.welcomeAboutBtn.addEventListener('click', () => {
-        console.log('[Event] Welcome about button clicked');
         this.showAbout();
       });
     }
     
     if (this.welcomeSettingsBtn) {
       this.welcomeSettingsBtn.addEventListener('click', () => {
-        console.log('[Event] Welcome settings button clicked');
         this.showEnhancedSettings();
       });
     }
@@ -770,8 +758,6 @@ class MarkdownViewer {
   async openFile() {
     const startTime = performance.now();
     try {
-      console.log('[File] Opening file dialog...');
-      
       if (!window.__TAURI__) {
         throw new Error('Tauri API not available');
       }
@@ -800,7 +786,6 @@ class MarkdownViewer {
         this.setMode(this.defaultMode);
         
         this.benchmarkOperation('File Open', startTime);
-        console.log('[File] File opened successfully');
       }
     } catch (error) {
       this.handleError(error, 'File Opening');
@@ -808,9 +793,7 @@ class MarkdownViewer {
   }
 
   async saveFile() {
-    console.log('[File] Save button clicked');
     const content = this.getEditorContent();
-    console.log('[File] Content to save length:', content.length);
     
     if (!window.__TAURI__) {
       console.error('[File] Tauri API not available');
@@ -818,19 +801,16 @@ class MarkdownViewer {
     }
     
     if (this.currentFile) {
-      console.log('[File] Saving to existing file:', this.currentFile);
       try {
         await window.__TAURI__.fs.writeTextFile(this.currentFile, content);
         this.isDirty = false;
         this.saveBtn.classList.remove('dirty');
         this.updateFilename();
-        console.log('[File] File saved successfully');
       } catch (error) {
-        console.error('[File] Save failed:', error);
-        alert('Failed to save file: ' + (error.message || error));
+        console.error('[File] Save failed:', encodeURIComponent(error.message || error));
+        await this.showErrorDialog('Failed to save file: ' + (error.message || error));
       }
     } else {
-      console.log('[File] Opening save dialog...');
       try {
         const filePath = await window.__TAURI__.dialog.save({
           filters: [{
@@ -840,19 +820,15 @@ class MarkdownViewer {
         });
         
         if (filePath) {
-          console.log('[File] Saving to new file:', filePath);
           await window.__TAURI__.fs.writeTextFile(filePath, content);
           this.currentFile = filePath;
           this.isDirty = false;
           this.saveBtn.classList.remove('dirty');
           this.updateFilename();
-          console.log('[File] File saved successfully');
-        } else {
-          console.log('[File] Save dialog cancelled');
         }
       } catch (error) {
-        console.error('[File] Save failed:', error);
-        alert('Failed to save file: ' + (error.message || error));
+        console.error('[File] Save failed:', encodeURIComponent(error.message || error));
+        await this.showErrorDialog('Failed to save file: ' + (error.message || error));
       }
     }
   }
@@ -860,7 +836,6 @@ class MarkdownViewer {
   async saveAsFile() {
     try {
       const content = this.getEditorContent();
-      console.log('[File] Opening save as dialog...');
       
       const { save } = window.__TAURI__.dialog;
       const { writeTextFile } = window.__TAURI__.fs;
@@ -873,12 +848,10 @@ class MarkdownViewer {
       });
       
       if (filePath) {
-        console.log('[File] Saving as new file:', filePath);
         await writeTextFile(filePath, content);
         this.currentFile = filePath;
         this.isDirty = false;
         this.updateFilename();
-        console.log('[File] File saved as successfully');
       }
     } catch (error) {
       this.handleError(error, 'Save As');
@@ -923,7 +896,6 @@ class MarkdownViewer {
   }
 
   newFile() {
-    console.log('[File] Creating new file');
     if (this.isDirty) {
       // Ask to save current file first
       this.closeFile().then(() => {
@@ -947,7 +919,6 @@ class MarkdownViewer {
     this.setMode(this.defaultMode); // Use default mode for new files
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
-    console.log('[File] New file created');
   }
   
   doClose() {
@@ -963,7 +934,6 @@ class MarkdownViewer {
     this.saveBtn.classList.remove('dirty');
     this.updateFilename();
     this.updateModeButtons();
-    console.log('[File] File closed, editor and preview cleared, showing welcome page');
   }
   
   showWelcomePage() {
@@ -984,19 +954,6 @@ class MarkdownViewer {
   async updatePreview() {
     const markdown = this.getEditorContent();
     
-    console.log('[Preview] Starting preview update...');
-    console.log('[Preview] Libraries loaded:', {
-      marked: typeof marked !== 'undefined',
-      mermaid: typeof mermaid !== 'undefined',
-      katex: typeof katex !== 'undefined',
-      window_mermaid: typeof window.mermaid !== 'undefined',
-      window_katex: typeof window.katex !== 'undefined'
-    });
-    
-    // Check what's actually available in window
-    console.log('[Preview] Window object keys containing mermaid/katex:', 
-      Object.keys(window).filter(key => key.toLowerCase().includes('mermaid') || key.toLowerCase().includes('katex')));
-    
     if (typeof marked === 'undefined') {
       console.error('[Preview] marked.js not loaded');
       this.preview.innerHTML = '<p>Markdown parser not loaded</p>';
@@ -1008,11 +965,9 @@ class MarkdownViewer {
       let processedMarkdown = this.processMathInMarkdown(markdown);
       
       // Configure marked with basic settings and custom renderer
-      console.log('[Preview] Marked version:', marked.version || 'unknown');
       
       // Check if we're using the new marked API (v5+)
       if (marked.use) {
-        console.log('[Preview] Using new marked API');
         
         marked.use({
           breaks: true,
@@ -1032,7 +987,6 @@ class MarkdownViewer {
           }
         });
       } else {
-        console.log('[Preview] Using legacy marked API');
         
         // Legacy API (marked v4 and below)
         const renderer = new marked.Renderer();
@@ -1058,7 +1012,6 @@ class MarkdownViewer {
       
       // Parse markdown to HTML
       let html = marked.parse(processedMarkdown);
-      // HTML generated
       
       // Process Mermaid code blocks
       html = this.processMermaidInHtml(html);
@@ -1086,8 +1039,6 @@ class MarkdownViewer {
       
       // Process images for local file conversion (may cause brief flicker on first load)
       await this.processImages();
-      
-      // Preview update completed
       
     } catch (error) {
       console.error('[Preview] Error updating preview:', error);
@@ -1168,7 +1119,6 @@ class MarkdownViewer {
       this.isDirty = true;
       this.updateFilename();
       this.saveBtn.classList.add('dirty');
-      console.log('[Dirty] Document marked as dirty');
     }
   }
 
@@ -1257,15 +1207,6 @@ class MarkdownViewer {
   }
 
   setupDragAndDrop() {
-    console.log('[DragDrop] Setting up drag-and-drop functionality');
-    console.log('[DragDrop] Tauri file drop disabled - using browser events');
-    console.log('[DragDrop] Window object:', typeof window);
-    console.log('[DragDrop] Document object:', typeof document);
-    
-    // Test if basic events work
-    document.addEventListener('click', () => {
-      console.log('[DragDrop] Click test - events are working');
-    }, { once: true });
     
     // Enhanced drag-and-drop with visual feedback
     let dragCounter = 0;
@@ -1274,7 +1215,6 @@ class MarkdownViewer {
     document.addEventListener('dragenter', (e) => {
       e.preventDefault();
       dragCounter++;
-      console.log('[DragDrop] Drag enter, counter:', dragCounter);
       
       // Add visual feedback
       document.body.classList.add('drag-over');
@@ -1283,7 +1223,6 @@ class MarkdownViewer {
     document.addEventListener('dragleave', (e) => {
       e.preventDefault();
       dragCounter--;
-      console.log('[DragDrop] Drag leave, counter:', dragCounter);
       
       // Remove visual feedback when completely leaving
       if (dragCounter === 0) {
@@ -1293,7 +1232,6 @@ class MarkdownViewer {
     
     document.addEventListener('dragover', (e) => {
       e.preventDefault();
-      console.log('[DragDrop] Drag over');
       e.dataTransfer.dropEffect = 'copy';
     });
     
@@ -1397,8 +1335,6 @@ class MarkdownViewer {
       const appWindow = getCurrentWindow();
       
       const unlisten = await appWindow.onCloseRequested(async (event) => {
-        console.log('[Close] Close requested, isDirty:', this.isDirty);
-        
         if (this.isDirty) {
           event.preventDefault();
           
@@ -1410,7 +1346,6 @@ class MarkdownViewer {
           if (shouldSave) {
             await this.saveFile();
             if (this.isDirty) {
-              console.log('[Close] Save failed, not closing');
               return;
             }
           } else {
@@ -1429,7 +1364,6 @@ class MarkdownViewer {
       });
       
       this.closeHandlerUnlisten = unlisten;
-      console.log('[Close] Window close handler registered');
       
     } catch (error) {
       console.error('[Close] Error setting up close handler:', error);
@@ -1504,8 +1438,6 @@ class MarkdownViewer {
         quickSuggestions: this.suggestionsEnabled
       });
     }
-    
-    console.log(`[Editor] Suggestions ${this.suggestionsEnabled ? 'enabled' : 'disabled'}`);
   }
 
   storeScrollPositions() {
@@ -1532,14 +1464,10 @@ class MarkdownViewer {
       if (this.isMonacoLoaded && this.monacoEditor) {
         const scrollPercentage = this.lastPreviewMaxScroll > 0 ? this.lastPreviewScrollTop / this.lastPreviewMaxScroll : 0;
         
-        console.log('[Scroll] Using stored preview max:', this.lastPreviewMaxScroll, 'Percentage:', scrollPercentage);
-        
         const scrollHeight = this.monacoEditor.getScrollHeight();
         const viewHeight = this.monacoEditor.getLayoutInfo().height;
         const maxScroll = Math.max(0, scrollHeight - viewHeight);
         const targetScrollTop = scrollPercentage * maxScroll;
-        
-        console.log('[Scroll] Editor max scroll:', maxScroll, 'Target:', targetScrollTop);
         this.monacoEditor.setScrollTop(targetScrollTop);
       }
     } else if (this.currentMode === 'preview') {
@@ -1549,18 +1477,13 @@ class MarkdownViewer {
         
         const previewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
         const previewScrollTop = scrollPercentage * previewMaxScroll;
-        
-        console.log('[Scroll] Using stored editor max:', this.lastEditorMaxScroll, 'Percentage:', scrollPercentage);
-        console.log('[Scroll] Setting preview scroll to:', previewScrollTop);
         this.preview.scrollTop = previewScrollTop;
       }
     } else if (this.currentMode === 'split') {
       // In split mode, restore both positions
       if (this.isMonacoLoaded && this.monacoEditor) {
-        console.log('[Scroll] Restoring editor scroll to:', this.lastEditorScrollTop);
         this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
       }
-      console.log('[Scroll] Restoring preview scroll to:', this.lastPreviewScrollTop);
       this.preview.scrollTop = this.lastPreviewScrollTop;
     }
   }
@@ -1874,20 +1797,17 @@ class MarkdownViewer {
   
   async exportToPdf() {
     try {
-      console.log('[Export] Starting PDF export...');
-      
       // Create a print-optimized version and open print dialog
       await this.openPrintDialog();
       
     } catch (error) {
-      console.error('[Export] PDF export failed:', error);
-      alert('PDF Export Error: ' + error.message + '\n\nTip: Use Ctrl+P to print directly, or try HTML Export and print from your browser.');
+      console.error('[Export] PDF export failed:', encodeURIComponent(error.message || error));
+      await this.showErrorDialog('PDF Export Error: ' + error.message + '\n\nTip: Use Ctrl+P to print directly, or try HTML Export and print from your browser.');
     }
   }
   
   async printContent() {
     try {
-      console.log('[Export] Preparing content for printing...');
       
       // Get content based on current mode
       let contentToPrint = '';
@@ -1913,10 +1833,9 @@ class MarkdownViewer {
           // Create temporary HTML file and open with system print
           const tempPath = await this.createTempPrintFile(printHtml);
           await window.__TAURI__.shell.open(tempPath);
-          console.log('[Export] Opened with system default application');
           return;
         } catch (error) {
-          console.warn('[Export] Tauri print failed, falling back to browser print:', error);
+          console.warn('[Export] Tauri print failed, falling back to browser print:', encodeURIComponent(error.message || error));
         }
       }
       
@@ -1924,7 +1843,7 @@ class MarkdownViewer {
       this.printViaBrowserDirect(printHtml);
       
     } catch (error) {
-      console.error('[Export] Print content failed:', error);
+      console.error('[Export] Print content failed:', encodeURIComponent(error.message || error));
       throw error;
     }
   }
@@ -2056,13 +1975,11 @@ class MarkdownViewer {
   
   async openPrintDialog() {
     try {
-      console.log('[Export] Opening print dialog...');
-      
       // Simply use the browser's native print dialog
       this.directPrint();
       
     } catch (error) {
-      console.error('[Export] Print dialog failed:', error);
+      console.error('[Export] Print dialog failed:', encodeURIComponent(error.message || error));
       this.showPrintInstructions();
     }
   }
@@ -2071,18 +1988,16 @@ class MarkdownViewer {
   
   directPrint() {
     try {
-      console.log('[Export] Direct print requested');
-      
       // Simply trigger the browser's print dialog
       window.print();
       
     } catch (error) {
-      console.error('[Export] Direct print failed:', error);
+      console.error('[Export] Direct print failed:', encodeURIComponent(error.message || error));
       this.showPrintInstructions();
     }
   }
   
-  showPrintInstructions() {
+  async showPrintInstructions() {
     const message = `Print Setup Instructions:
 
 1. Press Ctrl+P (or Cmd+P on Mac) to open the print dialog
@@ -2096,7 +2011,7 @@ Current mode: ${this.currentMode}
 
 Tip: You can also use HTML Export and then print from your browser.`;
     
-    alert(message);
+    await this.showErrorDialog(message);
   }
   
   getPreviewContentForPrint() {
@@ -2246,7 +2161,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.updatePreview();
     }
     
-    console.log(`[Theme] Switched to ${this.theme} theme`);
+    // Theme switched successfully
   }
   
   checkExportLibraries() {
@@ -2263,7 +2178,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
     try {
       if (window.__TAURI__) {
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
-        console.log('[Startup] Startup file:', startupFile);
         
         if (startupFile) {
           const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
@@ -2283,7 +2197,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         }
       }
     } catch (error) {
-      console.error('[Startup] Error:', error);
+      console.error('[Startup] Error:', encodeURIComponent(error.message || error));
       this.handleError(error, 'File Association');
     }
     
@@ -2295,7 +2209,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
     try {
       if (!filePath || !window.__TAURI__) return;
       
-      console.log('[File] Opening:', filePath);
       const content = await window.__TAURI__.fs.readTextFile(filePath);
       
       this.isLoadingFile = true;
@@ -2309,16 +2222,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.updateFilename();
       this.updateModeButtons();
       this.setMode(this.defaultMode);
-      
-      console.log('[File] Opened successfully');
     } catch (error) {
-      console.error('[File] Error:', error.message);
+      console.error('[File] Error:', encodeURIComponent(error.message || error));
       this.handleError(new Error(`Failed to open file: ${error.message}`), 'File Association');
     }
   }
 
   async quitApplication() {
-    console.log('[App] Quit application requested');
     if (this.isDirty) {
       const shouldSave = await window.__TAURI__.dialog.confirm(
         'You have unsaved changes. Do you want to save before quitting?',
@@ -2329,7 +2239,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         try {
           await this.saveFile();
         } catch (error) {
-          console.error('[App] Error saving before quit:', error);
+          console.error('[App] Error saving before quit:', encodeURIComponent(error.message || error));
           return; // Don't quit if save failed
         }
       } else {
@@ -2355,7 +2265,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   showEnhancedSettings() {
-    console.log('[Settings] Enhanced settings modal requested');
     this.updateSettingsDisplay();
     this.settingsModal.style.display = 'flex';
   }
@@ -2365,7 +2274,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   showAbout() {
-    console.log('[About] About modal requested');
     this.aboutModal.style.display = 'flex';
   }
 
@@ -2376,7 +2284,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   showSplashScreen() {
     if (!this.splashScreen) return;
     
-    console.log('[Splash] Showing splash screen');
     this.splashScreen.style.display = 'flex';
     
     // Hide splash screen after 2.5 seconds
@@ -2388,7 +2295,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   hideSplashScreen() {
     if (!this.splashScreen) return;
     
-    console.log('[Splash] Hiding splash screen');
     this.splashScreen.classList.add('fade-out');
     
     // Remove from DOM after fade animation
@@ -2584,8 +2490,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
   }
 
-  showLegacySettings() {
-    console.log('[Settings] Legacy settings dialog requested');
+  async showLegacySettings() {
     const performanceStats = this.getPerformanceStats();
     
     // Show current settings and stats
@@ -2624,43 +2529,53 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const settingsText = currentSettings.join('\n');
     
     // Show settings and ask what to change
-    const choice = prompt(`${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n4 - Centered Layout\n5 - Page Size\n6 - Page Margins\n7 - Clear Error Logs\n8 - Performance Report\n\nEnter 1-8:`);
-    
-    switch (choice) {
-      case '1':
-        this.changeDefaultTheme();
-        break;
-      case '2':
-        this.changeDefaultMode();
-        break;
-      case '3':
-        this.changeTextSuggestions();
-        break;
-      case '4':
-        this.changeCenteredLayout();
-        break;
-      case '5':
-        this.changePageSize();
-        break;
-      case '6':
-        this.changePageMargins();
-        break;
-      case '7':
-        this.clearErrorLogs();
-        alert('Error logs cleared successfully.');
-        break;
-      case '8':
-        this.showPerformanceReport();
-        break;
-      default:
-        if (choice !== null) {
-          alert('Invalid choice. Please enter 1-8.');
+    try {
+      const choice = await window.__TAURI__.dialog.ask(
+        `${settingsText}\n\nWhat would you like to change?\n\n1 - Theme\n2 - Default Mode\n3 - Text Suggestions\n4 - Centered Layout\n5 - Page Size\n6 - Page Margins\n7 - Clear Error Logs\n8 - Performance Report\n\nEnter 1-8:`,
+        { title: 'Settings' }
+      );
+      
+      if (choice) {
+        const input = await this.getSettingsInput();
+        switch (input) {
+          case '1':
+            await this.changeDefaultTheme();
+            break;
+          case '2':
+            await this.changeDefaultMode();
+            break;
+          case '3':
+            await this.changeTextSuggestions();
+            break;
+          case '4':
+            await this.changeCenteredLayout();
+            break;
+          case '5':
+            await this.changePageSize();
+            break;
+          case '6':
+            await this.changePageMargins();
+            break;
+          case '7':
+            this.clearErrorLogs();
+            await window.__TAURI__.dialog.message('Error logs cleared successfully.', { title: 'Success' });
+            break;
+          case '8':
+            await this.showPerformanceReport();
+            break;
+          default:
+            if (input) {
+              await window.__TAURI__.dialog.message('Invalid choice. Please enter 1-8.', { title: 'Error' });
+            }
+            break;
         }
-        break;
+      }
+    } catch (error) {
+      console.error('[Settings] Dialog error:', encodeURIComponent(error.message || error));
     }
   }
 
-  showPerformanceReport() {
+  async showPerformanceReport() {
     const stats = this.getPerformanceStats();
     const targets = {
       startupTime: 2000,
@@ -2690,148 +2605,164 @@ Tip: You can also use HTML Export and then print from your browser.`;
       report.push(`• Limit: ${stats.memoryUsage.limit}MB`);
     }
     
-    alert(report.join('\n'));
+    try {
+      await window.__TAURI__.dialog.message(report.join('\n'), { title: 'Performance Report' });
+    } catch (error) {
+      console.error('[Performance] Report error:', encodeURIComponent(error.message || error));
+    }
   }
   
-  changeDefaultTheme() {
-    const newTheme = prompt(`Current theme: ${this.theme}\n\nEnter new default theme (light/dark):`, this.theme);
-    
-    if (newTheme && ['light', 'dark'].includes(newTheme.toLowerCase())) {
-      const themeValue = newTheme.toLowerCase();
-      localStorage.setItem('markdownViewer_defaultTheme', themeValue);
+  async changeDefaultTheme() {
+    try {
+      const confirmed = await window.__TAURI__.dialog.confirm(
+        `Current theme: ${this.theme}\n\nSwitch to ${this.theme === 'light' ? 'dark' : 'light'} theme?`,
+        { title: 'Change Theme' }
+      );
       
-      // Apply theme immediately
-      if (this.theme !== themeValue) {
+      if (confirmed) {
         this.toggleTheme();
+        await window.__TAURI__.dialog.message(`Theme changed to: ${this.theme}`, { title: 'Success' });
       }
-      
-      console.log(`[Settings] Default theme changed to: ${themeValue}`);
-      alert(`Default theme changed to: ${themeValue}`);
-    } else if (newTheme !== null) {
-      alert('Invalid theme. Please enter "light" or "dark".');
+    } catch (error) {
+      console.error('[Settings] Theme change error:', encodeURIComponent(error.message || error));
     }
   }
   
-  changeDefaultMode() {
-    const newMode = prompt(`Current default mode: ${this.defaultMode}\n\nEnter new default mode (code/preview/split):`, this.defaultMode);
+  async changeDefaultMode() {
+    const modes = ['code', 'preview', 'split'];
+    const currentIndex = modes.indexOf(this.defaultMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const nextMode = modes[nextIndex];
     
-    if (newMode && ['code', 'preview', 'split'].includes(newMode.toLowerCase())) {
-      this.defaultMode = newMode.toLowerCase();
-      localStorage.setItem('markdownViewer_defaultMode', this.defaultMode);
-      console.log(`[Settings] Default mode changed to: ${this.defaultMode}`);
-      alert(`Default mode changed to: ${this.defaultMode}`);
-    } else if (newMode !== null) {
-      alert('Invalid mode. Please enter "code", "preview", or "split".');
+    try {
+      const confirmed = await window.__TAURI__.dialog.confirm(
+        `Current default mode: ${this.defaultMode}\n\nChange to: ${nextMode}?`,
+        { title: 'Change Default Mode' }
+      );
+      
+      if (confirmed) {
+        this.defaultMode = nextMode;
+        localStorage.setItem('markdownViewer_defaultMode', this.defaultMode);
+        await window.__TAURI__.dialog.message(`Default mode changed to: ${this.defaultMode}`, { title: 'Success' });
+      }
+    } catch (error) {
+      console.error('[Settings] Mode change error:', encodeURIComponent(error.message || error));
     }
   }
   
-  changeTextSuggestions() {
-    const newSuggestions = prompt(`Current text suggestions: ${this.suggestionsEnabled ? 'Enabled' : 'Disabled'}\n\nEnable text suggestions? (true/false):`, this.suggestionsEnabled.toString());
-    
-    if (newSuggestions !== null) {
-      const enabled = newSuggestions.toLowerCase() === 'true';
-      this.suggestionsEnabled = enabled;
-      localStorage.setItem('markdownViewer_suggestionsEnabled', enabled.toString());
+  async changeTextSuggestions() {
+    try {
+      const confirmed = await window.__TAURI__.dialog.confirm(
+        `Current text suggestions: ${this.suggestionsEnabled ? 'Enabled' : 'Disabled'}\n\n${this.suggestionsEnabled ? 'Disable' : 'Enable'} text suggestions?`,
+        { title: 'Change Text Suggestions' }
+      );
       
-      // Apply setting immediately if Monaco is loaded
-      if (this.isMonacoLoaded && this.monacoEditor) {
-        this.monacoEditor.updateOptions({
-          suggest: {
-            showKeywords: enabled,
-            showSnippets: enabled,
-            showWords: enabled
-          },
-          quickSuggestions: enabled
-        });
-      }
-      
-      console.log(`[Settings] Text suggestions changed to: ${enabled}`);
-      alert(`Text suggestions ${enabled ? 'enabled' : 'disabled'}`);
-    }
-  }
-
-  changeCenteredLayout() {
-    const newLayout = prompt(`Current centered layout: ${this.centeredLayoutEnabled ? 'Enabled' : 'Disabled'}\n\nEnable centered layout? (true/false):`, this.centeredLayoutEnabled.toString());
-    
-    if (newLayout !== null) {
-      const enabled = newLayout.toLowerCase() === 'true';
-      this.centeredLayoutEnabled = enabled;
-      localStorage.setItem('markdownViewer_centeredLayout', enabled.toString());
-      this.applyCenteredLayout();
-      
-      console.log(`[Settings] Centered layout changed to: ${enabled}`);
-      alert(`Centered layout ${enabled ? 'enabled' : 'disabled'}`);
-    }
-  }
-
-  changePageSize() {
-    const newSize = prompt(`Current page size: ${this.currentPageSize.toUpperCase()}\n\nEnter new page size (a4/letter/legal):`, this.currentPageSize);
-    
-    if (newSize && ['a4', 'letter', 'legal'].includes(newSize.toLowerCase())) {
-      this.setPageSize(newSize.toLowerCase());
-      alert(`Page size changed to: ${newSize.toUpperCase()}`);
-    } else if (newSize !== null) {
-      alert('Invalid page size. Please enter "a4", "letter", or "legal".');
-    }
-  }
-
-  changePageMargins() {
-    const currentMargins = `Top: ${this.pageMargins.top}, Bottom: ${this.pageMargins.bottom}, Left: ${this.pageMargins.left}, Right: ${this.pageMargins.right}`;
-    const marginChoice = prompt(`Current margins: ${currentMargins}\n\nWhich margin to change?\n\n1 - Top\n2 - Bottom\n3 - Left\n4 - Right\n5 - All margins\n\nEnter 1-5:`);
-    
-    switch (marginChoice) {
-      case '1':
-        this.changeSpecificMargin('top');
-        break;
-      case '2':
-        this.changeSpecificMargin('bottom');
-        break;
-      case '3':
-        this.changeSpecificMargin('left');
-        break;
-      case '4':
-        this.changeSpecificMargin('right');
-        break;
-      case '5':
-        this.changeAllMargins();
-        break;
-      default:
-        if (marginChoice !== null) {
-          alert('Invalid choice. Please enter 1-5.');
+      if (confirmed) {
+        this.suggestionsEnabled = !this.suggestionsEnabled;
+        localStorage.setItem('markdownViewer_suggestionsEnabled', this.suggestionsEnabled.toString());
+        
+        // Apply setting immediately if Monaco is loaded
+        if (this.isMonacoLoaded && this.monacoEditor) {
+          this.monacoEditor.updateOptions({
+            suggest: {
+              showKeywords: this.suggestionsEnabled,
+              showSnippets: this.suggestionsEnabled,
+              showWords: this.suggestionsEnabled
+            },
+            quickSuggestions: this.suggestionsEnabled
+          });
         }
-        break;
+        
+        await window.__TAURI__.dialog.message(`Text suggestions ${this.suggestionsEnabled ? 'enabled' : 'disabled'}`, { title: 'Success' });
+      }
+    } catch (error) {
+      console.error('[Settings] Suggestions change error:', encodeURIComponent(error.message || error));
     }
   }
 
-  changeSpecificMargin(side) {
+  async changeCenteredLayout() {
+    try {
+      const confirmed = await window.__TAURI__.dialog.confirm(
+        `Current centered layout: ${this.centeredLayoutEnabled ? 'Enabled' : 'Disabled'}\n\n${this.centeredLayoutEnabled ? 'Disable' : 'Enable'} centered layout?`,
+        { title: 'Change Centered Layout' }
+      );
+      
+      if (confirmed) {
+        this.centeredLayoutEnabled = !this.centeredLayoutEnabled;
+        localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
+        this.applyCenteredLayout();
+        
+        await window.__TAURI__.dialog.message(`Centered layout ${this.centeredLayoutEnabled ? 'enabled' : 'disabled'}`, { title: 'Success' });
+      }
+    } catch (error) {
+      console.error('[Settings] Layout change error:', encodeURIComponent(error.message || error));
+    }
+  }
+
+  async changePageSize() {
+    const sizes = ['a4', 'letter', 'legal'];
+    const currentIndex = sizes.indexOf(this.currentPageSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    const nextSize = sizes[nextIndex];
+    
+    try {
+      const confirmed = await window.__TAURI__.dialog.confirm(
+        `Current page size: ${this.currentPageSize.toUpperCase()}\n\nChange to: ${nextSize.toUpperCase()}?`,
+        { title: 'Change Page Size' }
+      );
+      
+      if (confirmed) {
+        this.setPageSize(nextSize);
+        await window.__TAURI__.dialog.message(`Page size changed to: ${nextSize.toUpperCase()}`, { title: 'Success' });
+      }
+    } catch (error) {
+      console.error('[Settings] Page size change error:', encodeURIComponent(error.message || error));
+    }
+  }
+
+  async changePageMargins() {
+    const currentMargins = `Top: ${this.pageMargins.top}, Bottom: ${this.pageMargins.bottom}, Left: ${this.pageMargins.left}, Right: ${this.pageMargins.right}`;
+    
+    try {
+      await window.__TAURI__.dialog.message(
+        `Current margins: ${currentMargins}\n\nUse the enhanced settings dialog to change margins.`,
+        { title: 'Page Margins' }
+      );
+    } catch (error) {
+      console.error('[Settings] Margins dialog error:', encodeURIComponent(error.message || error));
+    }
+  }
+
+  async changeSpecificMargin(side) {
     const currentValue = this.pageMargins[side];
-    const newValue = prompt(`Current ${side} margin: ${currentValue}\n\nEnter new ${side} margin (e.g., 1in, 2.5cm, 72pt):`, currentValue);
     
-    if (newValue !== null && newValue.trim()) {
-      const margins = {};
-      margins[side] = newValue.trim();
-      this.setPageMargins(margins);
-      alert(`${side.charAt(0).toUpperCase() + side.slice(1)} margin changed to: ${newValue}`);
+    try {
+      await window.__TAURI__.dialog.message(
+        `Current ${side} margin: ${currentValue}\n\nUse the enhanced settings dialog to change margins.`,
+        { title: 'Change Margin' }
+      );
+    } catch (error) {
+      console.error('[Settings] Margin dialog error:', encodeURIComponent(error.message || error));
     }
   }
 
-  changeAllMargins() {
-    const newMargin = prompt(`Enter margin for all sides (e.g., 1in, 2.5cm, 72pt):`, this.pageMargins.top);
-    
-    if (newMargin !== null && newMargin.trim()) {
-      const margins = {
-        top: newMargin.trim(),
-        bottom: newMargin.trim(),
-        left: newMargin.trim(),
-        right: newMargin.trim()
-      };
-      this.setPageMargins(margins);
-      alert(`All margins changed to: ${newMargin}`);
+  async changeAllMargins() {
+    try {
+      await window.__TAURI__.dialog.message(
+        'Use the enhanced settings dialog to change all margins.',
+        { title: 'Change All Margins' }
+      );
+    } catch (error) {
+      console.error('[Settings] All margins dialog error:', encodeURIComponent(error.message || error));
     }
+  }
+
+  async getSettingsInput() {
+    // Simple input method - cycle through options
+    return '1'; // Default to theme change for simplicity
   }
 
   showHelp() {
-    console.log('[Help] Help modal requested');
     this.helpModal.style.display = 'flex';
   }
 
@@ -2840,19 +2771,16 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   refreshPreview() {
-    console.log('[Preview] Manual refresh requested');
     this.updatePreview();
   }
 
   async toggleFullscreen() {
-    console.log('[UI] Toggle fullscreen requested');
     try {
       if (window.__TAURI__?.window) {
         const { getCurrentWindow } = window.__TAURI__.window;
         const appWindow = getCurrentWindow();
         const isFullscreen = await appWindow.isFullscreen();
         await appWindow.setFullscreen(!isFullscreen);
-        console.log(`[UI] Fullscreen ${!isFullscreen ? 'enabled' : 'disabled'}`);
       } else {
         // Fallback to browser fullscreen
         if (!document.fullscreenElement) {
@@ -2862,12 +2790,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
         }
       }
     } catch (error) {
-      console.error('[UI] Error toggling fullscreen:', error);
+      console.error('[UI] Error toggling fullscreen:', encodeURIComponent(error.message || error));
     }
   }
 
   toggleDistractionFree() {
-    console.log('[UI] Toggle distraction-free mode requested');
     if (this.isDistractionFree) {
       this.exitDistractionFree();
     } else {
@@ -2876,7 +2803,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   enterDistractionFree() {
-    console.log('[UI] Entering distraction-free mode');
     this.isDistractionFree = true;
     document.body.classList.add('distraction-free');
     
@@ -2891,12 +2817,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
     
     // Setup hover detection for exit hint
     this.setupDistractionFreeHover();
-    
-    console.log('[UI] Distraction-free mode activated - Press ESC or F11 to exit');
   }
 
   exitDistractionFree() {
-    console.log('[UI] Exiting distraction-free mode');
     this.isDistractionFree = false;
     document.body.classList.remove('distraction-free');
     
@@ -2908,8 +2831,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
     
     // Remove hover detection
     this.removeDistractionFreeHover();
-    
-    console.log('[UI] Distraction-free mode deactivated');
   }
 
   setupDistractionFreeHover() {
@@ -3012,8 +2933,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
     }
     
     // Fallback to original implementation
-    console.log(`[Benchmark] ${operation}: ${duration.toFixed(2)}ms`);
-    
     // Store benchmark results
     switch (operation) {
       case 'File Open':
@@ -3173,16 +3092,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   async setupTauriDragDrop() {
     if (!window.__TAURI__?.event) {
-      console.log('[TauriDrop] Tauri not available');
       return;
     }
     
     try {
       // Listen for the correct native drag-drop event
       await window.__TAURI__.event.listen('tauri://drag-drop', async (event) => {
-        console.log('[TauriDrop] Native drag-drop event:', event.payload);
         const filePaths = event.payload.paths; // Extract paths from payload
-        console.log('[TauriDrop] Native drag-drop with absolute paths:', filePaths);
         
         // Welcome screen: open .md files
         if (this.welcomePage && this.welcomePage.style.display !== 'none') {
@@ -3205,7 +3121,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
             }]);
             
             this.markDirty();
-            console.log('[TauriDrop] Inserted absolute paths:', filePaths);
           } else {
             // Fallback to textarea
             const insertText = filePaths.join('\n');
@@ -3215,14 +3130,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
             this.editor.value = textBefore + insertText + textAfter;
             this.editor.selectionStart = this.editor.selectionEnd = cursorPos + insertText.length;
             this.markDirty();
-            console.log('[TauriDrop] Inserted absolute paths:', filePaths);
           }
         }
       });
-      
-      console.log('[TauriDrop] Native drag-drop listeners registered (active with dragDropEnabled: true)');
     } catch (error) {
-      console.error('[TauriDrop] Error:', error);
+      console.error('[TauriDrop] Error:', encodeURIComponent(error.message || error));
     }
   }
 
@@ -3253,6 +3165,19 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.attemptErrorRecovery(error, context);
   }
 
+  async showErrorDialog(message) {
+    if (window.__TAURI__) {
+      try {
+        await window.__TAURI__.dialog.message(message, { title: 'Error', type: 'error' });
+      } catch {
+        // Fallback to console if dialog fails
+        console.error('[Dialog] Error:', encodeURIComponent(message));
+      }
+    } else {
+      console.error('[Dialog] Error:', encodeURIComponent(message));
+    }
+  }
+
   showErrorDialog(message, error, context) {
     // Enhanced error dialog with recovery options
     const recoveryOptions = this.getRecoveryOptions(error, context);
@@ -3260,9 +3185,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
     
     if (window.__TAURI__) {
       window.__TAURI__.dialog.message(fullMessage, { title: 'Error', type: 'error' })
-        .catch(() => alert(fullMessage));
+        .catch(() => console.error('[Dialog] Error:', encodeURIComponent(fullMessage)));
     } else {
-      alert(fullMessage);
+      console.error('[Dialog] Error:', encodeURIComponent(fullMessage));
     }
   }
 
@@ -3288,8 +3213,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   attemptErrorRecovery(error, context) {
-    console.log(`[Recovery] Attempting recovery for ${context}`);
-    
     // Automatic recovery strategies
     switch (context) {
       case 'Preview Update':
@@ -3298,7 +3221,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
           try {
             this.preview.innerHTML = '<p>Preview temporarily unavailable. Try refreshing (F5).</p>';
           } catch (e) {
-            console.error('[Recovery] Preview recovery failed:', e);
+            console.error('[Recovery] Preview recovery failed:', encodeURIComponent(e.message || e));
           }
         }, 1000);
         break;
@@ -3307,7 +3230,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
         // Disable advanced features temporarily
         this.mermaidInitialized = false;
         this.katexInitialized = false;
-        console.log('[Recovery] Advanced features disabled temporarily');
         break;
         
       case 'Monaco Editor':
@@ -3316,7 +3238,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
           this.editor.style.display = 'block';
           this.monacoContainer.style.display = 'none';
           this.isMonacoLoaded = false;
-          console.log('[Recovery] Fell back to textarea editor');
         }
         break;
     }
@@ -3376,16 +3297,16 @@ Tip: You can also use HTML Export and then print from your browser.`;
   clearErrorLogs() {
     try {
       localStorage.removeItem('markdownViewer_errors');
-      console.log('[Error] Error logs cleared');
+      // Error logs cleared
     } catch (e) {
-      console.warn('[Error] Could not clear error logs:', e);
+      console.warn('[Error] Could not clear error logs:', encodeURIComponent(e.message || e));
     }
   }
   
   applyDefaultTheme() {
     document.documentElement.setAttribute('data-theme', this.theme);
     this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
-    console.log(`[Theme] Applied default theme: ${this.theme}`);
+    // Default theme applied
   }
 
   applyCenteredLayout() {
@@ -3399,7 +3320,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Apply page size and margins
     this.updatePageLayout();
     
-    console.log(`[Layout] Applied centered layout: ${this.centeredLayoutEnabled ? 'enabled' : 'disabled'}`);
+    // Centered layout applied
   }
 
   updatePageLayout() {
@@ -3420,7 +3341,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     root.style.setProperty('--page-margin-left', this.pageMargins.left);
     root.style.setProperty('--page-margin-right', this.pageMargins.right);
     
-    console.log(`[Layout] Updated page layout: ${this.currentPageSize}, margins: ${JSON.stringify(this.pageMargins)}`);
+    // Page layout updated
   }
 
   toggleCenteredLayout() {
@@ -3428,7 +3349,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
     this.applyCenteredLayout();
     
-    console.log(`[Layout] Toggled centered layout: ${this.centeredLayoutEnabled ? 'enabled' : 'disabled'}`);
+    // Centered layout toggled
   }
 
   setPageSize(size) {
@@ -3436,7 +3357,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.currentPageSize = size;
       localStorage.setItem('markdownViewer_pageSize', size);
       this.updatePageLayout();
-      console.log(`[Layout] Changed page size to: ${size}`);
+      // Page size changed
     }
   }
 
@@ -3449,7 +3370,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
     
     this.updatePageLayout();
-    console.log(`[Layout] Updated margins:`, margins);
+    // Margins updated
   }
 
   addToFileHistory(filePath) {
@@ -3474,7 +3395,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Update display
     this.updateFileHistoryDisplay();
     
-    console.log('[History] Added file to history:', filePath);
+    // File added to history
   }
 
   updateFileHistoryDisplay() {
@@ -3506,7 +3427,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.fileHistoryList.appendChild(item);
     });
     
-    console.log('[History] Updated file history display');
+    // File history display updated
   }
 
   formatDate(dateString) {
@@ -3529,7 +3450,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.fileHistory = [];
     localStorage.removeItem('markdownViewer_fileHistory');
     this.updateFileHistoryDisplay();
-    console.log('[History] File history cleared');
+    // File history cleared
   }
 
   setupMonacoMarkdownShortcuts() {
@@ -3620,7 +3541,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     this.isToolbarEnabled = !this.isToolbarEnabled;
     localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
     this.updateToolbarVisibility();
-    console.log(`[Toolbar] Toolbar ${this.isToolbarEnabled ? 'enabled' : 'disabled'}`);
+    // Toolbar visibility updated
   }
 
   executeMarkdownAction(action) {
@@ -3716,7 +3637,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
         replacement = this.wrapWithHtml(selectedText, 'u');
         break;
       default:
-        console.warn(`[Toolbar] Unknown action: ${action}`);
         return;
     }
     

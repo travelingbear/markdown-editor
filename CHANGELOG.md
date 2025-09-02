@@ -5,6 +5,25 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2025-01-02
+
+### Added
+- **Font Size Controls**: Interactive font size adjustment (10px-24px) in markdown toolbar
+- **Preview Zoom**: Zoom controls for Preview mode (50%-300%) with keyboard shortcuts (Ctrl+=, Ctrl+-, Ctrl+0)
+- **Undo/Redo Buttons**: Quick access undo/redo buttons in markdown toolbar
+- **Toolbar Size Controls**: Configurable toolbar sizing (Small/Medium/Large) for main and markdown toolbars
+
+### Enhanced
+- **Keyboard Shortcuts**: Added zoom shortcuts (Ctrl+=, Ctrl+-, Ctrl+0) for Preview mode
+- **Help Documentation**: Updated help modal with new keyboard shortcuts
+- **Performance**: Optimized zoom functionality using CSS custom properties
+- **UI Accessibility**: Better control positioning and intuitive button placement
+
+### Technical
+- **Settings Persistence**: All new UI controls save preferences to localStorage
+- **Responsive Design**: Toolbar size variations adapt to different screen sizes
+- **Cross-Platform**: All new shortcuts work consistently across Windows/macOS/Linux
+
 ## [2.1.1] - 2025-01-02
 
 ### 🚀 Performance Optimization - Major Update

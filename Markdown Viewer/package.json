@@ -1,7 +1,7 @@
 {
   "name": "markdown-editor",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.2",
   "type": "module",
   "license": "MIT",
   "description": "A powerful native desktop markdown viewer and editor with real-time preview",

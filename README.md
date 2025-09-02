@@ -19,6 +19,10 @@
 - **GitHub-Style Themes**: Light and dark themes with perfect synchronization
 - **Drag & Drop**: Native file drag-drop with absolute path support
 - **Export Options**: HTML export and PDF printing
+- **Font Size Controls**: Adjustable font size (10px-24px) in markdown toolbar
+- **Preview Zoom**: Zoom controls (50%-300%) with keyboard shortcuts
+- **Undo/Redo Buttons**: Quick access undo/redo in markdown toolbar
+- **Toolbar Sizing**: Configurable toolbar sizes (Small/Medium/Large)
 
 ### System Integration
 - **File Associations**: Double-click .md files to open
@@ -54,7 +58,8 @@
 1. **Launch the app** - See the welcome screen with quick start guide
 2. **Open a file** - Use Ctrl+O or drag-drop a .md file
 3. **Choose your mode** - Code for editing, Preview for reading, Split for both
-4. **Customize settings** - Press Ctrl+, to configure theme and preferences
+4. **Customize settings** - Press Ctrl+, to configure theme, toolbar sizes, and preferences
+5. **Use shortcuts** - Ctrl+=/-/0 for zoom, font controls in toolbar, undo/redo buttons
 
 ### Architecture
 - **Frontend**: Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js

@@ -68,14 +68,9 @@
           <div class="toolbar-separator"></div>
           <!-- Headings & Text Formatting -->
           <div class="toolbar-group">
-            <div class="toolbar-dropdown">
-              <button class="md-btn dropdown-toggle" data-dropdown="headings" title="Headings">H</button>
-              <div class="dropdown-content" id="headings-dropdown">
-                <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+1)">H1</button>
-                <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+2)">H2</button>
-                <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+3)" style="padding-right: 6px;">H3</button>
-              </div>
-            </div>
+            <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+1)">H1</button>
+            <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+2)">H2</button>
+            <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+3)">H3</button>
             <button class="md-btn" data-action="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
             <button class="md-btn" data-action="italic" title="Italic (Ctrl+I)"><em>I</em></button>
             <button class="md-btn" data-action="underline" title="Underline (Ctrl+Shift+U)"><u>U</u></button>
@@ -84,129 +79,111 @@
           
           <!-- Content Tools -->
           <div class="toolbar-group">
-            <div class="toolbar-dropdown">
-              <button class="md-btn dropdown-toggle" data-dropdown="media" title="Links & Media">🔗</button>
-              <div class="dropdown-content" id="media-dropdown">
-                <button class="md-btn" data-action="link" title="Link (Ctrl+K)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                  </svg>
-                </button>
-                <button class="md-btn" data-action="image" title="Image">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21,15 16,10 5,21"></polyline>
-                  </svg>
-                </button>
-                <button class="md-btn" data-action="table" title="Table">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                    <line x1="15" y1="3" x2="15" y2="21"></line>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="3" y1="15" x2="21" y2="15"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="toolbar-dropdown">
-              <button class="md-btn dropdown-toggle" data-dropdown="lists" title="Lists">☑</button>
-              <div class="dropdown-content" id="lists-dropdown">
-                <button class="md-btn" data-action="ul" title="Unordered List">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="10" y1="6" x2="21" y2="6"></line>
-                    <line x1="10" y1="12" x2="21" y2="12"></line>
-                    <line x1="10" y1="18" x2="21" y2="18"></line>
-                    <circle cx="4" cy="6" r="2"></circle>
-                    <circle cx="4" cy="12" r="2"></circle>
-                    <circle cx="4" cy="18" r="2"></circle>
-                  </svg>
-                </button>
-                <button class="md-btn" data-action="ol" title="Ordered List">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="10" y1="6" x2="21" y2="6"></line>
-                    <line x1="10" y1="12" x2="21" y2="12"></line>
-                    <line x1="10" y1="18" x2="21" y2="18"></line>
-                    <text x="4" y="9" font-size="8" fill="currentColor">1</text>
-                    <text x="4" y="15" font-size="8" fill="currentColor">2</text>
-                    <text x="4" y="21" font-size="8" fill="currentColor">3</text>
-                  </svg>
-                </button>
-                <button class="md-btn" data-action="task" title="Task List">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="10" y1="6" x2="21" y2="6"></line>
-                    <line x1="10" y1="12" x2="21" y2="12"></line>
-                    <line x1="10" y1="18" x2="21" y2="18"></line>
-                    <rect x="2" y="4" width="4" height="4" rx="1"></rect>
-                    <rect x="2" y="10" width="4" height="4" rx="1"></rect>
-                    <rect x="2" y="16" width="4" height="4" rx="1"></rect>
-                    <polyline points="3,6 4,7 5,5"></polyline>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="toolbar-dropdown">
-              <button class="md-btn dropdown-toggle" data-dropdown="blocks" title="Code & Blocks"><></button>
-              <div class="dropdown-content" id="blocks-dropdown">
-                <button class="md-btn" data-action="code" title="Inline Code">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="16,18 22,12 16,6"></polyline>
-                    <polyline points="8,6 2,12 8,18"></polyline>
-                  </svg>
-                </button>
-                <button class="md-btn" data-action="codeblock" title="Code Block">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                    <line x1="8" y1="21" x2="16" y2="21"></line>
-                    <line x1="12" y1="17" x2="12" y2="21"></line>
-                  </svg>
-                </button>
-                <button class="md-btn" data-action="quote" title="Blockquote">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path>
-                    <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
+            <button class="md-btn" data-action="link" title="Link (Ctrl+K)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="image" title="Image">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21,15 16,10 5,21"></polyline>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="table" title="Table">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line x1="15" y1="3" x2="15" y2="21"></line>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="3" y1="15" x2="21" y2="15"></line>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="ul" title="Unordered List">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="10" y1="6" x2="21" y2="6"></line>
+                <line x1="10" y1="12" x2="21" y2="12"></line>
+                <line x1="10" y1="18" x2="21" y2="18"></line>
+                <circle cx="4" cy="6" r="2"></circle>
+                <circle cx="4" cy="12" r="2"></circle>
+                <circle cx="4" cy="18" r="2"></circle>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="ol" title="Ordered List">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="10" y1="6" x2="21" y2="6"></line>
+                <line x1="10" y1="12" x2="21" y2="12"></line>
+                <line x1="10" y1="18" x2="21" y2="18"></line>
+                <text x="4" y="9" font-size="8" fill="currentColor">1</text>
+                <text x="4" y="15" font-size="8" fill="currentColor">2</text>
+                <text x="4" y="21" font-size="8" fill="currentColor">3</text>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="task" title="Task List">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="10" y1="6" x2="21" y2="6"></line>
+                <line x1="10" y1="12" x2="21" y2="12"></line>
+                <line x1="10" y1="18" x2="21" y2="18"></line>
+                <rect x="2" y="4" width="4" height="4" rx="1"></rect>
+                <rect x="2" y="10" width="4" height="4" rx="1"></rect>
+                <rect x="2" y="16" width="4" height="4" rx="1"></rect>
+                <polyline points="3,6 4,7 5,5"></polyline>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="code" title="Inline Code">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16,18 22,12 16,6"></polyline>
+                <polyline points="8,6 2,12 8,18"></polyline>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="codeblock" title="Code Block">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="quote" title="Blockquote">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path>
+                <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
+              </svg>
+            </button>
           </div>
           <div class="toolbar-separator"></div>
           
           <!-- Text Alignment -->
-          <div class="toolbar-dropdown">
-            <button class="md-btn dropdown-toggle" data-dropdown="align" title="Text Alignment">≡</button>
-            <div class="dropdown-content" id="align-dropdown">
-              <button class="md-btn" data-action="align-left" title="Align Left">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="12" x2="15" y2="12"></line>
-                  <line x1="3" y1="18" x2="18" y2="18"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="align-center" title="Align Center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="6" y1="12" x2="18" y2="12"></line>
-                  <line x1="4" y1="18" x2="20" y2="18"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="align-right" title="Align Right">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="7" y1="12" x2="21" y2="12"></line>
-                  <line x1="5" y1="18" x2="21" y2="18"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="align-justify" title="Justify">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="12" x2="21" y2="12"></line>
-                  <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-              </button>
-            </div>
+          <div class="toolbar-group">
+            <button class="md-btn" data-action="align-left" title="Align Left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="15" y2="12"></line>
+                <line x1="3" y1="18" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="align-center" title="Align Center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="6" y1="12" x2="18" y2="12"></line>
+                <line x1="4" y1="18" x2="20" y2="18"></line>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="align-right" title="Align Right">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="7" y1="12" x2="21" y2="12"></line>
+                <line x1="5" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+            <button class="md-btn" data-action="align-justify" title="Justify">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
           </div>
           
 

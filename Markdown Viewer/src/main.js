@@ -908,6 +908,13 @@ class MarkdownViewer {
           case 'y':
             // Redo (handled by Monaco)
             return;
+          case 'r':
+            if (e.shiftKey && e.altKey) {
+              // Secret retro theme (Ctrl+Shift+Alt+R)
+              e.preventDefault();
+              this.toggleRetroTheme();
+            }
+            break;
           case 'a':
             // Select all (handled by Monaco)
             return;
@@ -2922,6 +2929,22 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Theme switched successfully
   }
   
+  toggleRetroTheme() {
+    const isRetro = document.body.classList.contains('retro-theme');
+    if (isRetro) {
+      document.body.classList.remove('retro-theme');
+      this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
+    } else {
+      document.body.classList.add('retro-theme');
+      this.themeBtn.textContent = '💾';
+    }
+    
+    // Update Monaco theme for retro
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      monaco.editor.setTheme(isRetro ? (this.theme === 'dark' ? 'vs-dark' : 'vs') : 'vs');
+    }
+  }
+  
   checkExportLibraries() {
     // Performance monitoring for export libraries
     this.exportLibrariesStatus = {
@@ -3084,8 +3107,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   updateSettingsDisplay() {
     // Update theme buttons
-    document.getElementById('theme-light-btn').classList.toggle('active', this.theme === 'light');
-    document.getElementById('theme-dark-btn').classList.toggle('active', this.theme === 'dark');
+    const isRetro = document.body.classList.contains('retro-theme');
+    document.getElementById('theme-light-btn').classList.toggle('active', this.theme === 'light' && !isRetro);
+    document.getElementById('theme-dark-btn').classList.toggle('active', this.theme === 'dark' && !isRetro);
+    document.getElementById('theme-retro-btn').classList.toggle('active', isRetro);
     
     // Update mode buttons
     document.getElementById('mode-code-btn').classList.toggle('active', this.defaultMode === 'code');
@@ -3170,6 +3195,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
   setupSettingsControls() {
     // Theme controls
     document.getElementById('theme-light-btn').addEventListener('click', () => {
+      document.body.classList.remove('retro-theme');
       if (this.theme !== 'light') {
         this.theme = 'light';
         localStorage.setItem('markdownViewer_defaultTheme', this.theme);
@@ -3182,9 +3208,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
           this.updatePreview();
         }
       }
+      this.themeBtn.textContent = '🌙';
       this.updateSettingsDisplay();
     });
     document.getElementById('theme-dark-btn').addEventListener('click', () => {
+      document.body.classList.remove('retro-theme');
       if (this.theme !== 'dark') {
         this.theme = 'dark';
         localStorage.setItem('markdownViewer_defaultTheme', this.theme);
@@ -3197,6 +3225,12 @@ Tip: You can also use HTML Export and then print from your browser.`;
           this.updatePreview();
         }
       }
+      this.themeBtn.textContent = '☀️';
+      this.updateSettingsDisplay();
+    });
+    document.getElementById('theme-retro-btn').addEventListener('click', () => {
+      document.body.classList.add('retro-theme');
+      this.themeBtn.textContent = '💾';
       this.updateSettingsDisplay();
     });
     

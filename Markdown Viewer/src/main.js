@@ -106,6 +106,7 @@ class MarkdownViewer {
     // Batch property initialization for better performance
     Object.assign(this, {
       isScrollSyncing: false,
+      lastKeyboardNavigation: 0,
       suggestionsEnabled: localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false',
       fontSize: parseInt(localStorage.getItem('markdownViewer_fontSize') || '14'),
       previewZoom: 1.0,
@@ -499,12 +500,18 @@ class MarkdownViewer {
 
 
     // Cursor position change events
-    this.monacoEditor.onDidChangeCursorPosition(() => {
+    this.monacoEditor.onDidChangeCursorPosition((e) => {
       this.updateCursorPosition();
       
-      // Sync preview to cursor position in split mode
+      // Only sync preview to cursor position when:
+      // 1. Actively typing (content is being modified)
+      // 2. Using keyboard navigation (arrow keys, page up/down, etc.)
+      // 3. Cursor reaches top or bottom of visible area (natural scroll boundary)
       if (this.currentMode === 'split' && !this.isScrollSyncing) {
-        this.syncPreviewToCursor();
+        const shouldSync = this.isTyping || this.shouldSyncOnCursorMove(e);
+        if (shouldSync) {
+          this.syncPreviewToCursor();
+        }
       }
     });
 
@@ -540,7 +547,11 @@ class MarkdownViewer {
     // Add markdown formatting shortcuts
     this.setupMonacoMarkdownShortcuts();
     
+    // Track keyboard navigation for cursor sync
     this.monacoEditor.onKeyDown((e) => {
+      // Mark that we're using keyboard navigation
+      this.lastKeyboardNavigation = performance.now();
+      
       if (e.keyCode === monaco.KeyCode.Enter && !e.ctrlKey && !e.shiftKey && !e.altKey) {
         this.handleEnterKeyForLists(e);
         
@@ -721,19 +732,24 @@ class MarkdownViewer {
       if (!this.isMonacoLoaded) {
         this.updateCursorPosition();
         
-        // Sync preview to cursor position
-        if (this.currentMode === 'split' && !this.isScrollSyncing) {
+        // Only sync on keyboard navigation, not on simple clicks
+        if (this.currentMode === 'split' && !this.isScrollSyncing && (this.isKeyboardNavigation(e) || this.isTyping)) {
           this.syncPreviewToCursorFallback();
         }
       }
     });
     
     this.editor.addEventListener('keydown', (e) => {
-      if (!this.isMonacoLoaded && e.key === 'Enter' && this.currentMode === 'split') {
-        // Immediately sync preview to cursor when Enter is pressed
-        setTimeout(() => {
-          this.syncPreviewToCursorFallback();
-        }, 50);
+      if (!this.isMonacoLoaded) {
+        // Track keyboard navigation for fallback editor too
+        this.lastKeyboardNavigation = performance.now();
+        
+        if (e.key === 'Enter' && this.currentMode === 'split') {
+          // Immediately sync preview to cursor when Enter is pressed
+          setTimeout(() => {
+            this.syncPreviewToCursorFallback();
+          }, 50);
+        }
       }
     });
     
@@ -741,10 +757,7 @@ class MarkdownViewer {
       if (!this.isMonacoLoaded) {
         this.updateCursorPosition();
         
-        // Sync preview to cursor position
-        if (this.currentMode === 'split' && !this.isScrollSyncing) {
-          this.syncPreviewToCursorFallback();
-        }
+        // Don't sync preview on simple clicks - only on scroll or keyboard navigation
       }
     });
     
@@ -1862,6 +1875,43 @@ Please check the link format and try again.`;
     const targetScrollTop = scrollPercentage * maxScroll;
     
     this.monacoEditor.setScrollTop(targetScrollTop);
+  }
+  
+  // Helper method to determine if cursor movement was caused by keyboard navigation
+  isKeyboardNavigation(e) {
+    if (!e) return false;
+    
+    // Consider these keys as navigation that should trigger sync
+    const navigationKeys = [
+      'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+      'PageUp', 'PageDown', 'Home', 'End',
+      'Tab'
+    ];
+    
+    return navigationKeys.includes(e.key);
+  }
+  
+  // Helper method to determine if cursor movement should trigger sync in Monaco
+  shouldSyncOnCursorMove(e) {
+    // If we recently used keyboard navigation (within 200ms), allow sync
+    if (this.lastKeyboardNavigation && (performance.now() - this.lastKeyboardNavigation) < 200) {
+      return true;
+    }
+    
+    // Check if cursor moved to top or bottom of visible area (natural scroll boundary)
+    if (this.monacoEditor && e && e.position) {
+      const visibleRange = this.monacoEditor.getVisibleRanges()[0];
+      if (visibleRange) {
+        const cursorLine = e.position.lineNumber;
+        const topLine = visibleRange.startLineNumber;
+        const bottomLine = visibleRange.endLineNumber;
+        
+        // Sync if cursor is at the very top or bottom of visible area
+        return cursorLine <= topLine + 1 || cursorLine >= bottomLine - 1;
+      }
+    }
+    
+    return false;
   }
 
   toggleSuggestions() {

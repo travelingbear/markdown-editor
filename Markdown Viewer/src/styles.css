@@ -1,7 +1,7 @@
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f6f8fa;
-  --bg-tertiary: #f1f3f4;
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #e8e8e8;
+  --bg-tertiary: #d9d9d9;
   --text-primary: #24292f;
   --text-secondary: #656d76;
   --border-primary: #d0d7de;
@@ -49,11 +49,12 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-primary);
   min-height: 40px;
   position: relative;
-  z-index: 10003;
+  z-index: 10000;
+  box-shadow: 0 -3px 4px 1px #080808;
 }
 
 .toolbar-left,
@@ -222,6 +223,19 @@ body {
   resize: none;
 }
 
+/* Monaco Editor background override */
+.monaco-editor .monaco-editor-background {
+  background-color: var(--bg-primary) !important;
+}
+
+.monaco-editor {
+  background-color: var(--bg-primary) !important;
+}
+
+.monaco-editor .margin {
+  background-color: var(--bg-tertiary) !important;
+}
+
 /* Preview */
 .preview-pane {
   background-color: var(--bg-primary);
@@ -380,7 +394,7 @@ body.centered-layout .preview-pane {
   justify-content: space-between;
   align-items: center;
   padding: 4px 12px;
-  background-color: var(--bg-secondary);
+  background-color: var(--bg-tertiary);
   border-top: 1px solid var(--border-primary);
   font-size: 12px;
   color: var(--text-secondary);
@@ -2164,7 +2178,7 @@ body.distraction-free .preview-content {
 
 /* Markdown Toolbar Styles - Simple toggle */
 .markdown-toolbar {
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-primary);
   padding: 0;
   overflow: visible;
@@ -2254,6 +2268,30 @@ body:has(.markdown-toolbar.pinned) .main-content {
   text-decoration: line-through;
 }
 
+/* SVG icon styling for alignment buttons */
+.md-btn svg {
+  display: inline-block;
+  vertical-align: middle;
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.md-btn svg text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  stroke: none;
+  fill: currentColor;
+}
+
+.md-btn[data-action^="align-"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+}
+
 /* Pin button styling */
 .pin-btn {
   background: var(--bg-tertiary) !important;
@@ -2274,6 +2312,10 @@ body:has(.markdown-toolbar.pinned) .main-content {
 /* Show toolbar only in code mode */
 .main-content.code-mode .markdown-toolbar {
   display: block;
+}
+
+.main-content.split-mode .markdown-toolbar {
+  display: none !important;
 }
 
 /* Hide toolbar in distraction-free mode */
@@ -2383,8 +2425,75 @@ body.distraction-free .markdown-toolbar {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* Responsive design for toolbar */
-@media (max-width: 768px) {
+/* Responsive design for toolbar - Wide screens (>800px) show inline buttons */
+@media (min-width: 801px) {
+  .toolbar-dropdown {
+    position: static;
+  }
+  
+  .dropdown-toggle {
+    display: none;
+  }
+  
+  .dropdown-content {
+    position: static;
+    display: flex !important;
+    flex-direction: row;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    gap: 4px;
+  }
+  
+  .dropdown-content .md-btn {
+    width: auto;
+    text-align: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    min-width: 32px;
+    height: 28px;
+  }
+}
+
+/* Responsive design for toolbar - Medium screens */
+@media (max-width: 800px) and (min-width: 481px) {
+  .toolbar-content {
+    padding: 7px 10px;
+    gap: 7px;
+  }
+  
+  .toolbar-group {
+    gap: 4px;
+  }
+  
+  .md-btn {
+    padding: 6px 9px;
+    font-size: 11px;
+    min-width: 30px;
+    height: 27px;
+  }
+  
+  .toolbar-separator {
+    height: 22px;
+    margin: 0 4px;
+  }
+  
+  .dropdown-content {
+    min-width: 130px;
+  }
+  
+  .dropdown-content .md-btn {
+    font-size: 11px;
+    padding: 5px 7px;
+  }
+}
+
+/* Responsive design for toolbar - Small screens */
+@media (max-width: 480px) {
   .toolbar-content {
     padding: 6px 8px;
     gap: 6px;
@@ -2416,7 +2525,8 @@ body.distraction-free .markdown-toolbar {
   }
 }
 
-@media (max-width: 480px) {
+/* Extra small screens */
+@media (max-width: 360px) {
   .toolbar-content {
     padding: 4px 6px;
     gap: 4px;

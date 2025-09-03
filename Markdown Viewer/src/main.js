@@ -3480,9 +3480,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Ensure current mode class is on body for CSS selectors
     document.body.classList.add(`${this.currentMode}-mode`);
     
-    // Update button state
-    this.distractionBtn.textContent = '■';
-    
     // Update toolbar visibility
     this.updateToolbarVisibility();
     
@@ -3493,9 +3490,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
   exitDistractionFree() {
     this.isDistractionFree = false;
     document.body.classList.remove('distraction-free');
-    
-    // Update button state
-    this.distractionBtn.textContent = '☐';
     
     // Update toolbar visibility
     this.updateToolbarVisibility();
@@ -4354,14 +4348,20 @@ Tip: You can also use HTML Export and then print from your browser.`;
   setupMarkdownToolbarEvents() {
     if (!this.markdownToolbar) return;
     
+    // Setup responsive behavior
+    this.setupResponsiveToolbar();
+    
     // Dropdown toggle buttons
     const dropdownToggles = this.markdownToolbar.querySelectorAll('.dropdown-toggle');
     dropdownToggles.forEach(toggle => {
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const dropdownId = toggle.getAttribute('data-dropdown');
-        this.toggleToolbarDropdown(dropdownId, toggle);
+        // Only allow dropdown if not in inline mode
+        if (!this.isToolbarInlineMode()) {
+          const dropdownId = toggle.getAttribute('data-dropdown');
+          this.toggleToolbarDropdown(dropdownId, toggle);
+        }
       });
     });
     
@@ -4370,8 +4370,8 @@ Tip: You can also use HTML Export and then print from your browser.`;
     mdButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
-        // Skip dropdown toggles
-        if (btn.classList.contains('dropdown-toggle')) {
+        // Skip dropdown toggles in inline mode
+        if (btn.classList.contains('dropdown-toggle') && !this.isToolbarInlineMode()) {
           return;
         }
         
@@ -4438,16 +4438,16 @@ Tip: You can also use HTML Export and then print from your browser.`;
   updateToolbarVisibility() {
     if (!this.markdownToolbar) return;
     
-    // Show only in code mode, not in distraction-free mode, and when enabled
+    // Show only in code mode, not in split or preview mode, not in distraction-free mode, and when enabled
     const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && this.isToolbarEnabled;
     
     if (shouldShow) {
+      this.markdownToolbar.style.display = 'block';
       this.markdownToolbar.classList.add('visible');
     } else {
+      this.markdownToolbar.style.display = 'none';
       this.markdownToolbar.classList.remove('visible');
     }
-    
-
   }
 
   toggleMarkdownToolbar() {
@@ -4457,9 +4457,30 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Toolbar visibility updated
   }
 
+  setupResponsiveToolbar() {
+    // Setup resize listener for responsive behavior
+    const handleResize = () => {
+      if (this.isToolbarInlineMode()) {
+        this.closeAllToolbarDropdowns();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Store reference for cleanup
+    this.toolbarResizeHandler = handleResize;
+  }
+  
+  isToolbarInlineMode() {
+    return window.innerWidth > 800;
+  }
+  
   toggleToolbarDropdown(dropdownId, toggleButton) {
     const dropdown = document.getElementById(`${dropdownId}-dropdown`);
     if (!dropdown) return;
+    
+    // Don't allow dropdown in inline mode
+    if (this.isToolbarInlineMode()) return;
     
     const isOpen = dropdown.classList.contains('show');
     

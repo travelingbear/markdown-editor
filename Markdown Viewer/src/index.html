@@ -64,36 +64,63 @@
             <button id="redo-btn" class="md-btn" title="Redo (Ctrl+Y)">↷</button>
           </div>
           <div class="toolbar-separator"></div>
+          <!-- Headings & Text Formatting -->
           <div class="toolbar-group">
-            <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+1)">H1</button>
-            <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+2)">H2</button>
-            <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+3)">H3</button>
-          </div>
-          <div class="toolbar-separator"></div>
-          <div class="toolbar-group">
+            <div class="toolbar-dropdown">
+              <button class="md-btn dropdown-toggle" data-dropdown="headings" title="Headings">H</button>
+              <div class="dropdown-content" id="headings-dropdown">
+                <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+1)">H1</button>
+                <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+2)">H2</button>
+                <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+3)">H3</button>
+              </div>
+            </div>
             <button class="md-btn" data-action="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
             <button class="md-btn" data-action="italic" title="Italic (Ctrl+I)"><em>I</em></button>
             <button class="md-btn" data-action="underline" title="Underline (Ctrl+Shift+U)"><u>U</u></button>
-            <button class="md-btn" data-action="strikethrough" title="Strikethrough"><s>S</s></button>
           </div>
           <div class="toolbar-separator"></div>
+          
+          <!-- Content Tools -->
           <div class="toolbar-group">
-            <button class="md-btn" data-action="link" title="Link (Ctrl+K)">🔗</button>
-            <button class="md-btn" data-action="image" title="Image">🖼️</button>
-            <button class="md-btn" data-action="code" title="Inline Code">💻</button>
+            <div class="toolbar-dropdown">
+              <button class="md-btn dropdown-toggle" data-dropdown="media" title="Links & Media">🔗</button>
+              <div class="dropdown-content" id="media-dropdown">
+                <button class="md-btn" data-action="link" title="Link (Ctrl+K)">🔗 Link</button>
+                <button class="md-btn" data-action="image" title="Image">🖼️ Image</button>
+                <button class="md-btn" data-action="table" title="Table">📊 Table</button>
+              </div>
+            </div>
+            <div class="toolbar-dropdown">
+              <button class="md-btn dropdown-toggle" data-dropdown="lists" title="Lists">☑</button>
+              <div class="dropdown-content" id="lists-dropdown">
+                <button class="md-btn" data-action="ul" title="Unordered List">• Bullet List</button>
+                <button class="md-btn" data-action="ol" title="Ordered List">1. Numbered List</button>
+                <button class="md-btn" data-action="task" title="Task List">☐ Task List</button>
+              </div>
+            </div>
+            <div class="toolbar-dropdown">
+              <button class="md-btn dropdown-toggle" data-dropdown="blocks" title="Code & Blocks"><></button>
+              <div class="dropdown-content" id="blocks-dropdown">
+                <button class="md-btn" data-action="code" title="Inline Code">💻 Inline Code</button>
+                <button class="md-btn" data-action="codeblock" title="Code Block">📄 Code Block</button>
+                <button class="md-btn" data-action="quote" title="Blockquote">❝ Blockquote</button>
+              </div>
+            </div>
           </div>
           <div class="toolbar-separator"></div>
-          <div class="toolbar-group">
-            <button class="md-btn" data-action="ul" title="Unordered List">• List</button>
-            <button class="md-btn" data-action="ol" title="Ordered List">1. List</button>
-            <button class="md-btn" data-action="task" title="Task List">☐ Task</button>
+          
+          <!-- Text Alignment -->
+          <div class="toolbar-dropdown">
+            <button class="md-btn dropdown-toggle" data-dropdown="align" title="Text Alignment">≡</button>
+            <div class="dropdown-content" id="align-dropdown">
+              <button class="md-btn" data-action="align-left" title="Align Left">← Left</button>
+              <button class="md-btn" data-action="align-center" title="Align Center">↔ Center</button>
+              <button class="md-btn" data-action="align-right" title="Align Right">→ Right</button>
+              <button class="md-btn" data-action="align-justify" title="Justify">≡ Justify</button>
+            </div>
           </div>
-          <div class="toolbar-separator"></div>
-          <div class="toolbar-group">
-            <button class="md-btn" data-action="table" title="Table">📊</button>
-            <button class="md-btn" data-action="hr" title="Horizontal Rule">―</button>
-            <button class="md-btn" data-action="quote" title="Blockquote">❝</button>
-          </div>
+          
+
           <div class="toolbar-separator"></div>
           <div class="toolbar-group font-size-group">
             <button id="font-size-decrease" class="md-btn font-btn" title="Decrease Font Size">A-</button>

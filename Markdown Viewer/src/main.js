@@ -4338,11 +4338,27 @@ Tip: You can also use HTML Export and then print from your browser.`;
   setupMarkdownToolbarEvents() {
     if (!this.markdownToolbar) return;
     
+    // Dropdown toggle buttons
+    const dropdownToggles = this.markdownToolbar.querySelectorAll('.dropdown-toggle');
+    dropdownToggles.forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdownId = toggle.getAttribute('data-dropdown');
+        this.toggleToolbarDropdown(dropdownId, toggle);
+      });
+    });
+    
     // Markdown formatting buttons
     const mdButtons = this.markdownToolbar.querySelectorAll('.md-btn');
     mdButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
+        // Skip dropdown toggles
+        if (btn.classList.contains('dropdown-toggle')) {
+          return;
+        }
+        
         // Check target and parent for data-action attribute
         let action = e.target.getAttribute('data-action');
         if (!action && e.target.parentElement) {
@@ -4353,8 +4369,17 @@ Tip: You can also use HTML Export and then print from your browser.`;
         }
         if (action) {
           this.executeMarkdownAction(action);
+          // Close any open dropdowns after action
+          this.closeAllToolbarDropdowns();
         }
       });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.toolbar-dropdown')) {
+        this.closeAllToolbarDropdowns();
+      }
     });
     
     // Font size controls
@@ -4408,6 +4433,35 @@ Tip: You can also use HTML Export and then print from your browser.`;
     localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
     this.updateToolbarVisibility();
     // Toolbar visibility updated
+  }
+
+  toggleToolbarDropdown(dropdownId, toggleButton) {
+    const dropdown = document.getElementById(`${dropdownId}-dropdown`);
+    if (!dropdown) return;
+    
+    const isOpen = dropdown.classList.contains('show');
+    
+    // Close all other dropdowns first
+    this.closeAllToolbarDropdowns();
+    
+    if (!isOpen) {
+      // Open this dropdown
+      dropdown.classList.add('show');
+      toggleButton.classList.add('active');
+    }
+  }
+
+  closeAllToolbarDropdowns() {
+    const dropdowns = this.markdownToolbar.querySelectorAll('.dropdown-content');
+    const toggles = this.markdownToolbar.querySelectorAll('.dropdown-toggle');
+    
+    dropdowns.forEach(dropdown => {
+      dropdown.classList.remove('show');
+    });
+    
+    toggles.forEach(toggle => {
+      toggle.classList.remove('active');
+    });
   }
 
   executeMarkdownAction(action) {
@@ -4501,6 +4555,21 @@ Tip: You can also use HTML Export and then print from your browser.`;
         break;
       case 'underline':
         replacement = this.wrapWithHtml(selectedText, 'u');
+        break;
+      case 'codeblock':
+        replacement = this.createCodeBlock(selectedText);
+        break;
+      case 'align-left':
+        replacement = this.createAlignment(selectedText, 'left');
+        break;
+      case 'align-center':
+        replacement = this.createAlignment(selectedText, 'center');
+        break;
+      case 'align-right':
+        replacement = this.createAlignment(selectedText, 'right');
+        break;
+      case 'align-justify':
+        replacement = this.createAlignment(selectedText, 'justify');
         break;
       default:
         return;
@@ -4602,6 +4671,21 @@ Tip: You can also use HTML Export and then print from your browser.`;
       case 'underline':
         replacement = this.wrapWithHtml(selectedText, 'u');
         break;
+      case 'codeblock':
+        replacement = this.createCodeBlock(selectedText);
+        break;
+      case 'align-left':
+        replacement = this.createAlignment(selectedText, 'left');
+        break;
+      case 'align-center':
+        replacement = this.createAlignment(selectedText, 'center');
+        break;
+      case 'align-right':
+        replacement = this.createAlignment(selectedText, 'right');
+        break;
+      case 'align-justify':
+        replacement = this.createAlignment(selectedText, 'justify');
+        break;
       default:
         return;
     }
@@ -4701,6 +4785,23 @@ Tip: You can also use HTML Export and then print from your browser.`;
       return `<${tag}>${text}</${tag}>`;
     }
     return `<${tag}>text</${tag}>`;
+  }
+
+  createCodeBlock(text) {
+    if (text && text.trim()) {
+      return `\n\`\`\`\n${text.trim()}\n\`\`\`\n`;
+    }
+    return `\n\`\`\`\ncode here\n\`\`\`\n`;
+  }
+
+  createAlignment(text, alignment) {
+    const alignText = text && text.trim() ? text.trim() : 'Text to align';
+    if (alignment === 'left') {
+      // Remove div wrapper if present
+      const divMatch = alignText.match(/^<div[^>]*>(.*)<\/div>$/s);
+      return divMatch ? divMatch[1] : alignText;
+    }
+    return `<div style="text-align: ${alignment};">${alignText}</div>`;
   }
 
   handleEnterKeyForLists(e) {

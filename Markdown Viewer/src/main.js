@@ -483,12 +483,17 @@ class MarkdownViewer {
       this.markDirty();
       this.updateCursorPosition();
       
-      // Disable scroll sync temporarily during typing
+      // Enable cursor-based scroll sync during typing
       this.isTyping = true;
       clearTimeout(this.typingTimeout);
       this.typingTimeout = setTimeout(() => {
         this.isTyping = false;
-      }, 1000);
+      }, 500); // Reduced timeout for better responsiveness
+      
+      // Sync preview to cursor position when typing
+      if (this.currentMode === 'split') {
+        this.syncPreviewToCursor();
+      }
     });
     
 
@@ -496,6 +501,11 @@ class MarkdownViewer {
     // Cursor position change events
     this.monacoEditor.onDidChangeCursorPosition(() => {
       this.updateCursorPosition();
+      
+      // Sync preview to cursor position in split mode
+      if (this.currentMode === 'split' && !this.isScrollSyncing) {
+        this.syncPreviewToCursor();
+      }
     });
 
     // Selection change events - track current selection for toolbar
@@ -509,8 +519,11 @@ class MarkdownViewer {
 
     // Scroll synchronization
     this.monacoEditor.onDidScrollChange((e) => {
-      if (this.currentMode === 'split' && !this.isTyping && !this.isScrollSyncing) {
-        this.syncScrollToPreview(e.scrollTop, e.scrollHeight);
+      if (this.currentMode === 'split' && !this.isScrollSyncing) {
+        // Only use traditional scroll sync when not typing
+        if (!this.isTyping) {
+          this.syncScrollToPreview(e.scrollTop, e.scrollHeight);
+        }
       }
     });
 
@@ -530,6 +543,14 @@ class MarkdownViewer {
     this.monacoEditor.onKeyDown((e) => {
       if (e.keyCode === monaco.KeyCode.Enter && !e.ctrlKey && !e.shiftKey && !e.altKey) {
         this.handleEnterKeyForLists(e);
+        
+        // Immediately sync preview to cursor when Enter is pressed
+        if (this.currentMode === 'split') {
+          // Use a small delay to allow the cursor position to update
+          setTimeout(() => {
+            this.syncPreviewToCursor();
+          }, 50);
+        }
       }
     });
   }
@@ -678,20 +699,44 @@ class MarkdownViewer {
         this.updatePreview();
         this.markDirty();
         this.updateCursorPosition();
+        
+        // Sync preview to cursor position when typing
+        if (this.currentMode === 'split') {
+          this.syncPreviewToCursorFallback();
+        }
       }
     });
     
 
     
-    this.editor.addEventListener('keyup', () => {
+    this.editor.addEventListener('keyup', (e) => {
       if (!this.isMonacoLoaded) {
         this.updateCursorPosition();
+        
+        // Sync preview to cursor position
+        if (this.currentMode === 'split' && !this.isScrollSyncing) {
+          this.syncPreviewToCursorFallback();
+        }
+      }
+    });
+    
+    this.editor.addEventListener('keydown', (e) => {
+      if (!this.isMonacoLoaded && e.key === 'Enter' && this.currentMode === 'split') {
+        // Immediately sync preview to cursor when Enter is pressed
+        setTimeout(() => {
+          this.syncPreviewToCursorFallback();
+        }, 50);
       }
     });
     
     this.editor.addEventListener('click', () => {
       if (!this.isMonacoLoaded) {
         this.updateCursorPosition();
+        
+        // Sync preview to cursor position
+        if (this.currentMode === 'split' && !this.isScrollSyncing) {
+          this.syncPreviewToCursorFallback();
+        }
       }
     });
     
@@ -1418,14 +1463,17 @@ class MarkdownViewer {
     
     // Create unified scroll handler
     const handlePreviewScroll = (event) => {
-      if (this.currentMode === 'split' && !this.isScrollSyncing && !this.isTyping) {
+      if (this.currentMode === 'split' && !this.isScrollSyncing) {
         const activeScrollElement = this.getActiveScrollElement();
         if (event.target === activeScrollElement) {
-          this.isScrollSyncing = true;
-          this.syncScrollToEditor();
-          requestAnimationFrame(() => {
-            this.isScrollSyncing = false;
-          });
+          // Only sync back to editor when user manually scrolls preview (not typing)
+          if (!this.isTyping) {
+            this.isScrollSyncing = true;
+            this.syncScrollToEditor();
+            requestAnimationFrame(() => {
+              this.isScrollSyncing = false;
+            });
+          }
         }
       }
     };
@@ -1616,6 +1664,101 @@ class MarkdownViewer {
     requestAnimationFrame(() => {
       this.isScrollSyncing = false;
     });
+  }
+  
+  syncPreviewToCursor() {
+    if (!this.isMonacoLoaded || !this.monacoEditor || this.isScrollSyncing) return;
+    
+    this.isScrollSyncing = true;
+    
+    try {
+      const position = this.monacoEditor.getPosition();
+      if (!position) return;
+      
+      const model = this.monacoEditor.getModel();
+      if (!model) return;
+      
+      const totalLines = model.getLineCount();
+      const currentLine = position.lineNumber;
+      
+      // Calculate the percentage of cursor position in the document
+      const cursorPercentage = Math.max(0, Math.min(1, (currentLine - 1) / Math.max(1, totalLines - 1)));
+      
+      // Get the preview scrolling element
+      const targetElement = this.getActiveScrollElement();
+      
+      if (targetElement) {
+        const maxScroll = Math.max(0, targetElement.scrollHeight - targetElement.clientHeight);
+        let targetScrollTop = cursorPercentage * maxScroll;
+        
+        // Try to center the corresponding content in the viewport
+        const viewportHeight = targetElement.clientHeight;
+        const centerOffset = viewportHeight * 0.3; // Position at 30% from top for better visibility
+        targetScrollTop = Math.max(0, targetScrollTop - centerOffset);
+        
+        // Smooth scroll to the target position
+        targetElement.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+      }
+    } catch (error) {
+      console.warn('[Scroll] Cursor sync error:', error);
+    } finally {
+      // Use requestAnimationFrame to reset the flag
+      requestAnimationFrame(() => {
+        this.isScrollSyncing = false;
+      });
+    }
+  }
+  
+  syncPreviewToCursorFallback() {
+    if (this.isScrollSyncing) return;
+    
+    this.isScrollSyncing = true;
+    
+    try {
+      const textarea = this.editor;
+      const text = textarea.value;
+      const cursorPos = textarea.selectionStart;
+      
+      // Calculate current line number
+      const textBeforeCursor = text.substring(0, cursorPos);
+      const lines = textBeforeCursor.split('\n');
+      const currentLine = lines.length;
+      
+      // Calculate total lines
+      const totalLines = text.split('\n').length;
+      
+      // Calculate the percentage of cursor position in the document
+      const cursorPercentage = Math.max(0, Math.min(1, (currentLine - 1) / Math.max(1, totalLines - 1)));
+      
+      // Get the preview scrolling element
+      const targetElement = this.getActiveScrollElement();
+      
+      if (targetElement) {
+        const maxScroll = Math.max(0, targetElement.scrollHeight - targetElement.clientHeight);
+        let targetScrollTop = cursorPercentage * maxScroll;
+        
+        // Try to center the corresponding content in the viewport
+        const viewportHeight = targetElement.clientHeight;
+        const centerOffset = viewportHeight * 0.3; // Position at 30% from top for better visibility
+        targetScrollTop = Math.max(0, targetScrollTop - centerOffset);
+        
+        // Smooth scroll to the target position
+        targetElement.scrollTo({
+          top: targetScrollTop,
+          behavior: 'smooth'
+        });
+      }
+    } catch (error) {
+      console.warn('[Scroll] Fallback cursor sync error:', error);
+    } finally {
+      // Use requestAnimationFrame to reset the flag
+      requestAnimationFrame(() => {
+        this.isScrollSyncing = false;
+      });
+    }
   }
   
   updateCachedScrollInfo() {

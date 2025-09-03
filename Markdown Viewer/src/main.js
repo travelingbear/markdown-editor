@@ -1258,6 +1258,9 @@ class MarkdownViewer {
       // Process footnotes
       html = this.processFootnotesInHtml(html);
       
+      // Process superscript and subscript
+      html = this.processSupSubScript(html);
+      
       // Post-process HTML to handle img tags that bypass markdown renderer
       html = this.postProcessHtmlImages(html);
       
@@ -1969,6 +1972,18 @@ class MarkdownViewer {
         </div>`;
       });
     }
+    
+    return html;
+  }
+  
+  processSupSubScript(html) {
+    // Process superscript: ^text^ or ^(text with spaces)^
+    html = html.replace(/\^\(([^)]+)\)\^/g, '<sup>$1</sup>');
+    html = html.replace(/\^([^\s^]+)\^/g, '<sup>$1</sup>');
+    
+    // Process subscript: ~text~ or ~(text with spaces)~
+    html = html.replace(/~\(([^)]+)\)~/g, '<sub>$1</sub>');
+    html = html.replace(/~([^\s~]+)~/g, '<sub>$1</sub>');
     
     return html;
   }

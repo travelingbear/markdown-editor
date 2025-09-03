@@ -794,17 +794,17 @@ body.centered-layout .preview-pane {
 
 .preview-content img.local-image {
   opacity: 1;
-  border: 2px solid var(--accent-primary);
+  border: 1px solid #999;
 }
 
 .preview-content img.remote-image {
   opacity: 1;
-  border: 2px solid #28a745;
+  border: 1px solid #999;
 }
 
 .preview-content img.image-error {
   opacity: 0.5;
-  border: 2px solid #f85149;
+  border: 1px solid #f85149;
   background-color: rgba(248, 81, 73, 0.1);
   position: relative;
 }
@@ -827,7 +827,6 @@ body.centered-layout .preview-pane {
 
 /* Image hover effects */
 .preview-content img:hover {
-  transform: scale(1.02);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 

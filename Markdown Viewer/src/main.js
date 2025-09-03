@@ -107,7 +107,7 @@ class MarkdownViewer {
     Object.assign(this, {
       isScrollSyncing: false,
       lastKeyboardNavigation: 0,
-      suggestionsEnabled: localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false',
+      suggestionsEnabled: localStorage.getItem('markdownViewer_suggestionsEnabled') === 'true',
       fontSize: parseInt(localStorage.getItem('markdownViewer_fontSize') || '14'),
       previewZoom: 1.0,
       mainToolbarSize: localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium',

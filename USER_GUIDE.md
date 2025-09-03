@@ -294,6 +294,27 @@ Click checkboxes in Preview mode to toggle completion status.
 
 *[Image placeholder: Interactive task lists]*
 
+### Footnotes
+Add footnotes to your documents with automatic numbering and linking:
+
+#### Creating Footnotes
+Use `[^id]` for footnote references and `[^id]: definition` for definitions:
+
+```markdown
+This text has a footnote[^1] and another one[^note].
+
+[^1]: This is the first footnote definition.
+[^note]: This is a named footnote instead of numbered.
+```
+
+#### Features
+- **Clickable References**: Footnote markers become clickable superscript links
+- **Auto-Generated Section**: Footnotes appear at the bottom with back-references
+- **Multiple References**: Same footnote can be referenced multiple times
+- **Named Footnotes**: Use descriptive names like `[^note]` instead of numbers
+
+*[Image placeholder: Footnotes in preview with clickable links]*
+
 ### Export Options
 
 #### HTML Export (Ctrl+Shift+E)

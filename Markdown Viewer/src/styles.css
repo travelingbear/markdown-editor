@@ -510,6 +510,45 @@ body.centered-layout .preview-pane {
   border-radius: 4px;
 }
 
+/* Footnotes */
+.footnotes {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-primary);
+  font-size: 14px;
+}
+
+.footnotes ol {
+  padding-left: 20px;
+}
+
+.footnotes li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.footnote-ref {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footnote-ref:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.footnote-backref {
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.footnote-backref:hover {
+  color: var(--accent-primary);
+}
+
 /* Task Lists - Simplified structure using divs */
 .preview-content .task-list-item {
   margin-bottom: 8px;

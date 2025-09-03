@@ -1210,6 +1210,9 @@ class MarkdownViewer {
       // Process task lists
       html = this.processTaskListsInHtml(html);
       
+      // Process footnotes
+      html = this.processFootnotesInHtml(html);
+      
       // Post-process HTML to handle img tags that bypass markdown renderer
       html = this.postProcessHtmlImages(html);
       
@@ -1822,6 +1825,37 @@ class MarkdownViewer {
           <div class="placeholder-note">Mermaid.js not loaded - showing code instead</div>
         </div>`;
       });
+    }
+    
+    return html;
+  }
+  
+  processFootnotesInHtml(html) {
+    const footnotes = new Map();
+    
+    // Collect definitions - simpler pattern
+    html.replace(/\[\^([^\]]+)\]:\s*(.+?)(?=\n|$)/g, (match, id, definition) => {
+      footnotes.set(id, definition.trim());
+    });
+    
+    // Remove definition paragraphs
+    html = html.replace(/<p>\[\^[^\]]+\]:[^<]*<\/p>/g, '');
+    
+    // Process references
+    html = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
+      return footnotes.has(id) ? 
+        `<sup><a href="#footnote-${id}" id="footnote-ref-${id}" class="footnote-ref">${id}</a></sup>` : 
+        match;
+    });
+    
+    // Add footnotes section
+    if (footnotes.size > 0) {
+      let footnotesHtml = '<div class="footnotes"><hr><ol>';
+      for (const [id, definition] of footnotes) {
+        footnotesHtml += `<li id="footnote-${id}">${definition} <a href="#footnote-ref-${id}" class="footnote-backref">↩</a></li>`;
+      }
+      footnotesHtml += '</ol></div>';
+      html += footnotesHtml;
     }
     
     return html;

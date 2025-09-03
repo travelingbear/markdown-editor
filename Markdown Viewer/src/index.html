@@ -252,6 +252,14 @@
                   <button id="md-toolbar-large" class="setting-btn">Large</button>
                 </div>
               </div>
+              <div class="setting-item">
+                <label>Status Bar Size</label>
+                <div class="setting-control">
+                  <button id="status-bar-small" class="setting-btn">Small</button>
+                  <button id="status-bar-medium" class="setting-btn">Medium</button>
+                  <button id="status-bar-large" class="setting-btn">Large</button>
+                </div>
+              </div>
             </div>
             
             <div class="settings-section">
@@ -491,3 +499,36 @@
     <script src="/main.js"></script>
   </body>
 </html>
+      <!-- Paste Modal -->
+      <div id="paste-modal" class="paste-modal" style="display: none;">
+        <div class="paste-overlay"></div>
+        <div class="paste-window">
+          <div class="paste-header">
+            <h2>Paste Content</h2>
+          </div>
+          <div class="paste-content">
+            <p>Edit the content below before pasting to avoid task conflicts:</p>
+            <textarea id="paste-content" class="paste-textarea" rows="10"></textarea>
+            <div class="paste-buttons">
+              <button id="paste-confirm-btn" class="paste-btn primary">Paste</button>
+              <button id="paste-cancel-btn" class="paste-btn">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Task Conflict Warning Modal -->
+      <div id="task-conflict-modal" class="task-conflict-modal" style="display: none;">
+        <div class="task-conflict-overlay"></div>
+        <div class="task-conflict-window">
+          <div class="task-conflict-header">
+            <h3>⚠️ Duplicate Task Detected</h3>
+          </div>
+          <div class="task-conflict-content">
+            <p>This task has identical text to another task, which may cause conflicts when updating.</p>
+            <p><strong>Recommendation:</strong> Edit one of the tasks to have unique text to avoid issues.</p>
+            <div class="task-conflict-buttons">
+              <button id="task-conflict-ok" class="task-conflict-btn primary">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>

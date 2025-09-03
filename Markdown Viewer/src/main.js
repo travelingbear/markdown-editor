@@ -53,6 +53,7 @@ class MarkdownViewer {
       this.applyFontSize();
       this.applyZoom();
       this.applyToolbarSizes();
+      this.applyStatusBarSize();
       
       this.updateSplashProgress(60, 'Loading advanced features...');
       await this.initializeAdvancedFeatures();
@@ -110,6 +111,7 @@ class MarkdownViewer {
       previewZoom: 1.0,
       mainToolbarSize: localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium',
       mdToolbarSize: localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium',
+      statusBarSize: localStorage.getItem('markdownViewer_statusBarSize') || 'medium',
       isLoadingFile: false,
       lastEditorScrollTop: 0,
       lastPreviewScrollTop: 0,
@@ -262,13 +264,16 @@ class MarkdownViewer {
       
       // Load Mermaid using dynamic import to avoid AMD conflicts
       try {
-        const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.esm.min.mjs');
+        const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs');
         this.mermaid = mermaidModule.default;
         this.mermaid.initialize({
           startOnLoad: false,
           theme: this.theme === 'dark' ? 'dark' : 'default',
           securityLevel: 'loose',
-          fontFamily: 'inherit'
+          fontFamily: 'inherit',
+          pie: {
+            useMaxWidth: true
+          }
         });
         this.mermaidInitialized = true;
         // Mermaid loaded successfully
@@ -485,6 +490,8 @@ class MarkdownViewer {
         this.isTyping = false;
       }, 1000);
     });
+    
+
 
     // Cursor position change events
     this.monacoEditor.onDidChangeCursorPosition(() => {
@@ -502,7 +509,7 @@ class MarkdownViewer {
 
     // Scroll synchronization
     this.monacoEditor.onDidScrollChange((e) => {
-      if (this.currentMode === 'split' && !this.isTyping) {
+      if (this.currentMode === 'split' && !this.isTyping && !this.isScrollSyncing) {
         this.syncScrollToPreview(e.scrollTop, e.scrollHeight);
       }
     });
@@ -673,6 +680,8 @@ class MarkdownViewer {
         this.updateCursorPosition();
       }
     });
+    
+
     
     this.editor.addEventListener('keyup', () => {
       if (!this.isMonacoLoaded) {
@@ -1097,7 +1106,7 @@ class MarkdownViewer {
     this.updatePreview();
     this.updateFilename();
     this.updateModeButtons();
-    this.setMode(this.defaultMode); // Use default mode for new files
+    this.setMode('code'); // New files always start in code mode
     this.isDirty = false;
     this.saveBtn.classList.remove('dirty');
     this.resetZoom();
@@ -1143,9 +1152,6 @@ class MarkdownViewer {
     }
 
     try {
-      // First, process math expressions in the raw markdown
-      let processedMarkdown = this.processMathInMarkdown(markdown);
-      
       // Configure marked with basic settings and custom renderer
       
       // Check if we're using the new marked API (v5+)
@@ -1192,8 +1198,11 @@ class MarkdownViewer {
         });
       }
       
-      // Parse markdown to HTML
-      let html = marked.parse(processedMarkdown);
+      // Parse markdown to HTML first
+      let html = marked.parse(markdown);
+      
+      // Process math expressions in the HTML (after markdown processing)
+      html = this.processMathInHtml(html);
       
       // Process Mermaid code blocks
       html = this.processMermaidInHtml(html);
@@ -1230,25 +1239,29 @@ class MarkdownViewer {
   }
 
   updateCursorPosition() {
-    let line = 1, col = 1;
-    
-    if (this.isMonacoLoaded && this.monacoEditor) {
-      const position = this.monacoEditor.getPosition();
-      if (position) {
-        line = position.lineNumber;
-        col = position.column;
-      }
-    } else {
-      const textarea = this.editor;
-      const text = textarea.value;
-      const cursorPos = textarea.selectionStart;
+    // Debounce cursor position updates for better performance
+    clearTimeout(this.cursorUpdateTimeout);
+    this.cursorUpdateTimeout = setTimeout(() => {
+      let line = 1, col = 1;
       
-      const lines = text.substring(0, cursorPos).split('\n');
-      line = lines.length;
-      col = lines[lines.length - 1].length + 1;
-    }
-    
-    this.cursorPos.textContent = `Line ${line}, Col ${col}`;
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        const position = this.monacoEditor.getPosition();
+        if (position) {
+          line = position.lineNumber;
+          col = position.column;
+        }
+      } else {
+        const textarea = this.editor;
+        const text = textarea.value;
+        const cursorPos = textarea.selectionStart;
+        
+        const lines = text.substring(0, cursorPos).split('\n');
+        line = lines.length;
+        col = lines[lines.length - 1].length + 1;
+      }
+      
+      this.cursorPos.textContent = `Line ${line}, Col ${col}`;
+    }, 50);
   }
 
   updateFilename() {
@@ -1389,17 +1402,42 @@ class MarkdownViewer {
   }
 
   setupScrollSync() {
-    // Sync from preview to editor with optimized timing
-    this.preview.addEventListener('scroll', () => {
-      if (this.currentMode === 'split' && !this.isScrollSyncing && !this.isTyping) {
-        this.isScrollSyncing = true;
-        this.syncScrollToEditor();
-        // Use requestAnimationFrame for smooth scrolling at browser refresh rate
-        requestAnimationFrame(() => {
-          this.isScrollSyncing = false;
-        });
+    // Remove any existing scroll listeners to prevent duplicates
+    if (this.previewScrollHandler) {
+      this.preview.removeEventListener('scroll', this.previewScrollHandler);
+    }
+    if (this.previewPaneScrollHandler) {
+      const previewPane = document.querySelector('.preview-pane');
+      if (previewPane) {
+        previewPane.removeEventListener('scroll', this.previewPaneScrollHandler);
       }
-    });
+    }
+    
+    // Create unified scroll handler
+    const handlePreviewScroll = (event) => {
+      if (this.currentMode === 'split' && !this.isScrollSyncing && !this.isTyping) {
+        const activeScrollElement = this.getActiveScrollElement();
+        if (event.target === activeScrollElement) {
+          this.isScrollSyncing = true;
+          this.syncScrollToEditor();
+          requestAnimationFrame(() => {
+            this.isScrollSyncing = false;
+          });
+        }
+      }
+    };
+    
+    // Store handlers for cleanup
+    this.previewScrollHandler = handlePreviewScroll;
+    this.previewPaneScrollHandler = handlePreviewScroll;
+    
+    // Add listeners to both elements
+    this.preview.addEventListener('scroll', this.previewScrollHandler);
+    
+    const previewPane = document.querySelector('.preview-pane');
+    if (previewPane) {
+      previewPane.addEventListener('scroll', this.previewPaneScrollHandler);
+    }
   }
 
   setupDragAndDrop() {
@@ -1563,9 +1601,13 @@ class MarkdownViewer {
     const maxEditorScroll = Math.max(0, editorScrollHeight - this.cachedScrollInfo.editorViewHeight);
     const scrollPercentage = maxEditorScroll > 0 ? editorScrollTop / maxEditorScroll : 0;
     
-    // Apply to preview using cached values
-    const previewScrollTop = scrollPercentage * this.cachedScrollInfo.previewMaxScroll;
-    this.preview.scrollTop = previewScrollTop;
+    // Get the actual scrolling element
+    const targetElement = this.getActiveScrollElement();
+    
+    if (targetElement) {
+      const maxScroll = Math.max(0, targetElement.scrollHeight - targetElement.clientHeight);
+      targetElement.scrollTop = scrollPercentage * maxScroll;
+    }
     
     // Use requestAnimationFrame instead of setTimeout
     requestAnimationFrame(() => {
@@ -1587,13 +1629,31 @@ class MarkdownViewer {
       };
     }
   }
+  
+  getActiveScrollElement() {
+    // Determine which element is actually scrolling based on layout mode
+    const previewPane = document.querySelector('.preview-pane');
+    const isCentered = document.body.classList.contains('centered-layout');
+    
+    if (isCentered) {
+      // In centered layout, preview-pane is the scrolling element
+      return previewPane && previewPane.scrollHeight > previewPane.clientHeight ? previewPane : null;
+    } else {
+      // In normal layout, preview-content is the scrolling element
+      return this.preview && this.preview.scrollHeight > this.preview.clientHeight ? this.preview : null;
+    }
+  }
 
   syncScrollToEditor() {
     if (!this.isMonacoLoaded || !this.monacoEditor) return;
     
-    // Calculate scroll percentage from preview
-    const previewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
-    const scrollPercentage = previewMaxScroll > 0 ? this.preview.scrollTop / previewMaxScroll : 0;
+    // Get the actual scrolling element
+    const sourceElement = this.getActiveScrollElement();
+    if (!sourceElement) return;
+    
+    // Calculate scroll percentage from the active scroll element
+    const previewMaxScroll = Math.max(0, sourceElement.scrollHeight - sourceElement.clientHeight);
+    const scrollPercentage = previewMaxScroll > 0 ? sourceElement.scrollTop / previewMaxScroll : 0;
     
     // Get Monaco editor scroll info
     const scrollHeight = this.monacoEditor.getScrollHeight();
@@ -1626,21 +1686,23 @@ class MarkdownViewer {
       const scrollHeight = this.monacoEditor.getScrollHeight();
       const viewHeight = this.monacoEditor.getLayoutInfo().height;
       this.lastEditorMaxScroll = Math.max(0, scrollHeight - viewHeight);
-
     }
     
-    // Store preview scroll position and dimensions
-    this.lastPreviewScrollTop = this.preview.scrollTop;
-    this.lastPreviewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
-
+    // Store preview scroll position from the active scroll element
+    const activeScrollElement = this.getActiveScrollElement();
+    if (activeScrollElement) {
+      this.lastPreviewScrollTop = activeScrollElement.scrollTop;
+      this.lastPreviewMaxScroll = Math.max(0, activeScrollElement.scrollHeight - activeScrollElement.clientHeight);
+    }
   }
   
   restoreScrollPositions() {
+    const activeScrollElement = this.getActiveScrollElement();
+    
     if (this.currentMode === 'code') {
       // When switching to code mode, sync preview scroll to editor
       if (this.isMonacoLoaded && this.monacoEditor) {
         const scrollPercentage = this.lastPreviewMaxScroll > 0 ? this.lastPreviewScrollTop / this.lastPreviewMaxScroll : 0;
-        
         const scrollHeight = this.monacoEditor.getScrollHeight();
         const viewHeight = this.monacoEditor.getLayoutInfo().height;
         const maxScroll = Math.max(0, scrollHeight - viewHeight);
@@ -1649,50 +1711,31 @@ class MarkdownViewer {
       }
     } else if (this.currentMode === 'preview') {
       // When switching to preview mode, sync editor scroll to preview
-      if (this.isMonacoLoaded && this.monacoEditor) {
+      if (this.isMonacoLoaded && this.monacoEditor && activeScrollElement) {
         const scrollPercentage = this.lastEditorMaxScroll > 0 ? this.lastEditorScrollTop / this.lastEditorMaxScroll : 0;
-        
-        const previewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
+        const previewMaxScroll = Math.max(0, activeScrollElement.scrollHeight - activeScrollElement.clientHeight);
         const previewScrollTop = scrollPercentage * previewMaxScroll;
-        this.preview.scrollTop = previewScrollTop;
+        activeScrollElement.scrollTop = previewScrollTop;
       }
     } else if (this.currentMode === 'split') {
-      // In split mode, sync both panels based on the most recent scroll position
-      if (this.isMonacoLoaded && this.monacoEditor) {
-        // Determine which scroll position to use as the reference
-        const hasEditorScroll = this.lastEditorScrollTop > 0;
-        const hasPreviewScroll = this.lastPreviewScrollTop > 0;
-        
-        if (hasPreviewScroll && !hasEditorScroll) {
-          // Use preview as reference, sync editor to it
-          const scrollPercentage = this.lastPreviewMaxScroll > 0 ? this.lastPreviewScrollTop / this.lastPreviewMaxScroll : 0;
-          const scrollHeight = this.monacoEditor.getScrollHeight();
-          const viewHeight = this.monacoEditor.getLayoutInfo().height;
-          const maxScroll = Math.max(0, scrollHeight - viewHeight);
-          const targetScrollTop = scrollPercentage * maxScroll;
-          this.monacoEditor.setScrollTop(targetScrollTop);
-          this.preview.scrollTop = this.lastPreviewScrollTop;
-        } else if (hasEditorScroll && !hasPreviewScroll) {
-          // Use editor as reference, sync preview to it
-          const scrollPercentage = this.lastEditorMaxScroll > 0 ? this.lastEditorScrollTop / this.lastEditorMaxScroll : 0;
-          const previewMaxScroll = Math.max(0, this.preview.scrollHeight - this.preview.clientHeight);
-          const previewScrollTop = scrollPercentage * previewMaxScroll;
-          this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
-          this.preview.scrollTop = previewScrollTop;
-        } else {
-          // Both have scroll or neither have scroll - restore both positions
-          this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
-          this.preview.scrollTop = this.lastPreviewScrollTop;
-        }
+      // In split mode, restore both positions using active scroll element
+      if (this.isMonacoLoaded && this.monacoEditor && activeScrollElement) {
+        this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
+        activeScrollElement.scrollTop = this.lastPreviewScrollTop;
       }
     }
   }
 
-  processMathInMarkdown(markdown) {
+  processMathInHtml(html) {
     if (this.katexInitialized && this.katex) {
       
-      // Process display math: $$...$$
-      markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+      // Process display math: $$...$$ (not inside code blocks)
+      html = html.replace(/\$\$([^$]+)\$\$/g, (match, math, offset, string) => {
+        // Check if this match is inside a code block or inline code
+        if (this.isInsideCodeBlock(string, offset, match.length)) {
+          return match; // Return unchanged if inside code
+        }
+        
         try {
           const rendered = this.katex.renderToString(math.trim(), {
             displayMode: true,
@@ -1705,8 +1748,13 @@ class MarkdownViewer {
         }
       });
       
-      // Process inline math: $...$
-      markdown = markdown.replace(/\$([^$\n]+)\$/g, (match, math) => {
+      // Process inline math: $...$ (not inside code blocks)
+      html = html.replace(/\$([^$\n]+)\$/g, (match, math, offset, string) => {
+        // Check if this match is inside a code block or inline code
+        if (this.isInsideCodeBlock(string, offset, match.length)) {
+          return match; // Return unchanged if inside code
+        }
+        
         try {
           const rendered = this.katex.renderToString(math.trim(), {
             displayMode: false,
@@ -1721,16 +1769,37 @@ class MarkdownViewer {
     } else {
       
       // Fallback styling without external libraries
-      markdown = markdown.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
+      html = html.replace(/\$\$([^$]+)\$\$/g, (match, math, offset, string) => {
+        if (this.isInsideCodeBlock(string, offset, match.length)) {
+          return match;
+        }
         return `<div class="math-display math-fallback"><code>${math.trim()}</code></div>`;
       });
       
-      markdown = markdown.replace(/\$([^$\n]+)\$/g, (match, math) => {
+      html = html.replace(/\$([^$\n]+)\$/g, (match, math, offset, string) => {
+        if (this.isInsideCodeBlock(string, offset, match.length)) {
+          return match;
+        }
         return `<span class="math-inline math-fallback"><code>${math.trim()}</code></span>`;
       });
     }
     
-    return markdown;
+    return html;
+  }
+  
+  isInsideCodeBlock(html, offset, matchLength) {
+    // Check if the match is inside <code> or <pre> tags
+    const beforeMatch = html.substring(0, offset);
+    const afterMatch = html.substring(offset + matchLength);
+    
+    // Count opening and closing code/pre tags before the match
+    const codeOpenBefore = (beforeMatch.match(/<code[^>]*>/g) || []).length;
+    const codeCloseBefore = (beforeMatch.match(/<\/code>/g) || []).length;
+    const preOpenBefore = (beforeMatch.match(/<pre[^>]*>/g) || []).length;
+    const preCloseBefore = (beforeMatch.match(/<\/pre>/g) || []).length;
+    
+    // If we're inside an unclosed code or pre tag, skip processing
+    return (codeOpenBefore > codeCloseBefore) || (preOpenBefore > preCloseBefore);
   }
   
   processMermaidInHtml(html) {
@@ -1738,7 +1807,7 @@ class MarkdownViewer {
       
       // Replace mermaid code blocks with containers for rendering
       html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
         const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
         return `<div class="mermaid-diagram" id="${id}" data-mermaid-code="${encodeURIComponent(decodedCode.trim())}"></div>`;
       });
@@ -1746,7 +1815,7 @@ class MarkdownViewer {
       
       // Fallback placeholders
       html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
         return `<div class="mermaid-placeholder mermaid-fallback">
           <div class="placeholder-header">📊 Mermaid Diagram</div>
           <pre class="diagram-code">${decodedCode}</pre>
@@ -1761,9 +1830,12 @@ class MarkdownViewer {
   processTaskListsInHtml(html) {
     let taskCount = 0;
     
-    // First, handle any existing disabled checkboxes in li elements
-    html = html.replace(/<li><input[^>]*disabled[^>]*type="checkbox"[^>]*>\s*([^<]*)<\/li>/g, (match, content) => {
-      // Check for checked attribute specifically as an attribute
+    // First, handle any existing disabled checkboxes in li elements (not in code blocks)
+    html = html.replace(/<li><input[^>]*disabled[^>]*type="checkbox"[^>]*>\s*([^<]*)<\/li>/g, (match, content, offset, string) => {
+      if (this.isInsideCodeBlock(string, offset, match.length)) {
+        return match; // Keep original if inside code block
+      }
+      
       const isChecked = /\bchecked\b[="']?/.test(match);
       const id = 'task-' + Date.now() + '-' + taskCount;
       taskCount++;
@@ -1771,8 +1843,12 @@ class MarkdownViewer {
       return `<div class="task-list-item dash-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content.trim()}</label></div>`;
     });
     
-    // Handle dash-prefixed task lists in li elements (markdown syntax)
-    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (match, checked, content) => {
+    // Handle dash-prefixed task lists in li elements (not in code blocks)
+    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (match, checked, content, offset, string) => {
+      if (this.isInsideCodeBlock(string, offset, match.length)) {
+        return match; // Keep original if inside code block
+      }
+      
       const isChecked = checked === 'x';
       const id = 'task-' + Date.now() + '-' + taskCount;
       taskCount++;
@@ -1780,8 +1856,12 @@ class MarkdownViewer {
       return `<div class="task-list-item dash-task"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
     });
     
-    // Handle standalone checkbox patterns in paragraphs
-    html = html.replace(/<p>\[([ x])\]\s*([^<]*?)<\/p>/g, (match, checked, content) => {
+    // Handle standalone checkbox patterns in paragraphs (not in code blocks)
+    html = html.replace(/<p>\[([ x])\]\s*([^<]*?)<\/p>/g, (match, checked, content, offset, string) => {
+      if (this.isInsideCodeBlock(string, offset, match.length)) {
+        return match; // Keep original if inside code block
+      }
+      
       const isChecked = checked === 'x';
       const cleanContent = content.trim();
       const id = 'task-' + Date.now() + '-' + taskCount;
@@ -1836,6 +1916,15 @@ class MarkdownViewer {
         const label = e.target.nextElementSibling;
         if (label && label.tagName === 'LABEL') {
           const taskText = label.textContent.trim();
+          
+          // Check for duplicate tasks
+          if (this.hasDuplicateTask(taskText)) {
+            // Revert checkbox state and show warning
+            e.target.checked = !e.target.checked;
+            this.showTaskConflictModal();
+            return;
+          }
+          
           this.updateTaskInMarkdown(taskText, e.target.checked);
           this.markDirty();
         }
@@ -1845,6 +1934,21 @@ class MarkdownViewer {
     this.preview.addEventListener('change', this.taskChangeHandler);
     
     const checkboxes = this.preview.querySelectorAll('.task-list-item input[type="checkbox"]');
+  }
+  
+
+
+  async openExternalLink(href) {
+    try {
+      if (window.__TAURI__?.core?.invoke) {
+        await window.__TAURI__.core.invoke('plugin:opener|open_url', { url: href });
+      } else {
+        window.open(href, '_blank');
+      }
+    } catch (error) {
+      console.error('[Links] Error opening external link:', error);
+      window.open(href, '_blank');
+    }
   }
 
   setupAnchorLinks() {
@@ -1867,12 +1971,23 @@ class MarkdownViewer {
     }
     
     this.anchorClickHandler = (e) => {
-      if (e.target.tagName === 'A' && e.target.getAttribute('href')?.startsWith('#')) {
-        e.preventDefault();
-        const targetId = e.target.getAttribute('href').substring(1);
-        const targetElement = this.preview.querySelector(`#${targetId}`);
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (e.target.tagName === 'A') {
+        const href = e.target.getAttribute('href');
+        if (!href) return;
+        
+        // Handle internal anchor links
+        if (href.startsWith('#')) {
+          e.preventDefault();
+          const targetId = href.substring(1);
+          const targetElement = this.preview.querySelector(`#${targetId}`);
+          if (targetElement) {
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+        // Handle external links - open in browser
+        else if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) {
+          e.preventDefault();
+          this.openExternalLink(href);
         }
       }
     };
@@ -1881,13 +1996,64 @@ class MarkdownViewer {
 
   }
   
+
+  
+  hasDuplicateTask(taskText) {
+    const currentContent = this.getEditorContent();
+    const lines = currentContent.split('\n');
+    let count = 0;
+    let inCodeBlock = false;
+    
+    for (const line of lines) {
+      // Check for code block boundaries
+      if (line.trim().startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      
+      // Skip lines inside code blocks
+      if (inCodeBlock) continue;
+      
+      if ((line.includes('- [ ]') || line.includes('- [x]') || line.includes('[ ]') || line.includes('[x]')) && line.includes(taskText)) {
+        count++;
+        if (count > 1) return true;
+      }
+    }
+    return false;
+  }
+  
+  showTaskConflictModal() {
+    const modal = document.getElementById('task-conflict-modal');
+    const okBtn = document.getElementById('task-conflict-ok');
+    
+    modal.style.display = 'flex';
+    
+    const handleOk = () => {
+      modal.style.display = 'none';
+      okBtn.removeEventListener('click', handleOk);
+    };
+    
+    okBtn.addEventListener('click', handleOk);
+  }
+  
   updateTaskInMarkdown(taskText, checked) {
     const currentContent = this.getEditorContent();
     const lines = currentContent.split('\n');
+    let inCodeBlock = false;
     
     let updated = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      
+      // Check for code block boundaries
+      if (line.trim().startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      
+      // Skip lines inside code blocks
+      if (inCodeBlock) continue;
+      
       if (line.includes(taskText)) {
         // Handle dash-prefixed tasks: - [ ] or - [x]
         if (line.includes('- [ ]') || line.includes('- [x]')) {
@@ -2582,6 +2748,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
     document.getElementById('md-toolbar-medium').classList.toggle('active', this.mdToolbarSize === 'medium');
     document.getElementById('md-toolbar-large').classList.toggle('active', this.mdToolbarSize === 'large');
     
+    document.getElementById('status-bar-small').classList.toggle('active', this.statusBarSize === 'small');
+    document.getElementById('status-bar-medium').classList.toggle('active', this.statusBarSize === 'medium');
+    document.getElementById('status-bar-large').classList.toggle('active', this.statusBarSize === 'large');
+    
 
     
     // Show/hide duration setting based on splash enabled state
@@ -2775,6 +2945,17 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
     document.getElementById('md-toolbar-large').addEventListener('click', () => {
       this.setMdToolbarSize('large');
+    });
+    
+    // Status bar size controls
+    document.getElementById('status-bar-small').addEventListener('click', () => {
+      this.setStatusBarSize('small');
+    });
+    document.getElementById('status-bar-medium').addEventListener('click', () => {
+      this.setStatusBarSize('medium');
+    });
+    document.getElementById('status-bar-large').addEventListener('click', () => {
+      this.setStatusBarSize('large');
     });
     
 
@@ -3315,6 +3496,20 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.closeHandlerUnlisten = null;
     }
     
+    // Cleanup scroll sync event handlers
+    if (this.previewScrollHandler) {
+      this.preview.removeEventListener('scroll', this.previewScrollHandler);
+      this.previewScrollHandler = null;
+    }
+    
+    if (this.previewPaneScrollHandler) {
+      const previewPane = document.querySelector('.preview-pane');
+      if (previewPane) {
+        previewPane.removeEventListener('scroll', this.previewPaneScrollHandler);
+      }
+      this.previewPaneScrollHandler = null;
+    }
+    
     // Cleanup other event handlers
     if (this.taskChangeHandler) {
       this.preview.removeEventListener('change', this.taskChangeHandler);
@@ -3644,6 +3839,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Apply page size and margins
     this.updatePageLayout();
     
+    // Re-setup scroll sync when layout changes
+    if (this.isInitialized) {
+      this.setupScrollSync();
+    }
+    
     // Centered layout applied
   }
 
@@ -3888,6 +4088,17 @@ Tip: You can also use HTML Export and then print from your browser.`;
   applyToolbarSizes() {
     document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
+  }
+  
+  setStatusBarSize(size) {
+    this.statusBarSize = size;
+    localStorage.setItem('markdownViewer_statusBarSize', size);
+    this.applyStatusBarSize();
+    this.updateSettingsDisplay();
+  }
+  
+  applyStatusBarSize() {
+    document.body.setAttribute('data-status-bar-size', this.statusBarSize);
   }
 
   setupMonacoMarkdownShortcuts() {

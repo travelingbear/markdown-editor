@@ -209,7 +209,7 @@
           <div id="welcome-page" class="welcome-page">
             <div class="welcome-content">
               <h1><img src="assets/icon.svg" alt="" class="favicon-icon"> Markdown Editor</h1>
-              <p class="welcome-subtitle">A powerful native markdown editor with live preview</p>
+              <p class="welcome-subtitle">A light, but powerful markdown editor with live preview</p>
               
               <div class="welcome-actions">
                 <button id="welcome-new-btn" class="welcome-btn primary">📄 Create New File</button>
@@ -538,9 +538,6 @@
                 <li>Three-mode interface (Code, Preview, Split)</li>
                 <li>Monaco Editor with syntax highlighting</li>
                 <li>Real-time preview with KaTeX math and Mermaid diagrams</li>
-                <li>Interactive task lists with state persistence</li>
-                <li>GitHub-style themes and export options</li>
-                <li>Native file operations and drag-drop support</li>
               </ul>
             </div>
             
@@ -592,23 +589,6 @@
     <script src="/main.js"></script>
   </body>
 </html>
-      <!-- Paste Modal -->
-      <div id="paste-modal" class="paste-modal" style="display: none;">
-        <div class="paste-overlay"></div>
-        <div class="paste-window">
-          <div class="paste-header">
-            <h2>Paste Content</h2>
-          </div>
-          <div class="paste-content">
-            <p>Edit the content below before pasting to avoid task conflicts:</p>
-            <textarea id="paste-content" class="paste-textarea" rows="10"></textarea>
-            <div class="paste-buttons">
-              <button id="paste-confirm-btn" class="paste-btn primary">Paste</button>
-              <button id="paste-cancel-btn" class="paste-btn">Cancel</button>
-            </div>
-          </div>
-        </div>
-      </div>
       <!-- Task Conflict Warning Modal -->
       <div id="task-conflict-modal" class="task-conflict-modal" style="display: none;">
         <div class="task-conflict-overlay"></div>

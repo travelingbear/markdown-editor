@@ -1292,8 +1292,51 @@ class MarkdownViewer {
       
     } catch (error) {
       console.error('[Preview] Error updating preview:', error);
-      console.error('[Preview] Error stack:', error.stack);
-      this.preview.innerHTML = `<p>Error rendering markdown: ${error.message}</p><pre>${error.stack}</pre>`;
+      this.showMarkdownErrorModal(error, markdown);
+      this.preview.innerHTML = '<p>⚠️ Markdown rendering error - see error dialog for details</p>';
+    }
+  }
+
+  showMarkdownErrorModal(error, markdown) {
+    const errorMessage = `Markdown Rendering Error
+
+The markdown content contains syntax that could not be processed:
+
+${error.message}
+
+This could be due to:
+• Unsupported markdown syntax
+• Malformed links or images
+• Invalid HTML tags
+• Special characters in URLs
+
+Please check your markdown syntax and try again.`;
+    
+    if (window.__TAURI__) {
+      window.__TAURI__.dialog.message(errorMessage, { title: 'Markdown Error', type: 'error' });
+    } else {
+      alert(errorMessage);
+    }
+  }
+
+  showLinkErrorModal(href, error) {
+    const errorMessage = `Link Error
+
+Failed to open link: ${href}
+
+Error: ${error.message}
+
+This could be due to:
+• Invalid URL format
+• Unsupported protocol
+• System restrictions
+
+Please check the link format and try again.`;
+    
+    if (window.__TAURI__) {
+      window.__TAURI__.dialog.message(errorMessage, { title: 'Link Error', type: 'error' });
+    } else {
+      alert(errorMessage);
     }
   }
 
@@ -2139,16 +2182,71 @@ class MarkdownViewer {
 
 
   async openExternalLink(href) {
+    // Strict validation - reject anything that doesn't meet standards
+    if (!href || typeof href !== 'string' || href.trim().length === 0) {
+      this.showLinkErrorModal(href, new Error('Empty or invalid link'));
+      return;
+    }
+    
+    const cleanHref = href.trim();
+    
+    // Only allow well-formed URLs
+    if (!this.isStrictlyValidUrl(cleanHref)) {
+      this.showLinkErrorModal(cleanHref, new Error('Invalid URL format - please use proper format like https://example.com or mailto:user@domain.com'));
+      return;
+    }
+    
     try {
       if (window.__TAURI__?.core?.invoke) {
-        await window.__TAURI__.core.invoke('plugin:opener|open_url', { url: href });
+        // Wrap Tauri call in additional safety
+        await Promise.race([
+          window.__TAURI__.core.invoke('plugin:opener|open_url', { url: cleanHref }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+        ]);
       } else {
-        window.open(href, '_blank');
+        window.open(cleanHref, '_blank');
       }
     } catch (error) {
       console.error('[Links] Error opening external link:', error);
-      window.open(href, '_blank');
+      this.showLinkErrorModal(cleanHref, error);
     }
+  }
+
+  isValidUrl(string) {
+    try {
+      // Basic validation for common protocols
+      if (string.startsWith('mailto:')) {
+        return string.includes('@') && string.length > 7;
+      }
+      if (string.startsWith('http://') || string.startsWith('https://')) {
+        new URL(string);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  isStrictlyValidUrl(string) {
+    try {
+      if (string.startsWith('mailto:')) {
+        // Strict email validation
+        const email = string.substring(7);
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+      }
+      if (string.startsWith('http://') || string.startsWith('https://')) {
+        const url = new URL(string);
+        return url.hostname.includes('.') && url.hostname.length > 3;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  looksLikeEmail(string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(string);
   }
 
   setupAnchorLinks() {
@@ -2171,24 +2269,55 @@ class MarkdownViewer {
     }
     
     this.anchorClickHandler = (e) => {
+      // Handle both direct links and image links
+      let linkElement = null;
+      let href = null;
+      
       if (e.target.tagName === 'A') {
-        const href = e.target.getAttribute('href');
-        if (!href) return;
-        
-        // Handle internal anchor links
-        if (href.startsWith('#')) {
-          e.preventDefault();
-          const targetId = href.substring(1);
-          const targetElement = this.preview.querySelector(`#${targetId}`);
-          if (targetElement) {
-            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        linkElement = e.target;
+        href = linkElement.getAttribute('href');
+      } else if (e.target.tagName === 'IMG' && e.target.parentElement.tagName === 'A') {
+        // Handle image inside link (clickable image)
+        linkElement = e.target.parentElement;
+        href = linkElement.getAttribute('href');
+      }
+      
+      if (!href || !linkElement) return;
+      
+      // Handle internal anchor links
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetId = href.substring(1);
+        const targetElement = this.preview.querySelector(`#${targetId}`);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+      // Handle external links - open in browser (including image links)
+      else if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || this.looksLikeEmail(href)) {
+        e.preventDefault();
+        // Always prevent default and show error for invalid links
+        try {
+          // Convert plain email to mailto format only if it's a valid email
+          let finalHref = href;
+          if (this.looksLikeEmail(href) && !href.startsWith('mailto:')) {
+            if (this.isStrictlyValidUrl(`mailto:${href}`)) {
+              finalHref = `mailto:${href}`;
+            } else {
+              this.showLinkErrorModal(href, new Error('Invalid email format - please use format: user@domain.com'));
+              return;
+            }
           }
+          this.openExternalLink(finalHref);
+        } catch (error) {
+          console.error('[Links] Error opening link:', error);
+          this.showLinkErrorModal(href, error);
         }
-        // Handle external links - open in browser
-        else if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')) {
-          e.preventDefault();
-          this.openExternalLink(href);
-        }
+      }
+      // Catch any other link types and show error
+      else if (href && href !== '#') {
+        e.preventDefault();
+        this.showLinkErrorModal(href, new Error('Unsupported link format - please use http://, https://, or mailto: links'));
       }
     };
     
@@ -3554,6 +3683,10 @@ Tip: You can also use HTML Export and then print from your browser.`;
       }
     }).catch(error => {
       console.error('[Performance] Preview update error:', error);
+      this.showMarkdownErrorModal(error, this.getEditorContent());
+      if (this.preview) {
+        this.preview.innerHTML = '<p>⚠️ Preview update failed - see error dialog</p>';
+      }
     });
   }
 
@@ -4961,6 +5094,38 @@ Tip: You can also use HTML Export and then print from your browser.`;
   hideSaveDropdown() {
     this.saveDropdownMenu.classList.remove('show');
     this.saveDropdownArrow.textContent = '▼';
+  }
+}
+
+// Global error handlers to prevent crashes
+window.addEventListener('error', (event) => {
+  console.error('[Global] Unhandled error:', event.error);
+  showGlobalErrorModal(event.error);
+  event.preventDefault();
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Global] Unhandled promise rejection:', event.reason);
+  showGlobalErrorModal(event.reason);
+  event.preventDefault();
+});
+
+function showGlobalErrorModal(error) {
+  const message = `Application Error
+
+An unexpected error occurred:
+${error?.message || error}
+
+The application will continue running, but some features may not work correctly.
+
+Please check your markdown syntax or restart the application if problems persist.`;
+  
+  if (window.__TAURI__?.dialog) {
+    window.__TAURI__.dialog.message(message, { title: 'Error', type: 'error' }).catch(() => {
+      alert(message);
+    });
+  } else {
+    alert(message);
   }
 }
 

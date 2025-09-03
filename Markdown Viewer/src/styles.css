@@ -2303,19 +2303,15 @@ body:has(.markdown-toolbar.pinned) .main-content {
   border-color: var(--accent-primary) !important;
 }
 
-/* Hide toolbar in non-code modes */
-.main-content.preview-mode .markdown-toolbar,
-.main-content.split-mode .markdown-toolbar {
+/* Hide toolbar in preview mode only */
+.main-content.preview-mode .markdown-toolbar {
   display: none !important;
 }
 
-/* Show toolbar only in code mode */
-.main-content.code-mode .markdown-toolbar {
+/* Show toolbar in code and split modes */
+.main-content.code-mode .markdown-toolbar,
+.main-content.split-mode .markdown-toolbar {
   display: block;
-}
-
-.main-content.split-mode .markdown-toolbar {
-  display: none !important;
 }
 
 /* Hide toolbar in distraction-free mode */

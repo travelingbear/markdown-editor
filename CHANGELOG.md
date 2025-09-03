@@ -5,6 +5,36 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2025-01-02
+
+### Added
+- **Collapsible Dropdown Toolbar**: Organized markdown toolbar with grouped dropdown menus
+  - Headings dropdown (H1, H2, H3)
+  - Links & Media dropdown (Link, Image, Table)
+  - Lists dropdown (Bullet, Numbered, Task lists)
+  - Code & Blocks dropdown (Inline Code, Code Block, Blockquote)
+  - Text Alignment dropdown (Left, Center, Right, Justify)
+- **Settings Button**: Added settings button to main toolbar for quick access
+- **Enhanced Status Bar**: Moved font size controls to status bar (Code mode only)
+
+### Enhanced
+- **Toolbar Organization**: Reduced clutter by grouping related formatting tools
+- **Icon Improvements**: Updated icons for better visual recognition (H, 🔗, ☑, <>, ≡)
+- **Consistent Styling**: Unified button sizes and hover colors (#5e60e7) across toolbars
+- **Native Tooltips**: Replaced custom CSS tooltips with native title attributes for better performance
+- **Status Bar Alignment**: Fixed horizontal alignment consistency between font size and zoom controls
+
+### Fixed
+- **Dropdown Z-index**: Resolved dropdown menus appearing behind Monaco editor
+- **Button Consistency**: Ensured all toolbar buttons have consistent vertical sizing
+- **Text Alignment**: Align-left now properly removes div wrappers from selected text
+- **Toolbar Spacing**: Optimized separator placement for logical grouping
+
+### Technical
+- **Dropdown Management**: Added JavaScript methods for dropdown state management
+- **CSS Optimization**: Improved dropdown positioning and responsive design
+- **Performance**: Reduced code complexity by using native browser features
+
 ## [2.1.3] - 2025-01-02
 
 ### Fixed

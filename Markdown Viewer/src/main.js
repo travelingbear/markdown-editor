@@ -624,6 +624,14 @@ class MarkdownViewer {
       });
     }
     
+    // Settings button in main toolbar
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.showEnhancedSettings();
+      });
+    }
+    
     // Help modal events
     if (this.helpCloseBtn) {
       this.helpCloseBtn.addEventListener('click', () => this.hideHelp());
@@ -4245,6 +4253,14 @@ Tip: You can also use HTML Export and then print from your browser.`;
       const shouldShow = this.currentMode === 'preview' && !this.isDistractionFree && hasDocument;
       this.zoomControls.style.display = shouldShow ? 'flex' : 'none';
     }
+    
+    // Show font size controls only in code mode
+    const fontSizeControls = document.getElementById('font-size-controls');
+    if (fontSizeControls) {
+      const hasDocument = this.currentFile || (this.welcomePage && this.welcomePage.style.display === 'none');
+      const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && hasDocument;
+      fontSizeControls.style.display = shouldShow ? 'flex' : 'none';
+    }
   }
   
   executeUndo() {
@@ -4393,6 +4409,12 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.fontSizeDecrease.addEventListener('click', (e) => {
         e.preventDefault();
         this.changeFontSize(-2);
+      });
+    }
+    if (this.fontSizeReset) {
+      this.fontSizeReset.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.resetFontSize();
       });
     }
     

@@ -51,8 +51,10 @@
               <button id="export-pdf-btn" class="dropdown-item">PDF</button>
             </div>
           </div>
-          <button id="distraction-btn" class="toolbar-btn">☐</button>
-          <button id="theme-btn" class="toolbar-btn">🌙</button>
+          <button id="distraction-btn" class="toolbar-btn" title="Toggle Distraction-Free Mode (F11)">☐</button>
+          <button id="theme-btn" class="toolbar-btn" title="Toggle Theme (Ctrl+T)">🌙</button>
+          <button id="settings-btn" class="toolbar-btn" title="Settings (Ctrl+,)">⚙</button>
+          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)">❓</button>
         </div>
       </div>
 
@@ -121,12 +123,7 @@
           </div>
           
 
-          <div class="toolbar-separator"></div>
-          <div class="toolbar-group font-size-group">
-            <button id="font-size-decrease" class="md-btn font-btn" title="Decrease Font Size">A-</button>
-            <span id="font-size-display" class="font-size-display">14px</span>
-            <button id="font-size-increase" class="md-btn font-btn" title="Increase Font Size">A+</button>
-          </div>
+
 
 
         </div>
@@ -184,11 +181,16 @@
           <span id="cursor-pos">Line 1, Col 1</span>
         </div>
         <div class="status-center">
-          <button id="help-status-btn" class="status-btn" title="Help (F1)">Help</button>
+          <div id="font-size-controls" class="font-size-controls" style="display: none;">
+            <button id="font-size-decrease" class="status-btn font-btn" title="Decrease Font Size">A-</button>
+            <span id="font-size-display" class="font-size-display">14px</span>
+            <button id="font-size-increase" class="status-btn font-btn" title="Increase Font Size">A+</button>
+            <button id="font-size-reset" class="status-btn font-btn" title="Reset Font Size">Reset</button>
+          </div>
           <div id="zoom-controls" class="zoom-controls" style="display: none;">
-            <button id="zoom-out" class="status-btn zoom-btn" title="Zoom Out (Ctrl+-)">🔍-</button>
+            <button id="zoom-out" class="status-btn zoom-btn" title="Zoom Out (Ctrl+-)">🔎︎−</button>
             <span id="zoom-display" class="zoom-display">100%</span>
-            <button id="zoom-in" class="status-btn zoom-btn" title="Zoom In (Ctrl+=)">🔍+</button>
+            <button id="zoom-in" class="status-btn zoom-btn" title="Zoom In (Ctrl+=)">🔎︎＋</button>
             <button id="zoom-reset" class="status-btn zoom-btn" title="Reset Zoom (Ctrl+0)">Reset</button>
           </div>
         </div>

@@ -394,7 +394,9 @@ body.centered-layout .preview-pane {
 }
 
 .status-center {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .status-right {
@@ -1766,39 +1768,7 @@ body.drag-over .main-content.split-mode::after {
   position: relative;
 }
 
-#distraction-btn:hover::after {
-  content: "Toggle Distraction-Free Mode (F11)";
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 1000;
-  border: 1px solid var(--border-primary);
-  margin-top: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
 
-#theme-btn:hover::after {
-  content: "Toggle Theme (Ctrl+T)";
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 1000;
-  border: 1px solid var(--border-primary);
-  margin-top: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
 
 /* Dark theme adjustments */
 [data-theme="dark"] .dropdown-menu {
@@ -2676,22 +2646,25 @@ body.distraction-free .markdown-toolbar {
   text-align: center;
   font-weight: 600;
   color: var(--accent-primary);
-  background: var(--bg-primary);
-  padding: 4px 6px;
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
   border-radius: 3px;
   border: 1px solid var(--border-primary);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 10px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .font-btn {
   min-width: 36px;
   font-weight: bold;
   font-size: 10px;
+}
+
+/* Font Size Controls */
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Zoom Controls */
@@ -2719,6 +2692,7 @@ body.distraction-free .markdown-toolbar {
   font-size: 10px;
   padding: 2px 6px;
   min-width: 32px;
+  font-weight: bold;
 }
 
 /* Preview Zoom Styles */
@@ -2954,8 +2928,8 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
 }
 
 .status-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--accent-primary);
+  background: #5e60e7;
+  color: white;
 }
 
 /* Welcome Action Buttons */

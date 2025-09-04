@@ -1,7 +1,7 @@
 # Markdown Editor
 
 <p align="center">
-  <img src="SplashScreen.gif" alt="Markdown Editor Splash Screen">
+  <img src="MarkdownEditorAboutImage.png" alt="Markdown Editor Splash Screen">
 </p>
 
 <p align="center">A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.</p>

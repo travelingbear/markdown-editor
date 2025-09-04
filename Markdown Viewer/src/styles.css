@@ -53,7 +53,7 @@ body {
   border-bottom: 1px solid var(--border-primary);
   min-height: 40px;
   position: relative;
-  z-index: 10000;
+  z-index: 10001;
   box-shadow: 0 -3px 4px 1px #080808;
 }
 
@@ -1380,11 +1380,11 @@ kbd {
   }
   
   /* Print-friendly colors and syntax highlighting */
-  * {
+  /* * {
     color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
+  } */
   
   /* Ensure syntax highlighting is visible in print */
   .hljs { 
@@ -2420,13 +2420,6 @@ body.distraction-free.code-mode #editor {
   }
   body.distraction-free.code-mode .editor-pane {
     height: calc(100vh - 16px);
-  }
-}
-
-@media (max-width: 1200px) {
-  body.distraction-free.preview-mode .preview-content {
-    /* margin: 60px 60px 52px 60px; */
-    /* max-width: none; */
   }
 }
 

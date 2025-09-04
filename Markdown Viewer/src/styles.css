@@ -1820,6 +1820,47 @@ body.retro-theme .retro-checkbox {
   cursor: pointer;
 }
 
+/* Test sound button styling */
+.test-sound-btn {
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  min-width: 60px !important;
+  background: var(--accent-primary) !important;
+  color: white !important;
+  border-color: var(--accent-primary) !important;
+}
+
+.test-sound-btn:hover {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
+
+/* Retro theme test button */
+body.retro-theme .test-sound-btn {
+  background: #000080 !important;
+  color: #ffffff !important;
+  border: 2px outset #000080 !important;
+}
+
+body.retro-theme .test-sound-btn:hover {
+  background: #0000ff !important;
+  border: 2px outset #0000ff !important;
+}
+
+body.retro-theme .test-sound-btn:active {
+  border: 2px inset #000080 !important;
+}
+
+/* Adjust retro sound setting layout */
+.retro-sound-setting {
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.retro-sound-setting label {
+  flex: 1 !important;
+}
+
 body.retro-theme .retro-checkbox:checked {
   background: #ffffff;
   border: 2px inset #c0c0c0;

@@ -16,7 +16,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Load jsPDF with AMD conflict prevention -->
+    <script>
+      // Temporarily disable AMD to prevent conflicts with jsPDF
+      if (typeof define === 'function' && define.amd) {
+        window.__amdBackup = define;
+        delete window.define;
+      }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+      // Restore AMD after jsPDF loads
+      if (window.__amdBackup) {
+        window.define = window.__amdBackup;
+        delete window.__amdBackup;
+      }
+    </script>
   </head>
 
   <body>
@@ -53,8 +68,8 @@
           </div>
           <button id="distraction-btn" class="toolbar-btn" title="Toggle Distraction-Free Mode (F11)">🔳</button>
           <button id="theme-btn" class="toolbar-btn" title="Toggle Theme (Ctrl+T)">🌙</button>
-          <button id="settings-btn" class="toolbar-btn" title="Settings (Ctrl+,)">⚙️</button>
-          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)">❔</button>
+          <button id="settings-btn" class="toolbar-btn" title="Settings (Ctrl+,)">⚙</button>
+          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)">❓</button>
         </div>
       </div>
 
@@ -303,6 +318,7 @@
                   <input type="checkbox" id="retro-sound-checkbox" class="retro-checkbox" checked>
                   Startup Sound
                 </label>
+                <button id="test-startup-sound-btn" class="setting-btn test-sound-btn" title="Test startup sound">🔊 Test</button>
               </div>
             </div>
             
@@ -549,7 +565,7 @@
           <div class="about-content">
             <div class="about-logo">
               <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
-              <p class="version">Version 2.2.0</p>
+              <p class="version">Version 2.2.1</p>
             </div>
             
             <div class="about-description">
@@ -605,6 +621,12 @@
       </div>
 
     </div>
+    
+    <!-- Load debug script for IPC issues -->
+    <script src="/debug-ipc.js"></script>
+    
+    <!-- Load safe IPC wrapper -->
+    <script src="/ipc-wrapper.js"></script>
     
     <!-- Load performance optimizer -->
     <script src="/performance-optimizer.js"></script>

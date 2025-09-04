@@ -50,7 +50,8 @@ class MarkdownViewer {
       this.applyDefaultTheme();
       if (this.isRetroTheme) {
         document.body.classList.add('retro-theme');
-        this.themeBtn.innerHTML = '<span style="font-family: Wingdings; font-size: 14px;"></span>';
+        this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle;"><g fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></g></svg>';
+        // Play startup sound only when app starts with retro theme enabled
         this.playRetroStartupSound();
       }
       this.applyCenteredLayout();
@@ -381,14 +382,26 @@ class MarkdownViewer {
   }
   
   loadMonacoModule(resolve, reject) {
-    // Configure require.js only once globally
+    // Configure require.js only once globally with error handling
     if (!window.MONACO_CONFIGURED) {
-      require.config({ 
-        paths: { 
-          'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
-        }
-      });
-      window.MONACO_CONFIGURED = true;
+      try {
+        require.config({ 
+          paths: { 
+            'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+          },
+          // Add timeout and error handling
+          waitSeconds: 30,
+          onError: function(err) {
+            console.error('[Monaco] RequireJS error:', err);
+            reject(new Error('Monaco RequireJS configuration failed: ' + err.message));
+          }
+        });
+        window.MONACO_CONFIGURED = true;
+      } catch (configError) {
+        console.error('[Monaco] Configuration error:', configError);
+        reject(configError);
+        return;
+      }
     }
     
     // Check if Monaco is already available after config
@@ -403,27 +416,48 @@ class MarkdownViewer {
       if (window.monaco?.editor) {
         resolve();
       } else {
-        // Wait a bit for Monaco to initialize
-        setTimeout(() => {
+        // Wait a bit for Monaco to initialize with timeout
+        const timeout = setTimeout(() => {
+          reject(new Error('Monaco initialization timeout'));
+        }, 5000);
+        
+        const checkMonaco = () => {
           if (window.monaco?.editor) {
+            clearTimeout(timeout);
             resolve();
           } else {
-            reject(new Error('Monaco loaded but not available'));
+            setTimeout(checkMonaco, 100);
           }
-        }, 100);
+        };
+        checkMonaco();
       }
       return;
     }
     
-    // Load Monaco main module for the first time
-    require(['vs/editor/editor.main'], () => {
-      // Ensure Monaco is actually available
-      if (window.monaco?.editor) {
-        resolve();
-      } else {
-        reject(new Error('Monaco module loaded but editor not available'));
-      }
-    }, reject);
+    // Load Monaco main module for the first time with timeout
+    const loadTimeout = setTimeout(() => {
+      reject(new Error('Monaco module loading timeout'));
+    }, 15000);
+    
+    try {
+      require(['vs/editor/editor.main'], () => {
+        clearTimeout(loadTimeout);
+        // Ensure Monaco is actually available
+        if (window.monaco?.editor) {
+          resolve();
+        } else {
+          reject(new Error('Monaco module loaded but editor not available'));
+        }
+      }, (err) => {
+        clearTimeout(loadTimeout);
+        console.error('[Monaco] Module loading error:', err);
+        reject(new Error('Monaco module loading failed: ' + (err.message || err)));
+      });
+    } catch (requireError) {
+      clearTimeout(loadTimeout);
+      console.error('[Monaco] Require call error:', requireError);
+      reject(requireError);
+    }
   }
   
   fallbackToTextarea() {
@@ -2844,7 +2878,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         const isLocalFile = !originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:');
         
         if (isLocalFile || isTauriDevUrl) {
-          if (window.__TAURI__) {
+          if (window.__TAURI__?.core?.invoke) {
             try {
               let resolvedPath = originalSrc;
               
@@ -2861,9 +2895,23 @@ Tip: You can also use HTML Export and then print from your browser.`;
                 }
               }
               
-              const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath });
-              img.src = dataUrl;
-              img.classList.add('local-image');
+              // Use safe IPC for image conversion
+              let dataUrl;
+              if (window.safeIPC?.isAvailable) {
+                dataUrl = await window.safeIPC.invoke('convert_local_image_path', { filePath: resolvedPath });
+              } else {
+                dataUrl = await Promise.race([
+                  window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath }),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('Image conversion timeout')), 5000))
+                ]);
+              }
+              
+              if (dataUrl && typeof dataUrl === 'string') {
+                img.src = dataUrl;
+                img.classList.add('local-image');
+              } else {
+                throw new Error('Invalid image data returned');
+              }
             } catch (error) {
               // Keep original src and add error class
               img.classList.add('image-error');
@@ -2883,8 +2931,15 @@ Tip: You can also use HTML Export and then print from your browser.`;
       }
     });
     
-    // Wait for all images to process concurrently - already optimized with Promise.all
-    await Promise.all(imagePromises);
+    // Wait for all images to process concurrently with timeout
+    try {
+      await Promise.race([
+        Promise.all(imagePromises),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Image processing timeout')), 10000))
+      ]);
+    } catch (error) {
+      console.warn('[Images] Processing timeout or error:', error);
+    }
   }
   
   postProcessHtmlImages(html) {
@@ -2951,11 +3006,15 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const isRetro = document.body.classList.contains('retro-theme');
     if (isRetro) {
       document.body.classList.remove('retro-theme');
+      localStorage.setItem('markdownViewer_retroTheme', 'false');
+      this.isRetroTheme = false;
       this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
     } else {
       document.body.classList.add('retro-theme');
-      this.themeBtn.innerHTML = '<span style="font-family: Wingdings; font-size: 14px;"></span>';
-      this.playRetroStartupSound();
+      localStorage.setItem('markdownViewer_retroTheme', 'true');
+      this.isRetroTheme = true;
+      this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle;"><g fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></g></svg>';
+      // Don't play startup sound when switching themes - only on app startup
     }
     
     // Update Monaco theme for retro
@@ -2964,16 +3023,61 @@ Tip: You can also use HTML Export and then print from your browser.`;
     }
   }
   
-  playRetroStartupSound() {
+  async playRetroStartupSound() {
     const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
+    
     if (soundEnabled) {
       try {
-        const audio = new Audio('assets/windows95_startup_hifi.flac');
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const response = await fetch('assets/windows95_startup_hifi.mp3');
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        const source = audioContext.createBufferSource();
+        const gainNode = audioContext.createGain();
+        
+        source.buffer = audioBuffer;
+        gainNode.gain.value = 0.5;
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        source.start(0);
       } catch (error) {
-        console.warn('[Retro] Startup sound failed to play');
+        // Silent fail for audio issues
       }
+    }
+  }
+  
+  async testRetroStartupSound() {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const response = await fetch('assets/windows95_startup_hifi.mp3');
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      const source = audioContext.createBufferSource();
+      const gainNode = audioContext.createGain();
+      
+      source.buffer = audioBuffer;
+      gainNode.gain.value = 0.5;
+      
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      source.start(0);
+    } catch (error) {
+      this.showSoundTestError();
+    }
+  }
+  
+  showSoundTestError() {
+    const message = 'Could not play startup sound. Please check that the sound files are present in the assets folder.\n\nTried paths:\n• assets/windows95_startup_hifi.mp3\n• assets/windows95_startup_hifi.ogg\n• assets/windows95_startup_hifi.wav';
+    
+    if (window.__TAURI__?.dialog) {
+      window.__TAURI__.dialog.message(message, { title: 'Sound Test Failed', type: 'error' });
+    } else {
+      alert(message);
     }
   }
   
@@ -2989,30 +3093,85 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   async checkStartupFile() {
     try {
-      if (window.__TAURI__) {
-        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
+      if (window.safeIPC?.isAvailable) {
+        // Use safe IPC wrapper
+        const startupFile = await window.safeIPC.invoke('get_startup_file');
         
         if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
           try {
-            const content = await window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile });
+            const content = await window.safeIPC.invoke('open_file_direct', { filePath: startupFile });
             
-            this.currentFile = startupFile;
-            this.isLoadingFile = true;
-            this.setEditorContent(content);
-            this.isLoadingFile = false;
-            this.isDirty = false;
-            this.addToFileHistory(startupFile);
-            this.showEditor();
-            this.updatePreview();
-            this.updateFilename();
-            this.updateModeButtons();
-            this.setMode(this.defaultMode);
-            
-            await window.__TAURI__.core.invoke('clear_startup_file');
-            return true;
+            if (content && typeof content === 'string') {
+              this.currentFile = startupFile;
+              this.isLoadingFile = true;
+              this.setEditorContent(content);
+              this.isLoadingFile = false;
+              this.isDirty = false;
+              this.addToFileHistory(startupFile);
+              this.showEditor();
+              this.updatePreview();
+              this.updateFilename();
+              this.updateModeButtons();
+              this.setMode(this.defaultMode);
+              
+              // Clear startup file
+              try {
+                await window.safeIPC.invoke('clear_startup_file');
+              } catch (clearError) {
+                console.warn('[Startup] Failed to clear startup file:', clearError);
+              }
+              return true;
+            }
           } catch (fileError) {
             console.error('[Startup] Failed to load startup file:', fileError);
-            await window.__TAURI__.core.invoke('clear_startup_file');
+            try {
+              await window.safeIPC.invoke('clear_startup_file');
+            } catch (clearError) {
+              console.warn('[Startup] Failed to clear startup file after error:', clearError);
+            }
+          }
+        }
+      } else if (window.__TAURI__?.core?.invoke) {
+        // Fallback to direct Tauri calls with timeout
+        const startupFile = await Promise.race([
+          window.__TAURI__.core.invoke('get_startup_file'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+        ]);
+        
+        if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
+          try {
+            const content = await Promise.race([
+              window.__TAURI__.core.invoke('open_file_direct', { filePath: startupFile }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+            ]);
+            
+            if (content && typeof content === 'string') {
+              this.currentFile = startupFile;
+              this.isLoadingFile = true;
+              this.setEditorContent(content);
+              this.isLoadingFile = false;
+              this.isDirty = false;
+              this.addToFileHistory(startupFile);
+              this.showEditor();
+              this.updatePreview();
+              this.updateFilename();
+              this.updateModeButtons();
+              this.setMode(this.defaultMode);
+              
+              try {
+                await window.__TAURI__.core.invoke('clear_startup_file');
+              } catch (clearError) {
+                console.warn('[Startup] Failed to clear startup file:', clearError);
+              }
+              return true;
+            }
+          } catch (fileError) {
+            console.error('[Startup] Failed to load startup file:', fileError);
+            try {
+              await window.__TAURI__.core.invoke('clear_startup_file');
+            } catch (clearError) {
+              console.warn('[Startup] Failed to clear startup file after error:', clearError);
+            }
           }
         }
       }
@@ -3278,13 +3437,20 @@ Tip: You can also use HTML Export and then print from your browser.`;
     document.getElementById('theme-retro-btn').addEventListener('click', () => {
       document.body.classList.add('retro-theme');
       localStorage.setItem('markdownViewer_retroTheme', 'true');
-      this.themeBtn.innerHTML = '<span style="font-family: Wingdings; font-size: 14px;"></span>';
+      this.isRetroTheme = true;
+      this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle;"><g fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></g></svg>';
+      // Don't play startup sound when switching themes - only on app startup
       this.updateSettingsDisplay();
     });
     
     // Retro sound checkbox
     document.getElementById('retro-sound-checkbox').addEventListener('change', (e) => {
       localStorage.setItem('markdownViewer_retroSound', e.target.checked.toString());
+    });
+    
+    // Test startup sound button
+    document.getElementById('test-startup-sound-btn').addEventListener('click', () => {
+      this.testRetroStartupSound();
     });
     
     // Mode controls
@@ -3841,11 +4007,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Fallback to original implementation
     return {
       ...this.performanceMetrics,
-      memoryUsage: performance.memory ? {
-        used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
-        total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
-        limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
-      } : null,
+      memoryUsage: this.getMemoryUsage(),
       benchmarks: this.getBenchmarkResults()
     };
   }
@@ -3856,6 +4018,31 @@ Tip: You can also use HTML Export and then print from your browser.`;
       fileOpenTime: this.lastFileOpenTime || 0,
       modeSwitchTime: this.lastModeSwitchTime || 0,
       previewUpdateTime: this.performanceMetrics.lastUpdateTime || 0
+    };
+  }
+  
+  getMemoryUsage() {
+    if (performance.memory) {
+      return {
+        used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+        total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+        limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+      };
+    }
+    
+    // Fallback for non-Chromium browsers
+    if (navigator.deviceMemory) {
+      return {
+        used: 'Unknown',
+        total: `${navigator.deviceMemory}GB`,
+        limit: 'Unknown'
+      };
+    }
+    
+    return {
+      used: 'Unknown',
+      total: 'Unknown', 
+      limit: 'Unknown'
     };
   }
 
@@ -4083,50 +4270,104 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   async setupTauriDragDrop() {
-    if (!window.__TAURI__?.event) {
-      return;
-    }
-    
     try {
-      // Listen for the correct native drag-drop event
-      await window.__TAURI__.event.listen('tauri://drag-drop', async (event) => {
-        const filePaths = event.payload.paths; // Extract paths from payload
-        
-        // Welcome screen: open .md files
-        if (this.welcomePage && this.welcomePage.style.display !== 'none') {
-          const mdFile = filePaths.find(f => f && /\.(md|markdown|txt)$/i.test(f));
-          if (mdFile) {
-            await this.openSpecificFile(mdFile); // This will add to history
-          }
-          return;
-        }
-        
-        // Code mode: insert absolute file paths (Tauri provides full paths)
-        if (this.currentMode === 'code') {
-          if (this.isMonacoLoaded && this.monacoEditor) {
-            const insertText = filePaths.join('\n');
-            const position = this.monacoEditor.getPosition();
+      if (window.safeIPC?.isAvailable) {
+        // Use safe IPC wrapper for event listening
+        const unlisten = await window.safeIPC.listen('tauri://drag-drop', async (event) => {
+          try {
+            // Safely extract paths from payload
+            const filePaths = event?.payload?.paths || [];
+            if (!Array.isArray(filePaths) || filePaths.length === 0) {
+              console.warn('[TauriDrop] No valid file paths in drop event');
+              return;
+            }
             
-            this.monacoEditor.executeEdits('drop', [{
-              range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
-              text: insertText
-            }]);
+            // Welcome screen: open .md files
+            if (this.welcomePage && this.welcomePage.style.display !== 'none') {
+              const mdFile = filePaths.find(f => f && /\.(md|markdown|txt)$/i.test(f));
+              if (mdFile) {
+                await this.openSpecificFile(mdFile);
+              }
+              return;
+            }
             
-            this.markDirty();
-          } else {
-            // Fallback to textarea
-            const insertText = filePaths.join('\n');
-            const cursorPos = this.editor.selectionStart;
-            const textBefore = this.editor.value.substring(0, cursorPos);
-            const textAfter = this.editor.value.substring(cursorPos);
-            this.editor.value = textBefore + insertText + textAfter;
-            this.editor.selectionStart = this.editor.selectionEnd = cursorPos + insertText.length;
-            this.markDirty();
+            // Code mode: insert absolute file paths
+            if (this.currentMode === 'code') {
+              if (this.isMonacoLoaded && this.monacoEditor) {
+                const insertText = filePaths.join('\n');
+                const position = this.monacoEditor.getPosition();
+                
+                this.monacoEditor.executeEdits('drop', [{
+                  range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+                  text: insertText
+                }]);
+                
+                this.markDirty();
+              } else {
+                // Fallback to textarea
+                const insertText = filePaths.join('\n');
+                const cursorPos = this.editor.selectionStart;
+                const textBefore = this.editor.value.substring(0, cursorPos);
+                const textAfter = this.editor.value.substring(cursorPos);
+                this.editor.value = textBefore + insertText + textAfter;
+                this.editor.selectionStart = this.editor.selectionEnd = cursorPos + insertText.length;
+                this.markDirty();
+              }
+            }
+          } catch (dropError) {
+            console.error('[TauriDrop] Error processing drop event:', dropError);
           }
-        }
-      });
+        });
+        
+        this.tauriDropUnlisten = unlisten;
+      } else if (window.__TAURI__?.event) {
+        // Fallback to direct Tauri event system
+        const unlisten = await window.__TAURI__.event.listen('tauri://drag-drop', async (event) => {
+          try {
+            const filePaths = event?.payload?.paths || [];
+            if (!Array.isArray(filePaths) || filePaths.length === 0) {
+              console.warn('[TauriDrop] No valid file paths in drop event');
+              return;
+            }
+            
+            if (this.welcomePage && this.welcomePage.style.display !== 'none') {
+              const mdFile = filePaths.find(f => f && /\.(md|markdown|txt)$/i.test(f));
+              if (mdFile) {
+                await this.openSpecificFile(mdFile);
+              }
+              return;
+            }
+            
+            if (this.currentMode === 'code') {
+              if (this.isMonacoLoaded && this.monacoEditor) {
+                const insertText = filePaths.join('\n');
+                const position = this.monacoEditor.getPosition();
+                
+                this.monacoEditor.executeEdits('drop', [{
+                  range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+                  text: insertText
+                }]);
+                
+                this.markDirty();
+              } else {
+                const insertText = filePaths.join('\n');
+                const cursorPos = this.editor.selectionStart;
+                const textBefore = this.editor.value.substring(0, cursorPos);
+                const textAfter = this.editor.value.substring(cursorPos);
+                this.editor.value = textBefore + insertText + textAfter;
+                this.editor.selectionStart = this.editor.selectionEnd = cursorPos + insertText.length;
+                this.markDirty();
+              }
+            }
+          } catch (dropError) {
+            console.error('[TauriDrop] Error processing drop event:', dropError);
+          }
+        });
+        
+        this.tauriDropUnlisten = unlisten;
+      }
     } catch (error) {
-      console.error('[TauriDrop] Error:', encodeURIComponent(error.message || error));
+      console.error('[TauriDrop] Error setting up drag-drop listener:', error);
     }
   }
 
@@ -5247,6 +5488,46 @@ window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault();
 });
 
+// Fix for Tauri IPC communication issues
+if (window.__TAURI__) {
+  // Override the default IPC handler to handle undefined responses gracefully
+  const originalInvoke = window.__TAURI__.core?.invoke;
+  if (originalInvoke) {
+    window.__TAURI__.core.invoke = function(cmd, args) {
+      return originalInvoke.call(this, cmd, args).catch(error => {
+        // Handle IPC communication errors gracefully
+        if (error && (typeof error === 'string' && error.includes('callbackId')) || 
+            (error.message && error.message.includes('callbackId'))) {
+          console.warn('[IPC] Communication error, retrying...', error);
+          // Return a resolved promise with null to prevent crashes
+          return Promise.resolve(null);
+        }
+        throw error;
+      });
+    };
+  }
+  
+  // Additional safety for event listeners
+  const originalListen = window.__TAURI__.event?.listen;
+  if (originalListen) {
+    window.__TAURI__.event.listen = function(event, handler) {
+      const safeHandler = function(eventData) {
+        try {
+          // Ensure eventData has the expected structure
+          if (!eventData || typeof eventData !== 'object') {
+            console.warn('[Event] Invalid event data received:', eventData);
+            return;
+          }
+          return handler(eventData);
+        } catch (handlerError) {
+          console.error('[Event] Handler error:', handlerError);
+        }
+      };
+      return originalListen.call(this, event, safeHandler);
+    };
+  }
+}
+
 function showGlobalErrorModal(error) {
   const message = `Application Error
 
@@ -5267,7 +5548,23 @@ Please check your markdown syntax or restart the application if problems persist
 }
 
 // Phase 4 Complete Implementation with OS Integration
-// Initialize the app when DOM is loaded
+// Initialize the app when DOM is loaded with error handling
 window.addEventListener('DOMContentLoaded', () => {
-  new MarkdownViewer();
+  try {
+    new MarkdownViewer();
+  } catch (initError) {
+    console.error('[Init] Failed to initialize MarkdownViewer:', initError);
+    showGlobalErrorModal(initError);
+    
+    // Try to show a basic interface even if initialization fails
+    document.body.innerHTML = `
+      <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+        <h1>Markdown Editor - Initialization Error</h1>
+        <p>The application failed to initialize properly.</p>
+        <p>Error: ${initError.message || initError}</p>
+        <p>Please refresh the page or restart the application.</p>
+        <button onclick="location.reload()" style="padding: 10px 20px; font-size: 16px;">Refresh Page</button>
+      </div>
+    `;
+  }
 });

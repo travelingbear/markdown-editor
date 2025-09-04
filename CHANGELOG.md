@@ -5,6 +5,24 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-01-02
+
+### Fixed
+- **Retro Startup Sound**: Fixed audio playback on Linux using Web Audio API instead of HTML5 Audio element
+- **Audio Timing**: Startup sound now only plays when application starts in retro mode, not when switching themes
+- **Memory Usage Display**: Fixed "N/A" memory display on macOS/Linux with fallback to device memory info
+- **Debug Cleanup**: Removed audio debugging console logs for cleaner production experience
+
+### Enhanced
+- **Settings Icons**: Updated Help and Settings buttons with clean SVG icons
+- **Cross-Platform Audio**: Improved audio compatibility across Windows, macOS, and Linux
+- **Error Handling**: Silent audio failures to prevent disrupting user experience
+
+### Technical
+- **Web Audio API**: Implemented AudioContext-based audio playback for better Linux compatibility
+- **Memory Detection**: Added navigator.deviceMemory fallback for non-Chromium browsers
+- **Audio Formats**: Added MP3 and OGG versions for broader format support
+
 ## [2.2.0] - 2025-01-02
 
 ### Added

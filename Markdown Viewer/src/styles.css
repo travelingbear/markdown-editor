@@ -1494,6 +1494,15 @@ body.retro-theme .dropdown-item,
 body.retro-theme .settings-window,
 body.retro-theme .help-window,
 body.retro-theme .about-window,
+body.retro-theme .md-btn,
+body.retro-theme .status-btn,
+body.retro-theme .welcome-btn,
+body.retro-theme .setting-btn,
+body.retro-theme .dropdown-menu,
+body.retro-theme .dropdown-item,
+body.retro-theme .settings-window,
+body.retro-theme .help-window,
+body.retro-theme .about-window,
 body.retro-theme .file-history-item,
 body.retro-theme .shortcut {
   background: #c0c0c0;
@@ -1506,6 +1515,13 @@ body.retro-theme .shortcut {
   border-radius: 0;
   padding: 4px 8px;
   box-shadow: none;
+}
+
+/* Special styling for file history items in retro mode */
+body.retro-theme .file-history-item {
+  background: #ffffff;
+  border: 1px solid #808080;
+  outline: none;
 }
 
 body.retro-theme .toolbar-btn:hover,
@@ -1575,12 +1591,32 @@ body.retro-theme .monaco-editor .mtk1 {
   color: #000000 !important;
 }
 
+/* Make blue text darker in retro mode Monaco editor */
+body.retro-theme .monaco-editor .mtk12,
+body.retro-theme .monaco-editor .mtk4,
+body.retro-theme .monaco-editor .mtk22 {
+  color: #000080 !important;
+}
+
 body.retro-theme .monaco-editor .margin {
   background-color: #e0e0e0 !important;
 }
 
 body.retro-theme .main-content {
   background: #c0c0c0;
+}
+
+/* Distraction-free mode backgrounds for retro theme */
+body.retro-theme.distraction-free.code-mode .main-content {
+  background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.preview-mode .main-content {
+  background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.preview-mode .preview-content {
+  background: #ffffff !important;
 }
 
 body.retro-theme .editor-pane,
@@ -1609,6 +1645,11 @@ body.retro-theme.split-mode .preview-content {
 }
 
 body.retro-theme.distraction-free.split-mode .preview-content {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+body.retro-theme.distraction-free .preview-content {
   background: #ffffff !important;
   color: #000000 !important;
 }
@@ -3047,7 +3088,6 @@ body.distraction-free .markdown-toolbar {
 
 /* Preview Zoom Styles */
 .preview-content {
-  --zoom-scale: 1;
   transform: scale(var(--zoom-scale));
   transform-origin: top center;
   width: calc(100% / var(--zoom-scale));

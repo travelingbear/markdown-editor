@@ -1347,6 +1347,9 @@ class MarkdownViewer {
       // Apply syntax highlighting to code blocks
       this.applySyntaxHighlighting();
       
+      // Setup code block buttons after syntax highlighting
+      this.setupCodeBlockButtons();
+      
       // Process images for local file conversion (may cause brief flicker on first load)
       await this.processImages();
       
@@ -2845,11 +2848,80 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Apply highlight.js syntax highlighting to code blocks
     if (typeof hljs !== 'undefined') {
       this.preview.querySelectorAll('pre code').forEach((block) => {
+        // Clear any existing highlighting to prevent security warnings
+        if (block.classList.contains('hljs')) {
+          block.classList.remove('hljs');
+          block.removeAttribute('data-highlighted');
+          // Remove all hljs-* classes
+          const classes = Array.from(block.classList);
+          classes.forEach(cls => {
+            if (cls.startsWith('hljs-')) {
+              block.classList.remove(cls);
+            }
+          });
+        }
+        
+        // Apply highlighting
         hljs.highlightElement(block);
+        block.setAttribute('data-highlighted', 'yes');
       });
     } else {
       console.warn('[Syntax] highlight.js not loaded');
     }
+  }
+
+  setupCodeBlockButtons() {
+    // Only add buttons in preview mode and not in distraction-free mode
+    if (this.currentMode !== 'preview' || this.isDistractionFree) return;
+    
+    this.preview.querySelectorAll('pre').forEach((pre) => {
+      // Skip if buttons already exist
+      if (pre.querySelector('.code-block-buttons')) return;
+      
+      const codeElement = pre.querySelector('code');
+      if (!codeElement) return;
+      
+      // Get text content (works with both plain and highlighted code)
+      const originalText = codeElement.textContent || codeElement.innerText;
+      
+      // Create button container
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'code-block-buttons';
+      
+      // Create copy button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'code-btn copy-btn';
+      copyBtn.textContent = 'Copy';
+      copyBtn.title = 'Copy code';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(originalText).then(() => {
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => copyBtn.textContent = 'Copy', 1000);
+        });
+      });
+      
+      // Create break line button
+      const breakBtn = document.createElement('button');
+      breakBtn.className = 'code-btn break-btn';
+      breakBtn.textContent = 'Wrap';
+      breakBtn.title = 'Toggle line wrapping';
+      breakBtn.addEventListener('click', () => {
+        const isWrapped = codeElement.style.whiteSpace === 'pre-wrap';
+        if (isWrapped) {
+          codeElement.style.whiteSpace = '';
+          codeElement.style.wordBreak = '';
+          breakBtn.textContent = 'Wrap';
+        } else {
+          codeElement.style.whiteSpace = 'pre-wrap';
+          codeElement.style.wordBreak = 'break-word';
+          breakBtn.textContent = 'Unwrap';
+        }
+      });
+      
+      buttonContainer.appendChild(copyBtn);
+      buttonContainer.appendChild(breakBtn);
+      pre.appendChild(buttonContainer);
+    });
   }
 
   async processImages() {

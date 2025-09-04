@@ -733,6 +733,11 @@ body.centered-layout .preview-pane {
   color: #d2a8ff !important;
 }
 
+/* Retro theme hljs styling */
+body.retro-theme .preview-content pre code.hljs {
+  background-color: #ebebeb !important;
+}
+
 /* Enhanced Tables */
 .preview-content table {
   border-spacing: 0;
@@ -771,6 +776,62 @@ body.centered-layout .preview-pane {
   display: block;
   overflow-x: auto;
   padding: 0;
+}
+
+/* Code Block Buttons */
+.code-block-buttons {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.preview-content pre:hover .code-block-buttons {
+  opacity: 1;
+}
+
+.code-btn {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.code-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+[data-theme="dark"] .code-btn {
+  background: rgba(255, 255, 255, 0.7);
+  color: black;
+}
+
+[data-theme="dark"] .code-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+body.retro-theme .code-btn {
+  background: #c0c0c0;
+  color: #000000;
+  border: 1px outset #c0c0c0;
+  font-family: 'MS Sans Serif', sans-serif;
+}
+
+body.retro-theme .code-btn:hover {
+  background: #e0e0e0;
+  border: 1px outset #e0e0e0;
+}
+
+body.retro-theme .code-btn:active {
+  border: 1px inset #c0c0c0;
 }
 
 /* Image Support - Including GIFs */
@@ -1467,6 +1528,10 @@ body.retro-theme .markdown-toolbar {
   box-shadow: none;
 }
 
+body.retro-theme .status-bar {
+  border-top: 3px outset #cdcdcd;
+}
+
 body.retro-theme .toolbar-btn,
 body.retro-theme .mode-btn {
   background: #c0c0c0;
@@ -1838,6 +1903,18 @@ body.retro-theme ::-webkit-scrollbar-button {
   box-shadow: -1px -1px 0 #404040, 1px 1px 0 #ffffff, inset -1px -1px 0 #a0a0a0, inset 1px 1px 0 #e0e0e0;
   width: 18px;
   height: 18px;
+}
+
+body.retro-theme ::-webkit-scrollbar-button:start:decrement {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><polygon points="4,2 2,6 6,6" fill="%23000000"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+body.retro-theme ::-webkit-scrollbar-button:end:increment {
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8"><polygon points="4,6 2,2 6,2" fill="%23000000"/></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 body.retro-theme ::-webkit-scrollbar-button:hover {
@@ -2329,7 +2406,8 @@ body.drag-over .main-content.split-mode::after {
 
 /* Distraction-Free Mode Styles */
 body.distraction-free .toolbar,
-body.distraction-free .status-bar {
+body.distraction-free .status-bar,
+body.distraction-free .code-block-buttons {
   display: none !important;
 }
 

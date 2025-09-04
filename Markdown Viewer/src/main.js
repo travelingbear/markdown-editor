@@ -6,6 +6,7 @@ class MarkdownViewer {
     this.currentFile = null;
     this.isDirty = false;
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+    this.isRetroTheme = localStorage.getItem('markdownViewer_retroTheme') === 'true';
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
     this.currentMode = 'preview';
     this.monacoEditor = null;
@@ -47,6 +48,11 @@ class MarkdownViewer {
       this.updateCursorPosition();
       this.updateModeButtons();
       this.applyDefaultTheme();
+      if (this.isRetroTheme) {
+        document.body.classList.add('retro-theme');
+        this.themeBtn.innerHTML = '<span style="font-family: Wingdings; font-size: 14px;"></span>';
+        this.playRetroStartupSound();
+      }
       this.applyCenteredLayout();
       this.updateFileHistoryDisplay();
       this.initializeMarkdownToolbar();
@@ -2906,13 +2912,27 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   toggleTheme() {
-    this.theme = this.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', this.theme);
-    this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
-    
-    // Update Monaco theme
-    if (this.isMonacoLoaded && this.monacoEditor) {
-      monaco.editor.setTheme(this.theme === 'dark' ? 'vs-dark' : 'vs');
+    const isRetro = document.body.classList.contains('retro-theme');
+    if (isRetro) {
+      // Exit retro mode and go to light theme
+      document.body.classList.remove('retro-theme');
+      localStorage.setItem('markdownViewer_retroTheme', 'false');
+      this.theme = 'light';
+      localStorage.setItem('markdownViewer_defaultTheme', 'light');
+      this.applyDefaultTheme();
+      this.themeBtn.textContent = '🌙';
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        monaco.editor.setTheme('vs');
+      }
+    } else {
+      this.theme = this.theme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', this.theme);
+      this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
+      
+      // Update Monaco theme
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        monaco.editor.setTheme(this.theme === 'dark' ? 'vs-dark' : 'vs');
+      }
     }
     
     // Update Mermaid theme and re-render diagrams
@@ -2925,8 +2945,6 @@ Tip: You can also use HTML Export and then print from your browser.`;
       // Re-render all Mermaid diagrams with new theme
       this.updatePreview();
     }
-    
-    // Theme switched successfully
   }
   
   toggleRetroTheme() {
@@ -2936,12 +2954,26 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.themeBtn.textContent = this.theme === 'light' ? '🌙' : '☀️';
     } else {
       document.body.classList.add('retro-theme');
-      this.themeBtn.textContent = '💾';
+      this.themeBtn.innerHTML = '<span style="font-family: Wingdings; font-size: 14px;"></span>';
+      this.playRetroStartupSound();
     }
     
     // Update Monaco theme for retro
     if (this.isMonacoLoaded && this.monacoEditor) {
       monaco.editor.setTheme(isRetro ? (this.theme === 'dark' ? 'vs-dark' : 'vs') : 'vs');
+    }
+  }
+  
+  playRetroStartupSound() {
+    const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
+    if (soundEnabled) {
+      try {
+        const audio = new Audio('assets/windows95_startup_hifi.flac');
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      } catch (error) {
+        console.warn('[Retro] Startup sound failed to play');
+      }
     }
   }
   
@@ -3112,6 +3144,19 @@ Tip: You can also use HTML Export and then print from your browser.`;
     document.getElementById('theme-dark-btn').classList.toggle('active', this.theme === 'dark' && !isRetro);
     document.getElementById('theme-retro-btn').classList.toggle('active', isRetro);
     
+    // Show/hide retro sound setting
+    const retroSoundSetting = document.querySelector('.retro-sound-setting');
+    if (retroSoundSetting) {
+      retroSoundSetting.style.display = isRetro ? 'flex' : 'none';
+    }
+    
+    // Update retro sound checkbox
+    const soundCheckbox = document.getElementById('retro-sound-checkbox');
+    if (soundCheckbox) {
+      const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
+      soundCheckbox.checked = soundEnabled;
+    }
+    
     // Update mode buttons
     document.getElementById('mode-code-btn').classList.toggle('active', this.defaultMode === 'code');
     document.getElementById('mode-preview-btn').classList.toggle('active', this.defaultMode === 'preview');
@@ -3196,6 +3241,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Theme controls
     document.getElementById('theme-light-btn').addEventListener('click', () => {
       document.body.classList.remove('retro-theme');
+      localStorage.setItem('markdownViewer_retroTheme', 'false');
       if (this.theme !== 'light') {
         this.theme = 'light';
         localStorage.setItem('markdownViewer_defaultTheme', this.theme);
@@ -3213,6 +3259,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
     document.getElementById('theme-dark-btn').addEventListener('click', () => {
       document.body.classList.remove('retro-theme');
+      localStorage.setItem('markdownViewer_retroTheme', 'false');
       if (this.theme !== 'dark') {
         this.theme = 'dark';
         localStorage.setItem('markdownViewer_defaultTheme', this.theme);
@@ -3230,8 +3277,14 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
     document.getElementById('theme-retro-btn').addEventListener('click', () => {
       document.body.classList.add('retro-theme');
-      this.themeBtn.textContent = '💾';
+      localStorage.setItem('markdownViewer_retroTheme', 'true');
+      this.themeBtn.innerHTML = '<span style="font-family: Wingdings; font-size: 14px;"></span>';
       this.updateSettingsDisplay();
+    });
+    
+    // Retro sound checkbox
+    document.getElementById('retro-sound-checkbox').addEventListener('change', (e) => {
+      localStorage.setItem('markdownViewer_retroSound', e.target.checked.toString());
     });
     
     // Mode controls

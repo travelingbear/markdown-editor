@@ -228,8 +228,8 @@
               <p class="welcome-subtitle">A light, yet powerful markdown editor with live preview</p>
               
               <div class="welcome-actions">
-                <button id="welcome-new-btn" class="welcome-btn primary">Create New File</button>
-                <button id="welcome-open-btn" class="welcome-btn">Open Existing File</button>
+                <button id="welcome-new-btn" class="welcome-btn primary">New File</button>
+                <button id="welcome-open-btn" class="welcome-btn">Open File</button>
               </div>
               
               <div id="file-history-section" class="file-history" style="display: none;">
@@ -298,6 +298,12 @@
                   <button id="theme-retro-btn" class="setting-btn">Retro</button>
                 </div>
               </div>
+              <div class="setting-item retro-sound-setting" style="display: none;">
+                <label>
+                  <input type="checkbox" id="retro-sound-checkbox" class="retro-checkbox" checked>
+                  Startup Sound
+                </label>
+              </div>
             </div>
             
             <div class="settings-section">
@@ -325,6 +331,7 @@
                   <button id="toolbar-off-btn" class="setting-btn">Disabled</button>
                 </div>
               </div>
+
               <div class="setting-item">
                 <label>Splash Screen</label>
                 <div class="setting-control">
@@ -542,7 +549,7 @@
           <div class="about-content">
             <div class="about-logo">
               <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
-              <p class="version">Version 2.1.4</p>
+              <p class="version">Version 2.2.0</p>
             </div>
             
             <div class="about-description">

@@ -5,6 +5,54 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-01-02
+
+### Added
+- **Windows 3.1 Retro Theme**: Complete authentic retro theme with Windows 3.1 styling
+  - Classic gray color scheme (#c0c0c0 backgrounds, #808080 borders)
+  - MS Sans Serif font family for authentic look
+  - 3D beveled buttons with proper inset/outset effects
+  - Authentic scrollbar styling with classic arrow buttons
+  - Windows logo icon and startup sound integration
+  - Retro splash screen with Windows 3.1 aesthetic
+- **Startup Sound System**: Audio feedback when entering retro mode
+  - High-quality Windows 95 startup sound (windows95_startup_hifi.flac)
+  - Configurable via settings with checkbox control
+  - Automatic enablement on first retro mode activation
+- **Theme Persistence**: Retro theme selection persists across application restarts
+- **Enhanced Modal System**: Improved z-index management for layered interfaces
+
+### Enhanced
+- **Strikethrough Button**: Redesigned with clearer "abc xyz" text with line-through styling
+- **Default Settings**: Changed application defaults for better user experience
+  - Text suggestions now disabled by default
+  - Markdown toolbar now enabled by default for new installations
+- **Image Styling**: Refined image presentation in preview mode
+  - Removed zoom scaling effect on hover for cleaner appearance
+  - Changed image borders from 2px colored to 1px gray (#ddd)
+- **Link Colors**: Improved retro theme link visibility
+  - Default links: dark blue (#000080) for better contrast
+  - Hover state: bright blue (#0000ff)
+  - Visited links: purple (#800080) for authentic Windows 3.1 colors
+- **Interface Consistency**: Unified styling across all retro theme elements
+  - Consistent button sizing and spacing
+  - Removed rounded corners for authentic square buttons
+  - Proper font inheritance throughout interface
+
+### Fixed
+- **Monaco Editor Colors**: Resolved color conflicts in retro theme mode
+- **Modal Font Issues**: Fixed font family inheritance in modal dialogs
+- **Button Sizing**: Standardized button dimensions in retro theme
+- **Splash Screen**: Adjusted background colors for retro theme compatibility
+- **Z-index Conflicts**: Resolved layering issues between modals and interface elements
+
+### Technical
+- **Audio Integration**: Implemented HTML5 audio with proper error handling
+- **CSS Architecture**: Organized retro theme styles with proper cascading
+- **Settings Management**: Enhanced localStorage handling for theme persistence
+- **Performance**: Optimized theme switching with minimal DOM manipulation
+- **Cross-Platform**: Ensured retro theme works consistently across all platforms
+
 ## [2.1.4] - 2025-01-02
 
 ### Added

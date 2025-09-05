@@ -1380,10 +1380,10 @@ This could be due to:
 
 Please check your markdown syntax and try again.`;
     
-    if (window.__TAURI__) {
-      window.__TAURI__.dialog.message(errorMessage, { title: 'Markdown Error', type: 'error' });
+    if (window.__TAURI__?.dialog) {
+      window.__TAURI__.dialog.message(errorMessage, { title: 'Markdown Error', type: 'error' }).catch(() => console.error('[Dialog] Failed to show error'));
     } else {
-      alert(errorMessage);
+      console.error('[Dialog] Error:', errorMessage);
     }
   }
 
@@ -1401,10 +1401,10 @@ This could be due to:
 
 Please check the link format and try again.`;
     
-    if (window.__TAURI__) {
-      window.__TAURI__.dialog.message(errorMessage, { title: 'Link Error', type: 'error' });
+    if (window.__TAURI__?.dialog) {
+      window.__TAURI__.dialog.message(errorMessage, { title: 'Link Error', type: 'error' }).catch(() => console.error('[Dialog] Failed to show error'));
     } else {
-      alert(errorMessage);
+      console.error('[Dialog] Error:', errorMessage);
     }
   }
 
@@ -3172,9 +3172,9 @@ Tip: You can also use HTML Export and then print from your browser.`;
     const message = 'Could not play startup sound. Please check that the sound files are present in the assets folder.\n\nTried paths:\n• assets/windows95_startup_hifi.mp3\n• assets/windows95_startup_hifi.ogg\n• assets/windows95_startup_hifi.wav';
     
     if (window.__TAURI__?.dialog) {
-      window.__TAURI__.dialog.message(message, { title: 'Sound Test Failed', type: 'error' });
+      window.__TAURI__.dialog.message(message, { title: 'Sound Test Failed', type: 'error' }).catch(() => console.error('[Dialog] Failed to show error'));
     } else {
-      alert(message);
+      console.error('[Dialog] Error:', message);
     }
   }
   
@@ -5640,10 +5640,10 @@ Please check your markdown syntax or restart the application if problems persist
   
   if (window.__TAURI__?.dialog) {
     window.__TAURI__.dialog.message(message, { title: 'Error', type: 'error' }).catch(() => {
-      alert(message);
+      console.error('[Dialog] Failed to show error:', message);
     });
   } else {
-    alert(message);
+    console.error('[Dialog] Error:', message);
   }
 }
 

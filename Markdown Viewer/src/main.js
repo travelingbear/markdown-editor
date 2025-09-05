@@ -1087,29 +1087,51 @@ class MarkdownViewer {
       });
       
       if (selected) {
-        const content = await window.__TAURI__.fs.readTextFile(selected);
-        
-        this.isLoadingFile = true;
-        this.setEditorContent(content);
-        this.isLoadingFile = false;
-        this.showEditor();
-        this.updatePreview();
-        this.currentFile = selected;
-        this.isDirty = false;
-        this.addToFileHistory(selected);
-        this.updateFilename();
-        this.updateModeButtons();
-        this.setMode(this.defaultMode);
-        this.resetZoom();
-        
-        this.benchmarkOperation('File Open', startTime);
+        // Batch file operations for better performance
+        await this.loadFileContent(selected, startTime);
       }
     } catch (error) {
       this.handleError(error, 'File Opening');
     }
   }
+  
+  async loadFileContent(filePath, startTime) {
+    try {
+      const content = await window.__TAURI__.fs.readTextFile(filePath);
+      
+      // Batch all UI updates to minimize reflows
+      this.isLoadingFile = true;
+      
+      // Use requestAnimationFrame to batch DOM updates
+      requestAnimationFrame(() => {
+        this.setEditorContent(content);
+        this.isLoadingFile = false;
+        this.showEditor();
+        this.currentFile = filePath;
+        this.isDirty = false;
+        
+        // Batch filename and history updates
+        this.addToFileHistory(filePath);
+        this.updateFilename();
+        this.updateModeButtons();
+        
+        // Update preview after DOM updates
+        requestAnimationFrame(() => {
+          this.updatePreview();
+          this.setMode(this.defaultMode);
+          this.resetZoom();
+          
+          this.benchmarkOperation('File Open', startTime);
+        });
+      });
+    } catch (error) {
+      this.isLoadingFile = false;
+      throw error;
+    }
+  }
 
   async saveFile() {
+    const startTime = performance.now();
     const content = this.getEditorContent();
     
     if (!window.__TAURI__) {
@@ -1117,36 +1139,48 @@ class MarkdownViewer {
       return;
     }
     
-    if (this.currentFile) {
-      try {
-        await window.__TAURI__.fs.writeTextFile(this.currentFile, content);
+    try {
+      if (this.currentFile) {
+        await this.saveExistingFile(content);
+      } else {
+        await this.saveNewFile(content);
+      }
+      this.benchmarkOperation('File Save', startTime);
+    } catch (error) {
+      console.error('[File] Save failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
+      await this.showErrorDialog('Failed to save file: ' + (error.message || error));
+    }
+  }
+  
+  async saveExistingFile(content) {
+    await window.__TAURI__.fs.writeTextFile(this.currentFile, content);
+    
+    // Batch UI updates
+    requestAnimationFrame(() => {
+      this.isDirty = false;
+      this.saveBtn.classList.remove('dirty');
+      this.updateFilename();
+    });
+  }
+  
+  async saveNewFile(content) {
+    const filePath = await window.__TAURI__.dialog.save({
+      filters: [{
+        name: 'Markdown',
+        extensions: ['md']
+      }]
+    });
+    
+    if (filePath) {
+      await window.__TAURI__.fs.writeTextFile(filePath, content);
+      
+      // Batch UI updates
+      requestAnimationFrame(() => {
+        this.currentFile = filePath;
         this.isDirty = false;
         this.saveBtn.classList.remove('dirty');
         this.updateFilename();
-      } catch (error) {
-        console.error('[File] Save failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
-        await this.showErrorDialog('Failed to save file: ' + (error.message || error));
-      }
-    } else {
-      try {
-        const filePath = await window.__TAURI__.dialog.save({
-          filters: [{
-            name: 'Markdown',
-            extensions: ['md']
-          }]
-        });
-        
-        if (filePath) {
-          await window.__TAURI__.fs.writeTextFile(filePath, content);
-          this.currentFile = filePath;
-          this.isDirty = false;
-          this.saveBtn.classList.remove('dirty');
-          this.updateFilename();
-        }
-      } catch (error) {
-        console.error('[File] Save failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
-        await this.showErrorDialog('Failed to save file: ' + (error.message || error));
-      }
+      });
     }
   }
 
@@ -2952,90 +2986,97 @@ Tip: You can also use HTML Export and then print from your browser.`;
   async processImages() {
     const images = this.preview.querySelectorAll('img.markdown-image');
     
-    // Process all images concurrently using Promise.all for better performance
-    const imagePromises = Array.from(images).map(async (img) => {
-      let originalSrc = img.getAttribute('data-original-src');
-      
-      if (!originalSrc) {
-        return;
-      }
-      
-      // Decode URL-encoded paths
-      if (originalSrc.includes('%')) {
-        try {
-          originalSrc = decodeURIComponent(originalSrc);
-        } catch (e) {
-          return;
-        }
-      }
+    if (images.length === 0) return;
+    
+    // Process images in smaller batches to avoid overwhelming the system
+    const batchSize = 5;
+    const batches = [];
+    
+    for (let i = 0; i < images.length; i += batchSize) {
+      batches.push(Array.from(images).slice(i, i + batchSize));
+    }
+    
+    // Process batches sequentially for better performance
+    for (const batch of batches) {
+      const batchPromises = batch.map(img => this.processImage(img));
       
       try {
-        // Check if it's a Tauri dev server URL that should be converted
-        const isTauriDevUrl = originalSrc.startsWith('http://127.0.0.1:') || originalSrc.startsWith('http://localhost:');
-        const isLocalFile = !originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:');
-        
-        if (isLocalFile || isTauriDevUrl) {
-          if (window.__TAURI__?.core?.invoke) {
-            try {
-              let resolvedPath = originalSrc;
-              
-              // Handle Tauri dev server URLs - extract the filename
-              if (isTauriDevUrl) {
-                resolvedPath = this.improveDevServerPathResolution(originalSrc);
-              }
-              
-              // Skip path resolution for dev server - just use the filename
-              if (!isTauriDevUrl && this.currentFile && !this.isAbsolutePath(resolvedPath)) {
-                const currentDir = this.currentFile.substring(0, Math.max(this.currentFile.lastIndexOf('/'), this.currentFile.lastIndexOf('\\')));
-                if (currentDir) {
-                  resolvedPath = this.joinPaths(currentDir, resolvedPath);
-                }
-              }
-              
-              // Use safe IPC for image conversion
-              let dataUrl;
-              if (window.safeIPC?.isAvailable) {
-                dataUrl = await window.safeIPC.invoke('convert_local_image_path', { filePath: resolvedPath });
-              } else {
-                dataUrl = await Promise.race([
-                  window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath }),
-                  new Promise((_, reject) => setTimeout(() => reject(new Error('Image conversion timeout')), 5000))
-                ]);
-              }
-              
-              if (dataUrl && typeof dataUrl === 'string') {
-                img.src = dataUrl;
-                img.classList.add('local-image');
-              } else {
-                throw new Error('Invalid image data returned');
-              }
-            } catch (error) {
-              // Keep original src and add error class
-              img.classList.add('image-error');
-              const errorMessage = typeof error === 'string' ? error : (error.message || error.toString() || 'Unknown error');
-              img.title = `Image not found: ${originalSrc}\nError: ${errorMessage}`;
+        await Promise.race([
+          Promise.all(batchPromises),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Batch timeout')), 3000))
+        ]);
+      } catch (error) {
+        console.warn('[Images] Batch processing timeout:', error);
+        // Continue with next batch even if current batch fails
+      }
+    }
+  }
+  
+  async processImage(img) {
+    let originalSrc = img.getAttribute('data-original-src');
+    
+    if (!originalSrc) return;
+    
+    // Decode URL-encoded paths
+    if (originalSrc.includes('%')) {
+      try {
+        originalSrc = decodeURIComponent(originalSrc);
+      } catch (e) {
+        return;
+      }
+    }
+    
+    try {
+      const isTauriDevUrl = originalSrc.startsWith('http://127.0.0.1:') || originalSrc.startsWith('http://localhost:');
+      const isLocalFile = !originalSrc.startsWith('http://') && !originalSrc.startsWith('https://') && !originalSrc.startsWith('data:');
+      
+      if (isLocalFile || isTauriDevUrl) {
+        if (window.__TAURI__?.core?.invoke) {
+          try {
+            let resolvedPath = originalSrc;
+            
+            if (isTauriDevUrl) {
+              resolvedPath = this.improveDevServerPathResolution(originalSrc);
             }
-          } else {
+            
+            if (!isTauriDevUrl && this.currentFile && !this.isAbsolutePath(resolvedPath)) {
+              const currentDir = this.currentFile.substring(0, Math.max(this.currentFile.lastIndexOf('/'), this.currentFile.lastIndexOf('\\')));
+              if (currentDir) {
+                resolvedPath = this.joinPaths(currentDir, resolvedPath);
+              }
+            }
+            
+            let dataUrl;
+            if (window.safeIPC?.isAvailable) {
+              dataUrl = await window.safeIPC.invoke('convert_local_image_path', { filePath: resolvedPath });
+            } else {
+              dataUrl = await Promise.race([
+                window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Image conversion timeout')), 2000))
+              ]);
+            }
+            
+            if (dataUrl && typeof dataUrl === 'string') {
+              img.src = dataUrl;
+              img.classList.add('local-image');
+            } else {
+              throw new Error('Invalid image data returned');
+            }
+          } catch (error) {
             img.classList.add('image-error');
-            img.title = `Local image requires Tauri: ${originalSrc}`;
+            const errorMessage = typeof error === 'string' ? error : (error.message || error.toString() || 'Unknown error');
+            img.title = `Image not found: ${originalSrc}\nError: ${errorMessage}`;
           }
         } else {
-          img.classList.add('remote-image');
+          img.classList.add('image-error');
+          img.title = `Local image requires Tauri: ${originalSrc}`;
         }
-      } catch (error) {
-        img.classList.add('image-error');
-        img.title = `Error loading image: ${error.message}`;
+      } else {
+        img.classList.add('remote-image');
       }
-    });
-    
-    // Wait for all images to process concurrently with timeout
-    try {
-      await Promise.race([
-        Promise.all(imagePromises),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Image processing timeout')), 10000))
-      ]);
     } catch (error) {
-      console.warn('[Images] Processing timeout or error:', error);
+      img.classList.add('image-error');
+      img.title = `Error loading image: ${error.message}`;
     }
   }
   
@@ -4057,10 +4098,23 @@ Tip: You can also use HTML Export and then print from your browser.`;
     // Clear existing timeout
     clearTimeout(this.previewUpdateTimeout);
     
+    // Use performance optimizer cache if available
+    if (this.performanceOptimizer) {
+      const content = this.getEditorContent();
+      const cached = this.performanceOptimizer.getCachedPreview(content);
+      
+      if (cached && (Date.now() - cached.timestamp) < 30000) { // 30 second cache
+        this.preview.innerHTML = cached.html;
+        this.setupTaskListInteractions();
+        this.setupAnchorLinks();
+        return;
+      }
+    }
+    
     // Set new timeout for debounced update with optimized delay
     this.previewUpdateTimeout = setTimeout(() => {
       this.updatePreviewWithMetrics();
-    }, 250); // Reduced debounce from 300ms to 250ms for better responsiveness
+    }, 200); // Reduced debounce to 200ms for better responsiveness
   }
 
   updatePreviewWithMetrics() {
@@ -4070,6 +4124,12 @@ Tip: You can also use HTML Export and then print from your browser.`;
       const endTime = performance.now();
       const updateTime = endTime - startTime;
       
+      // Cache the result if performance optimizer is available
+      if (this.performanceOptimizer && this.preview) {
+        const content = this.getEditorContent();
+        this.performanceOptimizer.setCachedPreview(content, this.preview.innerHTML);
+      }
+      
       // Update performance metrics
       this.performanceMetrics.updateCount++;
       this.performanceMetrics.lastUpdateTime = updateTime;
@@ -4078,7 +4138,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         this.performanceMetrics.updateCount;
       
       // Log performance if update takes too long
-      if (updateTime > 1000) {
+      if (updateTime > 500) { // Reduced threshold from 1000ms to 500ms
         console.warn(`[Performance] Slow preview update: ${updateTime.toFixed(2)}ms`);
       }
     }).catch(error => {

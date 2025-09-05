@@ -5,6 +5,24 @@ All notable changes to the Markdown Viewer project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2025-01-02
+
+### Fixed
+- **Print Functionality**: Added webview print permissions to enable Ctrl+P printing
+- **Recent Files**: Fixed "Unknown error" when opening files from recent files list
+- **File System Access**: Resolved permission issues for file operations across all platforms
+- **Startup File Handling**: Fixed file association errors on application launch
+
+### Enhanced
+- **Print Margins**: Optimized print margins (top: 0.1in, sides: 0.15in) for better page utilization
+- **Cross-Platform Icons**: Added proper ICNS icon support for macOS app bundling
+- **File Permissions**: Comprehensive file system permissions for seamless file access
+
+### Technical
+- **Tauri v2 Permissions**: Added complete permission set for webview, dialogs, file operations, and window controls
+- **Icon Generation**: Automated ICNS creation from PNG source with all required resolutions
+- **Permission Scopes**: Configured unrestricted file access for recent files and file associations
+
 ## [2.2.1] - 2025-01-02
 
 ### Fixed

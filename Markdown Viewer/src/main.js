@@ -2302,8 +2302,6 @@ Please check the link format and try again.`;
     };
     
     this.preview.addEventListener('change', this.taskChangeHandler);
-    
-    const checkboxes = this.preview.querySelectorAll('.task-list-item input[type="checkbox"]');
   }
   
 

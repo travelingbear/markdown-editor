@@ -1486,7 +1486,7 @@ kbd {
   
   /* Page setup */
   @page {
-    margin: 0.75in;
+    margin: 0.1in 0.15in 0.15in 0.15in;
     size: letter;
   }
   

@@ -22,7 +22,33 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https: http: file: asset: tauri:; media-src 'self' data: https: http: file: asset: tauri:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; connect-src 'self' https: http: ipc: tauri:; font-src 'self' https: data:;"
+      "csp": "default-src 'self'; img-src 'self' data: https: http: file: asset: tauri:; media-src 'self' data: https: http: file: asset: tauri:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; connect-src 'self' https: http: ipc: tauri:; font-src 'self' https: data:;",
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "description": "Main window capabilities",
+          "windows": ["main"],
+          "permissions": [
+            "core:webview:allow-print",
+            "core:app:allow-version",
+            "core:app:default",
+            "dialog:allow-message",
+            "dialog:default",
+            "core:event:allow-listen",
+            "core:event:default",
+            "fs:allow-read-file",
+            "fs:allow-write-file",
+            "fs:default",
+            "dialog:allow-open",
+            "dialog:allow-save",
+            "core:window:allow-destroy",
+            "core:window:default",
+            "core:path:default",
+            "opener:allow-open-url",
+            "opener:default"
+          ]
+        }
+      ]
     }
   },
 

@@ -104,7 +104,7 @@ class MarkdownViewer {
       }
       
     } catch (error) {
-      console.error('[Init] Initialization failed:', encodeURIComponent(error.message || error));
+      console.error('[Init] Initialization failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
       this.handleInitializationError(error);
     }
   }
@@ -345,7 +345,7 @@ class MarkdownViewer {
       await window.MONACO_SINGLETON;
       this.createMonacoInstance();
     } catch (error) {
-      console.error('[Monaco] Failed to load Monaco Editor:', encodeURIComponent(error.message || error));
+      console.error('[Monaco] Failed to load Monaco Editor:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
       this.fallbackToTextarea();
       throw error;
     }
@@ -510,7 +510,7 @@ class MarkdownViewer {
       this.monacoContainer.style.display = 'block';
       
     } catch (error) {
-      console.error('[Monaco] Failed to create editor instance:', encodeURIComponent(error.message || error));
+      console.error('[Monaco] Failed to create editor instance:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
       this.fallbackToTextarea();
     }
   }
@@ -1124,7 +1124,7 @@ class MarkdownViewer {
         this.saveBtn.classList.remove('dirty');
         this.updateFilename();
       } catch (error) {
-        console.error('[File] Save failed:', encodeURIComponent(error.message || error));
+        console.error('[File] Save failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
         await this.showErrorDialog('Failed to save file: ' + (error.message || error));
       }
     } else {
@@ -1144,7 +1144,7 @@ class MarkdownViewer {
           this.updateFilename();
         }
       } catch (error) {
-        console.error('[File] Save failed:', encodeURIComponent(error.message || error));
+        console.error('[File] Save failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
         await this.showErrorDialog('Failed to save file: ' + (error.message || error));
       }
     }
@@ -1256,7 +1256,12 @@ class MarkdownViewer {
   }
 
   async updatePreview() {
-    const markdown = this.getEditorContent();
+    let markdown = this.getEditorContent();
+    
+    // Sanitize markdown input to prevent code injection
+    if (window.SecurityUtils) {
+      markdown = window.SecurityUtils.sanitizeMarkdownInput(markdown);
+    }
     
     if (typeof marked === 'undefined') {
       console.error('[Preview] marked.js not loaded');
@@ -1504,7 +1509,7 @@ Please check the link format and try again.`;
       try {
         await this.loadMonacoEditor();
       } catch (error) {
-        console.error('[Monaco] Failed to load Monaco Editor for mode switch:', encodeURIComponent(error.message || error));
+        console.error('[Monaco] Failed to load Monaco Editor for mode switch:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
         // Fall back to preview mode if Monaco fails to load
         mode = 'preview';
       }
@@ -2605,7 +2610,7 @@ Please check the link format and try again.`;
       await this.openPrintDialog();
       
     } catch (error) {
-      console.error('[Export] PDF export failed:', encodeURIComponent(error.message || error));
+      console.error('[Export] PDF export failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
       await this.showErrorDialog('PDF Export Error: ' + error.message + '\n\nTip: Use Ctrl+P to print directly, or try HTML Export and print from your browser.');
     }
   }
@@ -2647,7 +2652,7 @@ Please check the link format and try again.`;
       this.printViaBrowserDirect(printHtml);
       
     } catch (error) {
-      console.error('[Export] Print content failed:', encodeURIComponent(error.message || error));
+      console.error('[Export] Print content failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
       throw error;
     }
   }
@@ -3299,7 +3304,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
         try {
           await this.saveFile();
         } catch (error) {
-          console.error('[App] Error saving before quit:', encodeURIComponent(error.message || error));
+          console.error('[App] Error saving before quit:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
           return; // Don't quit if save failed
         }
       } else {
@@ -4471,15 +4476,18 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   async showErrorDialog(message) {
+    // Sanitize message to prevent XSS
+    const sanitizedMessage = window.SecurityUtils ? window.SecurityUtils.sanitizeUserInput(message) : message;
+    
     if (window.__TAURI__) {
       try {
-        await window.__TAURI__.dialog.message(message, { title: 'Error', type: 'error' });
+        await window.__TAURI__.dialog.message(sanitizedMessage, { title: 'Error', type: 'error' });
       } catch {
         // Fallback to console if dialog fails
-        console.error('[Dialog] Error:', encodeURIComponent(message));
+        console.error('[Dialog] Error:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(sanitizedMessage) : encodeURIComponent(sanitizedMessage));
       }
     } else {
-      console.error('[Dialog] Error:', encodeURIComponent(message));
+      console.error('[Dialog] Error:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(sanitizedMessage) : encodeURIComponent(sanitizedMessage));
     }
   }
 

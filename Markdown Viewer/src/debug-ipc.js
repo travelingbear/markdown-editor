@@ -17,7 +17,7 @@ if (window.__TAURI__) {
     ]).then(result => {
       console.log('[Debug] IPC test successful:', result);
     }).catch(error => {
-      console.error('[Debug] IPC test failed:', error);
+      console.error('[Debug] IPC test failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error) : encodeURIComponent(error));
     });
   } else {
     console.error('[Debug] Tauri core.invoke not available');
@@ -37,13 +37,13 @@ if (window.__TAURI__) {
 // Monitor for IPC errors
 window.addEventListener('error', (event) => {
   if (event.error && event.error.message && event.error.message.includes('callbackId')) {
-    console.error('[Debug] IPC callback error detected:', event.error);
+    console.error('[Debug] IPC callback error detected:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(event.error) : encodeURIComponent(event.error));
   }
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   if (event.reason && typeof event.reason === 'string' && event.reason.includes('callbackId')) {
-    console.error('[Debug] IPC promise rejection detected:', event.reason);
+    console.error('[Debug] IPC promise rejection detected:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(event.reason) : encodeURIComponent(event.reason));
   }
 });
 

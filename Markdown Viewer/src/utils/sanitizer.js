@@ -12,18 +12,20 @@ function sanitizeForLog(input) {
   }
   
   if (typeof input === 'string') {
-    return encodeURIComponent(input);
+    // Only sanitize dangerous characters, keep readability
+    return input.replace(/[\r\n]/g, ' ').replace(/[<>"']/g, '_');
   }
   
   if (typeof input === 'object') {
     try {
-      return encodeURIComponent(JSON.stringify(input));
+      const str = JSON.stringify(input);
+      return str.replace(/[\r\n]/g, ' ').replace(/[<>"']/g, '_');
     } catch (e) {
-      return encodeURIComponent('[Object]');
+      return '[Object]';
     }
   }
   
-  return encodeURIComponent(String(input));
+  return String(input).replace(/[\r\n]/g, ' ').replace(/[<>"']/g, '_');
 }
 
 /**

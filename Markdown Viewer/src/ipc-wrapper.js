@@ -32,7 +32,7 @@ class SafeIPC {
     } catch (error) {
       // Handle specific destructuring errors
       if (error.message && error.message.includes('callbackId')) {
-        console.warn(`[SafeIPC] Callback error for ${command}, retrying...`);
+        console.warn(`[SafeIPC] Callback error for ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(command)) : encodeURIComponent(String(command))}, retrying...`);
         
         // Wait a bit and retry once
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -45,8 +45,8 @@ class SafeIPC {
             )
           ]);
         } catch (retryError) {
-          console.error(`[SafeIPC] Retry failed for ${command}:`, retryError);
-          throw new Error(`IPC command failed: ${command} - ${retryError.message}`);
+          console.error(`[SafeIPC] Retry failed for ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(command)) : encodeURIComponent(String(command))}:`, window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(retryError)) : encodeURIComponent(String(retryError)));
+          throw new Error(`IPC command failed: ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(command)) : encodeURIComponent(String(command))} - ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(retryError.message)) : encodeURIComponent(String(retryError.message))}`);
         }
       }
       
@@ -63,19 +63,19 @@ class SafeIPC {
       try {
         // Validate event data structure
         if (!eventData || typeof eventData !== 'object') {
-          console.warn(`[SafeIPC] Invalid event data for ${event}:`, eventData);
+          console.warn(`[SafeIPC] Invalid event data for ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(event)) : encodeURIComponent(String(event))}:`, window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(eventData)) : encodeURIComponent(String(eventData)));
           return;
         }
         
         // Ensure payload exists
         if (!eventData.payload) {
-          console.warn(`[SafeIPC] No payload in event ${event}:`, eventData);
+          console.warn(`[SafeIPC] No payload in event ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(event)) : encodeURIComponent(String(event))}:`, window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(eventData)) : encodeURIComponent(String(eventData)));
           return;
         }
         
         return handler(eventData);
       } catch (handlerError) {
-        console.error(`[SafeIPC] Event handler error for ${event}:`, handlerError);
+        console.error(`[SafeIPC] Event handler error for ${window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(event)) : encodeURIComponent(String(event))}:`, window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(String(handlerError)) : encodeURIComponent(String(handlerError)));
       }
     };
     

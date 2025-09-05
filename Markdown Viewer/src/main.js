@@ -1573,15 +1573,13 @@ Please check the link format and try again.`;
 
   setupScrollSync() {
     // Remove any existing scroll listeners to prevent duplicates
-    if (this.previewScrollHandler) {
-      this.preview.removeEventListener('scroll', this.previewScrollHandler);
-    }
-    if (this.previewPaneScrollHandler) {
-      const previewPane = document.querySelector('.preview-pane');
-      if (previewPane) {
-        previewPane.removeEventListener('scroll', this.previewPaneScrollHandler);
-      }
-    }
+    this.cleanupScrollSyncHandlers();
+    
+    // Cache scroll elements
+    this.cachedScrollElements = {
+      preview: this.preview,
+      previewPane: document.querySelector('.preview-pane')
+    };
     
     // Create unified scroll handler
     const handlePreviewScroll = (event) => {
@@ -1604,12 +1602,22 @@ Please check the link format and try again.`;
     this.previewScrollHandler = handlePreviewScroll;
     this.previewPaneScrollHandler = handlePreviewScroll;
     
-    // Add listeners to both elements
-    this.preview.addEventListener('scroll', this.previewScrollHandler);
+    // Add listeners to cached elements
+    if (this.cachedScrollElements.preview) {
+      this.cachedScrollElements.preview.addEventListener('scroll', this.previewScrollHandler);
+    }
     
-    const previewPane = document.querySelector('.preview-pane');
-    if (previewPane) {
-      previewPane.addEventListener('scroll', this.previewPaneScrollHandler);
+    if (this.cachedScrollElements.previewPane) {
+      this.cachedScrollElements.previewPane.addEventListener('scroll', this.previewPaneScrollHandler);
+    }
+  }
+  
+  cleanupScrollSyncHandlers() {
+    if (this.previewScrollHandler && this.cachedScrollElements?.preview) {
+      this.cachedScrollElements.preview.removeEventListener('scroll', this.previewScrollHandler);
+    }
+    if (this.previewPaneScrollHandler && this.cachedScrollElements?.previewPane) {
+      this.cachedScrollElements.previewPane.removeEventListener('scroll', this.previewPaneScrollHandler);
     }
   }
 
@@ -2033,9 +2041,16 @@ Please check the link format and try again.`;
 
   processMathInHtml(html) {
     if (this.katexInitialized && this.katex) {
+      // Cache regex patterns for better performance
+      if (!this.mathRegexCache) {
+        this.mathRegexCache = {
+          displayMath: /\$\$([^$]+)\$\$/g,
+          inlineMath: /\$([^$\n]+)\$/g
+        };
+      }
       
       // Process display math: $$...$$ (not inside code blocks)
-      html = html.replace(/\$\$([^$]+)\$\$/g, (match, math, offset, string) => {
+      html = html.replace(this.mathRegexCache.displayMath, (match, math, offset, string) => {
         // Check if this match is inside a code block or inline code
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match; // Return unchanged if inside code
@@ -2054,7 +2069,7 @@ Please check the link format and try again.`;
       });
       
       // Process inline math: $...$ (not inside code blocks)
-      html = html.replace(/\$([^$\n]+)\$/g, (match, math, offset, string) => {
+      html = html.replace(this.mathRegexCache.inlineMath, (match, math, offset, string) => {
         // Check if this match is inside a code block or inline code
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match; // Return unchanged if inside code
@@ -2073,15 +2088,22 @@ Please check the link format and try again.`;
       });
     } else {
       
-      // Fallback styling without external libraries
-      html = html.replace(/\$\$([^$]+)\$\$/g, (match, math, offset, string) => {
+      // Fallback styling without external libraries using cached patterns
+      if (!this.mathRegexCache) {
+        this.mathRegexCache = {
+          displayMath: /\$\$([^$]+)\$\$/g,
+          inlineMath: /\$([^$\n]+)\$/g
+        };
+      }
+      
+      html = html.replace(this.mathRegexCache.displayMath, (match, math, offset, string) => {
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match;
         }
         return `<div class="math-display math-fallback"><code>${math.trim()}</code></div>`;
       });
       
-      html = html.replace(/\$([^$\n]+)\$/g, (match, math, offset, string) => {
+      html = html.replace(this.mathRegexCache.inlineMath, (match, math, offset, string) => {
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match;
         }
@@ -4224,19 +4246,14 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.closeHandlerUnlisten = null;
     }
     
-    // Cleanup scroll sync event handlers
-    if (this.previewScrollHandler) {
-      this.preview.removeEventListener('scroll', this.previewScrollHandler);
-      this.previewScrollHandler = null;
-    }
+    // Cleanup scroll sync event handlers using cached elements
+    this.cleanupScrollSyncHandlers();
     
-    if (this.previewPaneScrollHandler) {
-      const previewPane = document.querySelector('.preview-pane');
-      if (previewPane) {
-        previewPane.removeEventListener('scroll', this.previewPaneScrollHandler);
-      }
-      this.previewPaneScrollHandler = null;
-    }
+    // Clear cached elements
+    this.cachedScrollElements = null;
+    this.cachedToolbarElements = null;
+    this.cachedPreviewPane = null;
+    this.mathRegexCache = null;
     
     // Cleanup other event handlers
     if (this.taskChangeHandler) {
@@ -4267,6 +4284,11 @@ Tip: You can also use HTML Export and then print from your browser.`;
     
     this.removeDistractionFreeHover();
     this.stopMemoryOptimization();
+    
+    // Cleanup performance optimizer
+    if (this.performanceOptimizer && this.performanceOptimizer.stopMemoryMonitoring) {
+      this.performanceOptimizer.stopMemoryMonitoring();
+    }
   }
   
   improveDevServerPathResolution(originalSrc) {
@@ -4825,10 +4847,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
       this.zoomDisplay.textContent = `${Math.round(this.previewZoom * 100)}%`;
     }
     
-    // Hide scrollbars when zoomed above 100%
-    const previewPane = document.querySelector('.preview-pane');
-    if (previewPane) {
-      previewPane.setAttribute('data-zoom-above-100', this.previewZoom > 1.0 ? 'true' : 'false');
+    // Cache preview pane element
+    if (!this.cachedPreviewPane) {
+      this.cachedPreviewPane = document.querySelector('.preview-pane');
+    }
+    
+    if (this.cachedPreviewPane) {
+      this.cachedPreviewPane.setAttribute('data-zoom-above-100', this.previewZoom > 1.0 ? 'true' : 'false');
     }
   }
   
@@ -4939,11 +4964,18 @@ Tip: You can also use HTML Export and then print from your browser.`;
   setupMarkdownToolbarEvents() {
     if (!this.markdownToolbar) return;
     
+    // Cache DOM elements to prevent repeated queries
+    this.cachedToolbarElements = {
+      dropdownToggles: this.markdownToolbar.querySelectorAll('.dropdown-toggle'),
+      mdButtons: this.markdownToolbar.querySelectorAll('.md-btn'),
+      dropdownContents: this.markdownToolbar.querySelectorAll('.dropdown-content')
+    };
+    
     // Setup responsive behavior
     this.setupResponsiveToolbar();
     
     // Dropdown toggle buttons
-    const dropdownToggles = this.markdownToolbar.querySelectorAll('.dropdown-toggle');
+    const dropdownToggles = this.cachedToolbarElements.dropdownToggles;
     dropdownToggles.forEach(toggle => {
       toggle.addEventListener('click', (e) => {
         e.preventDefault();
@@ -4957,7 +4989,7 @@ Tip: You can also use HTML Export and then print from your browser.`;
     });
     
     // Markdown formatting buttons
-    const mdButtons = this.markdownToolbar.querySelectorAll('.md-btn');
+    const mdButtons = this.cachedToolbarElements.mdButtons;
     mdButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -5086,8 +5118,8 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   closeAllToolbarDropdowns() {
-    const dropdowns = this.markdownToolbar.querySelectorAll('.dropdown-content');
-    const toggles = this.markdownToolbar.querySelectorAll('.dropdown-toggle');
+    const dropdowns = this.cachedToolbarElements?.dropdownContents || this.markdownToolbar.querySelectorAll('.dropdown-content');
+    const toggles = this.cachedToolbarElements?.dropdownToggles || this.markdownToolbar.querySelectorAll('.dropdown-toggle');
     
     dropdowns.forEach(dropdown => {
       dropdown.classList.remove('show');

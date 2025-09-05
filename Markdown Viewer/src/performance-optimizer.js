@@ -114,8 +114,10 @@ class PerformanceOptimizer {
   setCachedPreview(content, renderedHtml) {
     const hash = this.hashContent(content);
     
-    // Implement LRU cache
-    if (this.previewCache.size >= this.maxCacheSize) {
+    // Efficient LRU cache - delete first, then set to maintain order
+    if (this.previewCache.has(hash)) {
+      this.previewCache.delete(hash);
+    } else if (this.previewCache.size >= this.maxCacheSize) {
       const firstKey = this.previewCache.keys().next().value;
       this.previewCache.delete(firstKey);
     }
@@ -139,7 +141,7 @@ class PerformanceOptimizer {
 
   setupMemoryCleanup() {
     // Automatic memory cleanup every 5 minutes
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       this.performMemoryCleanup();
     }, 300000);
     
@@ -177,17 +179,29 @@ class PerformanceOptimizer {
   }
 
   cleanupMonacoPool() {
-    // Remove excess unused instances
-    const unused = this.monacoPool.filter(item => !item.inUse);
-    if (unused.length > this.maxPoolSize) {
-      const toRemove = unused.slice(this.maxPoolSize);
-      toRemove.forEach(item => {
-        item.editor.dispose();
-        item.container.remove();
-        const index = this.monacoPool.indexOf(item);
-        this.monacoPool.splice(index, 1);
-      });
+    // Remove excess unused instances efficiently
+    const toKeep = [];
+    const toRemove = [];
+    let unusedCount = 0;
+    
+    for (const item of this.monacoPool) {
+      if (item.inUse) {
+        toKeep.push(item);
+      } else if (unusedCount < this.maxPoolSize) {
+        toKeep.push(item);
+        unusedCount++;
+      } else {
+        toRemove.push(item);
+      }
     }
+    
+    // Dispose removed instances
+    toRemove.forEach(item => {
+      item.editor.dispose();
+      item.container.remove();
+    });
+    
+    this.monacoPool = toKeep;
   }
 
   setupTabCloseCleanup() {
@@ -210,6 +224,17 @@ class PerformanceOptimizer {
     this.memoryMonitor = setInterval(() => {
       this.checkMemoryUsage();
     }, 30000); // Check every 30 seconds
+  }
+  
+  stopMemoryMonitoring() {
+    if (this.memoryMonitor) {
+      clearInterval(this.memoryMonitor);
+      this.memoryMonitor = null;
+    }
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
   }
 
   checkMemoryUsage() {

@@ -19,7 +19,9 @@ class PerformanceOptimizer {
 
   // Memory optimization for multi-tab architecture
   optimizeForMultiTabs() {
-    console.log('[Performance] Optimizing for multi-tab architecture...');
+    if (localStorage.getItem('debug') === 'true') {
+      console.log('[Performance] Optimizing for multi-tab architecture...');
+    }
     
     // 1. Implement tab virtualization
     this.setupTabVirtualization();
@@ -150,7 +152,9 @@ class PerformanceOptimizer {
   }
 
   performMemoryCleanup() {
-    console.log('[Performance] Performing memory cleanup...');
+    if (localStorage.getItem('debug') === 'true') {
+      console.log('[Performance] Performing memory cleanup...');
+    }
     
     // Clear old preview cache entries
     this.cleanupPreviewCache();
@@ -322,7 +326,9 @@ class PerformanceOptimizer {
 
   // Optimize for older computers
   enableLowPowerMode() {
-    console.log('[Performance] Enabling low-power mode for older computers...');
+    if (localStorage.getItem('debug') === 'true') {
+      console.log('[Performance] Enabling low-power mode for older computers...');
+    }
     
     // Reduce performance targets
     this.performanceTargets.maxTabs = 20;
@@ -361,7 +367,9 @@ class PerformanceOptimizer {
     );
     
     if (isOlderHardware) {
-      console.log('[Performance] Older hardware detected, enabling optimizations');
+      if (localStorage.getItem('debug') === 'true') {
+        console.log('[Performance] Older hardware detected, enabling optimizations');
+      }
       this.enableLowPowerMode();
     }
     

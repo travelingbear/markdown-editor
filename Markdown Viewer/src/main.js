@@ -4472,25 +4472,16 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
   handleError(error, context = 'Unknown', showUser = true) {
     const errorInfo = {
-      message: error.message,
-      stack: error.stack,
+      message: error?.message || 'Unknown error',
       context: context,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      appState: {
-        currentFile: this.currentFile,
-        isDirty: this.isDirty,
-        currentMode: this.currentMode,
-        theme: this.theme
-      }
+      timestamp: new Date().toISOString()
     };
     
-    console.error(`[Error] ${context}:`, errorInfo);
+    console.error(`[Error] ${context}:`, window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(errorInfo) : errorInfo);
     
     if (showUser) {
       const userMessage = this.getUserFriendlyErrorMessage(error, context);
-      this.showErrorDialog(userMessage, error, context);
+      this.showErrorDialog(userMessage);
     }
     
     this.logError(errorInfo);
@@ -4570,28 +4561,27 @@ Tip: You can also use HTML Export and then print from your browser.`;
   }
 
   getUserFriendlyErrorMessage(error, context) {
-    const baseMessage = `An error occurred in ${context}.`;
     const errorMessage = error?.message || 'Unknown error';
     
     // Provide specific guidance based on error type
     if (errorMessage.includes('Tauri API not available')) {
-      return `${baseMessage}\n\nThe application is not running in the proper environment. Please restart the application.`;
+      return 'Application environment error. Please restart the application.';
     }
     
     if (errorMessage.includes('Permission denied')) {
-      return `${baseMessage}\n\nPermission denied. Please check file permissions and try again.`;
+      return 'Permission denied. Please check file permissions and try again.';
     }
     
     if (errorMessage.includes('Network')) {
-      return `${baseMessage}\n\nNetwork error. Please check your internet connection and try again.`;
+      return 'Network error. Please check your internet connection.';
     }
     
     if (errorMessage.includes('library not loaded')) {
-      return `${baseMessage}\n\nRequired libraries failed to load. Please refresh the page and try again.`;
+      return 'Required libraries failed to load. Please refresh the page.';
     }
     
-    // Generic error message with helpful suggestions
-    return `${baseMessage}\n\nError: ${errorMessage}\n\nSuggestions:\n• Try refreshing the page\n• Check your internet connection\n• Restart the application\n• Contact support if the problem persists`;
+    // Generic error message
+    return `An error occurred in ${context}. Please try again or restart the application.`;
   }
 
   logError(errorInfo) {

@@ -1,21 +1,31 @@
 // Debug script for IPC communication issues
-console.log('[Debug] Starting IPC debug script...');
+if (localStorage.getItem('debug') === 'true') {
+  console.log('[Debug] Starting IPC debug script...');
+}
 
 // Check Tauri availability
 if (window.__TAURI__) {
-  console.log('[Debug] Tauri is available');
-  console.log('[Debug] Tauri version:', window.__TAURI__.app?.getVersion?.() || 'Unknown');
+  if (localStorage.getItem('debug') === 'true') {
+    console.log('[Debug] Tauri is available');
+  }
+  if (localStorage.getItem('debug') === 'true') {
+    console.log('[Debug] Tauri version:', window.__TAURI__.app?.getVersion?.() || 'Unknown');
+  }
   
   // Test basic IPC communication
   if (window.__TAURI__.core?.invoke) {
-    console.log('[Debug] Testing basic IPC...');
+    if (localStorage.getItem('debug') === 'true') {
+      console.log('[Debug] Testing basic IPC...');
+    }
     
     // Test with timeout
     Promise.race([
       window.__TAURI__.core.invoke('get_app_info'),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
     ]).then(result => {
-      console.log('[Debug] IPC test successful:', result);
+      if (localStorage.getItem('debug') === 'true') {
+        console.log('[Debug] IPC test successful:', result);
+      }
     }).catch(error => {
       console.error('[Debug] IPC test failed:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error) : encodeURIComponent(error));
     });
@@ -25,7 +35,9 @@ if (window.__TAURI__) {
   
   // Check event system
   if (window.__TAURI__.event?.listen) {
-    console.log('[Debug] Event system available');
+    if (localStorage.getItem('debug') === 'true') {
+      console.log('[Debug] Event system available');
+    }
   } else {
     console.error('[Debug] Event system not available');
   }
@@ -47,4 +59,6 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
-console.log('[Debug] IPC debug script loaded');
+if (localStorage.getItem('debug') === 'true') {
+  console.log('[Debug] IPC debug script loaded');
+}

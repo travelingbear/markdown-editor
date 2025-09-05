@@ -19,6 +19,21 @@ class SafeIPC {
       throw new Error('Tauri IPC not available');
     }
     
+    // Input validation to prevent code injection
+    if (!command || typeof command !== 'string') {
+      throw new Error('Invalid command: must be a non-empty string');
+    }
+    
+    // Sanitize command string - only allow alphanumeric, underscore, dash, and colon
+    if (!/^[a-zA-Z0-9_:-]+$/.test(command)) {
+      throw new Error('Invalid command format: contains unsafe characters');
+    }
+    
+    // Validate args parameter
+    if (args !== null && typeof args !== 'object') {
+      throw new Error('Invalid args: must be an object or null');
+    }
+    
     try {
       // Add timeout to all IPC calls
       const result = await Promise.race([

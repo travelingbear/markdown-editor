@@ -525,10 +525,18 @@ class PerformanceOptimizer {
   // Phase 6: Check if we're in debug mode
   isDebugMode() {
     try {
-      // Check if console is accessible and not disabled
-      return typeof console !== 'undefined' && 
-             typeof console.log === 'function' && 
-             !window.__TAURI__; // In Tauri production builds, console might be limited
+      // Check if console is accessible and functional
+      if (typeof console === 'undefined' || typeof console.log !== 'function') {
+        return false;
+      }
+      
+      // In development, we're usually running from file:// or localhost
+      const isDev = window.location.protocol === 'file:' || 
+                   window.location.hostname === 'localhost' ||
+                   window.location.hostname === '127.0.0.1' ||
+                   window.location.port !== '';
+      
+      return isDev;
     } catch (e) {
       return false;
     }

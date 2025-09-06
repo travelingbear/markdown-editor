@@ -149,114 +149,141 @@ Transform the current single-document markdown editor into a multi-tab applicati
    - Restore tabs on application startup
    - Handle missing files gracefully
 
+5. **Implement Tab UI in Status Bar**
+   - Tab UI in bottom right (replacing filename when tabs are open)
+   - Show most recent 5 tabs with close buttons (X)
+   - "More" button when more than 5 tabs
+   - Modal showing all tabs with close functionality
+   - No file type icons (clean minimal design)
+
 #### Success Criteria
 - [ ] Can open multiple documents in tabs
 - [ ] Tab switching preserves document state
 - [ ] Unsaved changes tracked per tab
 - [ ] Tab persistence works across sessions
 - [ ] Performance acceptable with 20+ tabs
+- [ ] Tab UI shows in bottom right status bar
+- [ ] More button appears when >5 tabs
+- [ ] Tab modal shows all open tabs
 
 #### Testing Requirements
-- [ ] Open 5 different .md files → 5 tabs created
+- [ ] Open 5 different .md files → 5 tabs created in status bar
 - [ ] Switch between tabs → content preserved
 - [ ] Close tab with unsaved changes → confirmation dialog
+- [ ] Open 6th file → "More" button appears
+- [ ] Click "More" → modal shows all tabs
+- [ ] Close tabs from modal → works correctly
 - [ ] Restart app → tabs restored
 - [ ] Open 50 tabs → no significant performance impact
 - [ ] User has to validate the items in the success criteria
 
 ---
 
-### **Phase 4: Vertical Tab Sidebar** 📋
+### **Phase 4: Enhanced Tab Features** 🎯
 **Priority**: MEDIUM
-**Branch**: `feature/vertical-sidebar`
+**Branch**: `feature/enhanced-tabs`
 **Estimated Time**: 2-3 days
 
 #### Objectives
-- Add vertical tab bar on the left side
-- Implement auto-hide functionality
-- Support pinned/unpinned states
+- Add drag-and-drop tab reordering in status bar
+- Implement keyboard navigation for tabs
+- Add tab context menu functionality
+- Enhance tab modal with additional features
 
 #### Tasks
-1. **Create Sidebar Component**
-   - `SidebarComponent` (vertical tab container)
-   - `TabItem` (individual tab representation)
-   - Auto-hide/show logic
+1. **Implement Drag-and-Drop Reordering**
+   - Draggable tab items in status bar
+   - Visual feedback during drag operations
+   - Reorder tabs in collection
+   - Persist new tab order
 
-2. **Update Layout System**
-   - Modify CSS Grid to accommodate sidebar
-   - Responsive layout adjustments
-   - Distraction-free mode integration
+2. **Add Keyboard Navigation**
+   - Navigate between tabs with Ctrl+Tab/Ctrl+Shift+Tab
+   - Close tab with Ctrl+W
+   - New tab with Ctrl+T
+   - Switch to specific tab with Ctrl+1-9
 
-3. **Implement Tab Display**
-   - File name display (truncated if needed)
-   - Close button (X) on hover
-   - Active tab highlighting
-   - Unsaved indicator (dot or asterisk)
+3. **Enhance Tab Modal**
+   - Search/filter functionality
+   - Sort options (name, date, path)
+   - Bulk operations (close multiple tabs)
+   - Keyboard navigation within modal
 
-4. **Add Auto-hide Behavior**
-   - Hide sidebar when not in use
-   - Show on hover or keyboard shortcut
-   - Pin/unpin functionality
-   - Respect distraction-free mode
+4. **Add Tab Context Menu**
+   - Right-click context menu on tabs
+   - Close tab, close others, close all
+   - Duplicate tab functionality
+   - Reveal in file explorer
 
 #### Success Criteria
-- [ ] Vertical sidebar displays all open tabs
-- [ ] Auto-hide works smoothly
-- [ ] Pin/unpin functionality works
-- [ ] Integrates with distraction-free mode
-- [ ] Responsive design maintained
+- [ ] Drag-and-drop reordering works in status bar
+- [ ] Keyboard shortcuts for tab navigation work
+- [ ] Tab modal has enhanced functionality
+- [ ] Context menu provides useful actions
+- [ ] Tab order persists across sessions
 
 #### Testing Requirements
-- [ ] Sidebar shows all open tabs
-- [ ] Hover shows/hides sidebar when unpinned
-- [ ] Pin button keeps sidebar visible
-- [ ] Distraction-free mode hides sidebar
-- [ ] Tab close buttons work
-- [ ] Active tab clearly highlighted
+- [ ] Drag tab to new position in status bar → order changes
+- [ ] Ctrl+Tab cycles through tabs
+- [ ] Ctrl+W closes active tab
+- [ ] Right-click tab → context menu appears
+- [ ] Tab modal search filters tabs correctly
+- [ ] Keyboard navigation works in modal
+- [ ] Tab order preserved after restart
 - [ ] User has to validate the items in the success criteria
 
 ---
 
-### **Phase 5: Tab Interaction Features** 🎯
+### **Phase 5: Tab Session Management** 💾
 **Priority**: MEDIUM
-**Branch**: `feature/tab-interactions`
+**Branch**: `feature/tab-sessions`
 **Estimated Time**: 2-3 days
 
 #### Objectives
-- Add drag-and-drop tab reordering
-- Implement tab close functionality
-- Add keyboard navigation
+- Implement advanced tab session management
+- Add tab grouping and organization features
+- Enhance tab persistence with recovery options
+- Add tab export/import functionality
 
 #### Tasks
-1. **Implement Drag-and-Drop**
-   - Draggable tab items
-   - Drop zones and visual feedback
-   - Reorder tabs in collection
-   - Persist new tab order
+1. **Advanced Session Management**
+   - Save/restore tab sessions by name
+   - Auto-save sessions on app close
+   - Session recovery after crashes
+   - Recent sessions list
 
-2. **Add Tab Close Features**
-   - Close button (X) on each tab
-   - Close confirmation for unsaved tabs
-   - Close all tabs functionality
-   - Close other tabs functionality
+2. **Tab Organization Features**
+   - Pin/unpin important tabs
+   - Recently closed tabs recovery
+   - Tab bookmarking system
+   - Workspace-based tab groups
 
-3. **Keyboard Navigation**
-   - Navigate between tabs with keyboard
-   - Close tab with keyboard
-   - New tab with keyboard
-   - Show/hide sidebar with keyboard
+3. **Enhanced Persistence**
+   - Backup tab sessions to file
+   - Import/export tab configurations
+   - Cross-device session sync preparation
+   - Session cleanup and optimization
+
+4. **Tab Analytics and Insights**
+   - Most used files tracking
+   - Tab usage statistics
+   - Performance impact monitoring
+   - Memory usage per tab reporting
 
 #### Success Criteria
-- [ ] Drag-and-drop reordering works smoothly
-- [ ] Tab close buttons work correctly
-- [ ] Keyboard navigation implemented
-- [ ] Tab order persists across sessions
+- [ ] Named tab sessions can be saved/restored
+- [ ] Pinned tabs persist across sessions
+- [ ] Recently closed tabs can be recovered
+- [ ] Tab sessions can be exported/imported
+- [ ] Performance remains good with complex sessions
 
 #### Testing Requirements
-- [ ] Drag tab to new position → order changes
-- [ ] Click X on tab → tab closes (with confirmation if unsaved)
-- [ ] Keyboard shortcuts work for tab navigation
-- [ ] Tab order preserved after restart
+- [ ] Save session with name → can restore later
+- [ ] Pin tab → stays pinned after restart
+- [ ] Close tab → appears in "recently closed"
+- [ ] Export session → can import in fresh install
+- [ ] Complex session with 30+ tabs → good performance
+- [ ] Crash recovery → tabs restored correctly
 - [ ] User has to validate the items in the success criteria
 
 ---
@@ -276,20 +303,40 @@ Transform the current single-document markdown editor into a multi-tab applicati
    - Lazy load inactive tab content
    - Dispose of unused Monaco editor instances
    - Implement tab content virtualization
+   - Smart tab unloading for memory pressure
 
 2. **Performance Monitoring**
    - Add tab-specific performance metrics
    - Monitor memory usage per tab
    - Performance warnings for excessive tabs
+   - Real-time performance dashboard
 
 3. **UI Responsiveness**
    - Optimize tab switching performance
    - Debounce expensive operations
-   - Virtual scrolling for tab list if needed
+   - Virtual scrolling for tab modal if needed
+   - Async tab operations to prevent UI blocking
+
+4. **Smart Resource Management**
+   - Intelligent tab prioritization
+   - Background tab content freezing
+   - Predictive tab loading
+   - Memory cleanup automation
 
 #### Success Criteria
 - [ ] 100 tabs can be opened without significant slowdown
-- [ ] Memory usage remains reasonable
+- [ ] Memory usage stays reasonable with many tabs
+- [ ] Tab switching remains fast (<100ms)
+- [ ] UI stays responsive during heavy operations
+- [ ] Smart unloading works when memory is low
+
+#### Testing Requirements
+- [ ] Open 100 tabs → app remains responsive
+- [ ] Memory usage monitored → stays within limits
+- [ ] Tab switching performance → consistently fast
+- [ ] Background tabs → properly managed
+- [ ] Performance warnings → appear when needed
+- [ ] User has to validate the items in the success criteriaory usage remains reasonable
 - [ ] Tab switching is responsive
 - [ ] Performance metrics show acceptable values
 

@@ -11,6 +11,7 @@ class MarkdownEditor extends BaseComponent {
     this.editorComponent = null;
     this.previewComponent = null;
     this.toolbarComponent = null;
+    this.tabManager = null;
     
     // Application state
     this.currentMode = 'preview';
@@ -112,6 +113,11 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async createComponents() {
+    // Create tab manager first
+    this.tabManager = new TabManager();
+    this.addChild(this.tabManager);
+    await this.tabManager.init();
+    
     // Create document component
     this.documentComponent = new DocumentComponent();
     this.addChild(this.documentComponent);
@@ -134,50 +140,74 @@ class MarkdownEditor extends BaseComponent {
   }
 
   setupComponentCommunication() {
+    // Tab Manager Events
+    this.tabManager.on('tab-created', (data) => {
+      this.updateTabUI();
+      this.switchToTab(data.tab.id);
+    });
+    
+    this.tabManager.on('tab-removed', (data) => {
+      this.updateTabUI();
+      if (!this.tabManager.hasTabs()) {
+        this.showWelcomePage();
+      }
+    });
+    
+    this.tabManager.on('tab-activated', (data) => {
+      this.loadTabContent(data.tab);
+      this.updateTabUI();
+    });
+    
+    this.tabManager.on('tab-content-updated', (data) => {
+      this.updateTabUI();
+    });
+    
+    this.tabManager.on('tab-saved', (data) => {
+      this.updateTabUI();
+    });
+    
+    this.tabManager.on('tab-restored', (data) => {
+      // Tab restored from persistence
+    });
+    
+    this.tabManager.on('all-tabs-closed', (data) => {
+      this.showWelcomePage();
+      this.updateTabUI();
+    });
+    
     // Document Component Events
     this.documentComponent.on('document-opened', (data) => {
-      this.editorComponent.emit('set-content', { content: data.content });
-      this.previewComponent.emit('update-preview', { content: data.content });
-      this.previewComponent.showPreview();
-      this.updateFilename(data.fileName, false);
-      this.toolbarComponent.emit('document-state-changed', { 
-        hasDocument: true, 
-        isDirty: false 
-      });
-      this.setMode(this.defaultMode);
+      // Open file in new tab or existing tab
+      this.tabManager.openFileInTab(data.filePath, data.content);
       this.lastFileOpenTime = performance.now();
     });
     
     this.documentComponent.on('document-new', (data) => {
-      this.editorComponent.emit('set-content', { content: data.content });
-      this.previewComponent.emit('update-preview', { content: data.content });
-      this.previewComponent.showPreview();
-      this.updateFilename('untitled.md', false);
-      this.toolbarComponent.emit('document-state-changed', { 
-        hasDocument: true, 
-        isDirty: false 
-      });
+      // Create new tab
+      this.tabManager.createNewTab(data.content);
       this.setMode('code'); // New files start in code mode
     });
     
     this.documentComponent.on('document-closed', () => {
-      this.editorComponent.emit('set-content', { content: '' });
-      this.previewComponent.emit('update-preview', { content: '' });
-      this.previewComponent.showWelcome();
-      this.updateFilename('Welcome', false);
-      this.toolbarComponent.emit('document-state-changed', { 
-        hasDocument: false, 
-        isDirty: false 
-      });
-      this.setMode('preview');
+      // Close active tab
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        this.tabManager.closeTab(activeTab.id);
+      }
     });
     
     this.documentComponent.on('document-dirty-changed', (data) => {
-      this.updateFilename(null, data.isDirty);
-      this.toolbarComponent.emit('document-state-changed', { 
-        hasDocument: this.documentComponent.getDocumentState().hasDocument, 
-        isDirty: data.isDirty 
-      });
+      // Update active tab dirty state
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        activeTab.isDirty = data.isDirty;
+        this.updateTabUI();
+        this.updateFilename(null, data.isDirty);
+        this.toolbarComponent.emit('document-state-changed', { 
+          hasDocument: true, 
+          isDirty: data.isDirty 
+        });
+      }
     });
     
     this.documentComponent.on('document-error', (data) => {
@@ -186,6 +216,11 @@ class MarkdownEditor extends BaseComponent {
     
     // Editor Component Events
     this.editorComponent.on('content-changed', (data) => {
+      // Update active tab content
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        this.tabManager.updateTabContent(activeTab.id, data.content);
+      }
       this.documentComponent.emit('content-changed', data);
       this.previewComponent.emit('update-preview', data);
     });
@@ -341,6 +376,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Notify toolbar of current mode
     this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
+    
+    // Initialize tab UI
+    this.updateTabUI();
   }
 
   setupGlobalEventHandlers() {
@@ -367,6 +405,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Settings controls
     this.setupSettingsControls();
+    
+    // Tab dropdown
+    this.setupTabDropdown();
   }
 
   handleKeyboardShortcuts(e) {
@@ -469,14 +510,8 @@ class MarkdownEditor extends BaseComponent {
 
   // File Operations
   async newFile() {
-    if (this.documentComponent.getDocumentState().isDirty) {
-      const shouldClose = await this.handleUnsavedChanges();
-      if (shouldClose) {
-        this.documentComponent.newDocument();
-      }
-    } else {
-      this.documentComponent.newDocument();
-    }
+    // Always create new tab for new files
+    this.tabManager.createNewTab();
   }
 
   async openFile() {
@@ -484,15 +519,30 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async saveFile() {
-    await this.documentComponent.saveFile();
+    const activeTab = this.tabManager.getActiveTab();
+    if (activeTab) {
+      const result = await this.documentComponent.saveFile();
+      if (result && result.filePath) {
+        this.tabManager.markTabSaved(activeTab.id, result.filePath);
+      }
+    }
   }
 
   async saveAsFile() {
-    await this.documentComponent.saveAsFile();
+    const activeTab = this.tabManager.getActiveTab();
+    if (activeTab) {
+      const result = await this.documentComponent.saveAsFile();
+      if (result && result.filePath) {
+        this.tabManager.markTabSaved(activeTab.id, result.filePath);
+      }
+    }
   }
 
   async closeFile() {
-    await this.documentComponent.closeFile();
+    const activeTab = this.tabManager.getActiveTab();
+    if (activeTab) {
+      await this.tabManager.closeTab(activeTab.id);
+    }
   }
 
   // Mode Management
@@ -735,7 +785,13 @@ class MarkdownEditor extends BaseComponent {
   }
 
   updateFilename(name = null, isDirty = null) {
-    if (!this.filename) return;
+    const filenameBtn = document.getElementById('filename');
+    if (!filenameBtn) return;
+    
+    // If we have tabs, the filename is managed by updateTabUI
+    if (this.tabManager && this.tabManager.hasTabs()) {
+      return;
+    }
     
     const documentState = this.documentComponent.getDocumentState();
     
@@ -753,7 +809,8 @@ class MarkdownEditor extends BaseComponent {
       isDirty = documentState.isDirty;
     }
     
-    this.filename.textContent = `${name}${isDirty ? ' *' : ''}`;
+    filenameBtn.textContent = `${name}${isDirty ? ' *' : ''}`;
+    filenameBtn.classList.remove('has-tabs');
   }
 
   handleMarkdownAction(action) {
@@ -1397,21 +1454,12 @@ class MarkdownEditor extends BaseComponent {
         
         const files = event.payload;
         if (Array.isArray(files) && files.length > 0) {
-          // Open the first file (for now, until we have multi-tab support)
-          const firstFile = files[0];
-          console.log('[MarkdownEditor] Opening file from single instance:', firstFile);
+          console.log('[MarkdownEditor] Opening files from single instance:', files);
           
-          // Check if we have unsaved changes
-          const documentState = this.documentComponent.getDocumentState();
-          if (documentState.isDirty) {
-            this.handleUnsavedChanges().then((shouldClose) => {
-              if (shouldClose) {
-                this.documentComponent.openFile(firstFile);
-              }
-            });
-          } else {
-            this.documentComponent.openFile(firstFile);
-          }
+          // Open each file in a new tab
+          files.forEach(filePath => {
+            this.documentComponent.openFile(filePath);
+          });
         }
         
         // Focus the window
@@ -1597,8 +1645,280 @@ class MarkdownEditor extends BaseComponent {
     // Basic scroll sync - will be enhanced later
   }
 
+  // Tab Management Methods
+  switchToTab(tabId) {
+    this.tabManager.switchToTab(tabId);
+  }
+  
+  loadTabContent(tab) {
+    // Load tab content into editor and preview
+    this.editorComponent.emit('set-content', { content: tab.content });
+    this.previewComponent.emit('update-preview', { content: tab.content });
+    this.previewComponent.showPreview();
+    
+    // Update filename and document state
+    this.updateFilename(tab.fileName, tab.isDirty);
+    this.toolbarComponent.emit('document-state-changed', { 
+      hasDocument: true, 
+      isDirty: tab.isDirty 
+    });
+    
+    // Restore cursor position if available
+    if (tab.cursorPosition && this.editorComponent.isMonacoLoaded) {
+      setTimeout(() => {
+        this.editorComponent.setCursorPosition(tab.cursorPosition.line, tab.cursorPosition.col);
+      }, 100);
+    }
+  }
+  
+  showWelcomePage() {
+    this.editorComponent.emit('set-content', { content: '' });
+    this.previewComponent.emit('update-preview', { content: '' });
+    this.previewComponent.showWelcome();
+    this.updateFilename('Welcome', false);
+    this.toolbarComponent.emit('document-state-changed', { 
+      hasDocument: false, 
+      isDirty: false 
+    });
+    this.setMode('preview');
+  }
+  
+  updateTabUI() {
+    const filenameBtn = document.getElementById('filename');
+    const tabDropdownList = document.getElementById('tab-dropdown-list');
+    const tabMoreBtn = document.getElementById('tab-more-btn');
+    
+    if (!filenameBtn || !tabDropdownList || !tabMoreBtn) return;
+    
+    const tabs = this.tabManager.getAllTabs();
+    const activeTab = this.tabManager.getActiveTab();
+    
+    if (tabs.length === 0) {
+      // No tabs - show default filename
+      filenameBtn.textContent = 'Welcome';
+      filenameBtn.classList.remove('has-tabs');
+      return;
+    }
+    
+    // Update filename button to show active tab
+    if (activeTab) {
+      const displayName = `${activeTab.fileName}${activeTab.isDirty ? ' *' : ''}`;
+      filenameBtn.textContent = displayName;
+      filenameBtn.classList.add('has-tabs');
+    }
+    
+    // Clear existing dropdown items
+    tabDropdownList.innerHTML = '';
+    
+    // Show up to 5 most recent tabs in dropdown
+    const visibleTabs = tabs.slice(-5);
+    const showMoreBtn = tabs.length > 5;
+    
+    visibleTabs.forEach(tab => {
+      const tabElement = this.createDropdownTabElement(tab, activeTab);
+      tabDropdownList.appendChild(tabElement);
+    });
+    
+    // Show/hide more button
+    tabMoreBtn.style.display = showMoreBtn ? 'block' : 'none';
+  }
+  
+  createDropdownTabElement(tab, activeTab) {
+    const tabElement = document.createElement('div');
+    tabElement.className = `tab-dropdown-item ${tab.id === activeTab?.id ? 'active' : ''}`;
+    tabElement.title = tab.filePath || tab.fileName;
+    
+    // Tab info
+    const tabInfo = document.createElement('div');
+    tabInfo.className = 'tab-dropdown-info';
+    
+    const tabName = document.createElement('div');
+    tabName.className = `tab-dropdown-name ${tab.isDirty ? 'dirty' : ''}`;
+    tabName.textContent = tab.fileName;
+    tabInfo.appendChild(tabName);
+    
+    tabElement.appendChild(tabInfo);
+    
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-dropdown-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.title = 'Close tab';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.tabManager.closeTab(tab.id);
+      this.hideTabDropdown();
+    };
+    tabElement.appendChild(closeBtn);
+    
+    // Click to switch tab
+    tabElement.onclick = () => {
+      this.switchToTab(tab.id);
+      this.hideTabDropdown();
+    };
+    
+    return tabElement;
+  }
+  
+  setupTabDropdown() {
+    const filenameBtn = document.getElementById('filename');
+    const tabDropdownMenu = document.getElementById('tab-dropdown-menu');
+    const tabMoreBtn = document.getElementById('tab-more-btn');
+    const tabModal = document.getElementById('tab-modal');
+    const tabModalClose = document.getElementById('tab-modal-close');
+    const tabModalOverlay = document.querySelector('.tab-modal-overlay');
+    
+    // Filename button click to toggle dropdown
+    if (filenameBtn) {
+      filenameBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.tabManager.hasTabs()) {
+          this.toggleTabDropdown();
+        }
+      });
+    }
+    
+    // More button click to show modal
+    if (tabMoreBtn) {
+      tabMoreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.hideTabDropdown();
+        this.showTabModal();
+      });
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (tabDropdownMenu && !tabDropdownMenu.contains(e.target) && e.target !== filenameBtn) {
+        this.hideTabDropdown();
+      }
+    });
+    
+    // Tab modal handlers
+    if (tabModalClose) {
+      tabModalClose.addEventListener('click', () => {
+        this.hideTabModal();
+      });
+    }
+    
+    if (tabModalOverlay) {
+      tabModalOverlay.addEventListener('click', () => {
+        this.hideTabModal();
+      });
+    }
+  }
+  
+  toggleTabDropdown() {
+    const tabDropdownMenu = document.getElementById('tab-dropdown-menu');
+    if (tabDropdownMenu) {
+      const isVisible = tabDropdownMenu.classList.contains('show');
+      if (isVisible) {
+        this.hideTabDropdown();
+      } else {
+        this.showTabDropdown();
+      }
+    }
+  }
+  
+  showTabDropdown() {
+    const tabDropdownMenu = document.getElementById('tab-dropdown-menu');
+    if (tabDropdownMenu) {
+      tabDropdownMenu.classList.add('show');
+    }
+  }
+  
+  hideTabDropdown() {
+    const tabDropdownMenu = document.getElementById('tab-dropdown-menu');
+    if (tabDropdownMenu) {
+      tabDropdownMenu.classList.remove('show');
+    }
+  }
+  
+  showTabModal() {
+    const tabModal = document.getElementById('tab-modal');
+    const tabModalList = document.getElementById('tab-modal-list');
+    
+    if (!tabModal || !tabModalList) return;
+    
+    const tabs = this.tabManager.getAllTabs();
+    const activeTab = this.tabManager.getActiveTab();
+    
+    // Clear existing items
+    tabModalList.innerHTML = '';
+    
+    tabs.forEach(tab => {
+      const item = this.createTabModalItem(tab, activeTab);
+      tabModalList.appendChild(item);
+    });
+    
+    tabModal.style.display = 'flex';
+  }
+  
+  hideTabModal() {
+    const tabModal = document.getElementById('tab-modal');
+    if (tabModal) {
+      tabModal.style.display = 'none';
+    }
+  }
+  
+  createTabModalItem(tab, activeTab) {
+    const item = document.createElement('div');
+    item.className = `tab-modal-item ${tab.id === activeTab?.id ? 'active' : ''}`;
+    
+    const info = document.createElement('div');
+    info.className = 'tab-modal-info';
+    
+    const name = document.createElement('div');
+    name.className = 'tab-modal-name';
+    name.textContent = `${tab.fileName}${tab.isDirty ? ' •' : ''}`;
+    info.appendChild(name);
+    
+    if (tab.filePath) {
+      const path = document.createElement('div');
+      path.className = 'tab-modal-path';
+      path.textContent = tab.filePath;
+      info.appendChild(path);
+    }
+    
+    item.appendChild(info);
+    
+    const actions = document.createElement('div');
+    actions.className = 'tab-modal-actions';
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'tab-modal-close-btn';
+    closeBtn.innerHTML = '×';
+    closeBtn.title = 'Close tab';
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.tabManager.closeTab(tab.id);
+      // Update modal content
+      setTimeout(() => {
+        if (this.tabManager.getAllTabs().length === 0) {
+          this.hideTabModal();
+        } else {
+          this.showTabModal();
+        }
+      }, 100);
+    };
+    actions.appendChild(closeBtn);
+    
+    item.appendChild(actions);
+    
+    // Click to switch tab
+    item.onclick = () => {
+      this.switchToTab(tab.id);
+      this.hideTabModal();
+    };
+    
+    return item;
+  }
+
   onDestroy() {
     // Clean up all child components
+    if (this.tabManager) {
+      this.tabManager.destroy();
+    }
     if (this.documentComponent) {
       this.documentComponent.destroy();
     }

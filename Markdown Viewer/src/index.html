@@ -294,7 +294,13 @@
           </div>
         </div>
         <div class="status-right">
-          <span id="filename">untitled.md</span>
+          <div id="tab-dropdown" class="tab-dropdown">
+            <button id="filename" class="filename-btn">untitled.md</button>
+            <div id="tab-dropdown-menu" class="tab-dropdown-menu">
+              <div id="tab-dropdown-list" class="tab-dropdown-list"></div>
+              <button id="tab-more-btn" class="tab-more-btn" style="display: none;">More...</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -644,12 +650,30 @@
     <script src="/components/EditorComponent.js"></script>
     <script src="/components/PreviewComponent.js"></script>
     <script src="/components/ToolbarComponent.js"></script>
+    <!-- Load tab management components -->
+    <script src="/components/TabState.js"></script>
+    <script src="/components/TabCollection.js"></script>
+    <script src="/components/TabManager.js"></script>
     <script src="/components/MarkdownEditor.js"></script>
     
     <!-- Load main application -->
     <script src="/main.js"></script>
   </body>
 </html>
+      <!-- Tab Modal -->
+      <div id="tab-modal" class="tab-modal" style="display: none;">
+        <div class="tab-modal-overlay"></div>
+        <div class="tab-modal-window">
+          <div class="tab-modal-header">
+            <h3>Open Tabs</h3>
+            <button id="tab-modal-close" class="tab-modal-close">×</button>
+          </div>
+          <div class="tab-modal-content">
+            <div id="tab-modal-list" class="tab-modal-list"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Task Conflict Warning Modal -->
       <div id="task-conflict-modal" class="task-conflict-modal" style="display: none;">
         <div class="task-conflict-overlay"></div>

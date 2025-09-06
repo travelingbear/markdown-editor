@@ -4082,3 +4082,334 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
   }
 }
 
+/* Tab Dropdown Styles */
+.tab-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.filename-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.filename-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.filename-btn.has-tabs::after {
+  content: ' ▲';
+  font-size: 8px;
+  opacity: 0.7;
+}
+
+.tab-dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  margin-bottom: 4px;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.tab-dropdown-menu.show {
+  display: flex;
+}
+
+.tab-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.tab-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.tab-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.tab-dropdown-item:hover {
+  background: var(--bg-secondary);
+}
+
+.tab-dropdown-item.active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.tab-dropdown-info {
+  flex: 1;
+  min-width: 0;
+  margin-right: 8px;
+}
+
+.tab-dropdown-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-dropdown-name.dirty::after {
+  content: ' •';
+  color: #f85149;
+  font-weight: bold;
+}
+
+.tab-dropdown-item.active .tab-dropdown-name.dirty::after {
+  color: #ffcccb;
+}
+
+.tab-dropdown-close {
+  background: none;
+  border: none;
+  color: currentColor;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px;
+  border-radius: 2px;
+  opacity: 0.7;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.tab-dropdown-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-more-btn {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: none;
+  border-top: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+  border-radius: 0 0 6px 6px;
+}
+
+.tab-more-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Tab Modal */
+.tab-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.tab-modal-window {
+  position: relative;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  max-height: 70vh;
+  animation: fadeInContent 0.2s ease-out;
+}
+
+.tab-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  border-radius: 8px 8px 0 0;
+}
+
+.tab-modal-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+  color: var(--text-primary);
+}
+
+.tab-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.tab-modal-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tab-modal-content {
+  padding: 16px 20px;
+  max-height: calc(70vh - 80px);
+  overflow-y: auto;
+}
+
+.tab-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tab-modal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-modal-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+}
+
+.tab-modal-item.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.tab-modal-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-modal-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-modal-path {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-modal-item.active .tab-modal-path {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tab-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.tab-modal-close-btn {
+  background: none;
+  border: none;
+  color: currentColor;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 3px;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.tab-modal-close-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-modal-item.active .tab-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .tab-dropdown-menu {
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .tab-modal-window {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .tab-modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tab-dropdown-menu {
+    min-width: 180px;
+    max-width: 250px;
+  }
+  
+  .tab-modal-window {
+    width: 95%;
+    max-height: 80vh;
+  }
+  
+  .tab-modal-header {
+    padding: 12px 16px;
+  }
+  
+  .tab-modal-content {
+    padding: 12px 16px;
+  }
+  
+  .tab-modal-item {
+    padding: 10px 12px;
+  }
+}
+

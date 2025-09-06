@@ -1746,6 +1746,10 @@ body.retro-theme.split-mode .preview-content {
   color: #000000 !important;
 }
 
+body.retro-theme.split-mode .preview-pane {
+  background: #ffffff !important;
+}
+
 body.retro-theme.distraction-free.split-mode .preview-content {
   background: #ffffff !important;
   color: #000000 !important;

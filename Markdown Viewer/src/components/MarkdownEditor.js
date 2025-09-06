@@ -1627,8 +1627,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Update performance info
     const tabCount = this.tabManager.getTabsCount();
+    const virtualCount = this.performanceOptimizer ? this.performanceOptimizer.virtualizedTabs.size : 0;
     const performanceInfo = {
-      'perf-tab-count': tabCount.toString(),
+      'perf-tab-count': `${tabCount} (${virtualCount} virtual)`,
       'perf-memory': this.getMemoryUsage(),
       'perf-startup': this.startupTime ? `${this.startupTime.toFixed(2)}ms` : 'N/A',
       'perf-tab-switch': this.lastModeSwitchTime ? `${this.lastModeSwitchTime.toFixed(2)}ms` : 'N/A'

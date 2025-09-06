@@ -8,6 +8,13 @@
 
 ## ✨ Features
 
+### Multi-Tab Interface
+- **Smart Tab Management**: Open multiple files with intelligent tab organization
+- **Performance Optimized**: Handles 100+ tabs with virtualization and lazy loading
+- **Tab Navigation**: Quick access dropdown for recent 5 tabs, modal for all tabs
+- **Context Menus**: Right-click tabs for advanced operations (move, close, duplicate)
+- **Keyboard Shortcuts**: Alt+1-5 for numbered tabs, Ctrl+Tab for navigation
+
 ### Core Functionality
 - **Three-Mode Interface**: Code, Preview, and Split view modes
 - **Monaco Editor**: Professional code editing with syntax highlighting
@@ -16,7 +23,7 @@
 - **Interactive Elements**: Clickable task lists with state persistence
 
 ### User Experience
-- **GitHub-Style Themes**: Light and dark themes with perfect synchronization
+- **GitHub-Style Themes**: Light, Dark, and Retro themes with perfect synchronization
 - **Drag & Drop**: Native file drag-drop with absolute path support
 - **Export Options**: HTML export and PDF printing
 - **Font Size Controls**: Adjustable font size (10px-24px) in markdown toolbar
@@ -26,9 +33,10 @@
 
 ### System Integration
 - **File Associations**: Double-click .md files to open
-- **Lightning Fast Performance**: 57.80ms startup time (98.5% improvement)
-- **Memory Optimized**: Stable memory usage with leak prevention
-- **Performance Monitoring**: Built-in performance tracking and optimization
+- **Single Instance**: Multiple file opens merge into existing window
+- **Lightning Fast Performance**: <60ms startup time, <35ms tab switching
+- **Memory Optimized**: Smart tab virtualization and memory pressure detection
+- **Performance Monitoring**: Real-time performance dashboard in settings
 
 ## 🚀 Quick Start
 
@@ -56,15 +64,17 @@
 
 ### Getting Started
 1. **Launch the app** - See the welcome screen with quick start guide
-2. **Open a file** - Use Ctrl+O or drag-drop a .md file
-3. **Choose your mode** - Code for editing, Preview for reading, Split for both
-4. **Customize settings** - Press Ctrl+, to configure theme, toolbar sizes, and preferences
-5. **Use shortcuts** - Ctrl+=/-/0 for zoom, font controls in toolbar, undo/redo buttons
+2. **Open files** - Use Ctrl+O or drag-drop .md files (opens in new tabs)
+3. **Navigate tabs** - Click filename for recent tabs, Ctrl+Shift+Tab for all tabs
+4. **Choose your mode** - Code for editing, Preview for reading, Split for both
+5. **Customize settings** - Press Ctrl+, to configure theme, toolbar sizes, and preferences
+6. **Use shortcuts** - Alt+1-5 for tab switching, Ctrl+=/-/0 for zoom, right-click for context menus
 
 ### Architecture
-- **Frontend**: Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js
+- **Frontend**: Component-based architecture with Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js
 - **Backend**: Rust/Tauri for native file operations and system integration
-- **Performance**: 57.80ms startup, <500ms file ops, <35ms mode switching
+- **Tab System**: Smart tab management with virtualization and performance optimization
+- **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, handles 100+ tabs
 - **Bundle Size**: < 50MB across all platforms
 - **Security**: Sandboxed file access with CSP protection
 

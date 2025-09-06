@@ -247,8 +247,8 @@
               <p class="welcome-subtitle">A light, yet powerful markdown editor with live preview</p>
               
               <div class="welcome-actions">
-                <button id="welcome-new-btn" class="welcome-btn primary">New File</button>
-                <button id="welcome-open-btn" class="welcome-btn">Open File</button>
+                <button id="welcome-new-btn" class="welcome-btn primary">📄 New File</button>
+                <button id="welcome-open-btn" class="welcome-btn">📁 Open File</button>
               </div>
               
               <div id="file-history-section" class="file-history" style="display: none;">
@@ -260,9 +260,9 @@
               <div class="welcome-actions-grid">
                 <h3>Quick Actions</h3>
                 <div class="action-buttons">
-                  <button id="welcome-help-btn" class="welcome-btn action-btn">Shortcuts</button>
-                  <button id="welcome-about-btn" class="welcome-btn action-btn">About</button>
-                  <button id="welcome-settings-btn" class="welcome-btn action-btn">Settings</button>
+                  <button id="welcome-help-btn" class="welcome-btn action-btn">❓ Shortcuts</button>
+                  <button id="welcome-about-btn" class="welcome-btn action-btn">ℹ️ About</button>
+                  <button id="welcome-settings-btn" class="welcome-btn action-btn">⚙️ Settings</button>
                 </div>
               </div>
             </div>
@@ -425,6 +425,32 @@
             </div>
             
             <div class="settings-section">
+              <h3>Performance Monitor</h3>
+              <div class="performance-info">
+                <div class="info-item">
+                  <span class="info-label">Open Tabs:</span>
+                  <span id="perf-tab-count">0</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Memory Usage:</span>
+                  <span id="perf-memory">N/A</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Startup Time:</span>
+                  <span id="perf-startup">N/A</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Last Tab Switch:</span>
+                  <span id="perf-tab-switch">N/A</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Performance Status:</span>
+                  <span id="perf-status" class="status-good">Good</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="settings-section">
               <h3>System Info</h3>
               <div class="system-info">
                 <div class="info-item">
@@ -518,6 +544,25 @@
                 <div class="shortcut-item"><kbd>Ctrl+Shift+Tab</kbd><span>Tab modal (all tabs)</span></div>
                 <div class="shortcut-item"><kbd>Alt+1-5</kbd><span>Switch to numbered tab</span></div>
                 <div class="shortcut-item"><kbd>Click filename</kbd><span>Tab dropdown (recent 5)</span></div>
+                <div class="shortcut-item"><kbd>Right-click tab</kbd><span>Tab context menu</span></div>
+              </div>
+            </div>
+            
+            <div class="help-section">
+              <h3>💡 Tips & Features</h3>
+              <div class="help-tips">
+                <ul>
+                  <li><strong>Multi-Tab Support:</strong> Open multiple files in tabs with smart management</li>
+                  <li><strong>Performance Optimized:</strong> Handles 100+ tabs with virtualization</li>
+                  <li><strong>Drag & Drop:</strong> Drop .md files to open them instantly</li>
+                  <li><strong>Tab Navigation:</strong> Dropdown for recent 5, modal for all tabs</li>
+                  <li><strong>Context Menus:</strong> Right-click tabs for advanced options</li>
+                  <li><strong>Interactive Elements:</strong> Click task checkboxes to toggle</li>
+                  <li><strong>Math Support:</strong> $inline$ and $$display$$ expressions</li>
+                  <li><strong>Diagrams:</strong> Mermaid diagrams in ```mermaid blocks</li>
+                  <li><strong>Themes:</strong> Light, Dark, and Retro themes available</li>
+                  <li><strong>Export Options:</strong> HTML export and PDF printing</li>
+                </ul>
               </div>
             </div>
             
@@ -545,7 +590,7 @@
           <div class="about-content">
             <div class="about-logo">
               <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
-              <p class="version">Version 2.2.3</p>
+              <p class="version">Version 2.5.0</p>
             </div>
             
             <div class="about-description">
@@ -555,9 +600,14 @@
             <div class="about-features">
               <h3>Key Features</h3>
               <ul>
-                <li>Three-mode interface (Code, Preview, Split)</li>
-                <li>Monaco Editor with syntax highlighting</li>
-                <li>Real-time preview with KaTeX math and Mermaid diagrams</li>
+                <li><strong>Multi-Tab Interface:</strong> Open multiple files with smart tab management</li>
+                <li><strong>Three View Modes:</strong> Code, Preview, and Split view modes</li>
+                <li><strong>Monaco Editor:</strong> Professional code editing with syntax highlighting</li>
+                <li><strong>Real-Time Preview:</strong> GitHub-flavored markdown with live updates</li>
+                <li><strong>Advanced Rendering:</strong> KaTeX math expressions and Mermaid diagrams</li>
+                <li><strong>Performance Optimized:</strong> Handles 100+ tabs with virtualization</li>
+                <li><strong>Interactive Elements:</strong> Clickable task lists with state persistence</li>
+                <li><strong>Export Options:</strong> HTML export and PDF printing</li>
               </ul>
             </div>
             

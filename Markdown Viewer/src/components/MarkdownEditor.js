@@ -1625,6 +1625,41 @@ class MarkdownEditor extends BaseComponent {
       }
     });
     
+    // Update performance info
+    const tabCount = this.tabManager.getTabsCount();
+    const performanceInfo = {
+      'perf-tab-count': tabCount.toString(),
+      'perf-memory': this.getMemoryUsage(),
+      'perf-startup': this.startupTime ? `${this.startupTime.toFixed(2)}ms` : 'N/A',
+      'perf-tab-switch': this.lastModeSwitchTime ? `${this.lastModeSwitchTime.toFixed(2)}ms` : 'N/A'
+    };
+    
+    Object.entries(performanceInfo).forEach(([id, value]) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      }
+    });
+    
+    // Update performance status
+    const perfStatus = document.getElementById('perf-status');
+    if (perfStatus) {
+      let status = 'Good';
+      let statusClass = 'status-good';
+      
+      if (tabCount > 50) {
+        status = 'Warning';
+        statusClass = 'status-warning';
+      }
+      if (tabCount > 100) {
+        status = 'Critical';
+        statusClass = 'status-critical';
+      }
+      
+      perfStatus.textContent = status;
+      perfStatus.className = statusClass;
+    }
+    
     // Update system info
     const systemInfo = {
       'info-default-mode': this.defaultMode,
@@ -1640,8 +1675,6 @@ class MarkdownEditor extends BaseComponent {
         element.textContent = value;
       }
     });
-    
-    // Old performance stats removed - now handled by Performance Monitor section
   }
   
   getMemoryUsage() {

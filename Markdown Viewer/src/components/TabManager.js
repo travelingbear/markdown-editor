@@ -165,6 +165,11 @@ class TabManager extends BaseComponent {
 
 
   
+  // Move tab to front for dropdown priority
+  moveTabToFront(tabId) {
+    return this.tabCollection.moveNewTabToFront(tabId);
+  }
+  
   // Get tab by ID
   getTab(tabId) {
     return this.tabCollection.getTab(tabId);

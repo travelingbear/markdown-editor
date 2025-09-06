@@ -19,7 +19,8 @@ class TabCollection extends BaseComponent {
     const id = `tab-${this.nextTabId++}`;
     const tab = new TabState(id, options);
     
-    this.tabs.push(tab);
+    // Add new tab at the beginning for dropdown priority
+    this.tabs.unshift(tab);
     this.setActiveTab(id);
     
     this.emit('tab-created', { tab });
@@ -65,6 +66,16 @@ class TabCollection extends BaseComponent {
     this.activeTabId = tabId;
 
     this.emit('tab-activated', { tab });
+    return true;
+  }
+
+  // Move newly created tab to front for dropdown priority
+  moveNewTabToFront(tabId) {
+    const index = this.tabs.findIndex(tab => tab.id === tabId);
+    if (index === -1 || index === 0) return false;
+
+    const tab = this.tabs.splice(index, 1)[0];
+    this.tabs.unshift(tab);
     return true;
   }
 

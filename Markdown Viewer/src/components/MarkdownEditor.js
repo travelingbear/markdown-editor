@@ -1725,6 +1725,16 @@ class MarkdownEditor extends BaseComponent {
       this.tabManager.updateTabCursor(currentTab.id, cursorPos.line, cursorPos.col);
     }
     
+    // Check if tab is in current dropdown (first 5)
+    const allTabs = this.tabManager.getAllTabs();
+    const dropdownTabs = allTabs.slice(0, 5);
+    const isInDropdown = dropdownTabs.some(tab => tab.id === tabId);
+    
+    // If not in dropdown, move to front before switching
+    if (!isInDropdown) {
+      this.tabManager.moveTabToFront(tabId);
+    }
+    
     this.tabManager.switchToTab(tabId);
   }
   
@@ -1806,7 +1816,7 @@ class MarkdownEditor extends BaseComponent {
     // Clear existing dropdown items
     tabDropdownList.innerHTML = '';
     
-    // Show up to 5 most recent tabs in dropdown
+    // Show up to 5 most recent tabs in dropdown (newest first)
     const visibleTabs = tabs.slice(0, 5);
     const showMoreBtn = tabs.length > 5;
     
@@ -2081,12 +2091,12 @@ class MarkdownEditor extends BaseComponent {
   // Enhanced Tab Features - Phase 4
   
   setupTabKeyboardShortcuts() {
-    // Alt+1-5 for switching to numbered tabs in dropdown
+    // Alt+1-5 for switching to numbered tabs in dropdown (most recent first)
     document.addEventListener('keydown', (e) => {
       if (e.altKey && e.key >= '1' && e.key <= '5') {
         const tabIndex = parseInt(e.key) - 1;
         const tabs = this.tabManager.getAllTabs();
-        const visibleTabs = tabs.slice(0, 5); // First 5 tabs
+        const visibleTabs = tabs.slice(0, 5); // First 5 tabs (most recent first)
         
         if (visibleTabs[tabIndex]) {
           e.preventDefault();

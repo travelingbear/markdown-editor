@@ -144,6 +144,13 @@ class MarkdownEditor extends BaseComponent {
   setupComponentCommunication() {
     // Tab Manager Events
     this.tabManager.on('tab-created', (data) => {
+      // Phase 6: Track tab creation performance for all new tabs
+      if (this.performanceOptimizer) {
+        const currentTabCount = this.tabManager.getTabsCount();
+        this.performanceOptimizer.trackTabAccess(data.tab.id);
+        console.log(`[Performance] New tab created: ${data.tab.fileName || 'untitled'} (Total: ${currentTabCount})`);
+      }
+      
       this.updateTabUI();
       this.switchToTab(data.tab.id);
     });
@@ -181,9 +188,17 @@ class MarkdownEditor extends BaseComponent {
     
     // Document Component Events
     this.documentComponent.on('document-opened', (data) => {
+      const startTime = performance.now();
+      const currentTabCount = this.tabManager.getTabsCount();
+      
       // Open file in new tab or existing tab
       this.tabManager.openFileInTab(data.filePath, data.content);
       this.lastFileOpenTime = performance.now();
+      
+      // Phase 6: Track file open performance for all file opens (including from Explorer)
+      if (this.performanceOptimizer && this.tabManager.getTabsCount() > currentTabCount) {
+        this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
+      }
     });
     
     this.documentComponent.on('document-new', (data) => {

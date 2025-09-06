@@ -319,28 +319,32 @@ class PerformanceOptimizer {
   // Phase 6: Memory pressure detection and response
   checkMemoryPressure() {
     const memoryInfo = this.checkMemoryUsage();
-    if (!memoryInfo) return;
-    
-    // Also check tab count for virtualization
     const tabCount = window.markdownEditor?.tabManager?.getTabsCount() || 0;
     
-    if (memoryInfo.pressure > this.memoryPressureThreshold) {
+    // Always check tab count for virtualization, regardless of memory pressure
+    if (tabCount > 15) {
+      console.log(`[Performance] High tab count detected: ${tabCount} tabs, checking virtualization`);
+      this.handleHighTabCount(tabCount);
+    }
+    
+    if (memoryInfo && memoryInfo.pressure > this.memoryPressureThreshold) {
       console.warn(`[Performance] Memory pressure detected: ${(memoryInfo.pressure * 100).toFixed(1)}%`);
       this.handleMemoryPressure(memoryInfo);
-    } else if (tabCount > 15) {
-      // Virtualize tabs based on count even without memory pressure
-      console.log(`[Performance] High tab count detected: ${tabCount} tabs, considering virtualization`);
-      this.handleHighTabCount(tabCount);
     }
   }
   
   // Phase 6: Handle high tab count by virtualizing some tabs
   handleHighTabCount(tabCount) {
+    // Initialize tab access tracking if not done yet
+    this.initializeTabAccessTracking();
+    
     const tabsToVirtualize = this.selectTabsForVirtualization(tabCount);
     
     if (tabsToVirtualize.length > 0) {
       console.log(`[Performance] Virtualizing ${tabsToVirtualize.length} tabs to improve performance`);
       tabsToVirtualize.forEach(tabId => this.virtualizeTab(tabId));
+    } else {
+      console.log(`[Performance] ${tabCount} tabs detected, but no candidates for virtualization`);
     }
   }
   
@@ -350,15 +354,22 @@ class PerformanceOptimizer {
     const candidates = [];
     
     // Target: keep only 8-10 tabs active, virtualize the rest
-    const maxActiveTabs = 8;
+    const maxActiveTabs = 10;
     const tabsToVirtualize = Math.max(0, totalTabs - maxActiveTabs);
+    
+    console.log(`[Performance] Selecting tabs for virtualization: ${totalTabs} total, target ${tabsToVirtualize} to virtualize`);
     
     for (const [tabId, lastAccess] of this.lastAccessTime.entries()) {
       const timeSinceAccess = now - lastAccess;
       const accessCount = this.tabAccessPattern.get(tabId) || 0;
       
-      // Virtualize tabs not accessed in last 2 minutes
-      if (timeSinceAccess > 120000) { // 2 minutes
+      // Skip already virtualized tabs
+      if (this.virtualizedTabs.has(tabId)) {
+        continue;
+      }
+      
+      // Virtualize tabs not accessed in last 30 seconds (more aggressive)
+      if (timeSinceAccess > 30000) { // 30 seconds
         candidates.push({ tabId, timeSinceAccess, accessCount });
       }
     }
@@ -371,14 +382,20 @@ class PerformanceOptimizer {
       return b.timeSinceAccess - a.timeSinceAccess;
     });
     
+    console.log(`[Performance] Found ${candidates.length} candidates for virtualization`);
+    
     return candidates.slice(0, tabsToVirtualize).map(c => c.tabId);
   }
   
   // Phase 6: Virtualize a tab (similar to unload but different tracking)
   virtualizeTab(tabId) {
-    // For now, just mark it as virtualized for display purposes
+    // Mark it as virtualized for display purposes
     this.virtualizedTabs.add(tabId);
     console.log(`[Performance] Tab ${tabId} virtualized`);
+    
+    // Update access time to prevent immediate re-virtualization
+    const now = Date.now();
+    this.lastAccessTime.set(tabId, now - 300000); // Mark as 5 minutes old
   }
   
   // Phase 6: Handle memory pressure by unloading tabs
@@ -725,11 +742,41 @@ class PerformanceOptimizer {
     return isOlderHardware;
   }
   
+  // Phase 6: Initialize tab access tracking for existing tabs
+  initializeTabAccessTracking() {
+    if (this.lastAccessTime.size > 0) return; // Already initialized
+    
+    if (window.markdownEditor?.tabManager) {
+      const allTabs = window.markdownEditor.tabManager.getAllTabs();
+      const activeTab = window.markdownEditor.tabManager.getActiveTab();
+      const now = Date.now();
+      
+      allTabs.forEach((tab, index) => {
+        if (tab.id === activeTab?.id) {
+          this.lastAccessTime.set(tab.id, now); // Current tab accessed now
+          this.tabAccessPattern.set(tab.id, 10); // High access count for active tab
+        } else {
+          // Older tabs get older access times
+          this.lastAccessTime.set(tab.id, now - (index * 60000)); // 1 minute apart
+          this.tabAccessPattern.set(tab.id, Math.max(1, 5 - index)); // Decreasing access count
+        }
+      });
+      
+      console.log(`[Performance] Initialized access tracking for ${allTabs.length} tabs`);
+    }
+  }
+  
   // Phase 6: Tab access tracking
   trackTabAccess(tabId) {
     this.lastAccessTime.set(tabId, Date.now());
     const currentCount = this.tabAccessPattern.get(tabId) || 0;
     this.tabAccessPattern.set(tabId, currentCount + 1);
+    
+    // Remove from virtualized set when accessed
+    if (this.virtualizedTabs.has(tabId)) {
+      this.virtualizedTabs.delete(tabId);
+      console.log(`[Performance] Tab ${tabId} restored from virtual state due to access`);
+    }
   }
   
   // Phase 6: Tab switch performance tracking

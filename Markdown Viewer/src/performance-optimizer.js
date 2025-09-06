@@ -59,8 +59,8 @@ class PerformanceOptimizer {
   
   // Phase 6: Lazy loading for inactive tabs
   setupLazyTabLoading() {
-    this.lazyLoadThreshold = 5; // Start lazy loading after 5 tabs
-    this.maxActiveEditors = 3; // Maximum Monaco editors to keep active
+    this.lazyLoadThreshold = 10; // Start lazy loading after 10 tabs
+    this.maxActiveEditors = 5; // Maximum Monaco editors to keep active
     
     console.log('[PerformanceOptimizer] Lazy tab loading initialized');
   }
@@ -321,10 +321,64 @@ class PerformanceOptimizer {
     const memoryInfo = this.checkMemoryUsage();
     if (!memoryInfo) return;
     
+    // Also check tab count for virtualization
+    const tabCount = window.markdownEditor?.tabManager?.getTabsCount() || 0;
+    
     if (memoryInfo.pressure > this.memoryPressureThreshold) {
       console.warn(`[Performance] Memory pressure detected: ${(memoryInfo.pressure * 100).toFixed(1)}%`);
       this.handleMemoryPressure(memoryInfo);
+    } else if (tabCount > 15) {
+      // Virtualize tabs based on count even without memory pressure
+      console.log(`[Performance] High tab count detected: ${tabCount} tabs, considering virtualization`);
+      this.handleHighTabCount(tabCount);
     }
+  }
+  
+  // Phase 6: Handle high tab count by virtualizing some tabs
+  handleHighTabCount(tabCount) {
+    const tabsToVirtualize = this.selectTabsForVirtualization(tabCount);
+    
+    if (tabsToVirtualize.length > 0) {
+      console.log(`[Performance] Virtualizing ${tabsToVirtualize.length} tabs to improve performance`);
+      tabsToVirtualize.forEach(tabId => this.virtualizeTab(tabId));
+    }
+  }
+  
+  // Phase 6: Select tabs for virtualization based on usage
+  selectTabsForVirtualization(totalTabs) {
+    const now = Date.now();
+    const candidates = [];
+    
+    // Target: keep only 8-10 tabs active, virtualize the rest
+    const maxActiveTabs = 8;
+    const tabsToVirtualize = Math.max(0, totalTabs - maxActiveTabs);
+    
+    for (const [tabId, lastAccess] of this.lastAccessTime.entries()) {
+      const timeSinceAccess = now - lastAccess;
+      const accessCount = this.tabAccessPattern.get(tabId) || 0;
+      
+      // Virtualize tabs not accessed in last 2 minutes
+      if (timeSinceAccess > 120000) { // 2 minutes
+        candidates.push({ tabId, timeSinceAccess, accessCount });
+      }
+    }
+    
+    // Sort by least recently used and least accessed
+    candidates.sort((a, b) => {
+      if (a.accessCount !== b.accessCount) {
+        return a.accessCount - b.accessCount;
+      }
+      return b.timeSinceAccess - a.timeSinceAccess;
+    });
+    
+    return candidates.slice(0, tabsToVirtualize).map(c => c.tabId);
+  }
+  
+  // Phase 6: Virtualize a tab (similar to unload but different tracking)
+  virtualizeTab(tabId) {
+    // For now, just mark it as virtualized for display purposes
+    this.virtualizedTabs.add(tabId);
+    console.log(`[Performance] Tab ${tabId} virtualized`);
   }
   
   // Phase 6: Handle memory pressure by unloading tabs

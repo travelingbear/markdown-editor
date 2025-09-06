@@ -3,7 +3,7 @@
 ## 🏗️ Building from Source
 
 ### Prerequisites
-
+ 
 #### Windows
 - **Rust**: Install from [rustup.rs](https://rustup.rs/)
 - **Node.js**: Version 18+ from [nodejs.org](https://nodejs.org/)

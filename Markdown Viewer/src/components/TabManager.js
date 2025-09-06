@@ -30,6 +30,11 @@ class TabManager extends BaseComponent {
       this.emit('tab-activated', data);
       this.persistTabs();
     });
+    
+    this.tabCollection.on('tab-moved', (data) => {
+      this.emit('tab-moved', data);
+      this.persistTabs();
+    });
 
     this.tabCollection.on('tab-moved', (data) => {
       this.emit('tab-moved', data);

@@ -479,20 +479,26 @@ class PreviewComponent extends BaseComponent {
 
   applySyntaxHighlighting() {
     if (typeof hljs !== 'undefined') {
-      this.preview.querySelectorAll('pre code').forEach((block) => {
-        if (block.classList.contains('hljs')) {
-          block.classList.remove('hljs');
-          block.removeAttribute('data-highlighted');
-          const classes = Array.from(block.classList);
-          classes.forEach(cls => {
-            if (cls.startsWith('hljs-')) {
-              block.classList.remove(cls);
-            }
-          });
+      this.preview.querySelectorAll('pre code:not([data-highlighted])').forEach((block) => {
+        try {
+          // Store original text content if not already stored
+          if (!block.hasAttribute('data-original-text')) {
+            block.setAttribute('data-original-text', block.textContent || '');
+          }
+          
+          // Reset to original text content to remove any HTML
+          const originalText = block.getAttribute('data-original-text') || '';
+          block.textContent = originalText;
+          
+          // Remove all hljs classes
+          block.className = block.className.replace(/\bhljs[\w-]*\b/g, '').trim();
+          
+          hljs.highlightElement(block);
+          block.setAttribute('data-highlighted', 'yes');
+        } catch (error) {
+          // Silently handle highlighting errors
+          block.setAttribute('data-highlighted', 'error');
         }
-        
-        hljs.highlightElement(block);
-        block.setAttribute('data-highlighted', 'yes');
       });
     }
   }

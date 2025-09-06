@@ -166,6 +166,10 @@ class MarkdownEditor extends BaseComponent {
       this.updateTabUI();
     });
     
+    this.tabManager.on('tab-moved', (data) => {
+      this.updateTabUI();
+    });
+    
     this.tabManager.on('tab-restored', (data) => {
       // Tab restored from persistence
     });
@@ -210,6 +214,14 @@ class MarkdownEditor extends BaseComponent {
       }
     });
     
+    this.documentComponent.on('document-saved', (data) => {
+      // Update active tab after save
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        this.tabManager.markTabSaved(activeTab.id, data.filePath);
+      }
+    });
+    
     this.documentComponent.on('document-error', (data) => {
       this.handleError(new Error(data.error), data.type);
     });
@@ -220,6 +232,8 @@ class MarkdownEditor extends BaseComponent {
       const activeTab = this.tabManager.getActiveTab();
       if (activeTab) {
         this.tabManager.updateTabContent(activeTab.id, data.content);
+        // Also update document component to keep it in sync
+        this.documentComponent.content = data.content;
       }
       this.documentComponent.emit('content-changed', data);
       this.previewComponent.emit('update-preview', data);
@@ -227,6 +241,12 @@ class MarkdownEditor extends BaseComponent {
     
     this.editorComponent.on('cursor-position-changed', (data) => {
       this.updateCursorPosition(data.line, data.col);
+      
+      // Update active tab cursor position
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        this.tabManager.updateTabCursor(activeTab.id, data.line, data.col);
+      }
     });
     
     this.editorComponent.on('monaco-loaded', () => {
@@ -521,9 +541,16 @@ class MarkdownEditor extends BaseComponent {
   async saveFile() {
     const activeTab = this.tabManager.getActiveTab();
     if (activeTab) {
-      const result = await this.documentComponent.saveFile();
-      if (result && result.filePath) {
-        this.tabManager.markTabSaved(activeTab.id, result.filePath);
+      // Update document component with active tab content
+      this.documentComponent.currentFile = activeTab.filePath;
+      this.documentComponent.content = activeTab.content;
+      this.documentComponent.isDirty = activeTab.isDirty;
+      
+      try {
+        await this.documentComponent.saveFile();
+        this.tabManager.markTabSaved(activeTab.id, this.documentComponent.currentFile);
+      } catch (error) {
+        this.handleError(error, 'Save');
       }
     }
   }
@@ -531,9 +558,16 @@ class MarkdownEditor extends BaseComponent {
   async saveAsFile() {
     const activeTab = this.tabManager.getActiveTab();
     if (activeTab) {
-      const result = await this.documentComponent.saveAsFile();
-      if (result && result.filePath) {
-        this.tabManager.markTabSaved(activeTab.id, result.filePath);
+      // Update document component with active tab content
+      this.documentComponent.currentFile = activeTab.filePath;
+      this.documentComponent.content = activeTab.content;
+      this.documentComponent.isDirty = activeTab.isDirty;
+      
+      try {
+        await this.documentComponent.saveAsFile();
+        this.tabManager.markTabSaved(activeTab.id, this.documentComponent.currentFile);
+      } catch (error) {
+        this.handleError(error, 'Save As');
       }
     }
   }
@@ -551,8 +585,9 @@ class MarkdownEditor extends BaseComponent {
     
     const startTime = performance.now();
     
-    const documentState = this.documentComponent.getDocumentState();
-    if (!documentState.hasDocument && (mode === 'code' || mode === 'split')) {
+    // Check if we have tabs or document content
+    const hasContent = this.tabManager.hasTabs() || this.documentComponent.getDocumentState().hasDocument;
+    if (!hasContent && (mode === 'code' || mode === 'split')) {
       return;
     }
     
@@ -585,34 +620,43 @@ class MarkdownEditor extends BaseComponent {
     const splitter = document.getElementById('splitter');
     
     if (editorPane && previewPane && splitter) {
-      switch (mode) {
-        case 'code':
-          editorPane.style.display = 'block';
-          previewPane.style.display = 'none';
-          splitter.style.display = 'none';
-          break;
-        case 'preview':
-          editorPane.style.display = 'none';
-          previewPane.style.display = 'block';
-          splitter.style.display = 'none';
-          break;
-        case 'split':
-          editorPane.style.display = 'block';
-          previewPane.style.display = 'block';
-          splitter.style.display = 'block';
-          break;
-      }
+      // Use requestAnimationFrame to ensure proper rendering order
+      requestAnimationFrame(() => {
+        // Reset all displays first to prevent dual pane issues
+        editorPane.style.display = 'none';
+        previewPane.style.display = 'none';
+        splitter.style.display = 'none';
+        
+        // Apply mode-specific display settings after a brief delay
+        setTimeout(() => {
+          switch (mode) {
+            case 'code':
+              editorPane.style.display = 'block';
+              break;
+            case 'preview':
+              previewPane.style.display = 'block';
+              break;
+            case 'split':
+              editorPane.style.display = 'block';
+              previewPane.style.display = 'block';
+              splitter.style.display = 'block';
+              break;
+          }
+          
+          // Trigger Monaco layout after display changes
+          if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
+            setTimeout(() => {
+              this.editorComponent.monacoEditor.layout();
+            }, 50);
+          }
+        }, 10);
+      });
     }
     
     // Notify toolbar component
     this.toolbarComponent.emit('mode-changed', { mode });
     
-    // Trigger layout update for Monaco if needed
-    if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-      requestAnimationFrame(() => {
-        this.editorComponent.monacoEditor.layout();
-      });
-    }
+    // Layout update is now handled in the display logic above
     
     this.lastModeSwitchTime = performance.now() - startTime;
   }
@@ -638,6 +682,12 @@ class MarkdownEditor extends BaseComponent {
     this.editorComponent.emit('theme-changed', { theme: this.theme });
     this.previewComponent.emit('theme-changed', { theme: this.theme });
     this.toolbarComponent.updateThemeButton(this.theme, this.isRetroTheme);
+    
+    // Refresh preview if we have active tab content
+    const activeTab = this.tabManager.getActiveTab();
+    if (activeTab) {
+      this.previewComponent.emit('update-preview', { content: activeTab.content });
+    }
   }
 
   applyTheme() {
@@ -1257,6 +1307,13 @@ class MarkdownEditor extends BaseComponent {
           this.applyTheme();
           this.editorComponent.emit('theme-changed', { theme: this.theme });
           this.previewComponent.emit('theme-changed', { theme: this.theme });
+          
+          // Refresh preview if we have active tab content
+          const activeTab = this.tabManager.getActiveTab();
+          if (activeTab) {
+            this.previewComponent.emit('update-preview', { content: activeTab.content });
+          }
+          
           this.updateSettingsDisplay();
         });
       }
@@ -1647,6 +1704,13 @@ class MarkdownEditor extends BaseComponent {
 
   // Tab Management Methods
   switchToTab(tabId) {
+    // Save current tab's cursor position before switching
+    const currentTab = this.tabManager.getActiveTab();
+    if (currentTab && this.editorComponent.isMonacoLoaded) {
+      const cursorPos = this.editorComponent.getCursorPosition();
+      this.tabManager.updateTabCursor(currentTab.id, cursorPos.line, cursorPos.col);
+    }
+    
     this.tabManager.switchToTab(tabId);
   }
   
@@ -1654,6 +1718,8 @@ class MarkdownEditor extends BaseComponent {
     // Load tab content into editor and preview
     this.editorComponent.emit('set-content', { content: tab.content });
     this.previewComponent.emit('update-preview', { content: tab.content });
+    
+    // Ensure preview is shown and welcome is hidden
     this.previewComponent.showPreview();
     
     // Update filename and document state
@@ -1664,9 +1730,13 @@ class MarkdownEditor extends BaseComponent {
     });
     
     // Restore cursor position if available
-    if (tab.cursorPosition && this.editorComponent.isMonacoLoaded) {
+    if (tab.cursorPosition) {
       setTimeout(() => {
-        this.editorComponent.setCursorPosition(tab.cursorPosition.line, tab.cursorPosition.col);
+        try {
+          this.editorComponent.setCursorPosition(tab.cursorPosition.line, tab.cursorPosition.col);
+        } catch (error) {
+          console.warn('[MarkdownEditor] Failed to restore cursor position:', error);
+        }
       }, 100);
     }
   }
@@ -1681,6 +1751,9 @@ class MarkdownEditor extends BaseComponent {
       isDirty: false 
     });
     this.setMode('preview');
+    
+    // Force update tab UI to show Welcome instead of tabs
+    this.updateTabUIForWelcome();
   }
   
   updateTabUI() {
@@ -1693,15 +1766,24 @@ class MarkdownEditor extends BaseComponent {
     const tabs = this.tabManager.getAllTabs();
     const activeTab = this.tabManager.getActiveTab();
     
+    // Check if we're on welcome screen
+    const welcomePage = document.getElementById('welcome-page');
+    const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
+    
     if (tabs.length === 0) {
       // No tabs - show default filename
       filenameBtn.textContent = 'Welcome';
       filenameBtn.classList.remove('has-tabs');
+      tabMoreBtn.style.display = 'none';
       return;
     }
     
-    // Update filename button to show active tab
-    if (activeTab) {
+    // If on welcome screen but have tabs, show Welcome but enable tab functionality
+    if (isWelcomeVisible) {
+      filenameBtn.textContent = 'Welcome';
+      filenameBtn.classList.add('has-tabs'); // Enable dropdown functionality
+    } else if (activeTab) {
+      // Show active tab name when not on welcome screen
       const displayName = `${activeTab.fileName}${activeTab.isDirty ? ' *' : ''}`;
       filenameBtn.textContent = displayName;
       filenameBtn.classList.add('has-tabs');
@@ -1721,6 +1803,20 @@ class MarkdownEditor extends BaseComponent {
     
     // Show/hide more button
     tabMoreBtn.style.display = showMoreBtn ? 'block' : 'none';
+  }
+  
+  updateTabUIForWelcome() {
+    const filenameBtn = document.getElementById('filename');
+    const tabMoreBtn = document.getElementById('tab-more-btn');
+    
+    if (filenameBtn) {
+      filenameBtn.textContent = 'Welcome';
+      filenameBtn.classList.remove('has-tabs');
+    }
+    
+    if (tabMoreBtn) {
+      tabMoreBtn.style.display = 'none';
+    }
   }
   
   createDropdownTabElement(tab, activeTab) {

@@ -60,11 +60,24 @@ class TabCollection extends BaseComponent {
       if (currentTab) currentTab.setActive(false);
     }
 
+    // Move tab to end (most recent position)
+    this.moveTabToEnd(tabId);
+
     // Activate new tab
     tab.setActive(true);
     this.activeTabId = tabId;
 
     this.emit('tab-activated', { tab });
+    return true;
+  }
+
+  // Move tab to end of array (most recent position)
+  moveTabToEnd(tabId) {
+    const index = this.tabs.findIndex(tab => tab.id === tabId);
+    if (index === -1 || index === this.tabs.length - 1) return false;
+
+    const tab = this.tabs.splice(index, 1)[0];
+    this.tabs.push(tab);
     return true;
   }
 

@@ -448,6 +448,48 @@ class EditorComponent extends BaseComponent {
     }
   }
 
+  /**
+   * Set cursor position
+   */
+  setCursorPosition(line, col) {
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      this.monacoEditor.setPosition({ lineNumber: line, column: col });
+      this.monacoEditor.revealPosition({ lineNumber: line, column: col });
+    } else {
+      // For fallback textarea, calculate position
+      const textarea = this.fallbackEditor;
+      const lines = textarea.value.split('\n');
+      let position = 0;
+      
+      for (let i = 0; i < Math.min(line - 1, lines.length); i++) {
+        position += lines[i].length + 1; // +1 for newline
+      }
+      
+      position += Math.min(col - 1, lines[line - 1]?.length || 0);
+      textarea.setSelectionRange(position, position);
+    }
+  }
+
+  /**
+   * Get cursor position
+   */
+  getCursorPosition() {
+    if (this.isMonacoLoaded && this.monacoEditor) {
+      const position = this.monacoEditor.getPosition();
+      return position ? { line: position.lineNumber, col: position.column } : { line: 1, col: 1 };
+    } else {
+      const textarea = this.fallbackEditor;
+      const text = textarea.value;
+      const cursorPos = textarea.selectionStart;
+      
+      const lines = text.substring(0, cursorPos).split('\n');
+      const line = lines.length;
+      const col = lines[lines.length - 1].length + 1;
+      
+      return { line, col };
+    }
+  }
+
   onDestroy() {
     // Clean up Monaco editor
     if (this.monacoEditor && this.monacoEditor.dispose) {

@@ -2200,17 +2200,10 @@ class MarkdownEditor extends BaseComponent {
     closeBtn.className = 'tab-modal-close-btn';
     closeBtn.innerHTML = '×';
     closeBtn.title = 'Close tab';
-    closeBtn.onclick = async (e) => {
+    closeBtn.onclick = (e) => {
       e.stopPropagation();
-      await this.tabManager.closeTab(tab.id);
-      // Force immediate modal refresh
-      setTimeout(() => {
-        if (this.tabManager.getAllTabs().length === 0) {
-          this.hideTabModal();
-        } else {
-          this.showTabModal();
-        }
-      }, 10);
+      this.tabManager.closeTab(tab.id);
+      // Modal will be updated by the tab-removed event handler
     };
     actions.appendChild(closeBtn);
     

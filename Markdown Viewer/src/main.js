@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize the editor
     await markdownEditor.init();
     
+    // Set global reference for performance optimizer
+    window.markdownEditor = markdownEditor;
+    
     console.log('[App] Component-based markdown editor initialized successfully');
     
   } catch (error) {
@@ -47,5 +50,5 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('[App] Unhandled promise rejection:', event.reason);
 });
 
-// Export for debugging purposes
+// Initial export (will be updated after initialization)
 window.markdownEditor = markdownEditor;

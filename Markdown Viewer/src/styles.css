@@ -858,7 +858,7 @@ body.retro-theme .code-btn {
   background: #c0c0c0;
   color: #000000;
   border: 1px outset #c0c0c0;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
 body.retro-theme .code-btn:hover {
@@ -1552,7 +1552,7 @@ body.retro-theme {
   --border-secondary: #404040;
   --accent-primary: #000080;
   --accent-hover: #0000ff;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
 }
 
@@ -1574,7 +1574,7 @@ body.retro-theme .mode-btn {
   border: 3px outset #c0c0c0;
   outline: 1px solid #808080;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   font-weight: normal;
   border-radius: 0;
@@ -1611,7 +1611,7 @@ body.retro-theme .performance-actions .setting-btn {
   border: 3px outset #c0c0c0;
   outline: 1px solid #808080;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   font-weight: normal;
   border-radius: 0;
@@ -1756,9 +1756,27 @@ body.retro-theme.distraction-free .preview-content {
   color: #000000 !important;
 }
 
+/* Fix retro theme preview mode to fill entire window */
+body.retro-theme.preview-mode .preview-pane {
+  background: #ffffff !important;
+  min-height: 100vh;
+}
+
+body.retro-theme.preview-mode .preview-content {
+  background: #ffffff !important;
+  color: #000000 !important;
+  min-height: calc(100vh - 32px); /* Account for any padding */
+}
+
+/* Ensure retro theme welcome page fills window */
+body.retro-theme .welcome-page {
+  background: #c0c0c0 !important;
+  min-height: 100vh;
+}
+
 body.retro-theme .welcome-content h1 {
   color: #000080;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 24px;
   font-weight: bold;
 }
@@ -1769,7 +1787,7 @@ body.retro-theme .welcome-actions-grid h3,
 body.retro-theme .file-name,
 body.retro-theme .file-path,
 body.retro-theme .settings-section h3 {
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-weight: normal;
 }
 
@@ -1795,7 +1813,7 @@ body.retro-theme .help-header h2,
 body.retro-theme .about-header h2 {
   color: #ffffff;
   font-weight: normal;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
 body.retro-theme .help-content,
@@ -1808,7 +1826,7 @@ body.retro-theme .about-content,
 body.retro-theme .about-content h3,
 body.retro-theme .about-content p,
 body.retro-theme .about-content li {
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-weight: normal;
   color: #000000;
 }
@@ -1851,7 +1869,7 @@ body.retro-theme .preview-content h1,
 body.retro-theme .preview-content h2,
 body.retro-theme .preview-content h3 {
   color: #000080;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   border-bottom: 1px solid #808080;
 }
 
@@ -2034,7 +2052,7 @@ body.retro-theme .retro-checkbox:checked::after {
 body.retro-theme .retro-sound-setting label {
   display: flex;
   align-items: center;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   cursor: pointer;
 }
@@ -2045,7 +2063,7 @@ body.retro-theme .about-close-btn {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 12px;
   font-weight: bold;
   width: 20px;
@@ -3482,7 +3500,7 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
 /* Retro theme performance dashboard */
 body.retro-theme .performance-section h3 {
   color: #000080;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-weight: normal;
 }
 
@@ -3493,7 +3511,7 @@ body.retro-theme .perf-metric {
 }
 
 body.retro-theme .perf-metric label {
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   color: #000000;
 }
 
@@ -3524,25 +3542,25 @@ body.retro-theme .system-info {
 }
 
 body.retro-theme .info-item {
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   color: #000000;
 }
 
 body.retro-theme .info-label {
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
 body.retro-theme .info-item span:last-child {
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-weight: normal;
 }
 
 /* Retro theme settings modal consistency */
 body.retro-theme .settings-section h3 {
   color: #000080;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-weight: normal;
 }
 
@@ -3550,7 +3568,7 @@ body.retro-theme .test-sound-btn {
   background: #c0c0c0 !important;
   color: #000000 !important;
   border: 2px outset #c0c0c0 !important;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   border-radius: 0;
 }
 
@@ -3568,7 +3586,7 @@ body.retro-theme .perf-action-btn {
   background: #c0c0c0 !important;
   color: #000000 !important;
   border: 2px outset #c0c0c0 !important;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   border-radius: 0;
   font-weight: normal;
 }
@@ -4298,12 +4316,12 @@ body.retro-theme .task-conflict-header {
 body.retro-theme .task-conflict-header h3 {
   color: #ffffff;
   font-weight: normal;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 14px;
 }
 
 body.retro-theme .task-conflict-content {
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   color: #000000;
 }
 
@@ -4311,7 +4329,7 @@ body.retro-theme .task-conflict-btn {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   border-radius: 0;
 }
 
@@ -4747,7 +4765,7 @@ body.retro-theme .filename-btn {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   border-radius: 0;
   padding: 2px 6px;
@@ -4773,7 +4791,7 @@ body.retro-theme .tab-dropdown-item {
   background: #ffffff;
   border: 1px solid #808080;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   border-bottom: 1px solid #808080;
 }
@@ -4783,7 +4801,7 @@ body.retro-theme .tab-dropdown-number {
   color: #ffffff;
   border: 1px outset #000080;
   border-radius: 0;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
 body.retro-theme .tab-dropdown-item.active .tab-dropdown-number {
@@ -4806,7 +4824,7 @@ body.retro-theme .tab-dropdown-close {
   background: #c0c0c0;
   border: 1px outset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   border-radius: 0;
 }
 
@@ -4824,7 +4842,7 @@ body.retro-theme .tab-more-btn {
   border: 2px outset #c0c0c0;
   border-top: 1px solid #808080;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   border-radius: 0;
 }
@@ -4840,7 +4858,7 @@ body.retro-theme .tab-modal-item {
   background: #ffffff;
   border: 1px solid #808080;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   border-radius: 0;
 }
@@ -4872,14 +4890,14 @@ body.retro-theme .tab-modal-header {
 body.retro-theme .tab-modal-header h3 {
   color: #ffffff;
   font-weight: normal;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
 body.retro-theme .tab-modal-close {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 12px;
   font-weight: bold;
   border-radius: 0;
@@ -4898,7 +4916,7 @@ body.retro-theme .tab-modal-close-btn {
   background: #c0c0c0;
   border: 1px outset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   border-radius: 0;
 }
 
@@ -5108,7 +5126,7 @@ body.retro-theme .tab-search-input {
   background: #ffffff;
   border: 2px inset #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
   border-radius: 0;
 }
@@ -5128,7 +5146,7 @@ body.retro-theme .tab-context-menu {
 body.retro-theme .tab-context-item {
   background: #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
 }
 
@@ -5147,7 +5165,7 @@ body.retro-theme .tab-modal-number {
   color: #ffffff;
   border: 1px outset #000080;
   border-radius: 0;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
 body.retro-theme .tab-modal-item.active .tab-modal-number {
@@ -5166,7 +5184,7 @@ body.retro-theme .tab-context-submenu {
 body.retro-theme .tab-context-submenu .tab-context-item {
   background: #c0c0c0;
   color: #000000;
-  font-family: 'MS Sans Serif', sans-serif;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   font-size: 11px;
 }
 

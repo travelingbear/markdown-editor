@@ -585,6 +585,9 @@ class MarkdownEditor extends BaseComponent {
     // Always create new tab for new files
     this.tabManager.createNewTab();
     
+    // Switch to code mode for new files
+    this.setMode('code');
+    
     // Phase 6: Track tab creation performance
     if (this.performanceOptimizer) {
       this.performanceOptimizer.benchmarkTabOperation('Tab Create', startTime, currentTabCount + 1);
@@ -1579,7 +1582,7 @@ class MarkdownEditor extends BaseComponent {
       durationSetting.style.display = this.isSplashEnabled ? 'flex' : 'none';
     }
     
-    // Update page size buttons
+    // Update page size buttons and visibility
     const pageSizeButtons = {
       'page-a4-btn': this.currentPageSize === 'a4',
       'page-letter-btn': this.currentPageSize === 'letter',
@@ -1592,6 +1595,15 @@ class MarkdownEditor extends BaseComponent {
         btn.classList.toggle('active', active);
       }
     });
+    
+    // Show/hide page size section based on centered layout setting
+    const pageA4Btn = document.getElementById('page-a4-btn');
+    if (pageA4Btn) {
+      const pageSizeSetting = pageA4Btn.closest('.setting-item');
+      if (pageSizeSetting) {
+        pageSizeSetting.style.display = this.centeredLayoutEnabled ? 'flex' : 'none';
+      }
+    }
     
     // Update toolbar size buttons
     const toolbarSizeButtons = {

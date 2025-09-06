@@ -162,7 +162,11 @@ class DocumentComponent extends BaseComponent {
         throw new Error('Save functionality requires Tauri');
       }
 
+      // Extract first title from content as suggested filename
+      const suggestedName = this.extractFirstTitle(this.content);
+      
       const filePath = await window.__TAURI__.dialog.save({
+        defaultPath: suggestedName ? `${suggestedName}.md` : undefined,
         filters: [{
           name: 'Markdown',
           extensions: ['md']
@@ -308,6 +312,27 @@ class DocumentComponent extends BaseComponent {
    */
   getFilenameFromPath(filePath) {
     return filePath.split(/[\\/]/).pop();
+  }
+
+  /**
+   * Extract first title from markdown content
+   */
+  extractFirstTitle(content) {
+    if (!content) return null;
+    
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) {
+        // Extract title text and clean it for filename
+        const title = trimmed.replace(/^#+\s*/, '').trim();
+        if (title) {
+          // Clean filename: remove invalid characters
+          return title.replace(/[<>:"/\\|?*]/g, '').substring(0, 50);
+        }
+      }
+    }
+    return null;
   }
 
   /**

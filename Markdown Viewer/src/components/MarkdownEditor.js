@@ -352,6 +352,9 @@ class MarkdownEditor extends BaseComponent {
     // Window close handler
     this.setupWindowCloseHandler();
     
+    // Single instance handler
+    this.setupSingleInstanceHandler();
+    
     // Drag and drop
     this.setupDragAndDrop();
     
@@ -1379,6 +1382,59 @@ class MarkdownEditor extends BaseComponent {
       });
     } catch (error) {
       console.error('[MarkdownEditor] Error setting up close handler:', error);
+    }
+  }
+
+  async setupSingleInstanceHandler() {
+    if (!window.__TAURI__?.event) return;
+    
+    try {
+      const { listen } = window.__TAURI__.event;
+      
+      // Listen for single instance events
+      await listen('single-instance-args', (event) => {
+        console.log('[MarkdownEditor] Single instance event received:', event.payload);
+        
+        const files = event.payload;
+        if (Array.isArray(files) && files.length > 0) {
+          // Open the first file (for now, until we have multi-tab support)
+          const firstFile = files[0];
+          console.log('[MarkdownEditor] Opening file from single instance:', firstFile);
+          
+          // Check if we have unsaved changes
+          const documentState = this.documentComponent.getDocumentState();
+          if (documentState.isDirty) {
+            this.handleUnsavedChanges().then((shouldClose) => {
+              if (shouldClose) {
+                this.documentComponent.openFile(firstFile);
+              }
+            });
+          } else {
+            this.documentComponent.openFile(firstFile);
+          }
+        }
+        
+        // Focus the window
+        this.focusWindow();
+      });
+      
+      console.log('[MarkdownEditor] Single instance handler set up successfully');
+    } catch (error) {
+      console.error('[MarkdownEditor] Error setting up single instance handler:', error);
+    }
+  }
+
+  async focusWindow() {
+    try {
+      if (window.__TAURI__?.window) {
+        const { getCurrentWindow } = window.__TAURI__.window;
+        const appWindow = getCurrentWindow();
+        await appWindow.setFocus();
+        await appWindow.unminimize();
+        console.log('[MarkdownEditor] Window focused successfully');
+      }
+    } catch (error) {
+      console.error('[MarkdownEditor] Error focusing window:', error);
     }
   }
 

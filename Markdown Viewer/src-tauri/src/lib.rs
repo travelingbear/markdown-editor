@@ -1,5 +1,5 @@
 use std::env;
-use tauri::State;
+use tauri::{State, Manager, Emitter};
 use std::sync::Mutex;
 
 // State to hold the file path passed via command line
@@ -258,6 +258,41 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            println!("[Rust] Single instance callback triggered with args: {:?}", args);
+            
+            // Find markdown files in the arguments
+            let mut markdown_files = Vec::new();
+            for arg in &args {
+                if !arg.starts_with("-") && !arg.ends_with(".exe") {
+                    let path = std::path::Path::new(arg);
+                    let is_markdown = path.extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| matches!(ext.to_lowercase().as_str(), "md" | "markdown" | "txt"))
+                        .unwrap_or(false);
+                    
+                    if path.exists() && is_markdown {
+                        markdown_files.push(arg.clone());
+                    }
+                }
+            }
+            
+            // Emit event to frontend with the files to open
+            if !markdown_files.is_empty() {
+                println!("[Rust] Forwarding markdown files to existing instance: {:?}", markdown_files);
+                if let Err(e) = app.emit("single-instance-args", &markdown_files) {
+                    println!("[Rust] Failed to emit single-instance-args: {}", e);
+                }
+            } else {
+                println!("[Rust] No markdown files found in args, just focusing window");
+                // Just focus the existing window
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Err(e) = window.set_focus() {
+                        println!("[Rust] Failed to focus window: {}", e);
+                    }
+                }
+            }
+        }))
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             get_app_info,
@@ -270,7 +305,13 @@ pub fn run() {
             get_absolute_paths_from_names,
             get_dropped_file_absolute_path
         ])
-        .setup(|_app| {
+        .setup(|app| {
+            // Focus the main window on startup
+            if let Some(window) = app.get_webview_window("main") {
+                if let Err(e) = window.set_focus() {
+                    println!("[Rust] Failed to focus main window on startup: {}", e);
+                }
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -541,17 +541,21 @@ class MarkdownViewer {
 
     // Cursor position change events
     this.monacoEditor.onDidChangeCursorPosition((e) => {
-      this.updateCursorPosition();
-      
-      // Only sync preview to cursor position when:
-      // 1. Actively typing (content is being modified)
-      // 2. Using keyboard navigation (arrow keys, page up/down, etc.)
-      // 3. Cursor reaches top or bottom of visible area (natural scroll boundary)
-      if (this.currentMode === 'split' && !this.isScrollSyncing) {
-        const shouldSync = this.isTyping || this.shouldSyncOnCursorMove(e);
-        if (shouldSync) {
-          this.syncPreviewToCursor();
+      try {
+        this.updateCursorPosition();
+        
+        // Only sync preview to cursor position when:
+        // 1. Actively typing (content is being modified)
+        // 2. Using keyboard navigation (arrow keys, page up/down, etc.)
+        // 3. Cursor reaches top or bottom of visible area (natural scroll boundary)
+        if (this.currentMode === 'split' && !this.isScrollSyncing && e) {
+          const shouldSync = this.isTyping || this.shouldSyncOnCursorMove(e);
+          if (shouldSync) {
+            this.syncPreviewToCursor();
+          }
         }
+      } catch (error) {
+        console.warn('[Monaco] Cursor position change error:', error);
       }
     });
 
@@ -566,11 +570,15 @@ class MarkdownViewer {
 
     // Scroll synchronization
     this.monacoEditor.onDidScrollChange((e) => {
-      if (this.currentMode === 'split' && !this.isScrollSyncing) {
-        // Only use traditional scroll sync when not typing
-        if (!this.isTyping) {
-          this.syncScrollToPreview(e.scrollTop, e.scrollHeight);
+      try {
+        if (this.currentMode === 'split' && !this.isScrollSyncing) {
+          // Only use traditional scroll sync when not typing
+          if (!this.isTyping) {
+            this.syncScrollToPreview(e.scrollTop, e.scrollHeight);
+          }
         }
+      } catch (error) {
+        console.warn('[Monaco] Scroll change error:', error);
       }
     });
 
@@ -1180,8 +1188,10 @@ class MarkdownViewer {
         this.isDirty = false;
         this.saveBtn.classList.remove('dirty');
         this.updateFilename();
+        this.addToFileHistory(filePath);
       });
     }
+    // If filePath is null (user cancelled), do nothing - keep the current document
   }
 
   async saveAsFile() {
@@ -1215,6 +1225,7 @@ class MarkdownViewer {
       if (shouldClose) {
         this.doClose();
       }
+      // If shouldClose is false, do nothing - keep the current document
     } else {
       this.doClose();
     }
@@ -1232,12 +1243,14 @@ class MarkdownViewer {
     }
   }
 
-  newFile() {
+  async newFile() {
     if (this.isDirty) {
       // Ask to save current file first
-      this.closeFile().then(() => {
+      const shouldClose = await this.handleUnsavedChanges();
+      if (shouldClose) {
         this.doNewFile();
-      });
+      }
+      // If shouldClose is false, do nothing - keep the current document
     } else {
       this.doNewFile();
     }
@@ -1789,9 +1802,11 @@ Please check the link format and try again.`;
           
           const shouldClose = await this.handleUnsavedChanges();
           if (shouldClose) {
+            // Only close if user confirmed they want to close without saving
             this.isDirty = false;
             await appWindow.close();
           }
+          // If shouldClose is false, do nothing - keep the window open and preserve content
         }
       });
       
@@ -1807,27 +1822,43 @@ Please check the link format and try again.`;
   syncScrollToPreview(editorScrollTop, editorScrollHeight) {
     if (this.isScrollSyncing) return;
     
-    this.isScrollSyncing = true;
-    
-    // Use cached scroll info or calculate if needed
-    this.updateCachedScrollInfo();
-    
-    // Calculate scroll percentage using cached values
-    const maxEditorScroll = Math.max(0, editorScrollHeight - this.cachedScrollInfo.editorViewHeight);
-    const scrollPercentage = maxEditorScroll > 0 ? editorScrollTop / maxEditorScroll : 0;
-    
-    // Get the actual scrolling element
-    const targetElement = this.getActiveScrollElement();
-    
-    if (targetElement) {
-      const maxScroll = Math.max(0, targetElement.scrollHeight - targetElement.clientHeight);
-      targetElement.scrollTop = scrollPercentage * maxScroll;
+    // Validate input parameters
+    if (typeof editorScrollTop !== 'number' || typeof editorScrollHeight !== 'number') {
+      console.warn('[Scroll] Invalid scroll parameters:', { editorScrollTop, editorScrollHeight });
+      return;
     }
     
-    // Use requestAnimationFrame instead of setTimeout
-    requestAnimationFrame(() => {
-      this.isScrollSyncing = false;
-    });
+    this.isScrollSyncing = true;
+    
+    try {
+      // Use cached scroll info or calculate if needed
+      this.updateCachedScrollInfo();
+      
+      // Ensure cached scroll info exists
+      if (!this.cachedScrollInfo) {
+        this.isScrollSyncing = false;
+        return;
+      }
+      
+      // Calculate scroll percentage using cached values
+      const maxEditorScroll = Math.max(0, editorScrollHeight - this.cachedScrollInfo.editorViewHeight);
+      const scrollPercentage = maxEditorScroll > 0 ? editorScrollTop / maxEditorScroll : 0;
+      
+      // Get the actual scrolling element
+      const targetElement = this.getActiveScrollElement();
+      
+      if (targetElement) {
+        const maxScroll = Math.max(0, targetElement.scrollHeight - targetElement.clientHeight);
+        targetElement.scrollTop = scrollPercentage * maxScroll;
+      }
+    } catch (error) {
+      console.warn('[Scroll] Error in syncScrollToPreview:', error);
+    } finally {
+      // Use requestAnimationFrame instead of setTimeout
+      requestAnimationFrame(() => {
+        this.isScrollSyncing = false;
+      });
+    }
   }
   
   syncPreviewToCursor() {
@@ -1837,10 +1868,16 @@ Please check the link format and try again.`;
     
     try {
       const position = this.monacoEditor.getPosition();
-      if (!position) return;
+      if (!position) {
+        this.isScrollSyncing = false;
+        return;
+      }
       
       const model = this.monacoEditor.getModel();
-      if (!model) return;
+      if (!model) {
+        this.isScrollSyncing = false;
+        return;
+      }
       
       const totalLines = model.getLineCount();
       const currentLine = position.lineNumber;
@@ -1861,10 +1898,15 @@ Please check the link format and try again.`;
         targetScrollTop = Math.max(0, targetScrollTop - centerOffset);
         
         // Smooth scroll to the target position
-        targetElement.scrollTo({
-          top: targetScrollTop,
-          behavior: 'smooth'
-        });
+        try {
+          targetElement.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+        } catch (scrollError) {
+          // Fallback to direct scrollTop assignment if scrollTo fails
+          targetElement.scrollTop = targetScrollTop;
+        }
       }
     } catch (error) {
       console.warn('[Scroll] Cursor sync error:', error);
@@ -1926,52 +1968,74 @@ Please check the link format and try again.`;
   }
   
   updateCachedScrollInfo() {
-    const now = performance.now();
-    
-    // Only update cache if it's stale (older than 100ms) or doesn't exist
-    if (!this.cachedScrollInfo || (now - this.cachedScrollInfo.timestamp) > 100) {
-      const editorElement = this.monacoEditor?.getDomNode();
+    try {
+      const now = performance.now();
       
+      // Only update cache if it's stale (older than 100ms) or doesn't exist
+      if (!this.cachedScrollInfo || (now - this.cachedScrollInfo.timestamp) > 100) {
+        const editorElement = this.monacoEditor?.getDomNode();
+        
+        this.cachedScrollInfo = {
+          editorViewHeight: editorElement ? editorElement.clientHeight : 0,
+          previewMaxScroll: this.preview ? Math.max(0, this.preview.scrollHeight - this.preview.clientHeight) : 0,
+          timestamp: now
+        };
+      }
+    } catch (error) {
+      console.warn('[Scroll] Error updating cached scroll info:', error);
+      // Provide fallback cached info
       this.cachedScrollInfo = {
-        editorViewHeight: editorElement ? editorElement.clientHeight : 0,
-        previewMaxScroll: Math.max(0, this.preview.scrollHeight - this.preview.clientHeight),
-        timestamp: now
+        editorViewHeight: 0,
+        previewMaxScroll: 0,
+        timestamp: performance.now()
       };
     }
   }
   
   getActiveScrollElement() {
-    // Determine which element is actually scrolling based on layout mode
-    const previewPane = document.querySelector('.preview-pane');
-    const isCentered = document.body.classList.contains('centered-layout');
-    
-    if (isCentered) {
-      // In centered layout, preview-pane is the scrolling element
-      return previewPane && previewPane.scrollHeight > previewPane.clientHeight ? previewPane : null;
-    } else {
-      // In normal layout, preview-content is the scrolling element
-      return this.preview && this.preview.scrollHeight > this.preview.clientHeight ? this.preview : null;
+    try {
+      // Determine which element is actually scrolling based on layout mode
+      const previewPane = document.querySelector('.preview-pane');
+      const isCentered = document.body.classList.contains('centered-layout');
+      
+      if (isCentered) {
+        // In centered layout, preview-pane is the scrolling element
+        return previewPane && previewPane.scrollHeight > previewPane.clientHeight ? previewPane : null;
+      } else {
+        // In normal layout, preview-content is the scrolling element
+        return this.preview && this.preview.scrollHeight > this.preview.clientHeight ? this.preview : null;
+      }
+    } catch (error) {
+      console.warn('[Scroll] Error getting active scroll element:', error);
+      return null;
     }
   }
 
   syncScrollToEditor() {
     if (!this.isMonacoLoaded || !this.monacoEditor) return;
     
-    // Get the actual scrolling element
-    const sourceElement = this.getActiveScrollElement();
-    if (!sourceElement) return;
-    
-    // Calculate scroll percentage from the active scroll element
-    const previewMaxScroll = Math.max(0, sourceElement.scrollHeight - sourceElement.clientHeight);
-    const scrollPercentage = previewMaxScroll > 0 ? sourceElement.scrollTop / previewMaxScroll : 0;
-    
-    // Get Monaco editor scroll info
-    const scrollHeight = this.monacoEditor.getScrollHeight();
-    const viewHeight = this.monacoEditor.getLayoutInfo().height;
-    const maxScroll = Math.max(0, scrollHeight - viewHeight);
-    const targetScrollTop = scrollPercentage * maxScroll;
-    
-    this.monacoEditor.setScrollTop(targetScrollTop);
+    try {
+      // Get the actual scrolling element
+      const sourceElement = this.getActiveScrollElement();
+      if (!sourceElement) return;
+      
+      // Calculate scroll percentage from the active scroll element
+      const previewMaxScroll = Math.max(0, sourceElement.scrollHeight - sourceElement.clientHeight);
+      const scrollPercentage = previewMaxScroll > 0 ? sourceElement.scrollTop / previewMaxScroll : 0;
+      
+      // Get Monaco editor scroll info
+      const scrollHeight = this.monacoEditor.getScrollHeight();
+      const layoutInfo = this.monacoEditor.getLayoutInfo();
+      if (!layoutInfo) return;
+      
+      const viewHeight = layoutInfo.height;
+      const maxScroll = Math.max(0, scrollHeight - viewHeight);
+      const targetScrollTop = scrollPercentage * maxScroll;
+      
+      this.monacoEditor.setScrollTop(targetScrollTop);
+    } catch (error) {
+      console.warn('[Scroll] Error syncing scroll to editor:', error);
+    }
   }
   
   // Helper method to determine if cursor movement was caused by keyboard navigation
@@ -1990,25 +2054,33 @@ Please check the link format and try again.`;
   
   // Helper method to determine if cursor movement should trigger sync in Monaco
   shouldSyncOnCursorMove(e) {
-    // If we recently used keyboard navigation (within 200ms), allow sync
-    if (this.lastKeyboardNavigation && (performance.now() - this.lastKeyboardNavigation) < 200) {
-      return true;
-    }
-    
-    // Check if cursor moved to top or bottom of visible area (natural scroll boundary)
-    if (this.monacoEditor && e && e.position) {
-      const visibleRange = this.monacoEditor.getVisibleRanges()[0];
-      if (visibleRange) {
-        const cursorLine = e.position.lineNumber;
-        const topLine = visibleRange.startLineNumber;
-        const bottomLine = visibleRange.endLineNumber;
-        
-        // Sync if cursor is at the very top or bottom of visible area
-        return cursorLine <= topLine + 1 || cursorLine >= bottomLine - 1;
+    try {
+      // If we recently used keyboard navigation (within 200ms), allow sync
+      if (this.lastKeyboardNavigation && (performance.now() - this.lastKeyboardNavigation) < 200) {
+        return true;
       }
+      
+      // Check if cursor moved to top or bottom of visible area (natural scroll boundary)
+      if (this.monacoEditor && e && e.position) {
+        const visibleRanges = this.monacoEditor.getVisibleRanges();
+        if (visibleRanges && visibleRanges.length > 0) {
+          const visibleRange = visibleRanges[0];
+          if (visibleRange) {
+            const cursorLine = e.position.lineNumber;
+            const topLine = visibleRange.startLineNumber;
+            const bottomLine = visibleRange.endLineNumber;
+            
+            // Sync if cursor is at the very top or bottom of visible area
+            return cursorLine <= topLine + 1 || cursorLine >= bottomLine - 1;
+          }
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.warn('[Scroll] Error checking cursor sync condition:', error);
+      return false;
     }
-    
-    return false;
   }
 
   toggleSuggestions() {
@@ -2027,49 +2099,63 @@ Please check the link format and try again.`;
   }
 
   storeScrollPositions() {
-    // Store editor scroll position and dimensions
-    if (this.isMonacoLoaded && this.monacoEditor) {
-      this.lastEditorScrollTop = this.monacoEditor.getScrollTop();
-      const scrollHeight = this.monacoEditor.getScrollHeight();
-      const viewHeight = this.monacoEditor.getLayoutInfo().height;
-      this.lastEditorMaxScroll = Math.max(0, scrollHeight - viewHeight);
-    }
-    
-    // Store preview scroll position from the active scroll element
-    const activeScrollElement = this.getActiveScrollElement();
-    if (activeScrollElement) {
-      this.lastPreviewScrollTop = activeScrollElement.scrollTop;
-      this.lastPreviewMaxScroll = Math.max(0, activeScrollElement.scrollHeight - activeScrollElement.clientHeight);
+    try {
+      // Store editor scroll position and dimensions
+      if (this.isMonacoLoaded && this.monacoEditor) {
+        this.lastEditorScrollTop = this.monacoEditor.getScrollTop();
+        const scrollHeight = this.monacoEditor.getScrollHeight();
+        const layoutInfo = this.monacoEditor.getLayoutInfo();
+        if (layoutInfo) {
+          const viewHeight = layoutInfo.height;
+          this.lastEditorMaxScroll = Math.max(0, scrollHeight - viewHeight);
+        }
+      }
+      
+      // Store preview scroll position from the active scroll element
+      const activeScrollElement = this.getActiveScrollElement();
+      if (activeScrollElement) {
+        this.lastPreviewScrollTop = activeScrollElement.scrollTop;
+        this.lastPreviewMaxScroll = Math.max(0, activeScrollElement.scrollHeight - activeScrollElement.clientHeight);
+      }
+    } catch (error) {
+      console.warn('[Scroll] Error storing scroll positions:', error);
     }
   }
   
   restoreScrollPositions() {
-    const activeScrollElement = this.getActiveScrollElement();
-    
-    if (this.currentMode === 'code') {
-      // When switching to code mode, sync preview scroll to editor
-      if (this.isMonacoLoaded && this.monacoEditor) {
-        const scrollPercentage = this.lastPreviewMaxScroll > 0 ? this.lastPreviewScrollTop / this.lastPreviewMaxScroll : 0;
-        const scrollHeight = this.monacoEditor.getScrollHeight();
-        const viewHeight = this.monacoEditor.getLayoutInfo().height;
-        const maxScroll = Math.max(0, scrollHeight - viewHeight);
-        const targetScrollTop = scrollPercentage * maxScroll;
-        this.monacoEditor.setScrollTop(targetScrollTop);
+    try {
+      const activeScrollElement = this.getActiveScrollElement();
+      
+      if (this.currentMode === 'code') {
+        // When switching to code mode, sync preview scroll to editor
+        if (this.isMonacoLoaded && this.monacoEditor) {
+          const scrollPercentage = this.lastPreviewMaxScroll > 0 ? this.lastPreviewScrollTop / this.lastPreviewMaxScroll : 0;
+          const scrollHeight = this.monacoEditor.getScrollHeight();
+          const layoutInfo = this.monacoEditor.getLayoutInfo();
+          if (layoutInfo) {
+            const viewHeight = layoutInfo.height;
+            const maxScroll = Math.max(0, scrollHeight - viewHeight);
+            const targetScrollTop = scrollPercentage * maxScroll;
+            this.monacoEditor.setScrollTop(targetScrollTop);
+          }
+        }
+      } else if (this.currentMode === 'preview') {
+        // When switching to preview mode, sync editor scroll to preview
+        if (this.isMonacoLoaded && this.monacoEditor && activeScrollElement) {
+          const scrollPercentage = this.lastEditorMaxScroll > 0 ? this.lastEditorScrollTop / this.lastEditorMaxScroll : 0;
+          const previewMaxScroll = Math.max(0, activeScrollElement.scrollHeight - activeScrollElement.clientHeight);
+          const previewScrollTop = scrollPercentage * previewMaxScroll;
+          activeScrollElement.scrollTop = previewScrollTop;
+        }
+      } else if (this.currentMode === 'split') {
+        // In split mode, restore both positions using active scroll element
+        if (this.isMonacoLoaded && this.monacoEditor && activeScrollElement) {
+          this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
+          activeScrollElement.scrollTop = this.lastPreviewScrollTop;
+        }
       }
-    } else if (this.currentMode === 'preview') {
-      // When switching to preview mode, sync editor scroll to preview
-      if (this.isMonacoLoaded && this.monacoEditor && activeScrollElement) {
-        const scrollPercentage = this.lastEditorMaxScroll > 0 ? this.lastEditorScrollTop / this.lastEditorMaxScroll : 0;
-        const previewMaxScroll = Math.max(0, activeScrollElement.scrollHeight - activeScrollElement.clientHeight);
-        const previewScrollTop = scrollPercentage * previewMaxScroll;
-        activeScrollElement.scrollTop = previewScrollTop;
-      }
-    } else if (this.currentMode === 'split') {
-      // In split mode, restore both positions using active scroll element
-      if (this.isMonacoLoaded && this.monacoEditor && activeScrollElement) {
-        this.monacoEditor.setScrollTop(this.lastEditorScrollTop);
-        activeScrollElement.scrollTop = this.lastPreviewScrollTop;
-      }
+    } catch (error) {
+      console.warn('[Scroll] Error restoring scroll positions:', error);
     }
   }
 
@@ -3364,6 +3450,13 @@ Tip: You can also use HTML Export and then print from your browser.`;
       if (shouldSave) {
         try {
           await this.saveFile();
+          // Only quit if save was successful and file was actually saved
+          if (!this.isDirty) {
+            // File was saved successfully, proceed with quit
+          } else {
+            // Save was cancelled or failed, don't quit
+            return;
+          }
         } catch (error) {
           console.error('[App] Error saving before quit:', window.SecurityUtils ? window.SecurityUtils.sanitizeForLog(error.message || error) : encodeURIComponent(error.message || error));
           return; // Don't quit if save failed
@@ -3379,10 +3472,17 @@ Tip: You can also use HTML Export and then print from your browser.`;
       }
     }
     
-    if (window.__TAURI__?.window) {
-      const { getCurrentWindow } = window.__TAURI__.window;
-      const appWindow = getCurrentWindow();
-      await appWindow.close();
+    try {
+      if (window.__TAURI__?.core?.invoke) {
+        await window.__TAURI__.core.invoke('tauri', { __tauriModule: 'Process', message: { cmd: 'exit', exitCode: 0 } });
+      } else if (window.__TAURI__?.window) {
+        const { getCurrentWindow } = window.__TAURI__.window;
+        const appWindow = getCurrentWindow();
+        await appWindow.close();
+      }
+    } catch (error) {
+      console.warn('[App] Could not close window via Tauri, using fallback');
+      // Fallback: just hide the window or do nothing
     }
   }
 
@@ -5637,13 +5737,34 @@ Tip: You can also use HTML Export and then print from your browser.`;
 
 // Global error handlers to prevent crashes
 window.addEventListener('error', (event) => {
+  // Ignore benign ResizeObserver errors
+  if (event.message && event.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+    return;
+  }
+  
   console.error('[Global] Unhandled error:', event.error);
-  showGlobalErrorModal(event.error);
+  console.error('[Global] Error details:', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error
+  });
+  
+  // Only show modal for actual errors, not null/undefined
+  if (event.error !== null && event.error !== undefined) {
+    showGlobalErrorModal(event.error);
+  }
+  
   event.preventDefault();
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('[Global] Unhandled promise rejection:', event.reason);
+  console.error('[Global] Promise rejection details:', {
+    reason: event.reason,
+    promise: event.promise
+  });
   showGlobalErrorModal(event.reason);
   event.preventDefault();
 });
@@ -5689,10 +5810,34 @@ if (window.__TAURI__) {
 }
 
 function showGlobalErrorModal(error) {
+  // Handle null errors specifically
+  let errorMessage = 'Unknown error';
+  let errorDetails = '';
+  
+  if (error === null) {
+    errorMessage = 'Null reference error';
+    errorDetails = 'This may be caused by accessing an uninitialized element or API response.';
+  } else if (error === undefined) {
+    errorMessage = 'Undefined reference error';
+    errorDetails = 'This may be caused by accessing a property that does not exist.';
+  } else if (typeof error === 'string') {
+    errorMessage = error;
+  } else if (error && error.message) {
+    errorMessage = error.message;
+    if (error.stack) {
+      errorDetails = `Stack trace available in console.`;
+      console.error('[Error Stack]:', error.stack);
+    }
+  } else {
+    errorMessage = String(error);
+  }
+  
   const message = `Application Error
 
 An unexpected error occurred:
-${error?.message || error}
+${errorMessage}
+
+${errorDetails}
 
 The application will continue running, but some features may not work correctly.
 

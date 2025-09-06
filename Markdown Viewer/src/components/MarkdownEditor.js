@@ -2186,14 +2186,12 @@ class MarkdownEditor extends BaseComponent {
     closeBtn.onclick = (e) => {
       e.stopPropagation();
       this.tabManager.closeTab(tab.id);
-      // Update modal content
-      setTimeout(() => {
-        if (this.tabManager.getAllTabs().length === 0) {
-          this.hideTabModal();
-        } else {
-          this.showTabModal();
-        }
-      }, 100);
+      // Immediately update modal content
+      if (this.tabManager.getAllTabs().length === 0) {
+        this.hideTabModal();
+      } else {
+        this.showTabModal();
+      }
     };
     actions.appendChild(closeBtn);
     

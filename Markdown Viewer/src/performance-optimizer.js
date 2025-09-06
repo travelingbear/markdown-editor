@@ -70,10 +70,10 @@ class PerformanceOptimizer {
     this.unloadCandidates = new Map(); // Track tabs eligible for unloading
     this.lastAccessTime = new Map(); // Track when tabs were last accessed
     
-    // Monitor memory pressure
+    // Monitor memory pressure and tab virtualization
     this.memoryPressureMonitor = setInterval(() => {
       this.checkMemoryPressure();
-    }, 10000); // Check every 10 seconds
+    }, 5000); // Check every 5 seconds for faster response
     
     console.log('[PerformanceOptimizer] Smart tab unloading initialized');
   }
@@ -744,25 +744,26 @@ class PerformanceOptimizer {
   
   // Phase 6: Initialize tab access tracking for existing tabs
   initializeTabAccessTracking() {
-    if (this.lastAccessTime.size > 0) return; // Already initialized
-    
     if (window.markdownEditor?.tabManager) {
       const allTabs = window.markdownEditor.tabManager.getAllTabs();
       const activeTab = window.markdownEditor.tabManager.getActiveTab();
       const now = Date.now();
       
+      // Always reinitialize to catch new tabs
       allTabs.forEach((tab, index) => {
-        if (tab.id === activeTab?.id) {
-          this.lastAccessTime.set(tab.id, now); // Current tab accessed now
-          this.tabAccessPattern.set(tab.id, 10); // High access count for active tab
-        } else {
-          // Older tabs get older access times
-          this.lastAccessTime.set(tab.id, now - (index * 60000)); // 1 minute apart
-          this.tabAccessPattern.set(tab.id, Math.max(1, 5 - index)); // Decreasing access count
+        if (!this.lastAccessTime.has(tab.id)) {
+          if (tab.id === activeTab?.id) {
+            this.lastAccessTime.set(tab.id, now);
+            this.tabAccessPattern.set(tab.id, 10);
+          } else {
+            // Make older tabs eligible for virtualization immediately
+            this.lastAccessTime.set(tab.id, now - 120000); // 2 minutes old
+            this.tabAccessPattern.set(tab.id, 1);
+          }
         }
       });
       
-      console.log(`[Performance] Initialized access tracking for ${allTabs.length} tabs`);
+      console.log(`[Performance] Access tracking: ${this.lastAccessTime.size} tabs tracked`);
     }
   }
   

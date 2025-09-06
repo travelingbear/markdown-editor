@@ -193,6 +193,12 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.tabManager.on('all-tabs-closed', (data) => {
+      // Close tab modal if open
+      const tabModal = document.getElementById('tab-modal');
+      if (tabModal && tabModal.style.display === 'flex') {
+        this.hideTabModal();
+      }
+      
       this.showWelcomePage();
       this.updateTabUI();
     });
@@ -2194,15 +2200,17 @@ class MarkdownEditor extends BaseComponent {
     closeBtn.className = 'tab-modal-close-btn';
     closeBtn.innerHTML = '×';
     closeBtn.title = 'Close tab';
-    closeBtn.onclick = (e) => {
+    closeBtn.onclick = async (e) => {
       e.stopPropagation();
-      this.tabManager.closeTab(tab.id);
-      // Immediately update modal content
-      if (this.tabManager.getAllTabs().length === 0) {
-        this.hideTabModal();
-      } else {
-        this.showTabModal();
-      }
+      await this.tabManager.closeTab(tab.id);
+      // Force immediate modal refresh
+      setTimeout(() => {
+        if (this.tabManager.getAllTabs().length === 0) {
+          this.hideTabModal();
+        } else {
+          this.showTabModal();
+        }
+      }, 10);
     };
     actions.appendChild(closeBtn);
     

@@ -320,31 +320,20 @@ class PerformanceOptimizer {
   checkMemoryPressure() {
     const memoryInfo = this.checkMemoryUsage();
     
-    // Debug: Check if markdownEditor exists
-    console.log('[Debug] window.markdownEditor exists:', !!window.markdownEditor);
-    console.log('[Debug] tabManager exists:', !!window.markdownEditor?.tabManager);
-    
-    // Get tab count with multiple fallbacks
+    // Get tab count with fallbacks
     let tabCount = 0;
     if (window.markdownEditor?.tabManager) {
       tabCount = window.markdownEditor.tabManager.getTabsCount();
-      console.log('[Debug] Tab manager reports:', tabCount, 'tabs');
-    } else {
-      console.log('[Debug] Tab manager not available, using DOM fallback');
     }
     
     // Fallback: count tabs in DOM
     if (tabCount === 0) {
       const tabElements = document.querySelectorAll('.tab-dropdown-item');
       tabCount = tabElements.length;
-      console.log('[Debug] DOM fallback found:', tabCount, 'tabs');
     }
     
-    console.log(`[Performance] Final check: ${tabCount} tabs, ${this.virtualizedTabs.size} virtual`);
-    
-    // Force virtualization for testing
+    // Force virtualization for high tab counts
     if (tabCount > 15) {
-      console.log(`[Performance] High tab count detected: ${tabCount} tabs, forcing virtualization`);
       this.forceVirtualization(tabCount);
     }
     
@@ -695,10 +684,6 @@ class PerformanceOptimizer {
     const memoryInfo = this.checkMemoryUsage();
     const report = this.getPerformanceReport();
     
-    // Debug tab manager connection
-    console.log('[Debug] Tab Manager Available:', !!window.markdownEditor?.tabManager);
-    console.log('[Debug] Window.markdownEditor:', !!window.markdownEditor);
-    
     // Fix memory tracking
     if (memoryInfo && performance.memory) {
       memoryEl.textContent = `${memoryInfo.used}MB / ${memoryInfo.total}MB`;
@@ -714,39 +699,26 @@ class PerformanceOptimizer {
     }
     
     if (tabsEl) {
-      // Debug tab count detection
       let actualTabCount = 0;
       let virtualCount = this.virtualizedTabs.size;
       
       if (window.markdownEditor?.tabManager) {
         actualTabCount = window.markdownEditor.tabManager.getTabsCount();
-        console.log('[Debug] Tab Manager Count:', actualTabCount);
-        
-        // Get all tabs for debugging
-        const allTabs = window.markdownEditor.tabManager.getAllTabs();
-        console.log('[Debug] All Tabs:', allTabs.length, allTabs.map(t => t.fileName));
-      } else {
-        console.log('[Debug] Tab Manager not available');
       }
       
       // Fallback: count DOM elements
-      const dropdownItems = document.querySelectorAll('.tab-dropdown-item');
-      console.log('[Debug] DOM Tab Count:', dropdownItems.length);
-      
-      if (actualTabCount === 0 && dropdownItems.length > 0) {
+      if (actualTabCount === 0) {
+        const dropdownItems = document.querySelectorAll('.tab-dropdown-item');
         actualTabCount = dropdownItems.length;
-        console.log('[Debug] Using DOM count:', actualTabCount);
       }
       
       // Force virtualization if we have many tabs
       if (actualTabCount > 15 && virtualCount === 0) {
-        console.log('[Debug] Forcing virtualization for', actualTabCount, 'tabs');
         this.forceVirtualization(actualTabCount);
         virtualCount = this.virtualizedTabs.size;
       }
       
       tabsEl.textContent = `${actualTabCount} (${virtualCount} virtual)`;
-      console.log('[Debug] Final display:', actualTabCount, virtualCount);
     }
     
     if (switchEl) {

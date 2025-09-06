@@ -1578,12 +1578,8 @@ class MarkdownEditor extends BaseComponent {
       
       // Listen for single instance events
       await listen('single-instance-args', (event) => {
-        console.log('[MarkdownEditor] Single instance event received:', event.payload);
-        
         const files = event.payload;
         if (Array.isArray(files) && files.length > 0) {
-          console.log('[MarkdownEditor] Opening files from single instance:', files);
-          
           // Open each file in a new tab
           files.forEach(filePath => {
             this.documentComponent.openFile(filePath);
@@ -1594,7 +1590,7 @@ class MarkdownEditor extends BaseComponent {
         this.focusWindow();
       });
       
-      console.log('[MarkdownEditor] Single instance handler set up successfully');
+// Single instance handler set up
     } catch (error) {
       console.error('[MarkdownEditor] Error setting up single instance handler:', error);
     }
@@ -1607,7 +1603,6 @@ class MarkdownEditor extends BaseComponent {
         const appWindow = getCurrentWindow();
         await appWindow.setFocus();
         await appWindow.unminimize();
-        console.log('[MarkdownEditor] Window focused successfully');
       }
     } catch (error) {
       console.error('[MarkdownEditor] Error focusing window:', error);

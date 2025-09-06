@@ -630,6 +630,23 @@
         </div>
       </div>
 
+      <!-- Tab Modal -->
+      <div id="tab-modal" class="tab-modal" style="display: none;">
+        <div class="tab-modal-overlay"></div>
+        <div class="tab-modal-window">
+          <div class="tab-modal-header">
+            <h3>Open Tabs</h3>
+            <button id="tab-modal-close" class="tab-modal-close">×</button>
+          </div>
+          <div class="tab-modal-content">
+            <div class="tab-modal-search">
+              <input type="text" id="tab-search" placeholder="Search tabs..." class="tab-search-input">
+            </div>
+            <div id="tab-modal-list" class="tab-modal-list"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
     
     <!-- Load security utilities -->
@@ -660,33 +677,3 @@
     <script src="/main.js"></script>
   </body>
 </html>
-      <!-- Tab Modal -->
-      <div id="tab-modal" class="tab-modal" style="display: none;">
-        <div class="tab-modal-overlay"></div>
-        <div class="tab-modal-window">
-          <div class="tab-modal-header">
-            <h3>Open Tabs</h3>
-            <button id="tab-modal-close" class="tab-modal-close">×</button>
-          </div>
-          <div class="tab-modal-content">
-            <div id="tab-modal-list" class="tab-modal-list"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Task Conflict Warning Modal -->
-      <div id="task-conflict-modal" class="task-conflict-modal" style="display: none;">
-        <div class="task-conflict-overlay"></div>
-        <div class="task-conflict-window">
-          <div class="task-conflict-header">
-            <h3>⚠️ Duplicate Task Detected</h3>
-          </div>
-          <div class="task-conflict-content">
-            <p>This task has identical text to another task, which may cause conflicts when updating.</p>
-            <p><strong>Recommendation:</strong> Edit one of the tasks to have unique text to avoid issues.</p>
-            <div class="task-conflict-buttons">
-              <button id="task-conflict-ok" class="task-conflict-btn primary">OK</button>
-            </div>
-          </div>
-        </div>
-      </div>

@@ -173,7 +173,17 @@ class TabManager extends BaseComponent {
 
   // Move tab
   moveTab(fromIndex, toIndex) {
-    return this.tabCollection.moveTab(fromIndex, toIndex);
+    const result = this.tabCollection.moveTab(fromIndex, toIndex);
+    if (result) {
+      this.persistTabs();
+      this.emit('tab-moved', { fromIndex, toIndex });
+    }
+    return result;
+  }
+  
+  // Get tab by ID
+  getTab(tabId) {
+    return this.tabCollection.getTab(tabId);
   }
 
   // Close all tabs

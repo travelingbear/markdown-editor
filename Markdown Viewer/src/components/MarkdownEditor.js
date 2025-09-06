@@ -29,6 +29,9 @@ class MarkdownEditor extends BaseComponent {
     this.statusBarSize = localStorage.getItem('markdownViewer_statusBarSize') || 'medium';
     this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
     
+    // Enhanced tab features state
+    this.contextMenuTabId = null;
+    
     // Performance tracking
     this.startupTime = 0;
     this.lastFileOpenTime = 0;
@@ -484,6 +487,15 @@ class MarkdownEditor extends BaseComponent {
           if (e.shiftKey) {
             e.preventDefault();
             this.exportToHtml();
+          }
+          break;
+        case 'Tab':
+          if (!e.shiftKey) {
+            e.preventDefault();
+            this.switchToNextTab();
+          } else {
+            e.preventDefault();
+            this.switchToPreviousTab();
           }
           break;
       }
@@ -1823,6 +1835,8 @@ class MarkdownEditor extends BaseComponent {
     const tabElement = document.createElement('div');
     tabElement.className = `tab-dropdown-item ${tab.id === activeTab?.id ? 'active' : ''}`;
     tabElement.title = tab.filePath || tab.fileName;
+    tabElement.draggable = true;
+    tabElement.dataset.tabId = tab.id;
     
     // Tab info
     const tabInfo = document.createElement('div');
@@ -1853,6 +1867,14 @@ class MarkdownEditor extends BaseComponent {
       this.hideTabDropdown();
     };
     
+    // Right-click for context menu
+    tabElement.oncontextmenu = (e) => {
+      this.showTabContextMenu(e, tab.id);
+    };
+    
+    // Drag and drop handlers
+    this.setupTabDragAndDrop(tabElement, tab);
+    
     return tabElement;
   }
   
@@ -1863,6 +1885,7 @@ class MarkdownEditor extends BaseComponent {
     const tabModal = document.getElementById('tab-modal');
     const tabModalClose = document.getElementById('tab-modal-close');
     const tabModalOverlay = document.querySelector('.tab-modal-overlay');
+    const tabSearchInput = document.getElementById('tab-search');
     
     // Filename button click to toggle dropdown
     if (filenameBtn) {
@@ -1902,6 +1925,24 @@ class MarkdownEditor extends BaseComponent {
         this.hideTabModal();
       });
     }
+    
+    // Tab search functionality
+    if (tabSearchInput) {
+      tabSearchInput.addEventListener('input', (e) => {
+        this.filterTabModal(e.target.value);
+      });
+      
+      // Keyboard navigation in search
+      tabSearchInput.addEventListener('keydown', (e) => {
+        this.handleTabModalKeyboard(e);
+      });
+    }
+    
+    // Global keyboard shortcuts for tab navigation
+    this.setupTabKeyboardShortcuts();
+    
+    // Context menu setup
+    this.setupTabContextMenu();
   }
   
   toggleTabDropdown() {
@@ -1933,6 +1974,7 @@ class MarkdownEditor extends BaseComponent {
   showTabModal() {
     const tabModal = document.getElementById('tab-modal');
     const tabModalList = document.getElementById('tab-modal-list');
+    const tabSearchInput = document.getElementById('tab-search');
     
     if (!tabModal || !tabModalList) return;
     
@@ -1947,6 +1989,12 @@ class MarkdownEditor extends BaseComponent {
       tabModalList.appendChild(item);
     });
     
+    // Clear search and focus
+    if (tabSearchInput) {
+      tabSearchInput.value = '';
+      setTimeout(() => tabSearchInput.focus(), 100);
+    }
+    
     tabModal.style.display = 'flex';
   }
   
@@ -1954,12 +2002,18 @@ class MarkdownEditor extends BaseComponent {
     const tabModal = document.getElementById('tab-modal');
     if (tabModal) {
       tabModal.style.display = 'none';
+      
+      // Clear keyboard focus
+      const items = tabModal.querySelectorAll('.tab-modal-item');
+      items.forEach(item => item.classList.remove('keyboard-focus'));
     }
   }
   
   createTabModalItem(tab, activeTab) {
     const item = document.createElement('div');
     item.className = `tab-modal-item ${tab.id === activeTab?.id ? 'active' : ''}`;
+    item.draggable = true;
+    item.dataset.tabId = tab.id;
     
     const info = document.createElement('div');
     info.className = 'tab-modal-info';
@@ -2007,10 +2061,357 @@ class MarkdownEditor extends BaseComponent {
       this.hideTabModal();
     };
     
+    // Right-click for context menu
+    item.oncontextmenu = (e) => {
+      this.showTabContextMenu(e, tab.id);
+    };
+    
+    // Drag and drop handlers
+    this.setupTabDragAndDrop(item, tab);
+    
     return item;
   }
 
+  // Enhanced Tab Features - Phase 4
+  
+  setupTabKeyboardShortcuts() {
+    // Additional keyboard shortcuts for tab navigation
+    document.addEventListener('keydown', (e) => {
+      // Ctrl+Tab and Ctrl+Shift+Tab for tab switching
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.switchToPreviousTab();
+        } else {
+          this.switchToNextTab();
+        }
+      }
+      
+      // Ctrl+1-9 for direct tab switching
+      if (e.ctrlKey && e.key >= '1' && e.key <= '9' && !e.shiftKey) {
+        const tabIndex = parseInt(e.key) - 1;
+        const tabs = this.tabManager.getAllTabs();
+        if (tabs[tabIndex]) {
+          e.preventDefault();
+          this.switchToTab(tabs[tabIndex].id);
+        }
+      }
+    });
+  }
+  
+  switchToNextTab() {
+    const tabs = this.tabManager.getAllTabs();
+    if (tabs.length <= 1) return;
+    
+    const activeTab = this.tabManager.getActiveTab();
+    if (!activeTab) return;
+    
+    const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
+    const nextIndex = (currentIndex + 1) % tabs.length;
+    this.switchToTab(tabs[nextIndex].id);
+  }
+  
+  switchToPreviousTab() {
+    const tabs = this.tabManager.getAllTabs();
+    if (tabs.length <= 1) return;
+    
+    const activeTab = this.tabManager.getActiveTab();
+    if (!activeTab) return;
+    
+    const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
+    const prevIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
+    this.switchToTab(tabs[prevIndex].id);
+  }
+  
+  setupTabContextMenu() {
+    // Create context menu if it doesn't exist
+    let contextMenu = document.getElementById('tab-context-menu');
+    if (!contextMenu) {
+      contextMenu = document.createElement('div');
+      contextMenu.id = 'tab-context-menu';
+      contextMenu.className = 'tab-context-menu';
+      contextMenu.innerHTML = `
+        <button class="tab-context-item" data-action="close">Close Tab</button>
+        <button class="tab-context-item" data-action="close-others">Close Others</button>
+        <button class="tab-context-item" data-action="close-all">Close All</button>
+        <div class="tab-context-separator"></div>
+        <button class="tab-context-item" data-action="duplicate">Duplicate Tab</button>
+        <button class="tab-context-item" data-action="reveal">Reveal in Explorer</button>
+      `;
+      document.body.appendChild(contextMenu);
+    }
+    
+    // Context menu event handlers
+    contextMenu.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action && this.contextMenuTabId) {
+        this.handleTabContextAction(action, this.contextMenuTabId);
+      }
+      this.hideTabContextMenu();
+    });
+    
+    // Hide context menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!contextMenu.contains(e.target)) {
+        this.hideTabContextMenu();
+      }
+    });
+  }
+  
+  showTabContextMenu(e, tabId) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const contextMenu = document.getElementById('tab-context-menu');
+    if (!contextMenu) return;
+    
+    this.contextMenuTabId = tabId;
+    
+    // Position the context menu
+    contextMenu.style.left = `${e.clientX}px`;
+    contextMenu.style.top = `${e.clientY}px`;
+    contextMenu.classList.add('show');
+    
+    // Update menu items based on context
+    const tabs = this.tabManager.getAllTabs();
+    const closeOthersBtn = contextMenu.querySelector('[data-action="close-others"]');
+    const closeAllBtn = contextMenu.querySelector('[data-action="close-all"]');
+    const revealBtn = contextMenu.querySelector('[data-action="reveal"]');
+    
+    if (closeOthersBtn) {
+      closeOthersBtn.disabled = tabs.length <= 1;
+    }
+    if (closeAllBtn) {
+      closeAllBtn.disabled = tabs.length === 0;
+    }
+    if (revealBtn) {
+      const tab = this.tabManager.getTab(tabId);
+      revealBtn.disabled = !tab || !tab.filePath;
+    }
+  }
+  
+  hideTabContextMenu() {
+    const contextMenu = document.getElementById('tab-context-menu');
+    if (contextMenu) {
+      contextMenu.classList.remove('show');
+    }
+    this.contextMenuTabId = null;
+  }
+  
+  async handleTabContextAction(action, tabId) {
+    const tab = this.tabManager.getTab(tabId);
+    if (!tab) return;
+    
+    switch (action) {
+      case 'close':
+        await this.tabManager.closeTab(tabId);
+        break;
+        
+      case 'close-others':
+        const allTabs = this.tabManager.getAllTabs();
+        for (const otherTab of allTabs) {
+          if (otherTab.id !== tabId) {
+            await this.tabManager.closeTab(otherTab.id);
+          }
+        }
+        break;
+        
+      case 'close-all':
+        await this.tabManager.closeAllTabs();
+        break;
+        
+      case 'duplicate':
+        this.tabManager.createNewTab(tab.content);
+        break;
+        
+      case 'reveal':
+        if (tab.filePath && window.__TAURI__?.core?.invoke) {
+          try {
+            await window.__TAURI__.core.invoke('reveal_in_explorer', { path: tab.filePath });
+          } catch (error) {
+            console.warn('[MarkdownEditor] Failed to reveal file:', error);
+          }
+        }
+        break;
+    }
+  }
+  
+  filterTabModal(searchTerm) {
+    const tabModalList = document.getElementById('tab-modal-list');
+    if (!tabModalList) return;
+    
+    const items = tabModalList.querySelectorAll('.tab-modal-item');
+    const term = searchTerm.toLowerCase().trim();
+    
+    let visibleCount = 0;
+    items.forEach(item => {
+      const name = item.querySelector('.tab-modal-name')?.textContent?.toLowerCase() || '';
+      const path = item.querySelector('.tab-modal-path')?.textContent?.toLowerCase() || '';
+      
+      const matches = !term || name.includes(term) || path.includes(term);
+      
+      if (matches) {
+        item.classList.remove('filtered-out');
+        visibleCount++;
+      } else {
+        item.classList.add('filtered-out');
+      }
+    });
+    
+    // Show empty state if no matches
+    let emptyState = tabModalList.querySelector('.tab-modal-empty');
+    if (visibleCount === 0 && term) {
+      if (!emptyState) {
+        emptyState = document.createElement('div');
+        emptyState.className = 'tab-modal-empty';
+        emptyState.textContent = 'No tabs match your search';
+        tabModalList.appendChild(emptyState);
+      }
+      emptyState.style.display = 'block';
+    } else if (emptyState) {
+      emptyState.style.display = 'none';
+    }
+  }
+  
+  handleTabModalKeyboard(e) {
+    const tabModalList = document.getElementById('tab-modal-list');
+    if (!tabModalList) return;
+    
+    const visibleItems = Array.from(tabModalList.querySelectorAll('.tab-modal-item:not(.filtered-out)'));
+    if (visibleItems.length === 0) return;
+    
+    let currentIndex = visibleItems.findIndex(item => item.classList.contains('keyboard-focus'));
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        if (currentIndex < visibleItems.length - 1) {
+          this.setTabModalKeyboardFocus(currentIndex + 1, visibleItems);
+        }
+        break;
+        
+      case 'ArrowUp':
+        e.preventDefault();
+        if (currentIndex > 0) {
+          this.setTabModalKeyboardFocus(currentIndex - 1, visibleItems);
+        } else if (currentIndex === -1 && visibleItems.length > 0) {
+          this.setTabModalKeyboardFocus(visibleItems.length - 1, visibleItems);
+        }
+        break;
+        
+      case 'Enter':
+        e.preventDefault();
+        if (currentIndex >= 0 && visibleItems[currentIndex]) {
+          visibleItems[currentIndex].click();
+        }
+        break;
+        
+      case 'Escape':
+        e.preventDefault();
+        this.hideTabModal();
+        break;
+    }
+  }
+  
+  setTabModalKeyboardFocus(index, items) {
+    // Remove existing focus
+    items.forEach(item => item.classList.remove('keyboard-focus'));
+    
+    // Set new focus
+    if (index >= 0 && index < items.length) {
+      items[index].classList.add('keyboard-focus');
+      items[index].scrollIntoView({ block: 'nearest' });
+    }
+  }
+  
+  setupTabDragAndDrop(element, tab) {
+    let dragStartIndex = -1;
+    
+    element.addEventListener('dragstart', (e) => {
+      const tabs = this.tabManager.getAllTabs();
+      dragStartIndex = tabs.findIndex(t => t.id === tab.id);
+      element.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', tab.id);
+    });
+    
+    element.addEventListener('dragend', () => {
+      element.classList.remove('dragging');
+      // Remove drag over classes from all items
+      document.querySelectorAll('.tab-dropdown-item, .tab-modal-item').forEach(item => {
+        item.classList.remove('drag-over', 'drag-over-bottom');
+      });
+    });
+    
+    element.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      // Determine drop position
+      const rect = element.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      
+      element.classList.remove('drag-over', 'drag-over-bottom');
+      if (e.clientY < midpoint) {
+        element.classList.add('drag-over');
+      } else {
+        element.classList.add('drag-over-bottom');
+      }
+    });
+    
+    element.addEventListener('dragleave', () => {
+      element.classList.remove('drag-over', 'drag-over-bottom');
+    });
+    
+    element.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const draggedTabId = e.dataTransfer.getData('text/plain');
+      
+      if (draggedTabId === tab.id) return; // Same element
+      
+      const tabs = this.tabManager.getAllTabs();
+      const draggedIndex = tabs.findIndex(t => t.id === draggedTabId);
+      const targetIndex = tabs.findIndex(t => t.id === tab.id);
+      
+      if (draggedIndex === -1 || targetIndex === -1) return;
+      
+      // Determine final position based on drop zone
+      const rect = element.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      let finalIndex = targetIndex;
+      
+      if (e.clientY >= midpoint) {
+        finalIndex = targetIndex + 1;
+      }
+      
+      // Adjust for removal of dragged item
+      if (draggedIndex < finalIndex) {
+        finalIndex--;
+      }
+      
+      // Perform the move
+      this.tabManager.moveTab(draggedIndex, finalIndex);
+      
+      // Update UI
+      this.updateTabUI();
+      
+      // Refresh modal if open
+      const tabModal = document.getElementById('tab-modal');
+      if (tabModal && tabModal.style.display === 'flex') {
+        this.showTabModal();
+      }
+      
+      element.classList.remove('drag-over', 'drag-over-bottom');
+    });
+  }
+
   onDestroy() {
+    // Clean up context menu
+    const contextMenu = document.getElementById('tab-context-menu');
+    if (contextMenu) {
+      contextMenu.remove();
+    }
+    
     // Clean up all child components
     if (this.tabManager) {
       this.tabManager.destroy();

@@ -165,6 +165,67 @@ fn get_dropped_file_absolute_path(file_name: String, content: Vec<u8>) -> Result
 }
 
 #[tauri::command]
+fn show_in_folder(path: String) -> Result<(), String> {
+    println!("[Rust] Showing file in folder: {}", path);
+    
+    let file_path = std::path::Path::new(&path);
+    
+    if !file_path.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let result = Command::new("explorer")
+            .args(["/select,", &path])
+            .spawn();
+        
+        match result {
+            Ok(_) => {
+                println!("[Rust] Successfully opened explorer for: {}", path);
+                Ok(())
+            }
+            Err(e) => {
+                println!("[Rust] Failed to open explorer: {}", e);
+                Err(format!("Failed to open explorer: {}", e))
+            }
+        }
+    }
+    
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        let result = Command::new("open")
+            .args(["-R", &path])
+            .spawn();
+        
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Failed to open finder: {}", e))
+        }
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        
+        // Try different file managers
+        let file_managers = ["nautilus", "dolphin", "thunar", "pcmanfm", "nemo"];
+        
+        for fm in &file_managers {
+            if let Ok(_) = Command::new(fm)
+                .arg(&path)
+                .spawn() {
+                return Ok(());
+            }
+        }
+        
+        Err("No supported file manager found".to_string())
+    }
+}
+
+#[tauri::command]
 fn get_absolute_paths_from_names(file_names: Vec<String>) -> Result<Vec<String>, String> {
     println!("[Rust] Getting absolute paths for: {:?}", file_names);
     
@@ -324,7 +385,8 @@ pub fn run() {
             test_file_association,
             convert_local_image_path,
             get_absolute_paths_from_names,
-            get_dropped_file_absolute_path
+            get_dropped_file_absolute_path,
+            show_in_folder
         ])
         .setup(|app| {
             println!("[Rust] App setup started");

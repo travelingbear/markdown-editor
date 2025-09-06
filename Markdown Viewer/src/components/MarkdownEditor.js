@@ -487,21 +487,25 @@ class MarkdownEditor extends BaseComponent {
             this.exportToHtml();
           }
           break;
-        case 'm':
+        case 'Tab':
           if (e.shiftKey) {
             e.preventDefault();
             this.showTabModal();
           }
           break;
-        case 'Tab':
-          e.preventDefault();
-          if (e.shiftKey) {
-            this.switchToPreviousTab();
-          } else {
-            this.switchToNextTab();
-          }
-          break;
+
       }
+    }
+    
+    // Handle Ctrl+Tab and Ctrl+Shift+Tab separately
+    if (e.ctrlKey && e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        this.switchToPreviousTab();
+      } else {
+        this.switchToNextTab();
+      }
+      return;
     }
     
     // Function keys
@@ -2068,7 +2072,17 @@ class MarkdownEditor extends BaseComponent {
   // Enhanced Tab Features - Phase 4
   
   setupTabKeyboardShortcuts() {
-    // No additional keyboard shortcuts needed
+    // Alt+1-9 for switching between most recent tabs
+    document.addEventListener('keydown', (e) => {
+      if (e.altKey && e.key >= '1' && e.key <= '9') {
+        const tabIndex = parseInt(e.key) - 1;
+        const tabs = this.tabManager.getAllTabs();
+        if (tabs[tabIndex]) {
+          e.preventDefault();
+          this.switchToTab(tabs[tabIndex].id);
+        }
+      }
+    });
   }
   
   switchToNextTab() {
@@ -2077,15 +2091,11 @@ class MarkdownEditor extends BaseComponent {
     
     const activeTab = this.tabManager.getActiveTab();
     if (!activeTab) {
-      if (tabs.length > 0) {
-        this.switchToTab(tabs[0].id);
-      }
+      this.switchToTab(tabs[0].id);
       return;
     }
     
     const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
-    if (currentIndex === -1) return;
-    
     const nextIndex = (currentIndex + 1) % tabs.length;
     this.switchToTab(tabs[nextIndex].id);
   }
@@ -2096,15 +2106,11 @@ class MarkdownEditor extends BaseComponent {
     
     const activeTab = this.tabManager.getActiveTab();
     if (!activeTab) {
-      if (tabs.length > 0) {
-        this.switchToTab(tabs[0].id);
-      }
+      this.switchToTab(tabs[tabs.length - 1].id);
       return;
     }
     
     const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
-    if (currentIndex === -1) return;
-    
     const prevIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
     this.switchToTab(tabs[prevIndex].id);
   }
@@ -2153,10 +2159,33 @@ class MarkdownEditor extends BaseComponent {
     
     this.contextMenuTabId = tabId;
     
-    // Position the context menu
-    contextMenu.style.left = `${e.clientX}px`;
-    contextMenu.style.top = `${e.clientY}px`;
+    // Show menu first to get dimensions
     contextMenu.classList.add('show');
+    
+    // Calculate position to prevent overflow
+    const menuRect = contextMenu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let left = e.clientX;
+    let top = e.clientY;
+    
+    // Adjust horizontal position if menu would overflow
+    if (left + menuRect.width > viewportWidth) {
+      left = viewportWidth - menuRect.width - 10;
+    }
+    
+    // Adjust vertical position if menu would overflow
+    if (top + menuRect.height > viewportHeight) {
+      top = viewportHeight - menuRect.height - 10;
+    }
+    
+    // Ensure menu doesn't go off-screen
+    left = Math.max(10, left);
+    top = Math.max(10, top);
+    
+    contextMenu.style.left = `${left}px`;
+    contextMenu.style.top = `${top}px`;
     
     // Update menu items based on context
     const tabs = this.tabManager.getAllTabs();
@@ -2213,7 +2242,7 @@ class MarkdownEditor extends BaseComponent {
       case 'reveal':
         if (tab.filePath && window.__TAURI__?.core?.invoke) {
           try {
-            await window.__TAURI__.core.invoke('reveal_in_explorer', { path: tab.filePath });
+            await window.__TAURI__.core.invoke('show_in_folder', { path: tab.filePath });
           } catch (error) {
             console.warn('[MarkdownEditor] Failed to reveal file:', error);
           }

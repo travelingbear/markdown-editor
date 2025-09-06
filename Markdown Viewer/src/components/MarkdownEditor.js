@@ -487,12 +487,7 @@ class MarkdownEditor extends BaseComponent {
             this.exportToHtml();
           }
           break;
-        case 'Tab':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.showTabModal();
-          }
-          break;
+
 
       }
     }
@@ -501,7 +496,7 @@ class MarkdownEditor extends BaseComponent {
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
       if (e.shiftKey) {
-        this.switchToPreviousTab();
+        this.showTabModal();
       } else {
         this.switchToNextTab();
       }
@@ -1812,11 +1807,11 @@ class MarkdownEditor extends BaseComponent {
     tabDropdownList.innerHTML = '';
     
     // Show up to 5 most recent tabs in dropdown
-    const visibleTabs = tabs.slice(-5);
+    const visibleTabs = tabs.slice(0, 5);
     const showMoreBtn = tabs.length > 5;
     
-    visibleTabs.forEach(tab => {
-      const tabElement = this.createDropdownTabElement(tab, activeTab);
+    visibleTabs.forEach((tab, index) => {
+      const tabElement = this.createDropdownTabElement(tab, activeTab, index);
       tabDropdownList.appendChild(tabElement);
     });
     
@@ -1838,10 +1833,16 @@ class MarkdownEditor extends BaseComponent {
     }
   }
   
-  createDropdownTabElement(tab, activeTab) {
+  createDropdownTabElement(tab, activeTab, index) {
     const tabElement = document.createElement('div');
     tabElement.className = `tab-dropdown-item ${tab.id === activeTab?.id ? 'active' : ''}`;
     tabElement.title = tab.filePath || tab.fileName;
+    
+    // Tab number
+    const tabNumber = document.createElement('div');
+    tabNumber.className = 'tab-dropdown-number';
+    tabNumber.textContent = (index + 1).toString();
+    tabElement.appendChild(tabNumber);
     
     // Tab info
     const tabInfo = document.createElement('div');
@@ -1986,10 +1987,18 @@ class MarkdownEditor extends BaseComponent {
     // Clear existing items
     tabModalList.innerHTML = '';
     
-    tabs.forEach(tab => {
-      const item = this.createTabModalItem(tab, activeTab);
-      tabModalList.appendChild(item);
-    });
+    // Show modal even with no tabs or few tabs
+    if (tabs.length === 0) {
+      const emptyMessage = document.createElement('div');
+      emptyMessage.className = 'tab-modal-empty';
+      emptyMessage.textContent = 'No tabs open';
+      tabModalList.appendChild(emptyMessage);
+    } else {
+      tabs.forEach(tab => {
+        const item = this.createTabModalItem(tab, activeTab);
+        tabModalList.appendChild(item);
+      });
+    }
     
     // Clear search and focus
     if (tabSearchInput) {
@@ -2072,14 +2081,16 @@ class MarkdownEditor extends BaseComponent {
   // Enhanced Tab Features - Phase 4
   
   setupTabKeyboardShortcuts() {
-    // Alt+1-9 for switching between most recent tabs
+    // Alt+1-5 for switching to numbered tabs in dropdown
     document.addEventListener('keydown', (e) => {
-      if (e.altKey && e.key >= '1' && e.key <= '9') {
+      if (e.altKey && e.key >= '1' && e.key <= '5') {
         const tabIndex = parseInt(e.key) - 1;
         const tabs = this.tabManager.getAllTabs();
-        if (tabs[tabIndex]) {
+        const visibleTabs = tabs.slice(0, 5); // First 5 tabs
+        
+        if (visibleTabs[tabIndex]) {
           e.preventDefault();
-          this.switchToTab(tabs[tabIndex].id);
+          this.switchToTab(visibleTabs[tabIndex].id);
         }
       }
     });

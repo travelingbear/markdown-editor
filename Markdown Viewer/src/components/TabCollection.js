@@ -60,10 +60,7 @@ class TabCollection extends BaseComponent {
       if (currentTab) currentTab.setActive(false);
     }
 
-    // Move tab to end (most recent position)
-    this.moveTabToEnd(tabId);
-
-    // Activate new tab
+    // Activate new tab (keep original order)
     tab.setActive(true);
     this.activeTabId = tabId;
 
@@ -71,15 +68,7 @@ class TabCollection extends BaseComponent {
     return true;
   }
 
-  // Move tab to end of array (most recent position)
-  moveTabToEnd(tabId) {
-    const index = this.tabs.findIndex(tab => tab.id === tabId);
-    if (index === -1 || index === this.tabs.length - 1) return false;
 
-    const tab = this.tabs.splice(index, 1)[0];
-    this.tabs.push(tab);
-    return true;
-  }
 
   // Get tab by ID
   getTab(tabId) {

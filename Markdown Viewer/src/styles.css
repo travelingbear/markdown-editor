@@ -4148,6 +4148,26 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
   color: var(--text-primary);
   transition: all 0.2s;
   border-bottom: 1px solid var(--border-primary);
+  gap: 8px;
+}
+
+.tab-dropdown-number {
+  background: var(--accent-primary);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.tab-dropdown-item.active .tab-dropdown-number {
+  background: white;
+  color: var(--accent-primary);
 }
 
 .tab-dropdown-item:last-child {
@@ -4422,6 +4442,20 @@ body.retro-theme .tab-dropdown-item {
   font-family: 'MS Sans Serif', sans-serif;
   font-size: 11px;
   border-bottom: 1px solid #808080;
+}
+
+body.retro-theme .tab-dropdown-number {
+  background: #000080;
+  color: #ffffff;
+  border: 1px outset #000080;
+  border-radius: 0;
+  font-family: 'MS Sans Serif', sans-serif;
+}
+
+body.retro-theme .tab-dropdown-item.active .tab-dropdown-number {
+  background: #ffffff;
+  color: #000080;
+  border: 1px inset #c0c0c0;
 }
 
 body.retro-theme .tab-dropdown-item:hover {

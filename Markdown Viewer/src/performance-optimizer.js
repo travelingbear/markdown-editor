@@ -321,6 +321,8 @@ class PerformanceOptimizer {
     const memoryInfo = this.checkMemoryUsage();
     const tabCount = window.markdownEditor?.tabManager?.getTabsCount() || 0;
     
+    console.log(`[Performance] Checking: ${tabCount} tabs, ${this.virtualizedTabs.size} virtual`);
+    
     // Always check tab count for virtualization, regardless of memory pressure
     if (tabCount > 15) {
       console.log(`[Performance] High tab count detected: ${tabCount} tabs, checking virtualization`);
@@ -357,7 +359,23 @@ class PerformanceOptimizer {
     const maxActiveTabs = 10;
     const tabsToVirtualize = Math.max(0, totalTabs - maxActiveTabs);
     
-    console.log(`[Performance] Selecting tabs for virtualization: ${totalTabs} total, target ${tabsToVirtualize} to virtualize`);
+    console.log(`[Performance] Selecting tabs: ${totalTabs} total, ${tabsToVirtualize} to virtualize, ${this.lastAccessTime.size} tracked`);
+    
+    // If no tracking data, virtualize oldest tabs by index
+    if (this.lastAccessTime.size === 0 && window.markdownEditor?.tabManager) {
+      const allTabs = window.markdownEditor.tabManager.getAllTabs();
+      const activeTab = window.markdownEditor.tabManager.getActiveTab();
+      
+      // Virtualize all but the first 10 tabs (skip active tab)
+      for (let i = maxActiveTabs; i < allTabs.length; i++) {
+        if (allTabs[i].id !== activeTab?.id) {
+          candidates.push({ tabId: allTabs[i].id, timeSinceAccess: 999999, accessCount: 0 });
+        }
+      }
+      
+      console.log(`[Performance] No tracking data, virtualizing by index: ${candidates.length} candidates`);
+      return candidates.slice(0, tabsToVirtualize).map(c => c.tabId);
+    }
     
     for (const [tabId, lastAccess] of this.lastAccessTime.entries()) {
       const timeSinceAccess = now - lastAccess;
@@ -368,8 +386,8 @@ class PerformanceOptimizer {
         continue;
       }
       
-      // Virtualize tabs not accessed in last 30 seconds (more aggressive)
-      if (timeSinceAccess > 30000) { // 30 seconds
+      // Virtualize tabs not accessed in last 10 seconds (very aggressive)
+      if (timeSinceAccess > 10000) { // 10 seconds
         candidates.push({ tabId, timeSinceAccess, accessCount });
       }
     }

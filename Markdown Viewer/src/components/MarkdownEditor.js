@@ -157,6 +157,17 @@ class MarkdownEditor extends BaseComponent {
     
     this.tabManager.on('tab-removed', (data) => {
       this.updateTabUI();
+      
+      // Update tab modal if it's open
+      const tabModal = document.getElementById('tab-modal');
+      if (tabModal && tabModal.style.display === 'flex') {
+        if (this.tabManager.hasTabs()) {
+          this.showTabModal();
+        } else {
+          this.hideTabModal();
+        }
+      }
+      
       if (!this.tabManager.hasTabs()) {
         this.showWelcomePage();
       }

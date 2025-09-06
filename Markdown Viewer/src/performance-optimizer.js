@@ -353,11 +353,10 @@ class PerformanceOptimizer {
       const fakeTabId = `virtual-tab-${i}`;
       if (!this.virtualizedTabs.has(fakeTabId)) {
         this.virtualizedTabs.add(fakeTabId);
-        console.log(`[Performance] Virtualized tab ${fakeTabId}`);
       }
     }
     
-    console.log(`[Performance] Force virtualized ${this.virtualizedTabs.size} tabs`);
+    // Virtualization completed silently
   }
   
   // Phase 6: Handle high tab count by virtualizing some tabs
@@ -434,7 +433,6 @@ class PerformanceOptimizer {
   virtualizeTab(tabId) {
     // Mark it as virtualized for display purposes
     this.virtualizedTabs.add(tabId);
-    console.log(`[Performance] Tab ${tabId} virtualized`);
     
     // Update access time to prevent immediate re-virtualization
     const now = Date.now();
@@ -495,10 +493,9 @@ class PerformanceOptimizer {
     const duration = performance.now() - startTime;
     const target = this.getTargetForOperation(operation);
     
-    console.log(`[Benchmark] ${operation}: ${duration.toFixed(2)}ms (${tabCount} tabs)`);
-    
+    // Only log slow operations
     if (target && duration > target) {
-      console.warn(`[Performance] ${operation} exceeded target: ${duration.toFixed(2)}ms > ${target}ms`);
+      console.warn(`[Performance] ${operation} exceeded target: ${duration.toFixed(2)}ms > ${target}ms (${tabCount} tabs)`);
     }
     
     // Log to performance history

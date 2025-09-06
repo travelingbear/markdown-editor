@@ -146,9 +146,7 @@ class MarkdownEditor extends BaseComponent {
     this.tabManager.on('tab-created', (data) => {
       // Phase 6: Track tab creation performance for all new tabs
       if (this.performanceOptimizer) {
-        const currentTabCount = this.tabManager.getTabsCount();
         this.performanceOptimizer.trackTabAccess(data.tab.id);
-        console.log(`[Performance] New tab created: ${data.tab.fileName || 'untitled'} (Total: ${currentTabCount})`);
       }
       
       this.updateTabUI();

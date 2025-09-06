@@ -457,16 +457,22 @@ class MarkdownEditor extends BaseComponent {
           this.closeFile();
           break;
         case '1':
-          e.preventDefault();
-          this.setMode('code');
+          if (e.shiftKey) {
+            e.preventDefault();
+            this.setMode('code');
+          }
           break;
         case '2':
-          e.preventDefault();
-          this.setMode('preview');
+          if (e.shiftKey) {
+            e.preventDefault();
+            this.setMode('preview');
+          }
           break;
         case '3':
-          e.preventDefault();
-          this.setMode('split');
+          if (e.shiftKey) {
+            e.preventDefault();
+            this.setMode('split');
+          }
           break;
         case 't':
         case '/':
@@ -489,13 +495,18 @@ class MarkdownEditor extends BaseComponent {
             this.exportToHtml();
           }
           break;
+        case 'm':
+          if (e.shiftKey) {
+            e.preventDefault();
+            this.showTabModal();
+          }
+          break;
         case 'Tab':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.switchToNextTab();
-          } else {
-            e.preventDefault();
+          e.preventDefault();
+          if (e.shiftKey) {
             this.switchToPreviousTab();
+          } else {
+            this.switchToNextTab();
           }
           break;
       }
@@ -2077,18 +2088,8 @@ class MarkdownEditor extends BaseComponent {
   setupTabKeyboardShortcuts() {
     // Additional keyboard shortcuts for tab navigation
     document.addEventListener('keydown', (e) => {
-      // Ctrl+Tab and Ctrl+Shift+Tab for tab switching
-      if (e.ctrlKey && e.key === 'Tab') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          this.switchToPreviousTab();
-        } else {
-          this.switchToNextTab();
-        }
-      }
-      
-      // Ctrl+1-9 for direct tab switching
-      if (e.ctrlKey && e.key >= '1' && e.key <= '9' && !e.shiftKey) {
+      // Alt+1-9 for direct tab switching (avoiding conflict with mode shortcuts)
+      if (e.altKey && e.key >= '1' && e.key <= '9') {
         const tabIndex = parseInt(e.key) - 1;
         const tabs = this.tabManager.getAllTabs();
         if (tabs[tabIndex]) {
@@ -2384,21 +2385,24 @@ class MarkdownEditor extends BaseComponent {
         finalIndex = targetIndex + 1;
       }
       
-      // Adjust for removal of dragged item
-      if (draggedIndex < finalIndex) {
-        finalIndex--;
-      }
+      // Clamp final index to valid range
+      finalIndex = Math.max(0, Math.min(finalIndex, tabs.length - 1));
       
-      // Perform the move
-      this.tabManager.moveTab(draggedIndex, finalIndex);
-      
-      // Update UI
-      this.updateTabUI();
-      
-      // Refresh modal if open
-      const tabModal = document.getElementById('tab-modal');
-      if (tabModal && tabModal.style.display === 'flex') {
-        this.showTabModal();
+      // Only move if different position
+      if (draggedIndex !== finalIndex) {
+        console.log(`Moving tab from ${draggedIndex} to ${finalIndex}`);
+        this.tabManager.moveTab(draggedIndex, finalIndex);
+        
+        // Update UI
+        setTimeout(() => {
+          this.updateTabUI();
+          
+          // Refresh modal if open
+          const tabModal = document.getElementById('tab-modal');
+          if (tabModal && tabModal.style.display === 'flex') {
+            this.showTabModal();
+          }
+        }, 50);
       }
       
       element.classList.remove('drag-over', 'drag-over-bottom');

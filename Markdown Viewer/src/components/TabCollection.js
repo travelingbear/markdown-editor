@@ -111,18 +111,7 @@ class TabCollection extends BaseComponent {
     return this.tabs.filter(tab => tab.isDirty);
   }
 
-  // Move tab
-  moveTab(fromIndex, toIndex) {
-    if (fromIndex < 0 || fromIndex >= this.tabs.length) return false;
-    if (toIndex < 0 || toIndex >= this.tabs.length) return false;
-    if (fromIndex === toIndex) return false;
 
-    const tab = this.tabs.splice(fromIndex, 1)[0];
-    this.tabs.splice(toIndex, 0, tab);
-
-    this.emit('tab-moved', { tab, fromIndex, toIndex });
-    return true;
-  }
 
   // Find tab by file path
   findTabByPath(filePath) {

@@ -31,15 +31,7 @@ class TabManager extends BaseComponent {
       this.persistTabs();
     });
     
-    this.tabCollection.on('tab-moved', (data) => {
-      this.emit('tab-moved', data);
-      this.persistTabs();
-    });
 
-    this.tabCollection.on('tab-moved', (data) => {
-      this.emit('tab-moved', data);
-      this.persistTabs();
-    });
 
     this.tabCollection.on('all-tabs-closed', (data) => {
       this.emit('all-tabs-closed', data);
@@ -171,15 +163,7 @@ class TabManager extends BaseComponent {
     return this.tabCollection.getDirtyTabs();
   }
 
-  // Move tab
-  moveTab(fromIndex, toIndex) {
-    const result = this.tabCollection.moveTab(fromIndex, toIndex);
-    if (result) {
-      this.persistTabs();
-      this.emit('tab-moved', { fromIndex, toIndex });
-    }
-    return result;
-  }
+
   
   // Get tab by ID
   getTab(tabId) {

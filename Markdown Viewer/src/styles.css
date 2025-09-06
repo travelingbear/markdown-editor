@@ -4572,57 +4572,7 @@ body.retro-theme .tab-modal-close-btn:active {
   color: var(--text-secondary);
 }
 
-/* Drag and Drop Tab Reordering */
-.tab-dropdown-item.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
 
-.tab-dropdown-item.drag-over {
-  border-top: 2px solid var(--accent-primary);
-  background: rgba(94, 96, 231, 0.1);
-}
-
-.tab-dropdown-item.drag-over-bottom {
-  border-bottom: 2px solid var(--accent-primary);
-  background: rgba(94, 96, 231, 0.1);
-}
-
-.tab-dropdown-item[draggable="true"] {
-  cursor: grab;
-}
-
-.tab-dropdown-item[draggable="true"]:active {
-  cursor: grabbing;
-}
-
-/* Tab Modal Drag and Drop */
-.tab-modal-item.dragging {
-  opacity: 0.5;
-  transform: rotate(1deg) scale(0.98);
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.tab-modal-item.drag-over {
-  border-top: 2px solid var(--accent-primary);
-  background: rgba(94, 96, 231, 0.1);
-}
-
-.tab-modal-item.drag-over-bottom {
-  border-bottom: 2px solid var(--accent-primary);
-  background: rgba(94, 96, 231, 0.1);
-}
-
-.tab-modal-item[draggable="true"] {
-  cursor: grab;
-}
-
-.tab-modal-item[draggable="true"]:active {
-  cursor: grabbing;
-}
 
 /* Tab Context Menu */
 .tab-context-menu {
@@ -4694,32 +4644,14 @@ body.retro-theme .tab-modal-close-btn:active {
   font-style: italic;
 }
 
-/* Tab Reorder Animation */
-.tab-dropdown-item,
-.tab-modal-item {
-  transition: all 0.2s ease;
-}
 
-.tab-dropdown-item.reordering,
-.tab-modal-item.reordering {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
 
 /* Dark theme adjustments for enhanced features */
 [data-theme="dark"] .tab-context-menu {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="dark"] .tab-dropdown-item.dragging,
-[data-theme="dark"] .tab-modal-item.dragging {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-}
 
-[data-theme="dark"] .tab-dropdown-item.reordering,
-[data-theme="dark"] .tab-modal-item.reordering {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
 
 /* Retro theme enhanced features */
 body.retro-theme .tab-search-input {
@@ -4759,10 +4691,7 @@ body.retro-theme .tab-context-separator {
   background: #808080;
 }
 
-body.retro-theme .tab-dropdown-item.dragging,
-body.retro-theme .tab-modal-item.dragging {
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-}
+
 
 /* Responsive design */
 @media (max-width: 768px) {

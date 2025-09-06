@@ -169,9 +169,7 @@ class MarkdownEditor extends BaseComponent {
       this.updateTabUI();
     });
     
-    this.tabManager.on('tab-moved', (data) => {
-      this.updateTabUI();
-    });
+
     
     this.tabManager.on('tab-restored', (data) => {
       // Tab restored from persistence
@@ -457,22 +455,16 @@ class MarkdownEditor extends BaseComponent {
           this.closeFile();
           break;
         case '1':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.setMode('code');
-          }
+          e.preventDefault();
+          this.setMode('code');
           break;
         case '2':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.setMode('preview');
-          }
+          e.preventDefault();
+          this.setMode('preview');
           break;
         case '3':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.setMode('split');
-          }
+          e.preventDefault();
+          this.setMode('split');
           break;
         case 't':
         case '/':
@@ -1846,8 +1838,6 @@ class MarkdownEditor extends BaseComponent {
     const tabElement = document.createElement('div');
     tabElement.className = `tab-dropdown-item ${tab.id === activeTab?.id ? 'active' : ''}`;
     tabElement.title = tab.filePath || tab.fileName;
-    tabElement.draggable = true;
-    tabElement.dataset.tabId = tab.id;
     
     // Tab info
     const tabInfo = document.createElement('div');
@@ -1882,9 +1872,6 @@ class MarkdownEditor extends BaseComponent {
     tabElement.oncontextmenu = (e) => {
       this.showTabContextMenu(e, tab.id);
     };
-    
-    // Drag and drop handlers
-    this.setupTabDragAndDrop(tabElement, tab);
     
     return tabElement;
   }
@@ -2023,8 +2010,6 @@ class MarkdownEditor extends BaseComponent {
   createTabModalItem(tab, activeTab) {
     const item = document.createElement('div');
     item.className = `tab-modal-item ${tab.id === activeTab?.id ? 'active' : ''}`;
-    item.draggable = true;
-    item.dataset.tabId = tab.id;
     
     const info = document.createElement('div');
     info.className = 'tab-modal-info';
@@ -2077,27 +2062,13 @@ class MarkdownEditor extends BaseComponent {
       this.showTabContextMenu(e, tab.id);
     };
     
-    // Drag and drop handlers
-    this.setupTabDragAndDrop(item, tab);
-    
     return item;
   }
 
   // Enhanced Tab Features - Phase 4
   
   setupTabKeyboardShortcuts() {
-    // Additional keyboard shortcuts for tab navigation
-    document.addEventListener('keydown', (e) => {
-      // Alt+1-9 for direct tab switching (avoiding conflict with mode shortcuts)
-      if (e.altKey && e.key >= '1' && e.key <= '9') {
-        const tabIndex = parseInt(e.key) - 1;
-        const tabs = this.tabManager.getAllTabs();
-        if (tabs[tabIndex]) {
-          e.preventDefault();
-          this.switchToTab(tabs[tabIndex].id);
-        }
-      }
-    });
+    // No additional keyboard shortcuts needed
   }
   
   switchToNextTab() {
@@ -2105,9 +2076,16 @@ class MarkdownEditor extends BaseComponent {
     if (tabs.length <= 1) return;
     
     const activeTab = this.tabManager.getActiveTab();
-    if (!activeTab) return;
+    if (!activeTab) {
+      if (tabs.length > 0) {
+        this.switchToTab(tabs[0].id);
+      }
+      return;
+    }
     
     const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
+    if (currentIndex === -1) return;
+    
     const nextIndex = (currentIndex + 1) % tabs.length;
     this.switchToTab(tabs[nextIndex].id);
   }
@@ -2117,9 +2095,16 @@ class MarkdownEditor extends BaseComponent {
     if (tabs.length <= 1) return;
     
     const activeTab = this.tabManager.getActiveTab();
-    if (!activeTab) return;
+    if (!activeTab) {
+      if (tabs.length > 0) {
+        this.switchToTab(tabs[0].id);
+      }
+      return;
+    }
     
     const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
+    if (currentIndex === -1) return;
+    
     const prevIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
     this.switchToTab(tabs[prevIndex].id);
   }
@@ -2325,89 +2310,7 @@ class MarkdownEditor extends BaseComponent {
     }
   }
   
-  setupTabDragAndDrop(element, tab) {
-    let dragStartIndex = -1;
-    
-    element.addEventListener('dragstart', (e) => {
-      const tabs = this.tabManager.getAllTabs();
-      dragStartIndex = tabs.findIndex(t => t.id === tab.id);
-      element.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', tab.id);
-    });
-    
-    element.addEventListener('dragend', () => {
-      element.classList.remove('dragging');
-      // Remove drag over classes from all items
-      document.querySelectorAll('.tab-dropdown-item, .tab-modal-item').forEach(item => {
-        item.classList.remove('drag-over', 'drag-over-bottom');
-      });
-    });
-    
-    element.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      
-      // Determine drop position
-      const rect = element.getBoundingClientRect();
-      const midpoint = rect.top + rect.height / 2;
-      
-      element.classList.remove('drag-over', 'drag-over-bottom');
-      if (e.clientY < midpoint) {
-        element.classList.add('drag-over');
-      } else {
-        element.classList.add('drag-over-bottom');
-      }
-    });
-    
-    element.addEventListener('dragleave', () => {
-      element.classList.remove('drag-over', 'drag-over-bottom');
-    });
-    
-    element.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const draggedTabId = e.dataTransfer.getData('text/plain');
-      
-      if (draggedTabId === tab.id) return; // Same element
-      
-      const tabs = this.tabManager.getAllTabs();
-      const draggedIndex = tabs.findIndex(t => t.id === draggedTabId);
-      const targetIndex = tabs.findIndex(t => t.id === tab.id);
-      
-      if (draggedIndex === -1 || targetIndex === -1) return;
-      
-      // Determine final position based on drop zone
-      const rect = element.getBoundingClientRect();
-      const midpoint = rect.top + rect.height / 2;
-      let finalIndex = targetIndex;
-      
-      if (e.clientY >= midpoint) {
-        finalIndex = targetIndex + 1;
-      }
-      
-      // Clamp final index to valid range
-      finalIndex = Math.max(0, Math.min(finalIndex, tabs.length - 1));
-      
-      // Only move if different position
-      if (draggedIndex !== finalIndex) {
-        console.log(`Moving tab from ${draggedIndex} to ${finalIndex}`);
-        this.tabManager.moveTab(draggedIndex, finalIndex);
-        
-        // Update UI
-        setTimeout(() => {
-          this.updateTabUI();
-          
-          // Refresh modal if open
-          const tabModal = document.getElementById('tab-modal');
-          if (tabModal && tabModal.style.display === 'flex') {
-            this.showTabModal();
-          }
-        }, 50);
-      }
-      
-      element.classList.remove('drag-over', 'drag-over-bottom');
-    });
-  }
+
 
   onDestroy() {
     // Clean up context menu

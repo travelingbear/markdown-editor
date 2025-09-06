@@ -34,8 +34,31 @@ You can open markdown files in several ways:
 2. Click **"Open Existing File"** on the welcome screen
 3. Use **Ctrl+O** keyboard shortcut
 4. **Drag and drop** files onto the application window
+5. **Command line**: `markdown-editor.exe "path\to\file.md"`
 
 *[Image placeholder: File opening methods]*
+
+### Single Instance Behavior
+By default, Markdown Editor runs as a **single instance application**:
+- Only one window can be open at a time
+- Double-clicking `.md` files opens them in the existing window
+- Launching the app multiple times focuses the existing window
+- Files opened via command line or file association are forwarded to the running instance
+
+#### Opening Multiple Instances (Advanced)
+For development or special use cases, you can bypass single instance behavior:
+
+```bash
+# Force a new instance (any of these commands work)
+markdown-editor.exe --new-instance
+markdown-editor.exe --multi-instance
+markdown-editor.exe -n
+
+# Open specific file in new instance
+markdown-editor.exe --new-instance "path\to\file.md"
+```
+
+**Note**: Multiple instances run independently and don't share settings or recent files.
 
 ---
 
@@ -352,6 +375,14 @@ In Preview mode, use zoom controls for better readability:
 | `Ctrl+W` | Close file |
 | `Ctrl+Q` | Quit application |
 
+### Command Line Options
+| Command | Action |
+|---------|--------|
+| `markdown-editor.exe` | Launch application (single instance) |
+| `markdown-editor.exe "file.md"` | Open file in existing instance |
+| `markdown-editor.exe --new-instance` | Force new instance |
+| `markdown-editor.exe -n "file.md"` | Open file in new instance |
+
 ### View Modes
 | Shortcut | Action |
 |----------|--------|
@@ -426,6 +457,11 @@ In Preview mode, use zoom controls for better readability:
 **File won't open when double-clicked**
 - Ensure the file has `.md` or `.markdown` extension
 - Try right-click → "Open with" → Markdown Editor
+- If app is already running, file should open in existing window
+
+**Need multiple windows open**
+- Use command line: `markdown-editor.exe --new-instance`
+- Each instance runs independently
 
 **Preview not updating**
 - Press F5 to refresh preview

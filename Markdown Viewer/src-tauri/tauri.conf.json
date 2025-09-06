@@ -47,6 +47,8 @@
             "dialog:allow-open",
             "dialog:allow-save",
             "core:window:allow-destroy",
+            "core:window:allow-set-focus",
+            "core:window:allow-unminimize",
             "core:window:default",
             "core:path:default",
             "opener:allow-open-url",

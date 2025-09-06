@@ -215,6 +215,17 @@ pub fn run() {
     println!("[Rust] Command line args: {:?}", args);
     println!("[Rust] Total args count: {}", args.len());
     
+    // Check for multi-instance flag
+    let force_new_instance = args.iter().any(|arg| 
+        arg == "--new-instance" || 
+        arg == "--multi-instance" || 
+        arg == "-n"
+    );
+    
+    if force_new_instance {
+        println!("[Rust] Multi-instance flag detected, bypassing single instance");
+    }
+    
     // Log each argument for debugging
     for (i, arg) in args.iter().enumerate() {
         println!("[Rust] Arg[{}]: '{}'", i, arg);
@@ -254,11 +265,14 @@ pub fn run() {
         startup_file: Mutex::new(startup_file),
     };
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+        .plugin(tauri_plugin_fs::init());
+    
+    // Only add single instance plugin if not bypassed
+    if !force_new_instance {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             println!("[Rust] Single instance callback triggered with args: {:?}", args);
             
             // Find markdown files in the arguments
@@ -273,8 +287,16 @@ pub fn run() {
                     
                     if path.exists() && is_markdown {
                         markdown_files.push(arg.clone());
+                        println!("[Rust] Found markdown file: {}", arg);
                     }
                 }
+            }
+            
+            // Focus the window first
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+                println!("[Rust] Window focused");
             }
             
             // Emit event to frontend with the files to open
@@ -284,15 +306,14 @@ pub fn run() {
                     println!("[Rust] Failed to emit single-instance-args: {}", e);
                 }
             } else {
-                println!("[Rust] No markdown files found in args, just focusing window");
-                // Just focus the existing window
-                if let Some(window) = app.get_webview_window("main") {
-                    if let Err(e) = window.set_focus() {
-                        println!("[Rust] Failed to focus window: {}", e);
-                    }
-                }
+                println!("[Rust] No markdown files found in args");
             }
-        }))
+        }));
+    } else {
+        println!("[Rust] Single instance plugin bypassed");
+    }
+    
+    builder
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             get_app_info,
@@ -306,12 +327,16 @@ pub fn run() {
             get_dropped_file_absolute_path
         ])
         .setup(|app| {
+            println!("[Rust] App setup started");
+            
             // Focus the main window on startup
             if let Some(window) = app.get_webview_window("main") {
                 if let Err(e) = window.set_focus() {
                     println!("[Rust] Failed to focus main window on startup: {}", e);
                 }
             }
+            
+            println!("[Rust] App setup completed");
             Ok(())
         })
         .run(tauri::generate_context!())

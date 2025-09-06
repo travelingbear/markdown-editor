@@ -609,8 +609,8 @@ class PerformanceOptimizer {
           </div>
         </div>
         <div class="performance-actions">
-          <button id="perf-cleanup-btn" class="settings-btn">Force Cleanup</button>
-          ${isDebugMode ? '<button id="perf-report-btn" class="settings-btn">View Report</button>' : ''}
+          <button id="perf-cleanup-btn" class="perf-action-btn">Force Cleanup</button>
+          ${isDebugMode ? '<button id="perf-report-btn" class="perf-action-btn">View Report</button>' : ''}
         </div>
       `;
       
@@ -701,12 +701,16 @@ class PerformanceOptimizer {
       
       if (window.markdownEditor?.tabManager) {
         actualTabCount = window.markdownEditor.tabManager.getTabsCount();
-      }
-      
-      // Fallback: count DOM elements
-      if (actualTabCount === 0) {
+      } else {
+        // Fallback: count DOM elements
         const dropdownItems = document.querySelectorAll('.tab-dropdown-item');
         actualTabCount = dropdownItems.length;
+      }
+      
+      // Clean up virtualized tabs that no longer exist
+      if (actualTabCount === 0) {
+        this.virtualizedTabs.clear();
+        virtualCount = 0;
       }
       
       // Force virtualization if we have many tabs

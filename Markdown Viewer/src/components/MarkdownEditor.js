@@ -666,6 +666,9 @@ class MarkdownEditor extends BaseComponent {
       return;
     }
     
+    // Save current scroll position
+    this.saveCurrentScrollPosition();
+    
     // Load Monaco Editor lazily when switching to code or split mode
     if ((mode === 'code' || mode === 'split') && !this.editorComponent.isMonacoLoaded) {
       try {
@@ -677,6 +680,8 @@ class MarkdownEditor extends BaseComponent {
     }
     
     this.currentMode = mode;
+    
+
     
     // Update main content class
     const mainContent = document.querySelector('.main-content');
@@ -733,7 +738,48 @@ class MarkdownEditor extends BaseComponent {
     
     // Layout update is now handled in the display logic above
     
+    // Restore scroll position after layout
+    setTimeout(() => this.restoreScrollPosition(), 100);
+    
     this.lastModeSwitchTime = performance.now() - startTime;
+  }
+  
+  saveCurrentScrollPosition() {
+    if (!this.scrollPosition) this.scrollPosition = 0;
+    
+    const editor = this.editorComponent.monacoEditor;
+    const previewPane = document.querySelector('.preview-pane');
+    
+    if (this.currentMode === 'code' && editor) {
+      const scrollTop = editor.getScrollTop();
+      const scrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
+      this.scrollPosition = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+    } else if (this.currentMode === 'preview' && previewPane) {
+      const scrollTop = previewPane.scrollTop;
+      const scrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
+      this.scrollPosition = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+    }
+  }
+  
+  restoreScrollPosition() {
+    if (!this.scrollPosition) return;
+    
+    const editor = this.editorComponent.monacoEditor;
+    const previewPane = document.querySelector('.preview-pane');
+    
+    if ((this.currentMode === 'code' || this.currentMode === 'split') && editor) {
+      const scrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
+      if (scrollHeight > 0) {
+        editor.setScrollTop(this.scrollPosition * scrollHeight);
+      }
+    }
+    
+    if ((this.currentMode === 'preview' || this.currentMode === 'split') && previewPane) {
+      const scrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
+      if (scrollHeight > 0) {
+        previewPane.scrollTop = this.scrollPosition * scrollHeight;
+      }
+    }
   }
 
   // Theme Management
@@ -2039,7 +2085,64 @@ class MarkdownEditor extends BaseComponent {
   }
   
   setupScrollSync() {
-    // Basic scroll sync - will be enhanced later
+    let isScrolling = false;
+    
+    const syncEditorToPreview = () => {
+      if (isScrolling || this.currentMode !== 'split') return;
+      isScrolling = true;
+      
+      const editor = this.editorComponent.monacoEditor;
+      const previewPane = document.querySelector('.preview-pane');
+      
+      if (editor && previewPane) {
+        const editorScrollTop = editor.getScrollTop();
+        const editorScrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
+        const scrollRatio = editorScrollHeight > 0 ? editorScrollTop / editorScrollHeight : 0;
+        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
+        
+        if (previewScrollHeight > 0) {
+          previewPane.scrollTop = scrollRatio * previewScrollHeight;
+        }
+      }
+      
+      setTimeout(() => { isScrolling = false; }, 50);
+    };
+    
+    const syncPreviewToEditor = () => {
+      if (isScrolling || this.currentMode !== 'split') return;
+      isScrolling = true;
+      
+      const editor = this.editorComponent.monacoEditor;
+      const previewPane = document.querySelector('.preview-pane');
+      
+      if (editor && previewPane) {
+        const previewScrollTop = previewPane.scrollTop;
+        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
+        const scrollRatio = previewScrollHeight > 0 ? previewScrollTop / previewScrollHeight : 0;
+        const editorScrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
+        
+        if (editorScrollHeight > 0) {
+          editor.setScrollTop(scrollRatio * editorScrollHeight);
+        }
+      }
+      
+      setTimeout(() => { isScrolling = false; }, 50);
+    };
+    
+    this.editorComponent.on('monaco-loaded', () => {
+      if (this.editorComponent.monacoEditor) {
+        this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
+      }
+    });
+    
+    if (this.editorComponent.isMonacoLoaded) {
+      this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
+    }
+    
+    const previewPane = document.querySelector('.preview-pane');
+    if (previewPane) {
+      previewPane.addEventListener('scroll', syncPreviewToEditor);
+    }
   }
 
   // Tab Management Methods - Phase 6 Enhanced

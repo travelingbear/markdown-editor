@@ -139,6 +139,11 @@ class PreviewComponent extends BaseComponent {
       // Set the HTML content
       this.preview.innerHTML = html;
       
+      // Remove disabled attribute from checkboxes
+      this.preview.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.removeAttribute('disabled');
+      });
+      
       // Render advanced features
       await this.renderMermaidDiagrams();
       this.setupTaskListInteractions();
@@ -257,7 +262,7 @@ class PreviewComponent extends BaseComponent {
     if (this.mermaidInitialized && this.mermaid) {
       html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
         const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
-        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        const id = 'mermaid-' + Math.random().toString(36).substring(2, 11);
         return `<div class="mermaid-diagram" id="${id}" data-mermaid-code="${encodeURIComponent(decodedCode.trim())}"></div>`;
       });
     } else {
@@ -298,14 +303,14 @@ class PreviewComponent extends BaseComponent {
       
       const processedContent = content.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (liMatch, checked, liContent) => {
         const isChecked = checked === 'x';
-        const id = 'task-' + Date.now() + '-' + taskCount;
+        const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
         taskCount++;
         
         // Preserve HTML content including links
         const processedLiContent = liContent.replace(/<(ul|ol)([^>]*)>([\s\S]*?)<\/(ul|ol)>/g, (nestedMatch, nestedTag, nestedAttrs, nestedContent) => {
           const processedNestedContent = nestedContent.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (nestedLiMatch, nestedChecked, nestedLiContent) => {
             const nestedIsChecked = nestedChecked === 'x';
-            const nestedId = 'task-' + Date.now() + '-' + taskCount;
+            const nestedId = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
             taskCount++;
             return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}> <label for="${nestedId}">${nestedLiContent}</label></div>`;
           });
@@ -338,11 +343,9 @@ class PreviewComponent extends BaseComponent {
       }
       
       const isChecked = checked === 'x';
-      const id = 'task-' + Date.now() + '-' + taskCount;
+      const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
       taskCount++;
       
-
-
       return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
     });
     
@@ -354,11 +357,9 @@ class PreviewComponent extends BaseComponent {
       
       const isChecked = checked === 'x';
       const cleanContent = content.trim();
-      const id = 'task-' + Date.now() + '-' + taskCount;
+      const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
       taskCount++;
       
-
-
       return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
     });
     
@@ -489,30 +490,20 @@ class PreviewComponent extends BaseComponent {
   setupTaskListInteractions() {
     if (this.taskChangeHandler) {
       this.preview.removeEventListener('change', this.taskChangeHandler);
-      this.preview.removeEventListener('click', this.taskChangeHandler);
     }
     
-    const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
-    
     this.taskChangeHandler = (e) => {
-      if (e.target.type === 'checkbox' && e.target.closest('.task-list-item')) {
-        const label = e.target.nextElementSibling;
-        if (label && label.tagName === 'LABEL') {
-          const taskText = label.textContent.trim();
-          
-          this.emit('task-toggled', {
-            taskText: taskText,
-            checked: e.target.checked
-          });
-        }
+      if (e.target.type === 'checkbox') {
+        const taskText = e.target.parentElement.textContent.trim();
+        
+        this.emit('task-toggled', {
+          taskText: taskText,
+          checked: e.target.checked
+        });
       }
     };
     
-    // Listen for both change and click events
     this.preview.addEventListener('change', this.taskChangeHandler);
-    this.preview.addEventListener('click', this.taskChangeHandler);
-    
-
   }
 
   setupAnchorLinks() {

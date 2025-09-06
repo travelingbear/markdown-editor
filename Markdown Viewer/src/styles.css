@@ -1605,7 +1605,8 @@ body.retro-theme .settings-window,
 body.retro-theme .help-window,
 body.retro-theme .about-window,
 body.retro-theme .file-history-item,
-body.retro-theme .shortcut {
+body.retro-theme .shortcut,
+body.retro-theme .performance-actions .setting-btn {
   background: #c0c0c0;
   border: 3px outset #c0c0c0;
   outline: 1px solid #808080;
@@ -3440,17 +3441,29 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
   justify-content: center;
 }
 
-.performance-actions .settings-btn {
-  padding: 6px 12px;
-  font-size: 11px;
-  background: var(--accent-primary);
+.perf-action-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  background: #5e60e7;
   color: white;
-  border-color: var(--accent-primary);
+  border: 1px solid #7e80e3;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  min-width: 100px;
 }
 
-.performance-actions .settings-btn:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+.perf-action-btn:hover {
+  background: #4a4cc7;
+  border-color: #6a6cc3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.perf-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* Dark theme adjustments */
@@ -3501,22 +3514,79 @@ body.retro-theme .perf-value.warning {
   color: #800000;
 }
 
-body.retro-theme .performance-actions .settings-btn {
-  background: #000080;
-  color: #ffffff;
-  border: 2px outset #000080;
+
+
+/* Retro theme System Info section - remove background and use theme fonts */
+body.retro-theme .system-info {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+body.retro-theme .info-item {
+  font-family: 'MS Sans Serif', sans-serif;
+  color: #000000;
+}
+
+body.retro-theme .info-label {
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif;
+}
+
+body.retro-theme .info-item span:last-child {
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif;
+  font-weight: normal;
+}
+
+/* Retro theme settings modal consistency */
+body.retro-theme .settings-section h3 {
+  color: #000080;
+  font-family: 'MS Sans Serif', sans-serif;
+  font-weight: normal;
+}
+
+body.retro-theme .test-sound-btn {
+  background: #c0c0c0 !important;
+  color: #000000 !important;
+  border: 2px outset #c0c0c0 !important;
   font-family: 'MS Sans Serif', sans-serif;
   border-radius: 0;
 }
 
-body.retro-theme .performance-actions .settings-btn:hover {
-  background: #0000ff;
-  border: 2px outset #0000ff;
+body.retro-theme .test-sound-btn:hover {
+  background: #e0e0e0 !important;
+  border: 2px outset #e0e0e0 !important;
 }
 
-body.retro-theme .performance-actions .settings-btn:active {
-  border: 2px inset #000080;
+body.retro-theme .test-sound-btn:active {
+  border: 2px inset #c0c0c0 !important;
 }
+
+/* Retro theme performance action buttons */
+body.retro-theme .perf-action-btn {
+  background: #c0c0c0 !important;
+  color: #000000 !important;
+  border: 2px outset #c0c0c0 !important;
+  font-family: 'MS Sans Serif', sans-serif;
+  border-radius: 0;
+  font-weight: normal;
+}
+
+body.retro-theme .perf-action-btn:hover {
+  background: #e0e0e0 !important;
+  border: 2px outset #e0e0e0 !important;
+  transform: none;
+  box-shadow: none;
+}
+
+body.retro-theme .perf-action-btn:active {
+  border: 2px inset #c0c0c0 !important;
+  transform: none;
+  box-shadow: none;
+}
+
+
 
 /* Responsive design */
 @media (max-width: 768px) {

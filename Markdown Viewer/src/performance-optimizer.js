@@ -493,12 +493,10 @@ class PerformanceOptimizer {
         </div>
       `;
       
-      // Insert before system info section
-      const systemSection = settingsModal.querySelector('.system-info');
-      if (systemSection) {
-        systemSection.parentNode.insertBefore(perfSection, systemSection);
-      } else {
-        settingsModal.querySelector('.settings-content').appendChild(perfSection);
+      // Insert as its own section in settings content
+      const settingsContent = settingsModal.querySelector('.settings-content');
+      if (settingsContent) {
+        settingsContent.appendChild(perfSection);
       }
     }
     

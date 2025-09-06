@@ -1279,20 +1279,7 @@ class MarkdownEditor extends BaseComponent {
       }
     });
     
-    // Update performance stats
-    const perfElements = {
-      'perf-startup': `${this.startupTime.toFixed(2)}ms`,
-      'perf-file-open': `${this.lastFileOpenTime.toFixed(2)}ms`,
-      'perf-mode-switch': `${this.lastModeSwitchTime.toFixed(2)}ms`,
-      'perf-memory': this.getMemoryUsage()
-    };
-    
-    Object.entries(perfElements).forEach(([id, value]) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.textContent = value;
-      }
-    });
+    // Old performance stats removed - now handled by Performance Monitor section
   }
   
   getMemoryUsage() {

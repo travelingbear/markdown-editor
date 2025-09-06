@@ -2034,6 +2034,19 @@ class MarkdownEditor extends BaseComponent {
     const item = document.createElement('div');
     item.className = `tab-modal-item ${tab.id === activeTab?.id ? 'active' : ''}`;
     
+    // Check if this tab is in the top 5 (dropdown)
+    const allTabs = this.tabManager.getAllTabs();
+    const tabIndex = allTabs.findIndex(t => t.id === tab.id);
+    const isInDropdown = tabIndex < 5;
+    
+    // Add position number for top 5 tabs
+    if (isInDropdown) {
+      const number = document.createElement('div');
+      number.className = 'tab-modal-number';
+      number.textContent = (tabIndex + 1).toString();
+      item.appendChild(number);
+    }
+    
     const info = document.createElement('div');
     info.className = 'tab-modal-info';
     
@@ -2144,6 +2157,18 @@ class MarkdownEditor extends BaseComponent {
       contextMenu.id = 'tab-context-menu';
       contextMenu.className = 'tab-context-menu';
       contextMenu.innerHTML = `
+        <div class="tab-context-item submenu-parent" data-action="move-to">
+          Move to...
+          <span class="submenu-arrow">▶</span>
+          <div class="tab-context-submenu">
+            <button class="tab-context-item" data-action="move-to-1">Position 1</button>
+            <button class="tab-context-item" data-action="move-to-2">Position 2</button>
+            <button class="tab-context-item" data-action="move-to-3">Position 3</button>
+            <button class="tab-context-item" data-action="move-to-4">Position 4</button>
+            <button class="tab-context-item" data-action="move-to-5">Position 5</button>
+          </div>
+        </div>
+        <div class="tab-context-separator"></div>
         <button class="tab-context-item" data-action="close">Close Tab</button>
         <button class="tab-context-item" data-action="close-others">Close Others</button>
         <button class="tab-context-item" data-action="close-all">Close All</button>
@@ -2152,6 +2177,17 @@ class MarkdownEditor extends BaseComponent {
         <button class="tab-context-item" data-action="reveal">Reveal in Explorer</button>
       `;
       document.body.appendChild(contextMenu);
+      
+      // Add submenu hover functionality
+      const submenuParent = contextMenu.querySelector('.submenu-parent');
+      if (submenuParent) {
+        submenuParent.addEventListener('mouseenter', () => {
+          submenuParent.classList.add('submenu-open');
+        });
+        submenuParent.addEventListener('mouseleave', () => {
+          submenuParent.classList.remove('submenu-open');
+        });
+      }
     }
     
     // Context menu event handlers
@@ -2210,9 +2246,18 @@ class MarkdownEditor extends BaseComponent {
     
     // Update menu items based on context
     const tabs = this.tabManager.getAllTabs();
+    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
     const closeOthersBtn = contextMenu.querySelector('[data-action="close-others"]');
     const closeAllBtn = contextMenu.querySelector('[data-action="close-all"]');
     const revealBtn = contextMenu.querySelector('[data-action="reveal"]');
+    
+    // Update position buttons - disable current position
+    for (let i = 1; i <= 5; i++) {
+      const posBtn = contextMenu.querySelector(`[data-action="move-to-${i}"]`);
+      if (posBtn) {
+        posBtn.disabled = tabIndex === (i - 1);
+      }
+    }
     
     if (closeOthersBtn) {
       closeOthersBtn.disabled = tabs.length <= 1;
@@ -2239,6 +2284,20 @@ class MarkdownEditor extends BaseComponent {
     if (!tab) return;
     
     switch (action) {
+      case 'move-to-1':
+      case 'move-to-2':
+      case 'move-to-3':
+      case 'move-to-4':
+      case 'move-to-5':
+        const position = parseInt(action.split('-')[2]) - 1; // Convert to 0-based index
+        this.moveTabToPosition(tabId, position);
+        // Refresh modal if it's open
+        const tabModal = document.getElementById('tab-modal');
+        if (tabModal && tabModal.style.display === 'flex') {
+          this.showTabModal();
+        }
+        break;
+        
       case 'close':
         await this.tabManager.closeTab(tabId);
         break;
@@ -2360,8 +2419,14 @@ class MarkdownEditor extends BaseComponent {
     }
   }
   
-
-
+  // Move tab to specific position
+  moveTabToPosition(tabId, targetIndex) {
+    if (this.tabManager.moveTabToPosition(tabId, targetIndex)) {
+      this.tabManager.persistTabs();
+      this.updateTabUI();
+    }
+  }
+  
   onDestroy() {
     // Clean up context menu
     const contextMenu = document.getElementById('tab-context-menu');

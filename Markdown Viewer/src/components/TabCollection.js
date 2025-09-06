@@ -78,6 +78,18 @@ class TabCollection extends BaseComponent {
     this.tabs.unshift(tab);
     return true;
   }
+  
+  // Move tab to specific position
+  moveTabToPosition(tabId, targetIndex) {
+    const currentIndex = this.tabs.findIndex(tab => tab.id === tabId);
+    if (currentIndex === -1 || currentIndex === targetIndex) {
+      return false;
+    }
+    
+    const tab = this.tabs.splice(currentIndex, 1)[0];
+    this.tabs.splice(targetIndex, 0, tab);
+    return true;
+  }
 
 
 

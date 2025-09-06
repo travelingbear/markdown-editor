@@ -170,6 +170,11 @@ class TabManager extends BaseComponent {
     return this.tabCollection.moveNewTabToFront(tabId);
   }
   
+  // Move tab to specific position
+  moveTabToPosition(tabId, targetIndex) {
+    return this.tabCollection.moveTabToPosition(tabId, targetIndex);
+  }
+  
   // Get tab by ID
   getTab(tabId) {
     return this.tabCollection.getTab(tabId);

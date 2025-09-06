@@ -119,8 +119,9 @@
 ### Smart Tab Behavior
 - **Numbered Access**: Alt+1-5 switches to numbered tabs in dropdown
 - **Dynamic Updates**: Selecting tabs from modal (not in dropdown) moves them to #1
-- **Context Menu**: Right-click tabs for close, duplicate, reveal in explorer
+- **Context Menu**: Right-click tabs for close, duplicate, reveal in explorer, and "Move to..." positions 1-5
 - **Search**: Use tab modal to search through all open files
+- **Tab Reordering**: Use "Move to..." context menu to move tabs to specific positions (1-5)
 
 ### Tab Limits
 - **Maximum**: 50 tabs can be open simultaneously

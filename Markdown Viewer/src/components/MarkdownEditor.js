@@ -36,7 +36,6 @@ class MarkdownEditor extends BaseComponent {
     this.startupTime = 0;
     this.lastFileOpenTime = 0;
     this.lastModeSwitchTime = 0;
-    this.previewUpdateCount = 0;
     this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
     
     // Status bar elements
@@ -563,8 +562,6 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async openFile() {
-    const startTime = performance.now();
-    
     // Phase 6: Check tab limits before opening
     const currentTabCount = this.tabManager.getTabsCount();
     if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
@@ -572,10 +569,11 @@ class MarkdownEditor extends BaseComponent {
       if (!shouldContinue) return;
     }
     
+    const startTime = performance.now();
     await this.documentComponent.openFile();
     
-    // Phase 6: Track file open performance
-    if (this.performanceOptimizer) {
+    // Phase 6: Track file open performance only if file was actually opened
+    if (this.performanceOptimizer && this.tabManager.getTabsCount() > currentTabCount) {
       this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
     }
   }
@@ -1019,7 +1017,6 @@ class MarkdownEditor extends BaseComponent {
   }
 
   refreshPreview() {
-    const startTime = performance.now();
     const content = this.editorComponent.getContent();
     
     // Phase 6: Use debounced preview updates for better performance
@@ -1027,18 +1024,11 @@ class MarkdownEditor extends BaseComponent {
       if (!this.debouncedPreviewUpdate) {
         this.debouncedPreviewUpdate = window.PerformanceUtils.debounce((content) => {
           this.previewComponent.emit('update-preview', { content });
-          this.previewUpdateCount++;
         }, 150);
       }
       this.debouncedPreviewUpdate(content);
     } else {
       this.previewComponent.emit('update-preview', { content });
-      this.previewUpdateCount++;
-    }
-    
-    // Track performance
-    if (this.performanceOptimizer) {
-      this.performanceOptimizer.benchmarkTabOperation('Preview Update', startTime);
     }
   }
 
@@ -1294,9 +1284,7 @@ class MarkdownEditor extends BaseComponent {
       'perf-startup': `${this.startupTime.toFixed(2)}ms`,
       'perf-file-open': `${this.lastFileOpenTime.toFixed(2)}ms`,
       'perf-mode-switch': `${this.lastModeSwitchTime.toFixed(2)}ms`,
-      'perf-preview-update': '0ms',
-      'perf-memory': this.getMemoryUsage(),
-      'perf-update-count': this.previewUpdateCount.toString()
+      'perf-memory': this.getMemoryUsage()
     };
     
     Object.entries(perfElements).forEach(([id, value]) => {
@@ -1313,7 +1301,7 @@ class MarkdownEditor extends BaseComponent {
       const total = Math.round(performance.memory.totalJSHeapSize / 1024 / 1024);
       return `${used}MB / ${total}MB`;
     }
-    return 'N/A';
+    return 'Not Available';
   }
   
   async playRetroStartupSound() {

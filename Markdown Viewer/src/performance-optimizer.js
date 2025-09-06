@@ -509,7 +509,7 @@ class PerformanceOptimizer {
     if (cleanupBtn) {
       cleanupBtn.addEventListener('click', () => {
         this.performMemoryCleanup();
-        this.updatePerformanceDashboard();
+        setTimeout(() => this.updatePerformanceDashboard(), 100);
       });
     }
     
@@ -533,12 +533,18 @@ class PerformanceOptimizer {
     const memoryInfo = this.checkMemoryUsage();
     const report = this.getPerformanceReport();
     
-    if (memoryInfo) {
+    // Fix memory tracking
+    if (memoryInfo && performance.memory) {
       memoryEl.textContent = `${memoryInfo.used}MB / ${memoryInfo.total}MB`;
       memoryEl.className = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
       
       pressureEl.textContent = `${(memoryInfo.pressure * 100).toFixed(1)}%`;
       pressureEl.className = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
+    } else {
+      memoryEl.textContent = 'Not Available';
+      memoryEl.className = 'perf-value';
+      pressureEl.textContent = 'N/A';
+      pressureEl.className = 'perf-value';
     }
     
     if (tabsEl) {
@@ -551,6 +557,9 @@ class PerformanceOptimizer {
         const avgTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
         switchEl.textContent = `${avgTime.toFixed(1)}ms`;
         switchEl.className = `perf-value ${avgTime > 100 ? 'warning' : avgTime > 50 ? 'caution' : 'good'}`;
+      } else {
+        switchEl.textContent = 'No data';
+        switchEl.className = 'perf-value';
       }
     }
   }

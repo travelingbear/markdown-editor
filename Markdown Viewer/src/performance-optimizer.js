@@ -577,7 +577,16 @@ class PerformanceOptimizer {
     
     if (reportBtn && isDebugMode) {
       reportBtn.addEventListener('click', () => {
-        console.log('[Performance Report]', this.getPerformanceReport());
+        const report = this.getPerformanceReport();
+        console.log('[Performance Report]', report);
+        
+        // Debug tab manager connection
+        console.log('[Debug] Tab Manager Available:', !!window.markdownEditor?.tabManager);
+        if (window.markdownEditor?.tabManager) {
+          console.log('[Debug] Actual Tab Count:', window.markdownEditor.tabManager.getTabsCount());
+          console.log('[Debug] All Tabs:', window.markdownEditor.tabManager.getAllTabs().map(t => ({id: t.id, fileName: t.fileName})));
+        }
+        
         alert('Performance report logged to console (F12)');
       });
     }
@@ -630,12 +639,23 @@ class PerformanceOptimizer {
     }
     
     if (tabsEl) {
-      // Get actual tab count from tab manager
-      let actualTabCount = report.tabStats.totalTabs;
+      // Always get tab count directly from tab manager
+      let actualTabCount = 0;
+      let virtualCount = 0;
+      
       if (window.markdownEditor?.tabManager) {
         actualTabCount = window.markdownEditor.tabManager.getTabsCount();
+        virtualCount = report.cacheStats.virtualizedTabs;
+      } else {
+        // Fallback to report data if tab manager not available
+        actualTabCount = report.tabStats.totalTabs;
+        virtualCount = report.cacheStats.virtualizedTabs;
       }
-      tabsEl.textContent = `${actualTabCount} (${report.cacheStats.virtualizedTabs} virtual)`;
+      
+      tabsEl.textContent = `${actualTabCount} (${virtualCount} virtual)`;
+      
+      // Debug logging
+      console.log(`[Performance] Tab count: ${actualTabCount}, Virtual: ${virtualCount}`);
     }
     
     if (switchEl) {

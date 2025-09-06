@@ -32,8 +32,9 @@
 - **Single Instance**: Only one app instance runs, new files open in existing window
 - **File Associations**: Double-click .md files to open in active instance
 - **Lightning Fast Performance**: 57.80ms startup time (98.5% improvement)
-- **Memory Optimized**: Stable memory usage with leak prevention
-- **Performance Monitoring**: Built-in performance tracking and optimization
+- **Memory Optimized**: Stable memory usage with leak prevention and tab virtualization
+- **Performance Monitoring**: Real-time dashboard in Settings with memory tracking
+- **Smart Tab Management**: Automatic virtualization of inactive tabs (15+ tabs)
 
 ## 🚀 Quick Start
 
@@ -123,10 +124,12 @@
 - **Search**: Use tab modal to search through all open files
 - **Tab Reordering**: Use "Move to..." context menu to move tabs to specific positions (1-5)
 
-### Tab Limits
-- **Maximum**: 50 tabs can be open simultaneously
+### Tab Limits & Performance
+- **Maximum**: 100+ tabs can be open simultaneously
+- **Virtualization**: Tabs beyond 15 count are automatically virtualized
 - **Performance**: Optimized for smooth operation with many tabs
-- **Memory**: Inactive tabs use minimal memory resources
+- **Memory**: Smart cleanup and pressure detection
+- **Monitoring**: Real-time performance dashboard in Settings (Ctrl+,)
 
 ### Architecture
 - **Frontend**: Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js

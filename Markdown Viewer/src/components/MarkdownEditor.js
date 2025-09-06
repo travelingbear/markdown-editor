@@ -542,14 +542,42 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  // File Operations
+  // File Operations - Phase 6 Enhanced
   async newFile() {
+    const startTime = performance.now();
+    
+    // Phase 6: Check tab limits for performance
+    const currentTabCount = this.tabManager.getTabsCount();
+    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
+      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more tabs may affect performance. Continue?`);
+      if (!shouldContinue) return;
+    }
+    
     // Always create new tab for new files
     this.tabManager.createNewTab();
+    
+    // Phase 6: Track tab creation performance
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.benchmarkTabOperation('Tab Create', startTime, currentTabCount + 1);
+    }
   }
 
   async openFile() {
+    const startTime = performance.now();
+    
+    // Phase 6: Check tab limits before opening
+    const currentTabCount = this.tabManager.getTabsCount();
+    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
+      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more files may affect performance. Continue?`);
+      if (!shouldContinue) return;
+    }
+    
     await this.documentComponent.openFile();
+    
+    // Phase 6: Track file open performance
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
+    }
   }
 
   async saveFile() {
@@ -589,6 +617,11 @@ class MarkdownEditor extends BaseComponent {
   async closeFile() {
     const activeTab = this.tabManager.getActiveTab();
     if (activeTab) {
+      // Phase 6: Clean up performance tracking for closed tab
+      if (this.performanceOptimizer) {
+        this.performanceOptimizer.cleanupTabTracking(activeTab.id);
+      }
+      
       await this.tabManager.closeTab(activeTab.id);
     }
   }
@@ -986,8 +1019,27 @@ class MarkdownEditor extends BaseComponent {
   }
 
   refreshPreview() {
+    const startTime = performance.now();
     const content = this.editorComponent.getContent();
-    this.previewComponent.emit('update-preview', { content });
+    
+    // Phase 6: Use debounced preview updates for better performance
+    if (this.performanceOptimizer && window.PerformanceUtils) {
+      if (!this.debouncedPreviewUpdate) {
+        this.debouncedPreviewUpdate = window.PerformanceUtils.debounce((content) => {
+          this.previewComponent.emit('update-preview', { content });
+          this.previewUpdateCount++;
+        }, 150);
+      }
+      this.debouncedPreviewUpdate(content);
+    } else {
+      this.previewComponent.emit('update-preview', { content });
+      this.previewUpdateCount++;
+    }
+    
+    // Track performance
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.benchmarkTabOperation('Preview Update', startTime);
+    }
   }
 
   async toggleFullscreen() {
@@ -1716,13 +1768,26 @@ class MarkdownEditor extends BaseComponent {
     // Basic scroll sync - will be enhanced later
   }
 
-  // Tab Management Methods
+  // Tab Management Methods - Phase 6 Enhanced
   switchToTab(tabId) {
-    // Save current tab's cursor position before switching
+    const startTime = performance.now();
     const currentTab = this.tabManager.getActiveTab();
+    const currentTabId = currentTab?.id;
+    
+    // Save current tab's cursor position before switching
     if (currentTab && this.editorComponent.isMonacoLoaded) {
       const cursorPos = this.editorComponent.getCursorPosition();
       this.tabManager.updateTabCursor(currentTab.id, cursorPos.line, cursorPos.col);
+    }
+    
+    // Phase 6: Track tab access and performance
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.trackTabAccess(tabId);
+      
+      // Check if tab should be restored from virtual state
+      if (this.performanceOptimizer.virtualizedTabs.has(tabId)) {
+        this.performanceOptimizer.restoreTab(tabId);
+      }
     }
     
     // Check if tab is in current dropdown (first 5)
@@ -1736,9 +1801,38 @@ class MarkdownEditor extends BaseComponent {
     }
     
     this.tabManager.switchToTab(tabId);
+    
+    // Phase 6: Track tab switch performance
+    const duration = performance.now() - startTime;
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.trackTabSwitch(duration, currentTabId, tabId);
+      this.performanceOptimizer.benchmarkTabOperation('Tab Switch', startTime, allTabs.length);
+    }
   }
   
   loadTabContent(tab) {
+    const startTime = performance.now();
+    
+    // Phase 6: Check if content should be lazy loaded
+    const allTabs = this.tabManager.getAllTabs();
+    const tabIndex = allTabs.findIndex(t => t.id === tab.id);
+    
+    if (this.performanceOptimizer && this.performanceOptimizer.shouldLazyLoadTab(tabIndex, allTabs.length)) {
+      // Lazy load: only load essential content
+      this.loadTabContentLazy(tab);
+    } else {
+      // Full load: load all content immediately
+      this.loadTabContentFull(tab);
+    }
+    
+    // Phase 6: Track tab load performance
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.benchmarkTabOperation('Tab Load', startTime, allTabs.length);
+    }
+  }
+  
+  // Phase 6: Full tab content loading
+  loadTabContentFull(tab) {
     // Load tab content into editor and preview
     this.editorComponent.emit('set-content', { content: tab.content });
     this.previewComponent.emit('update-preview', { content: tab.content });
@@ -1763,6 +1857,34 @@ class MarkdownEditor extends BaseComponent {
         }
       }, 100);
     }
+  }
+  
+  // Phase 6: Lazy tab content loading
+  loadTabContentLazy(tab) {
+    // Load minimal content first
+    this.updateFilename(tab.fileName, tab.isDirty);
+    this.toolbarComponent.emit('document-state-changed', { 
+      hasDocument: true, 
+      isDirty: tab.isDirty 
+    });
+    
+    // Defer heavy operations
+    requestIdleCallback(() => {
+      this.editorComponent.emit('set-content', { content: tab.content });
+      this.previewComponent.emit('update-preview', { content: tab.content });
+      this.previewComponent.showPreview();
+      
+      // Restore cursor position
+      if (tab.cursorPosition) {
+        setTimeout(() => {
+          try {
+            this.editorComponent.setCursorPosition(tab.cursorPosition.line, tab.cursorPosition.col);
+          } catch (error) {
+            console.warn('[MarkdownEditor] Failed to restore cursor position:', error);
+          }
+        }, 50);
+      }
+    }, { timeout: 1000 });
   }
   
   showWelcomePage() {
@@ -2428,6 +2550,11 @@ class MarkdownEditor extends BaseComponent {
   }
   
   onDestroy() {
+    // Phase 6: Clean up performance optimizer
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.destroy();
+    }
+    
     // Clean up context menu
     const contextMenu = document.getElementById('tab-context-menu');
     if (contextMenu) {

@@ -1,4 +1,4 @@
-// Performance Optimizer for Multi-Tab Architecture
+// Performance Optimizer for Multi-Tab Architecture - Phase 6 Enhanced
 class PerformanceOptimizer {
   constructor() {
     this.performanceTargets = {
@@ -13,25 +13,40 @@ class PerformanceOptimizer {
     this.memoryMonitor = null;
     this.performanceLog = [];
     this.tabMemoryUsage = new Map();
+    this.inactiveTabsData = new Map(); // Lazy loading storage
+    this.performanceMetrics = new Map();
+    this.memoryPressureThreshold = 0.8; // 80% of available memory
+    this.tabUnloadQueue = [];
+    this.isLowPowerMode = false;
     
     this.startMemoryMonitoring();
+    this.setupPerformanceTracking();
   }
 
-  // Memory optimization for multi-tab architecture
+  // Memory optimization for multi-tab architecture - Phase 6 Enhanced
   optimizeForMultiTabs() {
-
+    console.log('[PerformanceOptimizer] Initializing Phase 6 optimizations...');
     
-    // 1. Implement tab virtualization
+    // 1. Implement tab virtualization with lazy loading
     this.setupTabVirtualization();
     
-    // 2. Monaco editor pooling
+    // 2. Monaco editor pooling with smart disposal
     this.setupMonacoPooling();
     
-    // 3. Preview content caching
+    // 3. Preview content caching with intelligent eviction
     this.setupPreviewCaching();
     
-    // 4. Memory cleanup strategies
+    // 4. Memory cleanup strategies with pressure detection
     this.setupMemoryCleanup();
+    
+    // 5. Phase 6: Lazy loading for inactive tabs
+    this.setupLazyTabLoading();
+    
+    // 6. Phase 6: Smart tab unloading for memory pressure
+    this.setupSmartTabUnloading();
+    
+    // 7. Phase 6: Performance dashboard
+    this.setupPerformanceDashboard();
   }
 
   setupTabVirtualization() {
@@ -39,6 +54,39 @@ class PerformanceOptimizer {
     // Serialize inactive tab content to lightweight objects
     this.tabContentCache = new Map();
     this.activeTabLimit = 3; // Only keep 3 tabs fully loaded
+    this.virtualizedTabs = new Set(); // Track which tabs are virtualized
+  }
+  
+  // Phase 6: Lazy loading for inactive tabs
+  setupLazyTabLoading() {
+    this.lazyLoadThreshold = 5; // Start lazy loading after 5 tabs
+    this.maxActiveEditors = 3; // Maximum Monaco editors to keep active
+    
+    console.log('[PerformanceOptimizer] Lazy tab loading initialized');
+  }
+  
+  // Phase 6: Smart tab unloading for memory pressure
+  setupSmartTabUnloading() {
+    this.unloadCandidates = new Map(); // Track tabs eligible for unloading
+    this.lastAccessTime = new Map(); // Track when tabs were last accessed
+    
+    // Monitor memory pressure
+    this.memoryPressureMonitor = setInterval(() => {
+      this.checkMemoryPressure();
+    }, 10000); // Check every 10 seconds
+    
+    console.log('[PerformanceOptimizer] Smart tab unloading initialized');
+  }
+  
+  // Phase 6: Performance tracking setup
+  setupPerformanceTracking() {
+    this.performanceMetrics.set('tabSwitches', []);
+    this.performanceMetrics.set('memoryUsage', []);
+    this.performanceMetrics.set('tabLoads', []);
+    this.performanceMetrics.set('editorOperations', []);
+    
+    // Track tab access patterns
+    this.tabAccessPattern = new Map();
   }
 
   setupMonacoPooling() {
@@ -238,13 +286,26 @@ class PerformanceOptimizer {
   }
 
   checkMemoryUsage() {
-    if (!performance.memory) return;
+    if (!performance.memory) return null;
     
     const memoryInfo = {
       used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
       total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
-      limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+      limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024),
+      pressure: performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit
     };
+    
+    // Store memory metrics for dashboard
+    const memoryMetrics = this.performanceMetrics.get('memoryUsage');
+    memoryMetrics.push({
+      timestamp: Date.now(),
+      ...memoryInfo
+    });
+    
+    // Keep only last 100 measurements
+    if (memoryMetrics.length > 100) {
+      memoryMetrics.shift();
+    }
     
     // Warn if memory usage is high
     if (memoryInfo.used > this.performanceTargets.maxTotalMemory) {
@@ -253,6 +314,59 @@ class PerformanceOptimizer {
     }
     
     return memoryInfo;
+  }
+  
+  // Phase 6: Memory pressure detection and response
+  checkMemoryPressure() {
+    const memoryInfo = this.checkMemoryUsage();
+    if (!memoryInfo) return;
+    
+    if (memoryInfo.pressure > this.memoryPressureThreshold) {
+      console.warn(`[Performance] Memory pressure detected: ${(memoryInfo.pressure * 100).toFixed(1)}%`);
+      this.handleMemoryPressure(memoryInfo);
+    }
+  }
+  
+  // Phase 6: Handle memory pressure by unloading tabs
+  handleMemoryPressure(memoryInfo) {
+    const tabsToUnload = this.selectTabsForUnloading();
+    
+    if (tabsToUnload.length > 0) {
+      console.log(`[Performance] Unloading ${tabsToUnload.length} tabs to free memory`);
+      tabsToUnload.forEach(tabId => this.unloadTab(tabId));
+      
+      // Force garbage collection if available
+      if (window.gc) {
+        setTimeout(() => window.gc(), 100);
+      }
+    }
+  }
+  
+  // Phase 6: Select tabs for unloading based on access patterns
+  selectTabsForUnloading() {
+    const now = Date.now();
+    const candidates = [];
+    
+    for (const [tabId, lastAccess] of this.lastAccessTime.entries()) {
+      const timeSinceAccess = now - lastAccess;
+      const accessCount = this.tabAccessPattern.get(tabId) || 0;
+      
+      // Unload tabs not accessed in last 5 minutes with low access count
+      if (timeSinceAccess > 300000 && accessCount < 5) {
+        candidates.push({ tabId, timeSinceAccess, accessCount });
+      }
+    }
+    
+    // Sort by least recently used and least accessed
+    candidates.sort((a, b) => {
+      if (a.accessCount !== b.accessCount) {
+        return a.accessCount - b.accessCount;
+      }
+      return b.timeSinceAccess - a.timeSinceAccess;
+    });
+    
+    // Return up to 3 tabs for unloading
+    return candidates.slice(0, 3).map(c => c.tabId);
   }
 
   logMemoryUsage() {
@@ -302,33 +416,157 @@ class PerformanceOptimizer {
     return targets[operation];
   }
 
-  // Get performance report for debugging
+  // Phase 6: Enhanced performance report with dashboard data
   getPerformanceReport() {
     const recentOperations = this.performanceLog.slice(-20);
     const slowOperations = this.performanceLog.filter(op => op.exceeded);
+    const memoryMetrics = this.performanceMetrics.get('memoryUsage').slice(-10);
     
     return {
       memoryUsage: this.checkMemoryUsage(),
       recentOperations,
       slowOperations: slowOperations.slice(-10),
+      memoryTrend: memoryMetrics,
       cacheStats: {
-        previewCacheSize: this.previewCache.size,
-        monacoPoolSize: this.monacoPool.length,
-        monacoPoolInUse: this.monacoPool.filter(item => item.inUse).length
+        previewCacheSize: this.previewCache?.size || 0,
+        monacoPoolSize: this.monacoPool?.length || 0,
+        monacoPoolInUse: this.monacoPool?.filter(item => item.inUse).length || 0,
+        virtualizedTabs: this.virtualizedTabs.size,
+        inactiveTabsData: this.inactiveTabsData.size
       },
-      targets: this.performanceTargets
+      tabStats: {
+        totalTabs: this.lastAccessTime.size,
+        unloadCandidates: this.unloadCandidates.size,
+        averageAccessCount: this.getAverageAccessCount()
+      },
+      targets: this.performanceTargets,
+      isLowPowerMode: this.isLowPowerMode
     };
   }
+  
+  // Phase 6: Performance dashboard setup
+  setupPerformanceDashboard() {
+    // Create performance dashboard in settings modal
+    this.createPerformanceDashboard();
+    
+    // Update dashboard every 5 seconds
+    this.dashboardUpdateInterval = setInterval(() => {
+      this.updatePerformanceDashboard();
+    }, 5000);
+    
+    console.log('[PerformanceOptimizer] Performance dashboard initialized');
+  }
+  
+  // Phase 6: Create performance dashboard UI
+  createPerformanceDashboard() {
+    const settingsModal = document.getElementById('settings-modal');
+    if (!settingsModal) return;
+    
+    // Find or create performance section
+    let perfSection = settingsModal.querySelector('.performance-section');
+    if (!perfSection) {
+      perfSection = document.createElement('div');
+      perfSection.className = 'performance-section';
+      perfSection.innerHTML = `
+        <h3>Performance Monitor</h3>
+        <div class="performance-grid">
+          <div class="perf-metric">
+            <label>Memory Usage</label>
+            <div id="perf-memory" class="perf-value">--</div>
+          </div>
+          <div class="perf-metric">
+            <label>Active Tabs</label>
+            <div id="perf-tabs" class="perf-value">--</div>
+          </div>
+          <div class="perf-metric">
+            <label>Tab Switch Avg</label>
+            <div id="perf-switch" class="perf-value">--</div>
+          </div>
+          <div class="perf-metric">
+            <label>Memory Pressure</label>
+            <div id="perf-pressure" class="perf-value">--</div>
+          </div>
+        </div>
+        <div class="performance-actions">
+          <button id="perf-cleanup-btn" class="settings-btn">Force Cleanup</button>
+          <button id="perf-report-btn" class="settings-btn">View Report</button>
+        </div>
+      `;
+      
+      // Insert before system info section
+      const systemSection = settingsModal.querySelector('.system-info');
+      if (systemSection) {
+        systemSection.parentNode.insertBefore(perfSection, systemSection);
+      } else {
+        settingsModal.querySelector('.settings-content').appendChild(perfSection);
+      }
+    }
+    
+    // Add event listeners
+    const cleanupBtn = document.getElementById('perf-cleanup-btn');
+    const reportBtn = document.getElementById('perf-report-btn');
+    
+    if (cleanupBtn) {
+      cleanupBtn.addEventListener('click', () => {
+        this.performMemoryCleanup();
+        this.updatePerformanceDashboard();
+      });
+    }
+    
+    if (reportBtn) {
+      reportBtn.addEventListener('click', () => {
+        console.log('[Performance Report]', this.getPerformanceReport());
+        alert('Performance report logged to console (F12)');
+      });
+    }
+  }
+  
+  // Phase 6: Update performance dashboard
+  updatePerformanceDashboard() {
+    const memoryEl = document.getElementById('perf-memory');
+    const tabsEl = document.getElementById('perf-tabs');
+    const switchEl = document.getElementById('perf-switch');
+    const pressureEl = document.getElementById('perf-pressure');
+    
+    if (!memoryEl) return; // Dashboard not created yet
+    
+    const memoryInfo = this.checkMemoryUsage();
+    const report = this.getPerformanceReport();
+    
+    if (memoryInfo) {
+      memoryEl.textContent = `${memoryInfo.used}MB / ${memoryInfo.total}MB`;
+      memoryEl.className = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
+      
+      pressureEl.textContent = `${(memoryInfo.pressure * 100).toFixed(1)}%`;
+      pressureEl.className = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
+    }
+    
+    if (tabsEl) {
+      tabsEl.textContent = `${report.tabStats.totalTabs} (${report.cacheStats.virtualizedTabs} virtual)`;
+    }
+    
+    if (switchEl) {
+      const recentSwitches = this.performanceMetrics.get('tabSwitches').slice(-10);
+      if (recentSwitches.length > 0) {
+        const avgTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
+        switchEl.textContent = `${avgTime.toFixed(1)}ms`;
+        switchEl.className = `perf-value ${avgTime > 100 ? 'warning' : avgTime > 50 ? 'caution' : 'good'}`;
+      }
+    }
+  }
 
-  // Optimize for older computers
+  // Phase 6: Enhanced low power mode
   enableLowPowerMode() {
-
+    console.log('[PerformanceOptimizer] Enabling low power mode for older hardware');
+    this.isLowPowerMode = true;
     
     // Reduce performance targets
     this.performanceTargets.maxTabs = 20;
     this.performanceTargets.maxTotalMemory = 100;
     this.maxCacheSize = 20;
     this.maxPoolSize = 2;
+    this.activeTabLimit = 2; // Reduce active tabs
+    this.maxActiveEditors = 1; // Only one active editor
     
     // Reduce update frequency
     clearInterval(this.memoryMonitor);
@@ -338,6 +576,9 @@ class PerformanceOptimizer {
     
     // More aggressive cleanup
     this.setupAggressiveCleanup();
+    
+    // Reduce memory pressure threshold
+    this.memoryPressureThreshold = 0.6; // 60% instead of 80%
   }
 
   setupAggressiveCleanup() {
@@ -361,13 +602,200 @@ class PerformanceOptimizer {
     );
     
     if (isOlderHardware) {
-
+      console.log('[PerformanceOptimizer] Older hardware detected, enabling optimizations');
       this.enableLowPowerMode();
     }
     
     return isOlderHardware;
   }
+  
+  // Phase 6: Tab access tracking
+  trackTabAccess(tabId) {
+    this.lastAccessTime.set(tabId, Date.now());
+    const currentCount = this.tabAccessPattern.get(tabId) || 0;
+    this.tabAccessPattern.set(tabId, currentCount + 1);
+  }
+  
+  // Phase 6: Tab switch performance tracking
+  trackTabSwitch(duration, fromTabId, toTabId) {
+    const switchMetrics = this.performanceMetrics.get('tabSwitches');
+    switchMetrics.push({
+      timestamp: Date.now(),
+      duration,
+      fromTabId,
+      toTabId
+    });
+    
+    // Keep only last 50 switches
+    if (switchMetrics.length > 50) {
+      switchMetrics.shift();
+    }
+    
+    // Track access for both tabs
+    if (fromTabId) this.trackTabAccess(fromTabId);
+    if (toTabId) this.trackTabAccess(toTabId);
+  }
+  
+  // Phase 6: Unload inactive tab content
+  unloadTab(tabId) {
+    // Store tab data for later restoration
+    const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
+    if (tabElement) {
+      const tabData = {
+        content: tabElement.textContent || '',
+        scrollPosition: tabElement.scrollTop || 0,
+        timestamp: Date.now()
+      };
+      
+      this.inactiveTabsData.set(tabId, tabData);
+      
+      // Remove from DOM but keep reference
+      tabElement.style.display = 'none';
+      this.virtualizedTabs.add(tabId);
+      
+      console.log(`[PerformanceOptimizer] Tab ${tabId} unloaded to save memory`);
+    }
+  }
+  
+  // Phase 6: Restore unloaded tab
+  restoreTab(tabId) {
+    const tabData = this.inactiveTabsData.get(tabId);
+    if (tabData) {
+      const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
+      if (tabElement) {
+        tabElement.style.display = '';
+        tabElement.scrollTop = tabData.scrollPosition;
+        this.virtualizedTabs.delete(tabId);
+        this.inactiveTabsData.delete(tabId);
+        
+        console.log(`[PerformanceOptimizer] Tab ${tabId} restored from virtual state`);
+      }
+    }
+  }
+  
+  // Phase 6: Check if tab should be lazy loaded
+  shouldLazyLoadTab(tabIndex, totalTabs) {
+    return totalTabs > this.lazyLoadThreshold && tabIndex >= this.maxActiveEditors;
+  }
+  
+  // Phase 6: Get average access count for tabs
+  getAverageAccessCount() {
+    if (this.tabAccessPattern.size === 0) return 0;
+    
+    const totalAccess = Array.from(this.tabAccessPattern.values()).reduce((sum, count) => sum + count, 0);
+    return Math.round(totalAccess / this.tabAccessPattern.size);
+  }
+  
+  // Phase 6: Clean up tab tracking data
+  cleanupTabTracking(tabId) {
+    this.lastAccessTime.delete(tabId);
+    this.tabAccessPattern.delete(tabId);
+    this.unloadCandidates.delete(tabId);
+    this.inactiveTabsData.delete(tabId);
+    this.virtualizedTabs.delete(tabId);
+    this.tabMemoryUsage.delete(tabId);
+  }
+  
+  // Phase 6: Enhanced cleanup with tab tracking
+  destroy() {
+    // Stop all intervals
+    this.stopMemoryMonitoring();
+    
+    if (this.memoryPressureMonitor) {
+      clearInterval(this.memoryPressureMonitor);
+    }
+    
+    if (this.dashboardUpdateInterval) {
+      clearInterval(this.dashboardUpdateInterval);
+    }
+    
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    
+    // Clean up Monaco pool
+    if (this.monacoPool) {
+      this.monacoPool.forEach(item => {
+        if (item.editor) item.editor.dispose();
+        if (item.container) item.container.remove();
+      });
+    }
+    
+    // Clear all maps and caches
+    this.tabMemoryUsage.clear();
+    this.inactiveTabsData.clear();
+    this.performanceMetrics.clear();
+    this.tabAccessPattern.clear();
+    this.lastAccessTime.clear();
+    this.unloadCandidates.clear();
+    this.virtualizedTabs.clear();
+    
+    if (this.previewCache) {
+      this.previewCache.clear();
+    }
+    
+    console.log('[PerformanceOptimizer] Cleanup completed');
+  }
 }
 
 // Export for use in main application
 window.PerformanceOptimizer = PerformanceOptimizer;
+
+// Phase 6: Global performance monitoring utilities
+window.PerformanceUtils = {
+  // Debounce function for expensive operations
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  },
+  
+  // Throttle function for frequent operations
+  throttle(func, limit) {
+    let inThrottle;
+    return function() {
+      const args = arguments;
+      const context = this;
+      if (!inThrottle) {
+        func.apply(context, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    };
+  },
+  
+  // Measure operation performance
+  measurePerformance(name, operation) {
+    const start = performance.now();
+    const result = operation();
+    const duration = performance.now() - start;
+    
+    console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
+    return { result, duration };
+  },
+  
+  // Async performance measurement
+  async measureAsyncPerformance(name, operation) {
+    const start = performance.now();
+    const result = await operation();
+    const duration = performance.now() - start;
+    
+    console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
+    return { result, duration };
+  }
+};
+
+// Phase 6: Performance monitoring integration
+if (typeof window !== 'undefined' && window.markdownEditor) {
+  // Auto-integrate with existing markdown editor if available
+  const editor = window.markdownEditor;
+  if (editor.performanceOptimizer) {
+    console.log('[PerformanceOptimizer] Phase 6 enhancements loaded');
+  }
+}

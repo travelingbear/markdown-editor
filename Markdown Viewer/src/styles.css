@@ -3343,6 +3343,145 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
   min-width: 40px;
 }
 
+/* Phase 6: Performance Dashboard Styles */
+.performance-section {
+  margin-bottom: 32px;
+}
+
+.performance-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.2em;
+  color: #5e60e7;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 8px;
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.perf-metric {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--border-primary);
+}
+
+.perf-metric label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.perf-value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text-primary);
+}
+
+.perf-value.good {
+  color: #28a745;
+}
+
+.perf-value.caution {
+  color: #ffc107;
+}
+
+.perf-value.warning {
+  color: #dc3545;
+}
+
+.performance-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.performance-actions .settings-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.performance-actions .settings-btn:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .perf-value.good {
+  color: #40d65c;
+}
+
+[data-theme="dark"] .perf-value.caution {
+  color: #ffda6a;
+}
+
+[data-theme="dark"] .perf-value.warning {
+  color: #f85149;
+}
+
+/* Retro theme performance dashboard */
+body.retro-theme .performance-section h3 {
+  color: #000080;
+  font-family: 'MS Sans Serif', sans-serif;
+  font-weight: normal;
+}
+
+body.retro-theme .perf-metric {
+  background: #ffffff;
+  border: 2px inset #c0c0c0;
+  border-radius: 0;
+}
+
+body.retro-theme .perf-metric label {
+  font-family: 'MS Sans Serif', sans-serif;
+  color: #000000;
+}
+
+body.retro-theme .perf-value {
+  font-family: 'Courier New', monospace;
+  color: #000000;
+}
+
+body.retro-theme .perf-value.good {
+  color: #008000;
+}
+
+body.retro-theme .perf-value.caution {
+  color: #808000;
+}
+
+body.retro-theme .perf-value.warning {
+  color: #800000;
+}
+
+body.retro-theme .performance-actions .settings-btn {
+  background: #000080;
+  color: #ffffff;
+  border: 2px outset #000080;
+  font-family: 'MS Sans Serif', sans-serif;
+  border-radius: 0;
+}
+
+body.retro-theme .performance-actions .settings-btn:hover {
+  background: #0000ff;
+  border: 2px outset #0000ff;
+}
+
+body.retro-theme .performance-actions .settings-btn:active {
+  border: 2px inset #000080;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .settings-window {
@@ -3374,6 +3513,34 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
     padding: 5px 10px;
     font-size: 11px;
     height: 26px;
+  }
+  
+  /* Responsive performance dashboard */
+  .performance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  
+  .perf-metric {
+    padding: 8px;
+  }
+  
+  .perf-metric label {
+    font-size: 10px;
+  }
+  
+  .perf-value {
+    font-size: 12px;
+  }
+  
+  .performance-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .performance-actions .settings-btn {
+    width: 100%;
+    max-width: 150px;
   }
 }
 

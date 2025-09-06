@@ -462,6 +462,9 @@ class PerformanceOptimizer {
     const settingsModal = document.getElementById('settings-modal');
     if (!settingsModal) return;
     
+    // Check if we're in debug mode (console accessible)
+    const isDebugMode = this.isDebugMode();
+    
     // Find or create performance section
     let perfSection = settingsModal.querySelector('.performance-section');
     if (!perfSection) {
@@ -489,7 +492,7 @@ class PerformanceOptimizer {
         </div>
         <div class="performance-actions">
           <button id="perf-cleanup-btn" class="settings-btn">Force Cleanup</button>
-          <button id="perf-report-btn" class="settings-btn">View Report</button>
+          ${isDebugMode ? '<button id="perf-report-btn" class="settings-btn">View Report</button>' : ''}
         </div>
       `;
       
@@ -511,11 +514,23 @@ class PerformanceOptimizer {
       });
     }
     
-    if (reportBtn) {
+    if (reportBtn && isDebugMode) {
       reportBtn.addEventListener('click', () => {
         console.log('[Performance Report]', this.getPerformanceReport());
         alert('Performance report logged to console (F12)');
       });
+    }
+  }
+  
+  // Phase 6: Check if we're in debug mode
+  isDebugMode() {
+    try {
+      // Check if console is accessible and not disabled
+      return typeof console !== 'undefined' && 
+             typeof console.log === 'function' && 
+             !window.__TAURI__; // In Tauri production builds, console might be limited
+    } catch (e) {
+      return false;
     }
   }
   

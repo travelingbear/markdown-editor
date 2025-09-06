@@ -422,6 +422,12 @@ class PerformanceOptimizer {
     const slowOperations = this.performanceLog.filter(op => op.exceeded);
     const memoryMetrics = this.performanceMetrics.get('memoryUsage').slice(-10);
     
+    // Get actual tab count from tab manager if available
+    let actualTabCount = this.lastAccessTime.size;
+    if (window.markdownEditor?.tabManager) {
+      actualTabCount = window.markdownEditor.tabManager.getTabsCount();
+    }
+    
     return {
       memoryUsage: this.checkMemoryUsage(),
       recentOperations,
@@ -435,7 +441,8 @@ class PerformanceOptimizer {
         inactiveTabsData: this.inactiveTabsData.size
       },
       tabStats: {
-        totalTabs: this.lastAccessTime.size,
+        totalTabs: actualTabCount,
+        trackedTabs: this.lastAccessTime.size,
         unloadCandidates: this.unloadCandidates.size,
         averageAccessCount: this.getAverageAccessCount()
       },
@@ -569,7 +576,12 @@ class PerformanceOptimizer {
     }
     
     if (tabsEl) {
-      tabsEl.textContent = `${report.tabStats.totalTabs} (${report.cacheStats.virtualizedTabs} virtual)`;
+      // Get actual tab count from tab manager
+      let actualTabCount = report.tabStats.totalTabs;
+      if (window.markdownEditor?.tabManager) {
+        actualTabCount = window.markdownEditor.tabManager.getTabsCount();
+      }
+      tabsEl.textContent = `${actualTabCount} (${report.cacheStats.virtualizedTabs} virtual)`;
     }
     
     if (switchEl) {

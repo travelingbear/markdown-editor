@@ -577,6 +577,21 @@ body.centered-layout .preview-pane {
   gap: 8px;
 }
 
+/* Nested task lists */
+.preview-content .task-list-item.nested {
+  margin-left: 20px;
+  margin-bottom: 4px;
+}
+
+.preview-content .task-list-container {
+  margin-bottom: 16px;
+}
+
+.preview-content .task-list-nested {
+  margin-left: 20px;
+  margin-top: 8px;
+}
+
 /* Dash tasks (converted from li) get list-style appearance */
 .preview-content .task-list-item.dash-task {
   margin-left: 20px;
@@ -603,6 +618,11 @@ body.centered-layout .preview-pane {
   cursor: pointer;
   flex-shrink: 0;
   margin-top: 2px;
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  position: relative !important;
+  opacity: 1 !important;
+  display: block !important;
 }
 
 /* Labels */
@@ -616,6 +636,22 @@ body.centered-layout .preview-pane {
 .preview-content .task-list-item input[type="checkbox"]:checked + label {
   opacity: 0.6;
   color: var(--text-secondary);
+}
+
+/* Nested task list visual hierarchy */
+.preview-content .task-list-nested .task-list-item {
+  border-left: 2px solid var(--border-primary);
+  padding-left: 12px;
+  margin-left: 8px;
+}
+
+.preview-content .task-list-nested .task-list-item.nested {
+  margin-left: 0;
+}
+
+/* Dark theme adjustments for nested tasks */
+[data-theme="dark"] .preview-content .task-list-nested .task-list-item {
+  border-left-color: var(--border-secondary);
 }
 
 /* Math Expressions - Rendered with KaTeX */
@@ -4132,7 +4168,7 @@ body.retro-theme .performance-actions .settings-btn:active {
 }
 
 .task-conflict-content {
-  padding: 20px;
+  padding: 20px 20px 12px 20px;
 }
 
 .task-conflict-content p {
@@ -4149,6 +4185,7 @@ body.retro-theme .performance-actions .settings-btn:active {
 .task-conflict-buttons {
   display: flex;
   justify-content: center;
+  padding: 0 20px 16px 20px;
 }
 
 .task-conflict-btn {
@@ -4171,6 +4208,65 @@ body.retro-theme .performance-actions .settings-btn:active {
 .task-conflict-btn.primary:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+}
+
+/* Retro theme task conflict modal */
+body.retro-theme .task-conflict-window {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  border-radius: 0;
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+body.retro-theme .task-conflict-header {
+  background: #000080;
+  color: #ffffff;
+  border-bottom: 2px inset #c0c0c0;
+  border-radius: 0;
+}
+
+body.retro-theme .task-conflict-header h3 {
+  color: #ffffff;
+  font-weight: normal;
+  font-family: 'MS Sans Serif', sans-serif;
+  font-size: 14px;
+}
+
+body.retro-theme .task-conflict-content {
+  font-family: 'MS Sans Serif', sans-serif;
+  color: #000000;
+}
+
+body.retro-theme .task-conflict-btn {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif;
+  border-radius: 0;
+}
+
+body.retro-theme .task-conflict-btn.primary {
+  background: #000080;
+  color: #ffffff;
+  border: 2px outset #000080;
+}
+
+body.retro-theme .task-conflict-btn:hover {
+  background: #e0e0e0;
+  border: 2px outset #e0e0e0;
+}
+
+body.retro-theme .task-conflict-btn.primary:hover {
+  background: #0000ff;
+  border: 2px outset #0000ff;
+}
+
+body.retro-theme .task-conflict-btn:active {
+  border: 2px inset #c0c0c0;
+}
+
+body.retro-theme .task-conflict-btn.primary:active {
+  border: 2px inset #000080;
 }
 
 /* Dark theme adjustments */

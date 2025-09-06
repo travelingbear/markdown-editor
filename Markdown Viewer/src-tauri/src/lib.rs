@@ -226,6 +226,20 @@ fn show_in_folder(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn get_current_dir() -> Result<String, String> {
+    match std::env::current_dir() {
+        Ok(path) => {
+            if let Some(path_str) = path.to_str() {
+                Ok(path_str.to_string())
+            } else {
+                Err("Failed to convert path to string".to_string())
+            }
+        }
+        Err(e) => Err(format!("Failed to get current directory: {}", e))
+    }
+}
+
+#[tauri::command]
 fn get_absolute_paths_from_names(file_names: Vec<String>) -> Result<Vec<String>, String> {
     println!("[Rust] Getting absolute paths for: {:?}", file_names);
     
@@ -384,6 +398,7 @@ pub fn run() {
             debug_command_line,
             test_file_association,
             convert_local_image_path,
+            get_current_dir,
             get_absolute_paths_from_names,
             get_dropped_file_absolute_path,
             show_in_folder

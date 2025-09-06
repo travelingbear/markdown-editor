@@ -279,6 +279,18 @@ class EditorComponent extends BaseComponent {
     this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit3, () => {
       this.emit('markdown-action', { action: 'h3' });
     });
+    
+    // Enter key handling for list continuation
+    this.monacoEditor.onKeyDown((e) => {
+      if (e.keyCode === monaco.KeyCode.Enter) {
+        if (this.handleEnterKey()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    });
+    
+
   }
 
   handleContentChange() {
@@ -488,6 +500,86 @@ class EditorComponent extends BaseComponent {
       
       return { line, col };
     }
+  }
+  
+
+
+  handleEnterKey() {
+    if (!this.isMonacoLoaded || !this.monacoEditor) return false;
+    
+    const position = this.monacoEditor.getPosition();
+    const model = this.monacoEditor.getModel();
+    const currentLine = model.getLineContent(position.lineNumber);
+    
+    // Check for list patterns
+    const ulMatch = currentLine.match(/^(\s*)- (.*)$/);
+    const olMatch = currentLine.match(/^(\s*)(\d+)\. (.*)$/);
+    const taskMatch = currentLine.match(/^(\s*)- \[([ x])\] (.*)$/);
+    
+    if (ulMatch) {
+      const [, indent, content] = ulMatch;
+      if (content.trim() === '') {
+        // Empty list item, replace with empty line
+        this.monacoEditor.executeEdits('list-exit', [{
+          range: new monaco.Range(position.lineNumber, 1, position.lineNumber, currentLine.length + 1),
+          text: ''
+        }]);
+        // Position cursor at start of line and let Monaco handle Enter
+        this.monacoEditor.setPosition({ lineNumber: position.lineNumber, column: 1 });
+        return false;
+      } else {
+        // Continue list
+        this.monacoEditor.executeEdits('list-continue', [{
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          text: `\n${indent}- `
+        }]);
+        return true;
+      }
+    }
+    
+    if (olMatch) {
+      const [, indent, num, content] = olMatch;
+      if (content.trim() === '') {
+        // Empty list item, replace with empty line
+        this.monacoEditor.executeEdits('list-exit', [{
+          range: new monaco.Range(position.lineNumber, 1, position.lineNumber, currentLine.length + 1),
+          text: ''
+        }]);
+        this.monacoEditor.setPosition({ lineNumber: position.lineNumber, column: 1 });
+        return false;
+      } else {
+        // Continue numbered list
+        const nextNum = parseInt(num) + 1;
+        this.monacoEditor.executeEdits('list-continue', [{
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          text: `\n${indent}${nextNum}. `
+        }]);
+        return true;
+      }
+    }
+    
+    if (taskMatch) {
+      const [, indent, , content] = taskMatch;
+      if (content.trim() === '') {
+        // Empty task item, replace with empty line
+        this.monacoEditor.executeEdits('list-exit', [{
+          range: new monaco.Range(position.lineNumber, 1, position.lineNumber, currentLine.length + 1),
+          text: ''
+        }]);
+        this.monacoEditor.setPosition({ lineNumber: position.lineNumber, column: 1 });
+        return false;
+      } else {
+        // Continue task list
+        this.monacoEditor.executeEdits('list-continue', [{
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          text: `\n${indent}- [ ] `
+        }]);
+        return true;
+      }
+    }
+    
+    // Not a list, let Monaco handle normally
+    return false;
   }
 
   onDestroy() {

@@ -944,54 +944,253 @@ class MarkdownEditor extends BaseComponent {
     const editor = this.editorComponent.monacoEditor;
     const model = editor.getModel();
     const selection = editor.getSelection();
+    const position = editor.getPosition();
     let selectedText = '';
+    let isMultiLine = false;
     
     if (selection && !selection.isEmpty()) {
       selectedText = model.getValueInRange(selection);
+      isMultiLine = selection.startLineNumber !== selection.endLineNumber;
+    }
+    
+    // Handle multi-line selections
+    if (isMultiLine && ['bold', 'italic', 'strikethrough', 'underline', 'h1', 'h2', 'h3', 'ul', 'ol', 'task', 'quote', 'code'].includes(action)) {
+      this.handleMultiLineFormatting(editor, selection, action);
+      return;
     }
     
     let replacement = '';
+    let insertAtNewLine = false;
+    let cursorOffset = 0;
     
     switch (action) {
+      // Text formatting
       case 'bold':
         replacement = selectedText ? `**${selectedText}**` : '**text**';
+        cursorOffset = selectedText ? 0 : -6;
         break;
       case 'italic':
         replacement = selectedText ? `*${selectedText}*` : '*text*';
+        cursorOffset = selectedText ? 0 : -5;
         break;
+      case 'strikethrough':
+        replacement = selectedText ? `~~${selectedText}~~` : '~~text~~';
+        cursorOffset = selectedText ? 0 : -6;
+        break;
+      case 'underline':
+        replacement = selectedText ? `<u>${selectedText}</u>` : '<u>text</u>';
+        cursorOffset = selectedText ? 0 : -7;
+        break;
+        
+      // Headings
       case 'h1':
         replacement = selectedText ? `# ${selectedText}` : '# Heading 1';
+        insertAtNewLine = true;
         break;
       case 'h2':
         replacement = selectedText ? `## ${selectedText}` : '## Heading 2';
+        insertAtNewLine = true;
         break;
       case 'h3':
         replacement = selectedText ? `### ${selectedText}` : '### Heading 3';
+        insertAtNewLine = true;
         break;
-      case 'code':
-        replacement = selectedText ? `\`${selectedText}\`` : '`code`';
-        break;
+        
+      // Links and media
       case 'link':
         replacement = selectedText ? `[${selectedText}](url)` : '[link text](url)';
+        cursorOffset = selectedText ? -4 : -4;
         break;
+      case 'image':
+        replacement = selectedText ? `![${selectedText}](image-url)` : '![alt text](image-url)';
+        cursorOffset = selectedText ? -12 : -12;
+        break;
+        
+      // Lists
+      case 'ul':
+        replacement = selectedText ? `- ${selectedText}` : '- List item';
+        insertAtNewLine = true;
+        break;
+      case 'ol':
+        replacement = selectedText ? `1. ${selectedText}` : '1. List item';
+        insertAtNewLine = true;
+        break;
+      case 'task':
+        replacement = selectedText ? `- [ ] ${selectedText}` : '- [ ] Task item';
+        insertAtNewLine = true;
+        break;
+        
+      // Table
+      case 'table':
+        replacement = `| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |`;
+        insertAtNewLine = true;
+        break;
+        
+      // Code
+      case 'code':
+        replacement = selectedText ? `\`${selectedText}\`` : '`code`';
+        cursorOffset = selectedText ? 0 : -5;
+        break;
+      case 'codeblock':
+        replacement = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\ncode block\n```';
+        cursorOffset = selectedText ? 0 : -15;
+        insertAtNewLine = true;
+        break;
+        
+      // Quote
+      case 'quote':
+        replacement = selectedText ? `> ${selectedText}` : '> Quote text';
+        insertAtNewLine = true;
+        break;
+        
+      // Text alignment
+      case 'align-left':
+        if (selectedText) {
+          // Remove any existing alignment
+          let cleanText = selectedText
+            .replace(/<div align="(center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
+            .trim();
+          replacement = cleanText;
+        } else {
+          return; // Do nothing for left align without selection
+        }
+        break;
+      case 'align-center':
+        if (selectedText) {
+          let cleanText = selectedText
+            .replace(/<div align="(left|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
+            .trim();
+          replacement = `<div align="center">\n${cleanText}\n</div>`;
+          insertAtNewLine = true;
+        } else {
+          replacement = '<div align="center">\nText aligned center\n</div>';
+          insertAtNewLine = true;
+        }
+        break;
+      case 'align-right':
+        if (selectedText) {
+          let cleanText = selectedText
+            .replace(/<div align="(left|center|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
+            .trim();
+          replacement = `<div align="right">\n${cleanText}\n</div>`;
+          insertAtNewLine = true;
+        } else {
+          replacement = '<div align="right">\nText aligned right\n</div>';
+          insertAtNewLine = true;
+        }
+        break;
+      case 'align-justify':
+        if (selectedText) {
+          let cleanText = selectedText
+            .replace(/<div align="(left|center|right)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
+            .trim();
+          replacement = `<div align="justify">\n${cleanText}\n</div>`;
+          insertAtNewLine = true;
+        } else {
+          replacement = '<div align="justify">\nText justified\n</div>';
+          insertAtNewLine = true;
+        }
+        break;
+        
       default:
         return;
     }
     
-    if (selection && !selection.isEmpty()) {
+    // Handle insertion
+    if (insertAtNewLine && !selectedText) {
+      const lineContent = model.getLineContent(position.lineNumber);
+      if (lineContent.trim() === '') {
+        editor.executeEdits('markdown-toolbar', [{
+          range: new monaco.Range(position.lineNumber, 1, position.lineNumber, position.column),
+          text: replacement
+        }]);
+      } else {
+        editor.executeEdits('markdown-toolbar', [{
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          text: `\n${replacement}`
+        }]);
+      }
+    } else if (selection && !selection.isEmpty()) {
       editor.executeEdits('markdown-toolbar', [{
         range: selection,
         text: replacement
       }]);
     } else {
-      const position = editor.getPosition();
       editor.executeEdits('markdown-toolbar', [{
         range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
         text: replacement
       }]);
+      
+      if (cursorOffset !== 0) {
+        const newPosition = editor.getPosition();
+        const targetColumn = newPosition.column + cursorOffset;
+        editor.setPosition({
+          lineNumber: newPosition.lineNumber,
+          column: Math.max(1, targetColumn)
+        });
+      }
     }
     
     editor.focus();
+    this.documentComponent.handleContentChange(editor.getValue());
+  }
+  
+  handleMultiLineFormatting(editor, selection, action) {
+    const model = editor.getModel();
+    const edits = [];
+    
+    for (let lineNum = selection.startLineNumber; lineNum <= selection.endLineNumber; lineNum++) {
+      const lineContent = model.getLineContent(lineNum);
+      if (lineContent.trim() === '') continue;
+      
+      let newContent = '';
+      
+      switch (action) {
+        case 'bold':
+          newContent = `**${lineContent}**`;
+          break;
+        case 'italic':
+          newContent = `*${lineContent}*`;
+          break;
+        case 'strikethrough':
+          newContent = `~~${lineContent}~~`;
+          break;
+        case 'underline':
+          newContent = `<u>${lineContent}</u>`;
+          break;
+        case 'h1':
+          newContent = `# ${lineContent}`;
+          break;
+        case 'h2':
+          newContent = `## ${lineContent}`;
+          break;
+        case 'h3':
+          newContent = `### ${lineContent}`;
+          break;
+        case 'ul':
+          newContent = `- ${lineContent}`;
+          break;
+        case 'ol':
+          newContent = `${lineNum - selection.startLineNumber + 1}. ${lineContent}`;
+          break;
+        case 'task':
+          newContent = `- [ ] ${lineContent}`;
+          break;
+        case 'quote':
+          newContent = `> ${lineContent}`;
+          break;
+        case 'code':
+          newContent = `\`${lineContent}\``;
+          break;
+      }
+      
+      edits.push({
+        range: new monaco.Range(lineNum, 1, lineNum, lineContent.length + 1),
+        text: newContent
+      });
+    }
+    
+    editor.executeEdits('markdown-toolbar-multiline', edits);
     this.documentComponent.handleContentChange(editor.getValue());
   }
 
@@ -999,7 +1198,12 @@ class MarkdownEditor extends BaseComponent {
     const content = this.editorComponent.getContent();
     const lines = content.split('\n');
     let inCodeBlock = false;
+    let matchingLines = [];
     
+    // Clean task text for better matching (remove HTML and extra whitespace)
+    const cleanTaskText = taskText.replace(/<[^>]*>/g, '').trim();
+    
+    // Find all lines that contain the task text
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
@@ -1010,28 +1214,98 @@ class MarkdownEditor extends BaseComponent {
       
       if (inCodeBlock) continue;
       
-      if (line.includes(taskText)) {
-        if (line.includes('- [ ]') || line.includes('- [x]')) {
-          if (checked) {
-            lines[i] = line.replace('- [ ]', '- [x]');
-          } else {
-            lines[i] = line.replace('- [x]', '- [ ]');
+      // Check for task list patterns with various indentation levels
+      const taskPatterns = [
+        /^(\s*)- \[([ x])\]\s*(.*)$/,  // Standard task list
+        /^(\s*)\* \[([ x])\]\s*(.*)$/,  // Alternative bullet
+        /^(\s*)\+ \[([ x])\]\s*(.*)$/,  // Alternative bullet
+        /^(\s*)\d+\. \[([ x])\]\s*(.*)$/,  // Numbered task list
+      ];
+      
+      for (const pattern of taskPatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          const [, indent, checkState, taskContent] = match;
+          const cleanLineTaskText = taskContent.trim();
+          
+          // More flexible matching - check if the task text is contained in the line
+          if (cleanLineTaskText === cleanTaskText || 
+              cleanLineTaskText.includes(cleanTaskText) || 
+              cleanTaskText.includes(cleanLineTaskText)) {
+            matchingLines.push({ index: i, indent, pattern: pattern.source, taskContent: cleanLineTaskText });
+            break;
           }
-          break;
-        } else if (line.includes('[ ]') || line.includes('[x]')) {
-          if (checked) {
-            lines[i] = line.replace('[ ]', '[x]');
-          } else {
-            lines[i] = line.replace('[x]', '[ ]');
-          }
-          break;
         }
       }
     }
     
-    const newContent = lines.join('\n');
-    this.editorComponent.setContent(newContent);
-    this.documentComponent.handleContentChange(newContent);
+    // Check for conflicts (multiple tasks with same text)
+    if (matchingLines.length > 1) {
+      this.showTaskConflictModal(taskText, matchingLines.length);
+      return;
+    }
+    
+    // Update the single matching task
+    if (matchingLines.length === 1) {
+      const match = matchingLines[0];
+      const lineIndex = match.index;
+      const line = lines[lineIndex];
+      
+      // Update the checkbox state while preserving indentation and formatting
+      const updatedLine = line.replace(/\[([ x])\]/, checked ? '[x]' : '[ ]');
+      lines[lineIndex] = updatedLine;
+      
+      const newContent = lines.join('\n');
+      this.editorComponent.setContent(newContent);
+      this.documentComponent.handleContentChange(newContent);
+      
+
+    }
+  }
+  
+  showTaskConflictModal(taskText, count) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('task-conflict-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'task-conflict-modal';
+      modal.className = 'task-conflict-modal';
+      modal.innerHTML = `
+        <div class="task-conflict-overlay"></div>
+        <div class="task-conflict-window">
+          <div class="task-conflict-header">
+            <h3>Task Conflict Detected</h3>
+          </div>
+          <div class="task-conflict-content">
+            <p>Multiple tasks with the same name were found:</p>
+            <p><strong id="conflict-task-text"></strong></p>
+            <p>Found <span id="conflict-count"></span> tasks with this name. Please use unique task names to avoid conflicts.</p>
+          </div>
+          <div class="task-conflict-buttons">
+            <button id="conflict-ok-btn" class="task-conflict-btn primary">OK</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      // Add event listeners
+      const okBtn = modal.querySelector('#conflict-ok-btn');
+      const overlay = modal.querySelector('.task-conflict-overlay');
+      
+      const closeModal = () => {
+        modal.style.display = 'none';
+      };
+      
+      okBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', closeModal);
+    }
+    
+    // Update modal content
+    modal.querySelector('#conflict-task-text').textContent = taskText;
+    modal.querySelector('#conflict-count').textContent = count;
+    
+    // Show modal
+    modal.style.display = 'flex';
   }
 
   async openExternalLink(href) {

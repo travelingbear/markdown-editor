@@ -15,12 +15,14 @@
 - **Real-Time Preview**: GitHub-flavored markdown with live updates
 - **Advanced Rendering**: KaTeX math expressions and Mermaid diagrams
 - **Interactive Elements**: Clickable task lists with state persistence
+- **Scroll Sync**: Manual scroll synchronization between Code and Preview modes
 
 ### User Experience
 - **Smart Tab Management**: Numbered tabs (1-5) in dropdown with quick access shortcuts
+- **Pinned Tabs Bar**: Optional horizontal tabs bar with numbering (1-5) for quick access
 - **Tab Modal**: Search and navigate through all open tabs with keyboard support
 - **Context Menus**: Right-click tabs for close, duplicate, and reveal options
-- **GitHub-Style Themes**: Light and dark themes with perfect synchronization
+- **GitHub-Style Themes**: Light, Dark, and Retro themes with perfect synchronization
 - **Drag & Drop**: Native file drag-drop with absolute path support
 - **Export Options**: HTML export and PDF printing
 - **Font Size Controls**: Adjustable font size (10px-24px) in markdown toolbar
@@ -98,9 +100,15 @@
 - **Ctrl+F** - Find & Replace
 - **Ctrl+,** - Open settings
 - **F1** - Show help
+- **F5** - Reload current file
 - **F11** - Toggle fullscreen
 - **Shift+F11** - Toggle distraction-free mode
 - **Esc** - Close modals or exit distraction-free mode
+
+### Scroll Sync
+- **Sync Button** - Manual scroll synchronization between Code and Preview modes
+- Available in status bar when in Code or Preview mode (not Split mode)
+- Preserves individual tab scroll positions
 
 ### Export
 - **Ctrl+Shift+E** - Export to HTML

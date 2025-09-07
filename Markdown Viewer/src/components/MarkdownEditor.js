@@ -3165,6 +3165,10 @@ class MarkdownEditor extends BaseComponent {
         this.tabManager.createNewTab(tab.content);
         break;
         
+      case 'toggle-pinned':
+        this.togglePinnedTabs();
+        break;
+        
       case 'reveal':
         if (tab.filePath && window.__TAURI__?.core?.invoke) {
           try {
@@ -3285,6 +3289,9 @@ class MarkdownEditor extends BaseComponent {
     this.pinnedTabsEnabled = !this.pinnedTabsEnabled;
     localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
     this.applyPinnedTabsVisibility();
+    if (this.pinnedTabsEnabled) {
+      this.updatePinnedTabs();
+    }
     this.updateSettingsDisplay();
   }
   

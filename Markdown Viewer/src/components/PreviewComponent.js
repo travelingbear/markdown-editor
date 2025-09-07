@@ -151,8 +151,10 @@ class PreviewComponent extends BaseComponent {
       this.applySyntaxHighlighting();
       this.setupCodeBlockButtons();
       
-      // Process images
-      await this.processImages();
+      // Process images only if there are images in the content
+      if (html.includes('<img')) {
+        await this.processImages();
+      }
       
       this.emit('preview-updated', { content: html });
       
@@ -726,10 +728,20 @@ class PreviewComponent extends BaseComponent {
           // Try to resolve relative paths
           let resolvedPath = originalSrc;
           
-          // If it's a relative path, resolve it to the main project directory
+          // If it's a relative path, resolve it to the current working directory
           if (!originalSrc.startsWith('/') && !originalSrc.match(/^[A-Za-z]:/)) {
             const projectDir = await this.getCurrentWorkingDirectory();
-            resolvedPath = `${projectDir}\\${originalSrc.replace(/\//g, '\\')}`;
+            
+            // If we're in src-tauri directory, go up to actual project root
+            let baseDir = projectDir;
+            if (projectDir.endsWith('/src-tauri') || projectDir.endsWith('\\src-tauri')) {
+              baseDir = projectDir.replace(/[\/\\]Markdown Viewer[\/\\]src-tauri$/, '');
+            }
+            
+            // Use appropriate path separator based on the platform
+            const pathSeparator = baseDir.includes('\\') ? '\\' : '/';
+            const normalizedSrc = originalSrc.replace(/[\/\\]/g, pathSeparator);
+            resolvedPath = `${baseDir}${pathSeparator}${normalizedSrc}`;
           }
           
 
@@ -743,11 +755,8 @@ class PreviewComponent extends BaseComponent {
             throw new Error('Invalid image data returned');
           }
         } catch (error) {
-
           img.classList.add('image-error');
           img.title = `Image not found: ${originalSrc}`;
-          
-          // Show a placeholder or error indicator
           img.alt = `[Image not found: ${originalSrc}]`;
         }
       } else {
@@ -761,8 +770,17 @@ class PreviewComponent extends BaseComponent {
   }
   
   async getCurrentWorkingDirectory() {
-    // Always use the main project directory where images are located
-    return 'c:\\Users\\Francisco\\Documents\\PROJECTS\\markdown-editor';
+    try {
+      if (window.__TAURI__?.core?.invoke) {
+        const currentDir = await window.__TAURI__.core.invoke('get_current_dir');
+        return currentDir;
+      }
+    } catch (error) {
+      console.warn('[Preview] Failed to get current directory:', error);
+    }
+    
+    // Fallback to current directory
+    return '.';
   }
 
   /**

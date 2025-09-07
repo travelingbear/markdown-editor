@@ -25,7 +25,7 @@ class PerformanceOptimizer {
 
   // Memory optimization for multi-tab architecture - Phase 6 Enhanced
   optimizeForMultiTabs() {
-    console.log('[PerformanceOptimizer] Initializing Phase 6 optimizations...');
+
     
     // 1. Implement tab virtualization with lazy loading
     this.setupTabVirtualization();
@@ -62,7 +62,7 @@ class PerformanceOptimizer {
     this.lazyLoadThreshold = 10; // Start lazy loading after 10 tabs
     this.maxActiveEditors = 5; // Maximum Monaco editors to keep active
     
-    console.log('[PerformanceOptimizer] Lazy tab loading initialized');
+
   }
   
   // Phase 6: Smart tab unloading for memory pressure
@@ -75,7 +75,7 @@ class PerformanceOptimizer {
       this.checkMemoryPressure();
     }, 5000); // Check every 5 seconds for faster response
     
-    console.log('[PerformanceOptimizer] Smart tab unloading initialized');
+
   }
   
   // Phase 6: Performance tracking setup
@@ -309,7 +309,7 @@ class PerformanceOptimizer {
     
     // Warn if memory usage is high
     if (memoryInfo.used > this.performanceTargets.maxTotalMemory) {
-      console.warn(`[Performance] High memory usage: ${memoryInfo.used}MB`);
+
       this.performMemoryCleanup();
     }
     
@@ -338,7 +338,7 @@ class PerformanceOptimizer {
     }
     
     if (memoryInfo && memoryInfo.pressure > this.memoryPressureThreshold) {
-      console.warn(`[Performance] Memory pressure detected: ${(memoryInfo.pressure * 100).toFixed(1)}%`);
+
       this.handleMemoryPressure(memoryInfo);
     }
   }
@@ -368,10 +368,10 @@ class PerformanceOptimizer {
     const tabsToVirtualize = this.selectTabsForVirtualization(tabCount);
     
     if (tabsToVirtualize.length > 0) {
-      console.log(`[Performance] Virtualizing ${tabsToVirtualize.length} tabs to improve performance`);
+
       tabsToVirtualize.forEach(tabId => this.virtualizeTab(tabId));
     } else {
-      console.log(`[Performance] ${tabCount} tabs detected, but no candidates for virtualization`);
+
     }
   }
   
@@ -407,7 +407,7 @@ class PerformanceOptimizer {
       }
     }
     
-    console.log(`[Performance] Virtualizing ${candidates.length} tabs beyond position ${maxActiveTabs}`);
+
     return candidates.map(c => c.tabId);
   }
   
@@ -426,7 +426,7 @@ class PerformanceOptimizer {
     const tabsToUnload = this.selectTabsForUnloading();
     
     if (tabsToUnload.length > 0) {
-      console.log(`[Performance] Unloading ${tabsToUnload.length} tabs to free memory`);
+
       tabsToUnload.forEach(tabId => this.unloadTab(tabId));
       
       // Force garbage collection if available
@@ -554,7 +554,7 @@ class PerformanceOptimizer {
       this.updatePerformanceDashboard();
     }, 5000);
     
-    console.log('[PerformanceOptimizer] Performance dashboard initialized');
+
   }
   
   // Phase 6: Create performance dashboard UI - use existing HTML section
@@ -716,7 +716,7 @@ class PerformanceOptimizer {
 
   // Phase 6: Enhanced low power mode
   enableLowPowerMode() {
-    console.log('[PerformanceOptimizer] Enabling low power mode for older hardware');
+
     this.isLowPowerMode = true;
     
     // Reduce performance targets
@@ -761,7 +761,7 @@ class PerformanceOptimizer {
     );
     
     if (isOlderHardware) {
-      console.log('[PerformanceOptimizer] Older hardware detected, enabling optimizations');
+
       this.enableLowPowerMode();
     }
     
@@ -789,7 +789,7 @@ class PerformanceOptimizer {
         }
       });
       
-      console.log(`[Performance] Access tracking: ${this.lastAccessTime.size} tabs tracked`);
+
     }
   }
   
@@ -842,7 +842,7 @@ class PerformanceOptimizer {
       tabElement.style.display = 'none';
       this.virtualizedTabs.add(tabId);
       
-      console.log(`[PerformanceOptimizer] Tab ${tabId} unloaded to save memory`);
+
     }
   }
   
@@ -888,7 +888,7 @@ class PerformanceOptimizer {
   
   // Manual cleanup for virtual tabs when all tabs are closed
   clearAllVirtualTabs() {
-    console.log(`[PerformanceOptimizer] Clearing ${this.virtualizedTabs.size} virtual tabs from memory`);
+
     
     this.virtualizedTabs.clear();
     this.lastAccessTime.clear();
@@ -902,7 +902,7 @@ class PerformanceOptimizer {
       window.gc();
     }
     
-    console.log('[PerformanceOptimizer] All virtual tabs cleared');
+
   }
   
   // Phase 6: Enhanced cleanup with tab tracking
@@ -943,7 +943,7 @@ class PerformanceOptimizer {
       this.previewCache.clear();
     }
     
-    console.log('[PerformanceOptimizer] Cleanup completed');
+
   }
 }
 

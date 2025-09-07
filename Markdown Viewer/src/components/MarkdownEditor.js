@@ -277,7 +277,10 @@ class MarkdownEditor extends BaseComponent {
       if (activeTab) {
         activeTab.setContent(data.content);
         this.editorComponent.emit('set-content', data);
-        this.previewComponent.emit('update-preview', data);
+        this.previewComponent.emit('update-preview', { 
+          content: data.content,
+          filePath: activeTab.filePath 
+        });
       }
     });
     
@@ -294,7 +297,10 @@ class MarkdownEditor extends BaseComponent {
       }
       this.documentComponent.emit('content-changed', data);
       
-      this.previewComponent.emit('update-preview', data);
+      this.previewComponent.emit('update-preview', { 
+        content: data.content,
+        filePath: activeTab?.filePath 
+      });
       
       // Immediately update toolbar state for save button color
       this.toolbarComponent.emit('document-state-changed', { 
@@ -913,7 +919,10 @@ class MarkdownEditor extends BaseComponent {
     // Refresh preview if we have active tab content
     const activeTab = this.tabManager.getActiveTab();
     if (activeTab) {
-      this.previewComponent.emit('update-preview', { content: activeTab.content });
+      this.previewComponent.emit('update-preview', { 
+        content: activeTab.content,
+        filePath: activeTab.filePath 
+      });
     }
   }
 
@@ -1425,8 +1434,6 @@ class MarkdownEditor extends BaseComponent {
       const newContent = lines.join('\n');
       this.editorComponent.setContent(newContent);
       this.documentComponent.handleContentChange(newContent);
-      
-
     }
   }
   
@@ -1528,7 +1535,10 @@ class MarkdownEditor extends BaseComponent {
         if (newContent !== activeTab.content) {
           activeTab.setContent(newContent);
           this.editorComponent.emit('set-content', { content: newContent });
-          this.previewComponent.emit('update-preview', { content: newContent });
+          this.previewComponent.emit('update-preview', { 
+            content: newContent,
+            filePath: activeTab.filePath 
+          });
           this.documentComponent.content = newContent;
           this.documentComponent.markClean();
         }
@@ -1545,12 +1555,20 @@ class MarkdownEditor extends BaseComponent {
     if (this.performanceOptimizer && window.PerformanceUtils) {
       if (!this.debouncedPreviewUpdate) {
         this.debouncedPreviewUpdate = window.PerformanceUtils.debounce((content) => {
-          this.previewComponent.emit('update-preview', { content });
+          const activeTab = this.tabManager.getActiveTab();
+          this.previewComponent.emit('update-preview', { 
+            content,
+            filePath: activeTab?.filePath 
+          });
         }, 150);
       }
       this.debouncedPreviewUpdate(content);
     } else {
-      this.previewComponent.emit('update-preview', { content });
+      const activeTab = this.tabManager.getActiveTab();
+      this.previewComponent.emit('update-preview', { 
+        content,
+        filePath: activeTab?.filePath 
+      });
     }
   }
 
@@ -1928,7 +1946,10 @@ class MarkdownEditor extends BaseComponent {
           // Refresh preview if we have active tab content
           const activeTab = this.tabManager.getActiveTab();
           if (activeTab) {
-            this.previewComponent.emit('update-preview', { content: activeTab.content });
+            this.previewComponent.emit('update-preview', { 
+              content: activeTab.content,
+              filePath: activeTab.filePath 
+            });
           }
           
           // Update theme button
@@ -2419,7 +2440,10 @@ class MarkdownEditor extends BaseComponent {
       const wasHidden = previewPane.style.display === 'none';
       if (wasHidden) {
         previewPane.style.display = 'block';
-        this.previewComponent.emit('update-preview', { content: activeTab.content });
+        this.previewComponent.emit('update-preview', { 
+          content: activeTab.content,
+          filePath: activeTab.filePath 
+        });
         previewPane.offsetHeight;
       }
       
@@ -2561,7 +2585,10 @@ class MarkdownEditor extends BaseComponent {
     } else {
       this.editorComponent.emit('set-content', { content: tab.content });
     }
-    this.previewComponent.emit('update-preview', { content: tab.content });
+    this.previewComponent.emit('update-preview', { 
+      content: tab.content,
+      filePath: tab.filePath 
+    });
     
     // Only show preview if we're in preview or split mode
     if (this.currentMode === 'preview' || this.currentMode === 'split') {
@@ -2609,7 +2636,10 @@ class MarkdownEditor extends BaseComponent {
       } else {
         this.editorComponent.emit('set-content', { content: tab.content });
       }
-      this.previewComponent.emit('update-preview', { content: tab.content });
+      this.previewComponent.emit('update-preview', { 
+        content: tab.content,
+        filePath: tab.filePath 
+      });
       
       // Only show preview if we're in preview or split mode
       if (this.currentMode === 'preview' || this.currentMode === 'split') {
@@ -2633,7 +2663,10 @@ class MarkdownEditor extends BaseComponent {
   
   showWelcomePage() {
     this.editorComponent.emit('set-content', { content: '' });
-    this.previewComponent.emit('update-preview', { content: '' });
+    this.previewComponent.emit('update-preview', { 
+      content: '',
+      filePath: null 
+    });
     this.previewComponent.showWelcome();
     this.updateFilename('Welcome', false);
     this.toolbarComponent.emit('document-state-changed', { 

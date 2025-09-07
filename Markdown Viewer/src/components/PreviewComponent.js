@@ -85,6 +85,9 @@ class PreviewComponent extends BaseComponent {
   setupEventListeners() {
     // Listen for content updates
     this.on('update-preview', (data) => {
+      if (data.filePath) {
+        this.setCurrentFilePath(data.filePath);
+      }
       this.updatePreview(data.content);
     });
     
@@ -490,22 +493,18 @@ class PreviewComponent extends BaseComponent {
   }
 
   setupTaskListInteractions() {
-    if (this.taskChangeHandler) {
-      this.preview.removeEventListener('change', this.taskChangeHandler);
-    }
+    const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
     
-    this.taskChangeHandler = (e) => {
-      if (e.target.type === 'checkbox') {
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', (e) => {
         const taskText = e.target.parentElement.textContent.trim();
         
         this.emit('task-toggled', {
           taskText: taskText,
           checked: e.target.checked
         });
-      }
-    };
-    
-    this.preview.addEventListener('change', this.taskChangeHandler);
+      });
+    });
   }
 
   setupAnchorLinks() {
@@ -684,7 +683,9 @@ class PreviewComponent extends BaseComponent {
   async processImages() {
     const images = this.preview.querySelectorAll('img.markdown-image');
     
-    if (images.length === 0) return;
+    if (images.length === 0) {
+      return;
+    }
     
     const batchSize = 5;
     const batches = [];
@@ -710,11 +711,14 @@ class PreviewComponent extends BaseComponent {
   async processImage(img) {
     let originalSrc = img.getAttribute('data-original-src');
     
-    if (!originalSrc) return;
+    if (!originalSrc) {
+      return;
+    }
     
     if (originalSrc.includes('%')) {
       try {
-        originalSrc = decodeURIComponent(originalSrc);
+        const decodedSrc = decodeURIComponent(originalSrc);
+        originalSrc = decodedSrc;
       } catch (e) {
         return;
       }
@@ -725,26 +729,32 @@ class PreviewComponent extends BaseComponent {
       
       if (isLocalFile && window.__TAURI__?.core?.invoke) {
         try {
-          // Try to resolve relative paths
           let resolvedPath = originalSrc;
           
-          // If it's a relative path, resolve it to the current working directory
-          if (!originalSrc.startsWith('/') && !originalSrc.match(/^[A-Za-z]:/)) {
-            const projectDir = await this.getCurrentWorkingDirectory();
-            
-            // If we're in src-tauri directory, go up to actual project root
-            let baseDir = projectDir;
-            if (projectDir.endsWith('/src-tauri') || projectDir.endsWith('\\src-tauri')) {
-              baseDir = projectDir.replace(/[\/\\]Markdown Viewer[\/\\]src-tauri$/, '');
+          const isAbsolutePath = originalSrc.startsWith('/') || originalSrc.match(/^[A-Za-z]:/);
+          
+          if (!isAbsolutePath) {
+            let baseDir = null;
+            if (this.currentFilePath) {
+              const pathSeparator = this.currentFilePath.includes('\\') ? '\\' : '/';
+              const pathParts = this.currentFilePath.split(pathSeparator);
+              pathParts.pop();
+              baseDir = pathParts.join(pathSeparator);
             }
             
-            // Use appropriate path separator based on the platform
+            if (!baseDir) {
+              const projectDir = await this.getCurrentWorkingDirectory();
+              baseDir = projectDir;
+            }
+            
+            if (!this.currentFilePath && (baseDir.endsWith('/src-tauri') || baseDir.endsWith('\\src-tauri'))) {
+              baseDir = baseDir.replace(/[\/\\]Markdown Viewer[\/\\]src-tauri$/, '');
+            }
+            
             const pathSeparator = baseDir.includes('\\') ? '\\' : '/';
             const normalizedSrc = originalSrc.replace(/[\/\\]/g, pathSeparator);
             resolvedPath = `${baseDir}${pathSeparator}${normalizedSrc}`;
           }
-          
-
           
           const dataUrl = await window.__TAURI__.core.invoke('convert_local_image_path', { filePath: resolvedPath });
           
@@ -779,7 +789,6 @@ class PreviewComponent extends BaseComponent {
       console.warn('[Preview] Failed to get current directory:', error);
     }
     
-    // Fallback to current directory
     return '.';
   }
 
@@ -818,6 +827,21 @@ class PreviewComponent extends BaseComponent {
    */
   applySettings() {
     this.updateZoom(this.previewZoom);
+  }
+  
+  /**
+   * Set current file path for resolving relative image paths
+   */
+  setCurrentFilePath(filePath) {
+    this.currentFilePath = filePath;
+    if (filePath) {
+      const pathSeparator = filePath.includes('\\') ? '\\' : '/';
+      const pathParts = filePath.split(pathSeparator);
+      pathParts.pop();
+      this.currentFileDirectory = pathParts.join(pathSeparator);
+    } else {
+      this.currentFileDirectory = null;
+    }
   }
 
   /**

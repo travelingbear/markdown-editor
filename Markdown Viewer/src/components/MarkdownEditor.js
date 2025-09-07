@@ -235,7 +235,7 @@ class MarkdownEditor extends BaseComponent {
     this.documentComponent.on('document-new', (data) => {
       // Create new tab
       this.tabManager.createNewTab(data.content);
-      this.setMode(this.defaultMode); // New files start in default mode
+      this.setMode('code'); // New files always start in code mode
     });
     
     this.documentComponent.on('document-closed', () => {
@@ -329,7 +329,10 @@ class MarkdownEditor extends BaseComponent {
     
     // Preview Component Events
     this.previewComponent.on('task-toggled', (data) => {
-      this.updateTaskInMarkdown(data.taskText, data.checked);
+      // Add small delay to ensure preview has finished processing
+      setTimeout(() => {
+        this.updateTaskInMarkdown(data.taskText, data.checked);
+      }, 10);
     });
     
     this.previewComponent.on('external-link-clicked', (data) => {
@@ -680,8 +683,8 @@ class MarkdownEditor extends BaseComponent {
     // Always create new tab for new files
     this.tabManager.createNewTab();
     
-    // Switch to default mode for new files
-    this.setMode(this.defaultMode);
+    // Always switch to code mode for new files (bypass default mode)
+    this.setMode('code');
     
     // Phase 6: Track tab creation performance
     if (this.performanceOptimizer) {
@@ -1376,65 +1379,137 @@ class MarkdownEditor extends BaseComponent {
     let inCodeBlock = false;
     let matchingLines = [];
     
-    // Clean task text for better matching (remove HTML and extra whitespace)
-    const cleanTaskText = taskText.replace(/<[^>]*>/g, '').trim();
+    // Normalize task text for better matching
+    const normalizeText = (text) => {
+      return text
+        .replace(/<[^>]*>/g, '')  // Remove HTML tags
+        .replace(/\s+/g, ' ')     // Normalize whitespace
+        .replace(/[\u00A0\u2000-\u200B\u2028\u2029\u202F\u205F\u3000]/g, ' ') // Replace various unicode spaces
+        .trim()
+        .toLowerCase();
+    };
+    
+    const normalizedTaskText = normalizeText(taskText);
     
     // Find all lines that contain the task text
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
-      if (line.trim().startsWith('```')) {
+      // Track code blocks
+      if (line.trim().startsWith('```') || line.trim().startsWith('~~~')) {
         inCodeBlock = !inCodeBlock;
         continue;
       }
       
       if (inCodeBlock) continue;
       
-      // Check for task list patterns with various indentation levels
+      // Enhanced task list patterns with more comprehensive regex
       const taskPatterns = [
-        /^(\s*)- \[([ x])\]\s*(.*)$/,  // Standard task list
-        /^(\s*)\* \[([ x])\]\s*(.*)$/,  // Alternative bullet
-        /^(\s*)\+ \[([ x])\]\s*(.*)$/,  // Alternative bullet
-        /^(\s*)\d+\. \[([ x])\]\s*(.*)$/,  // Numbered task list
+        /^(\s*)[-*+] \[([ xX])\]\s*(.*)$/,     // Standard bullets with x or X
+        /^(\s*)\d+\. \[([ xX])\]\s*(.*)$/,    // Numbered lists
+        /^(\s*)[-*+]\s*\[([ xX])\]\s*(.*)$/,  // Bullets without space before bracket
+        /^(\s*)\d+\.\s*\[([ xX])\]\s*(.*)$/   // Numbered without space before bracket
       ];
       
       for (const pattern of taskPatterns) {
         const match = line.match(pattern);
         if (match) {
           const [, indent, checkState, taskContent] = match;
-          const cleanLineTaskText = taskContent.trim();
+          const normalizedLineText = normalizeText(taskContent);
           
-          // More flexible matching - check if the task text is contained in the line
-          if (cleanLineTaskText === cleanTaskText || 
-              cleanLineTaskText.includes(cleanTaskText) || 
-              cleanTaskText.includes(cleanLineTaskText)) {
-            matchingLines.push({ index: i, indent, pattern: pattern.source, taskContent: cleanLineTaskText });
+          // Multiple matching strategies for better accuracy
+          const isMatch = 
+            normalizedLineText === normalizedTaskText ||                    // Exact match
+            normalizedLineText.includes(normalizedTaskText) ||              // Contains match
+            normalizedTaskText.includes(normalizedLineText) ||              // Reverse contains
+            this.fuzzyMatch(normalizedLineText, normalizedTaskText, 0.8);   // Fuzzy match
+          
+          if (isMatch) {
+            matchingLines.push({ 
+              index: i, 
+              indent, 
+              checkState: checkState.toLowerCase(),
+              taskContent: taskContent.trim(),
+              normalizedContent: normalizedLineText,
+              similarity: this.calculateSimilarity(normalizedLineText, normalizedTaskText)
+            });
             break;
           }
         }
       }
     }
     
-    // Check for conflicts (multiple tasks with same text)
+    // If multiple matches, prefer the one with highest similarity
     if (matchingLines.length > 1) {
-      this.showTaskConflictModal(taskText, matchingLines.length);
-      return;
+      // Sort by similarity (highest first)
+      matchingLines.sort((a, b) => b.similarity - a.similarity);
+      
+      // If top matches have very similar scores, show conflict modal
+      if (matchingLines.length > 1 && 
+          Math.abs(matchingLines[0].similarity - matchingLines[1].similarity) < 0.1) {
+        this.showTaskConflictModal(taskText, matchingLines.length);
+        return;
+      }
+      
+      // Use the best match
+      matchingLines = [matchingLines[0]];
     }
     
-    // Update the single matching task
+    // Update the matching task
     if (matchingLines.length === 1) {
       const match = matchingLines[0];
       const lineIndex = match.index;
       const line = lines[lineIndex];
       
-      // Update the checkbox state while preserving indentation and formatting
-      const updatedLine = line.replace(/\[([ x])\]/, checked ? '[x]' : '[ ]');
+      // Update checkbox state while preserving all formatting
+      const updatedLine = line.replace(/\[([ xX])\]/, checked ? '[x]' : '[ ]');
       lines[lineIndex] = updatedLine;
       
       const newContent = lines.join('\n');
       this.editorComponent.setContent(newContent);
       this.documentComponent.handleContentChange(newContent);
+    } else {
+      console.warn('[MarkdownEditor] Could not find matching task for:', taskText);
     }
+  }
+  
+  // Helper method for fuzzy string matching
+  fuzzyMatch(str1, str2, threshold = 0.8) {
+    const similarity = this.calculateSimilarity(str1, str2);
+    return similarity >= threshold;
+  }
+  
+  // Calculate similarity between two strings using Levenshtein distance
+  calculateSimilarity(str1, str2) {
+    if (str1 === str2) return 1.0;
+    if (str1.length === 0 || str2.length === 0) return 0.0;
+    
+    const matrix = [];
+    const len1 = str1.length;
+    const len2 = str2.length;
+    
+    // Initialize matrix
+    for (let i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+    
+    // Fill matrix
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,      // deletion
+          matrix[i][j - 1] + 1,      // insertion
+          matrix[i - 1][j - 1] + cost // substitution
+        );
+      }
+    }
+    
+    const maxLen = Math.max(len1, len2);
+    return (maxLen - matrix[len1][len2]) / maxLen;
   }
   
   showTaskConflictModal(taskText, count) {
@@ -2141,15 +2216,11 @@ class MarkdownEditor extends BaseComponent {
       const appWindow = getCurrentWindow();
       
       await appWindow.onCloseRequested(async (event) => {
-        const documentState = this.documentComponent.getDocumentState();
-        if (documentState.isDirty) {
-          event.preventDefault();
-          
-          const shouldClose = await this.handleUnsavedChanges();
-          if (shouldClose) {
-            await appWindow.close();
-          }
+        // Always persist tabs before closing (including unsaved changes)
+        if (this.tabManager) {
+          this.tabManager.persistTabs();
         }
+        // Allow the application to close without confirmation
       });
     } catch (error) {
       console.error('[MarkdownEditor] Error setting up close handler:', error);

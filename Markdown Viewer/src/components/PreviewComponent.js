@@ -142,9 +142,15 @@ class PreviewComponent extends BaseComponent {
       // Set the HTML content
       this.preview.innerHTML = html;
       
-      // Remove disabled attribute from checkboxes
+      // Remove disabled attribute from checkboxes and ensure they're properly set up
       this.preview.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.removeAttribute('disabled');
+        // Ensure checkbox has proper attributes for accessibility
+        if (!checkbox.id && checkbox.nextElementSibling?.tagName === 'LABEL') {
+          const id = 'task-' + Math.random().toString(36).substring(2, 11);
+          checkbox.id = id;
+          checkbox.nextElementSibling.setAttribute('for', id);
+        }
       });
       
       // Render advanced features
@@ -317,12 +323,12 @@ class PreviewComponent extends BaseComponent {
             const nestedIsChecked = nestedChecked === 'x';
             const nestedId = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
             taskCount++;
-            return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}> <label for="${nestedId}">${nestedLiContent}</label></div>`;
+            return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}><label for="${nestedId}">${nestedLiContent}</label></div>`;
           });
           return `<div class="task-list-nested"><${nestedTag}${nestedAttrs}>${processedNestedContent}</${nestedTag}></div>`;
         });
         
-        return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${processedLiContent}</label></div>`;
+        return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}><label for="${id}">${processedLiContent}</label></div>`;
       });
       
       // Only wrap if we actually processed task items
@@ -351,7 +357,7 @@ class PreviewComponent extends BaseComponent {
       const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
       taskCount++;
       
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
+      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}><label for="${id}">${content}</label></div>`;
     });
     
     // Handle standalone checkbox patterns
@@ -365,7 +371,7 @@ class PreviewComponent extends BaseComponent {
       const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
       taskCount++;
       
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
+      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}><label for="${id}">${cleanContent}</label></div>`;
     });
     
     return html;
@@ -497,7 +503,27 @@ class PreviewComponent extends BaseComponent {
     
     checkboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', (e) => {
-        const taskText = e.target.parentElement.textContent.trim();
+        // Get the label element which contains the actual task text
+        const label = e.target.parentElement.querySelector('label');
+        let taskText = '';
+        
+        if (label) {
+          // Get text content from label, preserving inner HTML structure
+          taskText = label.textContent || label.innerText || '';
+        } else {
+          // Fallback: get text from parent element, excluding the checkbox
+          const parent = e.target.parentElement;
+          const clone = parent.cloneNode(true);
+          // Remove the checkbox from the clone
+          const checkboxClone = clone.querySelector('input[type="checkbox"]');
+          if (checkboxClone) {
+            checkboxClone.remove();
+          }
+          taskText = clone.textContent || clone.innerText || '';
+        }
+        
+        // Clean up the task text
+        taskText = taskText.trim();
         
         this.emit('task-toggled', {
           taskText: taskText,

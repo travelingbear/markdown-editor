@@ -595,6 +595,15 @@ class PerformanceOptimizer {
         alert('Performance report logged to console (F12)');
       });
     }
+    
+    // Add clear virtual tabs button
+    const clearVirtualBtn = document.getElementById('perf-clear-virtual-btn');
+    if (clearVirtualBtn) {
+      clearVirtualBtn.addEventListener('click', () => {
+        this.clearAllVirtualTabs();
+        setTimeout(() => this.updatePerformanceDashboard(), 100);
+      });
+    }
   }
   
   // Phase 6: Check if we're in debug mode
@@ -853,6 +862,25 @@ class PerformanceOptimizer {
     this.inactiveTabsData.delete(tabId);
     this.virtualizedTabs.delete(tabId);
     this.tabMemoryUsage.delete(tabId);
+  }
+  
+  // Manual cleanup for virtual tabs when all tabs are closed
+  clearAllVirtualTabs() {
+    console.log(`[PerformanceOptimizer] Clearing ${this.virtualizedTabs.size} virtual tabs from memory`);
+    
+    this.virtualizedTabs.clear();
+    this.lastAccessTime.clear();
+    this.tabAccessPattern.clear();
+    this.unloadCandidates.clear();
+    this.inactiveTabsData.clear();
+    this.tabMemoryUsage.clear();
+    
+    // Force garbage collection if available
+    if (window.gc) {
+      window.gc();
+    }
+    
+    console.log('[PerformanceOptimizer] All virtual tabs cleared');
   }
   
   // Phase 6: Enhanced cleanup with tab tracking

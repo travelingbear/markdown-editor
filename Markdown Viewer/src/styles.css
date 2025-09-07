@@ -120,6 +120,22 @@ body {
   border-color: #da3633;
 }
 
+/* Retro theme dirty button styling */
+body.retro-theme .toolbar-btn.dirty {
+  background: #800000 !important;
+  color: #ffffff !important;
+  border: 2px outset #800000 !important;
+}
+
+body.retro-theme .toolbar-btn.dirty:hover {
+  background: #a00000 !important;
+  border: 2px outset #a00000 !important;
+}
+
+body.retro-theme .toolbar-btn.dirty:active {
+  border: 2px inset #800000 !important;
+}
+
 /* Main Content */
 .main-content {
   display: flex;
@@ -2516,6 +2532,7 @@ body.drag-over .main-content.split-mode::after {
 /* Distraction-Free Mode Styles */
 body.distraction-free .toolbar,
 body.distraction-free .status-bar,
+body.distraction-free .pinned-tabs-bar,
 body.distraction-free .code-block-buttons {
   display: none !important;
 }

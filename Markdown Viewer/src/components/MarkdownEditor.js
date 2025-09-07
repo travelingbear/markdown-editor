@@ -203,6 +203,11 @@ class MarkdownEditor extends BaseComponent {
         this.hideTabModal();
       }
       
+      // Clear virtual tabs from memory
+      if (this.performanceOptimizer) {
+        this.performanceOptimizer.clearAllVirtualTabs();
+      }
+      
       this.showWelcomePage();
       this.updateTabUI();
     });
@@ -1986,6 +1991,9 @@ class MarkdownEditor extends BaseComponent {
           this.pinnedTabsEnabled = id === 'pinned-tabs-on-btn';
           localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
           this.applyPinnedTabsVisibility();
+          if (this.pinnedTabsEnabled) {
+            this.updatePinnedTabs();
+          }
           this.updateSettingsDisplay();
         });
       }

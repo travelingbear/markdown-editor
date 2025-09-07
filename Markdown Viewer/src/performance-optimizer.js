@@ -345,18 +345,19 @@ class PerformanceOptimizer {
   
   // Phase 6: Force virtualization for testing
   forceVirtualization(tabCount) {
-    const maxActiveTabs = 10;
-    const tabsToVirtualize = Math.max(0, tabCount - maxActiveTabs);
-    
-    // Simply virtualize tabs by creating fake IDs
-    for (let i = maxActiveTabs; i < tabCount; i++) {
-      const fakeTabId = `virtual-tab-${i}`;
-      if (!this.virtualizedTabs.has(fakeTabId)) {
-        this.virtualizedTabs.add(fakeTabId);
+    // Don't create fake tabs - only virtualize real tabs
+    if (window.markdownEditor?.tabManager) {
+      const allTabs = window.markdownEditor.tabManager.getAllTabs();
+      const maxActiveTabs = 10;
+      
+      // Virtualize real tabs beyond the limit
+      for (let i = maxActiveTabs; i < allTabs.length; i++) {
+        const tabId = allTabs[i].id;
+        if (!this.virtualizedTabs.has(tabId)) {
+          this.virtualizedTabs.add(tabId);
+        }
       }
     }
-    
-    // Virtualization completed silently
   }
   
   // Phase 6: Handle high tab count by virtualizing some tabs
@@ -376,57 +377,38 @@ class PerformanceOptimizer {
   
   // Phase 6: Select tabs for virtualization based on usage
   selectTabsForVirtualization(totalTabs) {
-    const now = Date.now();
-    const candidates = [];
+    if (!window.markdownEditor?.tabManager) {
+      return [];
+    }
     
-    // Target: keep only 8-10 tabs active, virtualize the rest
+    const allTabs = window.markdownEditor.tabManager.getAllTabs();
+    const activeTab = window.markdownEditor.tabManager.getActiveTab();
     const maxActiveTabs = 10;
-    const tabsToVirtualize = Math.max(0, totalTabs - maxActiveTabs);
+    const tabsToVirtualize = Math.max(0, allTabs.length - maxActiveTabs);
     
-    console.log(`[Performance] Selecting tabs: ${totalTabs} total, ${tabsToVirtualize} to virtualize, ${this.lastAccessTime.size} tracked`);
-    
-    // If no tracking data, virtualize oldest tabs by index
-    if (this.lastAccessTime.size === 0 && window.markdownEditor?.tabManager) {
-      const allTabs = window.markdownEditor.tabManager.getAllTabs();
-      const activeTab = window.markdownEditor.tabManager.getActiveTab();
-      
-      // Virtualize all but the first 10 tabs (skip active tab)
-      for (let i = maxActiveTabs; i < allTabs.length; i++) {
-        if (allTabs[i].id !== activeTab?.id) {
-          candidates.push({ tabId: allTabs[i].id, timeSinceAccess: 999999, accessCount: 0 });
-        }
-      }
-      
-      console.log(`[Performance] No tracking data, virtualizing by index: ${candidates.length} candidates`);
-      return candidates.slice(0, tabsToVirtualize).map(c => c.tabId);
+    if (tabsToVirtualize <= 0) {
+      return [];
     }
     
-    for (const [tabId, lastAccess] of this.lastAccessTime.entries()) {
-      const timeSinceAccess = now - lastAccess;
-      const accessCount = this.tabAccessPattern.get(tabId) || 0;
-      
-      // Skip already virtualized tabs
-      if (this.virtualizedTabs.has(tabId)) {
-        continue;
-      }
-      
-      // Virtualize tabs not accessed in last 10 seconds (very aggressive)
-      if (timeSinceAccess > 10000) { // 10 seconds
-        candidates.push({ tabId, timeSinceAccess, accessCount });
+    const candidates = [];
+    const now = Date.now();
+    
+    // Always virtualize tabs beyond position 10, except active tab
+    for (let i = maxActiveTabs; i < allTabs.length; i++) {
+      const tab = allTabs[i];
+      if (tab.id !== activeTab?.id && !this.virtualizedTabs.has(tab.id)) {
+        const lastAccess = this.lastAccessTime.get(tab.id) || (now - 300000);
+        const accessCount = this.tabAccessPattern.get(tab.id) || 0;
+        candidates.push({ 
+          tabId: tab.id, 
+          timeSinceAccess: now - lastAccess, 
+          accessCount 
+        });
       }
     }
     
-    // Sort by least recently used and least accessed
-    candidates.sort((a, b) => {
-      if (a.accessCount !== b.accessCount) {
-        return a.accessCount - b.accessCount;
-      }
-      return b.timeSinceAccess - a.timeSinceAccess;
-    });
-    
-    console.log(`[Performance] Found ${candidates.length} candidates for virtualization`);
-    
-    return candidates.slice(0, tabsToVirtualize).map(c => c.tabId);
+    console.log(`[Performance] Virtualizing ${candidates.length} tabs beyond position ${maxActiveTabs}`);
+    return candidates.map(c => c.tabId);
   }
   
   // Phase 6: Virtualize a tab (similar to unload but different tracking)
@@ -579,20 +561,13 @@ class PerformanceOptimizer {
   createPerformanceDashboard() {
     // Just add event listeners to existing HTML elements
     const cleanupBtn = document.getElementById('perf-cleanup-btn');
-    const reportBtn = document.getElementById('perf-report-btn');
     
     if (cleanupBtn) {
       cleanupBtn.addEventListener('click', () => {
         this.performMemoryCleanup();
+        // Update dashboard immediately and again after cleanup
+        this.updatePerformanceDashboard();
         setTimeout(() => this.updatePerformanceDashboard(), 100);
-      });
-    }
-    
-    if (reportBtn) {
-      reportBtn.addEventListener('click', () => {
-        const report = this.getPerformanceReport();
-        console.log('[Performance Report]', report);
-        alert('Performance report logged to console (F12)');
       });
     }
     
@@ -601,6 +576,8 @@ class PerformanceOptimizer {
     if (clearVirtualBtn) {
       clearVirtualBtn.addEventListener('click', () => {
         this.clearAllVirtualTabs();
+        // Update dashboard immediately and again after cleanup
+        this.updatePerformanceDashboard();
         setTimeout(() => this.updatePerformanceDashboard(), 100);
       });
     }
@@ -628,67 +605,112 @@ class PerformanceOptimizer {
   
   // Phase 6: Update performance dashboard
   updatePerformanceDashboard() {
+    // Update elements in the Performance Monitor section
+    const perfTabCount = document.getElementById('perf-tab-count');
+    const perfMemory = document.getElementById('perf-memory');
+    const perfStartup = document.getElementById('perf-startup');
+    const perfTabSwitch = document.getElementById('perf-tab-switch');
+    const perfStatus = document.getElementById('perf-status');
+    
+    // Also update the old element IDs for backward compatibility
     const memoryEl = document.getElementById('memory-usage');
     const tabsEl = document.getElementById('active-tabs-count');
     const switchEl = document.getElementById('tab-switch-avg');
     const pressureEl = document.getElementById('memory-pressure');
     
-    if (!memoryEl) return; // Dashboard not created yet
-    
     const memoryInfo = this.checkMemoryUsage();
     const report = this.getPerformanceReport();
     
-    // Fix memory tracking
-    if (memoryInfo && performance.memory) {
-      memoryEl.textContent = `${memoryInfo.used}MB / ${memoryInfo.total}MB`;
-      memoryEl.className = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
-      
-      pressureEl.textContent = `${(memoryInfo.pressure * 100).toFixed(1)}%`;
-      pressureEl.className = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
+    // Update tab count information
+    let actualTabCount = 0;
+    let virtualCount = this.virtualizedTabs.size;
+    
+    if (window.markdownEditor?.tabManager) {
+      actualTabCount = window.markdownEditor.tabManager.getTabsCount();
     } else {
-      memoryEl.textContent = 'Not Available';
-      memoryEl.className = 'perf-value';
-      pressureEl.textContent = 'N/A';
-      pressureEl.className = 'perf-value';
+      // Fallback: count DOM elements
+      const dropdownItems = document.querySelectorAll('.tab-dropdown-item');
+      actualTabCount = dropdownItems.length;
     }
     
-    if (tabsEl) {
-      let actualTabCount = 0;
-      let virtualCount = this.virtualizedTabs.size;
-      
-      if (window.markdownEditor?.tabManager) {
-        actualTabCount = window.markdownEditor.tabManager.getTabsCount();
-      } else {
-        // Fallback: count DOM elements
-        const dropdownItems = document.querySelectorAll('.tab-dropdown-item');
-        actualTabCount = dropdownItems.length;
-      }
-      
-      // Clean up virtualized tabs that no longer exist
-      if (actualTabCount === 0) {
-        this.virtualizedTabs.clear();
-        virtualCount = 0;
-      }
-      
-      // Force virtualization if we have many tabs
-      if (actualTabCount > 15 && virtualCount === 0) {
-        this.forceVirtualization(actualTabCount);
-        virtualCount = this.virtualizedTabs.size;
-      }
-      
-      tabsEl.textContent = `${actualTabCount} (${virtualCount} virtual)`;
+    // Clean up virtualized tabs that no longer exist
+    if (actualTabCount === 0) {
+      this.virtualizedTabs.clear();
+      virtualCount = 0;
     }
     
+    // Force virtualization if we have many tabs
+    if (actualTabCount > 15 && virtualCount === 0) {
+      this.forceVirtualization(actualTabCount);
+      virtualCount = this.virtualizedTabs.size;
+    }
+    
+    const tabCountText = `${actualTabCount} (${virtualCount} virtual)`;
+    if (perfTabCount) perfTabCount.textContent = tabCountText;
+    if (tabsEl) tabsEl.textContent = tabCountText;
+    
+    // Update memory information
+    let memoryText = 'Not Available';
+    let memoryClass = 'perf-value';
+    let pressureText = 'N/A';
+    let pressureClass = 'perf-value';
+    
+    if (memoryInfo && performance.memory) {
+      memoryText = `${memoryInfo.used}MB / ${memoryInfo.total}MB`;
+      memoryClass = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
+      
+      pressureText = `${(memoryInfo.pressure * 100).toFixed(1)}%`;
+      pressureClass = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
+    }
+    
+    if (perfMemory) perfMemory.textContent = memoryText;
+    if (memoryEl) {
+      memoryEl.textContent = memoryText;
+      memoryEl.className = memoryClass;
+    }
+    if (pressureEl) {
+      pressureEl.textContent = pressureText;
+      pressureEl.className = pressureClass;
+    }
+    
+    // Update startup time
+    const startupTime = window.markdownEditor?.startupTime;
+    const startupText = startupTime ? `${startupTime.toFixed(2)}ms` : 'N/A';
+    if (perfStartup) perfStartup.textContent = startupText;
+    
+    // Update tab switch performance
+    const recentSwitches = this.performanceMetrics.get('tabSwitches').slice(-10);
+    let switchText = 'No data';
+    let switchClass = 'perf-value';
+    
+    if (recentSwitches.length > 0) {
+      const avgTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
+      switchText = `${avgTime.toFixed(1)}ms`;
+      switchClass = `perf-value ${avgTime > 100 ? 'warning' : avgTime > 50 ? 'caution' : 'good'}`;
+    }
+    
+    if (perfTabSwitch) perfTabSwitch.textContent = switchText;
     if (switchEl) {
-      const recentSwitches = this.performanceMetrics.get('tabSwitches').slice(-10);
-      if (recentSwitches.length > 0) {
-        const avgTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
-        switchEl.textContent = `${avgTime.toFixed(1)}ms`;
-        switchEl.className = `perf-value ${avgTime > 100 ? 'warning' : avgTime > 50 ? 'caution' : 'good'}`;
-      } else {
-        switchEl.textContent = 'No data';
-        switchEl.className = 'perf-value';
-      }
+      switchEl.textContent = switchText;
+      switchEl.className = switchClass;
+    }
+    
+    // Update performance status
+    let status = 'Good';
+    let statusClass = 'status-good';
+    
+    if (actualTabCount > 50) {
+      status = 'Warning';
+      statusClass = 'status-warning';
+    }
+    if (actualTabCount > 100) {
+      status = 'Critical';
+      statusClass = 'status-critical';
+    }
+    
+    if (perfStatus) {
+      perfStatus.textContent = status;
+      perfStatus.className = statusClass;
     }
   }
 
@@ -780,7 +802,6 @@ class PerformanceOptimizer {
     // Remove from virtualized set when accessed
     if (this.virtualizedTabs.has(tabId)) {
       this.virtualizedTabs.delete(tabId);
-      console.log(`[Performance] Tab ${tabId} restored from virtual state due to access`);
     }
   }
   
@@ -827,16 +848,17 @@ class PerformanceOptimizer {
   
   // Phase 6: Restore unloaded tab
   restoreTab(tabId) {
+    if (this.virtualizedTabs.has(tabId)) {
+      this.virtualizedTabs.delete(tabId);
+    }
+    
     const tabData = this.inactiveTabsData.get(tabId);
     if (tabData) {
       const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
       if (tabElement) {
         tabElement.style.display = '';
         tabElement.scrollTop = tabData.scrollPosition;
-        this.virtualizedTabs.delete(tabId);
         this.inactiveTabsData.delete(tabId);
-        
-        console.log(`[PerformanceOptimizer] Tab ${tabId} restored from virtual state`);
       }
     }
   }

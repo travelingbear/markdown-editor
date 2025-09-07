@@ -1,6 +1,21 @@
 # Changelog
 
-## Version 3.1.0 (2025-01-XX)
+## Version 3.1.1 (2025-01-07)
+
+### Bug Fixes
+- **F11 Fullscreen**: Fixed F11 key not toggling fullscreen mode by adding missing Tauri permissions
+- **Tab Clicking Issue**: Fixed virtualized tabs (beyond first 10) not being clickable with 50+ tabs open
+- **Performance Optimization**: Removed debug logging and optimized tab switching for better performance
+- **Browser Compatibility**: Added fallback for `requestIdleCallback` API in environments that don't support it
+- **Performance Monitor**: Fixed Performance Monitor section to update when Clear Tabs or Clean Memory buttons are clicked
+
+### Technical Changes
+- Added `core:window:allow-set-fullscreen` and `core:window:allow-is-fullscreen` permissions
+- Fixed performance optimizer to only virtualize real tabs instead of creating fake tab IDs
+- Improved tab restoration logic for virtualized tabs
+- Optimized tab switching performance by removing unnecessary operations
+
+## Version 3.1.0 (2025-09-06)
 
 ### New Features
 - **Scroll Sync Button**: Added manual scroll synchronization between Code and Preview modes

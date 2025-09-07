@@ -1781,40 +1781,44 @@ class MarkdownEditor extends BaseComponent {
       }
     });
     
-    // Update performance info
-    const tabCount = this.tabManager.getTabsCount();
-    const virtualCount = this.performanceOptimizer ? this.performanceOptimizer.virtualizedTabs.size : 0;
-    const performanceInfo = {
-      'perf-tab-count': `${tabCount} (${virtualCount} virtual)`,
-      'perf-memory': this.getMemoryUsage(),
-      'perf-startup': this.startupTime ? `${this.startupTime.toFixed(2)}ms` : 'N/A',
-      'perf-tab-switch': this.lastModeSwitchTime ? `${this.lastModeSwitchTime.toFixed(2)}ms` : 'N/A'
-    };
-    
-    Object.entries(performanceInfo).forEach(([id, value]) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.textContent = value;
-      }
-    });
-    
-    // Update performance status
-    const perfStatus = document.getElementById('perf-status');
-    if (perfStatus) {
-      let status = 'Good';
-      let statusClass = 'status-good';
+    // Update performance dashboard through performance optimizer
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.updatePerformanceDashboard();
+    } else {
+      // Fallback: Update performance info manually if optimizer not available
+      const tabCount = this.tabManager.getTabsCount();
+      const performanceInfo = {
+        'perf-tab-count': `${tabCount} (0 virtual)`,
+        'perf-memory': this.getMemoryUsage(),
+        'perf-startup': this.startupTime ? `${this.startupTime.toFixed(2)}ms` : 'N/A',
+        'perf-tab-switch': this.lastModeSwitchTime ? `${this.lastModeSwitchTime.toFixed(2)}ms` : 'N/A'
+      };
       
-      if (tabCount > 50) {
-        status = 'Warning';
-        statusClass = 'status-warning';
-      }
-      if (tabCount > 100) {
-        status = 'Critical';
-        statusClass = 'status-critical';
-      }
+      Object.entries(performanceInfo).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = value;
+        }
+      });
       
-      perfStatus.textContent = status;
-      perfStatus.className = statusClass;
+      // Update performance status
+      const perfStatus = document.getElementById('perf-status');
+      if (perfStatus) {
+        let status = 'Good';
+        let statusClass = 'status-good';
+        
+        if (tabCount > 50) {
+          status = 'Warning';
+          statusClass = 'status-warning';
+        }
+        if (tabCount > 100) {
+          status = 'Critical';
+          statusClass = 'status-critical';
+        }
+        
+        perfStatus.textContent = status;
+        perfStatus.className = statusClass;
+      }
     }
     
     // Update system info
@@ -2470,6 +2474,15 @@ class MarkdownEditor extends BaseComponent {
     const currentTab = this.tabManager.getActiveTab();
     const currentTabId = currentTab?.id;
     
+    // Check if tab exists
+    const targetTab = this.tabManager.getTab(tabId);
+    if (!targetTab) return;
+    
+    // Phase 6: Handle virtualized tabs FIRST
+    if (this.performanceOptimizer && this.performanceOptimizer.virtualizedTabs.has(tabId)) {
+      this.performanceOptimizer.restoreTab(tabId);
+    }
+    
     // Save current tab's cursor position and editor state before switching
     if (currentTab && this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
       // Save Monaco Editor view state to preserve undo/redo history and scroll position
@@ -2488,14 +2501,10 @@ class MarkdownEditor extends BaseComponent {
     // Phase 6: Track tab access and performance
     if (this.performanceOptimizer) {
       this.performanceOptimizer.trackTabAccess(tabId);
-      
-      // Check if tab should be restored from virtual state
-      if (this.performanceOptimizer.virtualizedTabs.has(tabId)) {
-        this.performanceOptimizer.restoreTab(tabId);
-      }
     }
     
-    this.tabManager.switchToTab(tabId);
+    const success = this.tabManager.switchToTab(tabId);
+    if (!success) return;
     
     // Phase 6: Track tab switch performance
     const duration = performance.now() - startTime;
@@ -2576,7 +2585,8 @@ class MarkdownEditor extends BaseComponent {
     });
     
     // Defer heavy operations
-    requestIdleCallback(() => {
+    const deferCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 0));
+    deferCallback(() => {
       if (this.editorComponent.isMonacoLoaded) {
         const model = tab.getMonacoModel();
         this.editorComponent.setMonacoModel(model, tab.editorViewState);

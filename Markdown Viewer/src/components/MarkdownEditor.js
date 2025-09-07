@@ -578,6 +578,10 @@ class MarkdownEditor extends BaseComponent {
             this.openFindReplace();
           }
           break;
+        case 'r':
+          e.preventDefault();
+          this.performManualScrollSync();
+          break;
         case '/':
         case '?':
           if (e.shiftKey) {

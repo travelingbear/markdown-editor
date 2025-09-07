@@ -501,10 +501,8 @@ class MarkdownEditor extends BaseComponent {
     this.setupSingleInstanceHandler();
     
     // Drag and drop - immediate setup
-    console.log('[DEBUG] About to setup drag and drop');
     this.setupDragAndDrop();
     this.setupTauriFileDrop();
-    console.log('[DEBUG] Drag and drop setup completed');
     
     // Splitter and scroll sync
     this.setupSplitter();
@@ -2249,7 +2247,7 @@ class MarkdownEditor extends BaseComponent {
         // Focus the window
         this.focusWindow();
       });
-      console.log('[DEBUG] Single instance listener registered');
+
       
 
       
@@ -2272,7 +2270,7 @@ class MarkdownEditor extends BaseComponent {
   }
 
   setupDragAndDrop() {
-    console.log('[DEBUG] Setting up HTML5 drag and drop handlers');
+
     
     // Test if events are working at all
     document.addEventListener('click', () => {
@@ -2358,7 +2356,7 @@ class MarkdownEditor extends BaseComponent {
     document.body.addEventListener('dragleave', dragLeaveHandler);
     document.body.addEventListener('drop', dropHandler);
     
-    console.log('[DEBUG] All drag handlers attached');
+
   }
 
   async checkStartupFile() {
@@ -3520,7 +3518,7 @@ class MarkdownEditor extends BaseComponent {
       return;
     }
     
-    console.log('[DEBUG] Setting up Tauri file drop');
+
     const { listen } = window.__TAURI__.event;
     
     try {
@@ -3550,19 +3548,19 @@ class MarkdownEditor extends BaseComponent {
           this.documentComponent.handleContentChange(editor.getValue());
         }
       });
-      console.log('[DEBUG] Tauri file-drop listener registered');
+
       
       await listen('tauri://file-drop-hover', () => {
         console.log('[DEBUG] TAURI HOVER');
         document.body.classList.add('drag-over');
       });
-      console.log('[DEBUG] Tauri hover listener registered');
+
       
       await listen('tauri://file-drop-cancelled', () => {
         console.log('[DEBUG] TAURI CANCELLED');
         document.body.classList.remove('drag-over');
       });
-      console.log('[DEBUG] Tauri cancelled listener registered');
+
       
     } catch (error) {
       console.error('[DEBUG] Error setting up Tauri listeners:', error);

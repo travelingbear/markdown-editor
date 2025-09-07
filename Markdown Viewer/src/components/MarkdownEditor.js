@@ -2376,42 +2376,67 @@ class MarkdownEditor extends BaseComponent {
   }
   
   performManualScrollSync() {
-    const editor = this.editorComponent.monacoEditor;
     const previewPane = document.querySelector('.preview-pane');
+    const activeTab = this.tabManager.getActiveTab();
+    const editor = this.editorComponent.monacoEditor;
     
-    if (!editor || !previewPane) return;
+    if (!previewPane || !activeTab || !this.editorComponent.isMonacoLoaded || !editor) {
+      return;
+    }
     
-    if (this.currentMode === 'preview') {
-      // Sync from Code to Preview: use editor's stored scroll position
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab && activeTab.editorViewState) {
-        const editorScrollTop = activeTab.editorViewState.viewState?.firstPosition?.lineNumber || 1;
-        const totalLines = editor.getModel()?.getLineCount() || 1;
-        const scrollRatio = Math.max(0, (editorScrollTop - 1) / Math.max(1, totalLines - 1));
-        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
-        
-        if (previewScrollHeight > 0) {
-          previewPane.scrollTop = scrollRatio * previewScrollHeight;
-          // Update tab's preview scroll position
-          this.tabManager.updateTabScroll(activeTab.id, null, previewPane.scrollTop);
-        }
+    if (this.currentMode === 'code' && activeTab.scrollPosition?.preview !== undefined) {
+      // Sync from Preview to Code
+      let previewScroll = activeTab.scrollPosition.preview;
+      
+      if (previewPane.style.display !== 'none') {
+        previewScroll = previewPane.scrollTop;
       }
-    } else if (this.currentMode === 'code') {
-      // Sync from Preview to Code: use preview's stored scroll position
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab && activeTab.scrollPosition?.preview !== undefined) {
-        const previewScrollTop = activeTab.scrollPosition.preview;
-        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
-        const scrollRatio = previewScrollHeight > 0 ? previewScrollTop / previewScrollHeight : 0;
-        const editorScrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
-        
-        if (editorScrollHeight > 0) {
-          editor.setScrollTop(scrollRatio * editorScrollHeight);
-          // Save the new editor state
-          const viewState = editor.saveViewState();
-          this.tabManager.saveTabEditorState(activeTab.id, viewState);
-        }
+      
+      const wasHidden = previewPane.style.display === 'none';
+      if (wasHidden) {
+        previewPane.style.display = 'block';
+        this.previewComponent.emit('update-preview', { content: activeTab.content });
+        previewPane.offsetHeight;
       }
+      
+      const previewHeight = previewPane.clientHeight;
+      const previewScrollHeight = previewPane.scrollHeight;
+      const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
+      
+      let scrollRatio = previewMaxScroll > 0 ? previewScroll / previewMaxScroll : 0;
+      scrollRatio = Math.min(1, scrollRatio * 5);
+      
+      const editorScrollHeight = editor.getScrollHeight();
+      const editorHeight = editor.getLayoutInfo().height;
+      const editorMaxScroll = Math.max(0, editorScrollHeight - editorHeight);
+      const targetScroll = scrollRatio * editorMaxScroll;
+      
+      editor.setScrollTop(targetScroll);
+      
+      if (wasHidden) {
+        previewPane.style.display = 'none';
+      }
+      
+    } else if (this.currentMode === 'preview') {
+      // Sync from Code to Preview
+      const editorScrollTop = editor.getScrollTop();
+      const editorHeight = editor.getLayoutInfo().height;
+      const editorScrollHeight = editor.getScrollHeight();
+      const editorMaxScroll = Math.max(0, editorScrollHeight - editorHeight);
+      
+      let scrollRatio = 0;
+      if (editorMaxScroll > 0) {
+        scrollRatio = editorScrollTop / editorMaxScroll;
+      }
+      
+      const amplifiedRatio = Math.min(1, scrollRatio * 1.3);
+      
+      const previewHeight = previewPane.clientHeight;
+      const previewScrollHeight = previewPane.scrollHeight;
+      const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
+      const targetScroll = amplifiedRatio * previewMaxScroll;
+      
+      previewPane.scrollTop = Math.max(0, Math.min(targetScroll, previewMaxScroll));
     }
   }
   
@@ -2427,10 +2452,10 @@ class MarkdownEditor extends BaseComponent {
     scrollSyncBtn.style.display = showButton ? 'inline-flex' : 'none';
     
     if (showButton) {
-      if (this.currentMode === 'preview') {
-        scrollSyncBtn.setAttribute('title', 'Sync from Code position');
-      } else if (this.currentMode === 'code') {
-        scrollSyncBtn.setAttribute('title', 'Sync from Preview position');
+      if (this.currentMode === 'code') {
+        scrollSyncBtn.setAttribute('title', 'Sync from Preview');
+      } else if (this.currentMode === 'preview') {
+        scrollSyncBtn.setAttribute('title', 'Sync from Code');
       }
     }
   }
@@ -2471,6 +2496,7 @@ class MarkdownEditor extends BaseComponent {
     // Phase 6: Track tab switch performance
     const duration = performance.now() - startTime;
     if (this.performanceOptimizer) {
+      const allTabs = this.tabManager.getAllTabs();
       this.performanceOptimizer.trackTabSwitch(duration, currentTabId, tabId);
       this.performanceOptimizer.benchmarkTabOperation('Tab Switch', startTime, allTabs.length);
     }

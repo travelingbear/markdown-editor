@@ -2458,16 +2458,6 @@ class MarkdownEditor extends BaseComponent {
       }
     }
     
-    // Check if tab is in current dropdown (first 5)
-    const allTabs = this.tabManager.getAllTabs();
-    const dropdownTabs = allTabs.slice(0, 5);
-    const isInDropdown = dropdownTabs.some(tab => tab.id === tabId);
-    
-    // If not in dropdown, move to front before switching
-    if (!isInDropdown) {
-      this.tabManager.moveTabToFront(tabId);
-    }
-    
     this.tabManager.switchToTab(tabId);
     
     // Phase 6: Track tab switch performance
@@ -3269,9 +3259,17 @@ class MarkdownEditor extends BaseComponent {
     const tabs = this.tabManager.getAllTabs();
     const activeTab = this.tabManager.getActiveTab();
     
-    tabs.forEach(tab => {
+    tabs.forEach((tab, index) => {
       const pinnedTab = document.createElement('div');
       pinnedTab.className = `pinned-tab ${tab.id === activeTab?.id ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
+      
+      // Add number for first 5 tabs
+      if (index < 5) {
+        const tabNumber = document.createElement('div');
+        tabNumber.className = 'pinned-tab-number';
+        tabNumber.textContent = (index + 1).toString();
+        pinnedTab.appendChild(tabNumber);
+      }
       
       const tabName = document.createElement('div');
       tabName.className = 'pinned-tab-name';

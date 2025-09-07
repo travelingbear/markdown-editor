@@ -225,17 +225,13 @@ class TabManager extends BaseComponent {
       const parsedData = JSON.parse(data);
       this.tabCollection.fromJSON(parsedData);
 
+      // Clear active tab to prevent auto-loading
+      this.tabCollection.activeTabId = null;
+
       // Emit event for each restored tab
       this.tabCollection.getAllTabs().forEach(tab => {
         this.emit('tab-restored', { tab });
       });
-
-      if (this.tabCollection.hasTabs()) {
-        const activeTab = this.tabCollection.getActiveTab();
-        if (activeTab) {
-          this.emit('tab-activated', { tab: activeTab });
-        }
-      }
     } catch (error) {
       console.warn('[TabManager] Failed to load persisted tabs:', error);
       localStorage.removeItem(this.persistenceKey);

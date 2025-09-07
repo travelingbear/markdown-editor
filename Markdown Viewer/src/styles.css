@@ -2259,61 +2259,7 @@ body.drag-over::before {
   animation: dragPulse 1s ease-in-out infinite alternate;
 }
 
-/* Context-specific drag messages */
-body.drag-over .welcome-page[style*="flex"]::after {
-  content: "📄 Drop .md files to open";
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(9, 105, 218, 0.95);
-  color: white;
-  padding: 24px 48px;
-  border-radius: 16px;
-  font-size: 28px;
-  font-weight: 700;
-  z-index: 10001;
-  pointer-events: none;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-}
 
-body.drag-over .main-content.code-mode::after {
-  content: "📁 Drop files to insert absolute paths";
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(9, 105, 218, 0.95);
-  color: white;
-  padding: 24px 48px;
-  border-radius: 16px;
-  font-size: 28px;
-  font-weight: 700;
-  z-index: 10001;
-  pointer-events: none;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-}
-
-body.drag-over .main-content.preview-mode::after,
-body.drag-over .main-content.split-mode::after {
-  content: "⚠️ Switch to Code mode to insert file paths";
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(248, 81, 73, 0.95);
-  color: white;
-  padding: 24px 48px;
-  border-radius: 16px;
-  font-size: 24px;
-  font-weight: 700;
-  z-index: 10001;
-  pointer-events: none;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-}
 
 
 

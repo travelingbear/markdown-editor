@@ -342,6 +342,11 @@ class EditorComponent extends BaseComponent {
    * Set content
    */
   setContent(content) {
+    // Prevent unnecessary setValue calls that reset cursor position
+    if (this.currentContent === content) {
+      return;
+    }
+    
     this.currentContent = content;
     
     if (this.isMonacoLoaded && this.monacoEditor) {

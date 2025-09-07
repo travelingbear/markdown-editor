@@ -293,6 +293,7 @@ class MarkdownEditor extends BaseComponent {
         this.documentComponent.content = data.content;
       }
       this.documentComponent.emit('content-changed', data);
+      
       this.previewComponent.emit('update-preview', data);
       
       // Immediately update toolbar state for save button color
@@ -511,7 +512,11 @@ class MarkdownEditor extends BaseComponent {
   }
 
   handleKeyboardShortcuts(e) {
-    if (e.ctrlKey || e.metaKey) {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const useCtrlForModes = e.ctrlKey || (!isMac && e.metaKey);
+    const useCtrlForOther = e.ctrlKey || e.metaKey;
+    
+    if (useCtrlForOther) {
       switch (e.key) {
         case 'n':
           e.preventDefault();
@@ -533,6 +538,12 @@ class MarkdownEditor extends BaseComponent {
           e.preventDefault();
           this.closeFile();
           break;
+      }
+    }
+    
+    // Mode switching: always use Ctrl+1-3 (even on macOS)
+    if (useCtrlForModes) {
+      switch (e.key) {
         case '1':
           if (!e.shiftKey) {
             e.preventDefault();
@@ -551,6 +562,11 @@ class MarkdownEditor extends BaseComponent {
             this.setMode('split');
           }
           break;
+      }
+    }
+    
+    if (useCtrlForOther) {
+      switch (e.key) {
         case 't':
         case '/':
           e.preventDefault();
@@ -2960,8 +2976,12 @@ class MarkdownEditor extends BaseComponent {
   
   setupTabKeyboardShortcuts() {
     // Alt+1-5 for switching to numbered tabs in dropdown (most recent first)
+    // On macOS, also support Cmd+1-5 as an alternative
     document.addEventListener('keydown', (e) => {
-      if (e.altKey && e.key >= '1' && e.key <= '5') {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const useAltKey = e.altKey || (isMac && e.metaKey);
+      
+      if (useAltKey && e.key >= '1' && e.key <= '5') {
         const tabIndex = parseInt(e.key) - 1;
         const tabs = this.tabManager.getAllTabs();
         const visibleTabs = tabs.slice(0, 5); // First 5 tabs (most recent first)
@@ -3354,7 +3374,25 @@ class MarkdownEditor extends BaseComponent {
     });
   }
   
+  // Utility function for debouncing
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
   onDestroy() {
+    // Clean up debounced functions
+    if (this.debouncedPreviewUpdate) {
+      this.debouncedPreviewUpdate = null;
+    }
+    
     // Phase 6: Clean up performance optimizer
     if (this.performanceOptimizer) {
       this.performanceOptimizer.destroy();

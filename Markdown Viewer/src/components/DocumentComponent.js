@@ -421,16 +421,16 @@ class DocumentComponent extends BaseComponent {
   }
 
   setupFileWatcher() {
-    // Poll for file changes every 2 seconds
-    this.fileWatchInterval = setInterval(() => {
-      if (this.currentFile && !this.isDirty) {
-        this.checkForExternalChanges();
-      }
-    }, 2000);
+    // File watcher disabled to prevent cursor jumping issues
+    // this.fileWatchInterval = setInterval(() => {
+    //   if (this.currentFile && !this.isDirty) {
+    //     this.checkForExternalChanges();
+    //   }
+    // }, 2000);
   }
   
   async checkForExternalChanges() {
-    if (!this.currentFile) return;
+    if (!this.currentFile || this.isDirty) return;
     
     try {
       const newContent = await this.readFile(this.currentFile);

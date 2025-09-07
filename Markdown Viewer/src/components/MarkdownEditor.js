@@ -500,8 +500,11 @@ class MarkdownEditor extends BaseComponent {
     // Single instance handler
     this.setupSingleInstanceHandler();
     
-    // Drag and drop
+    // Drag and drop - immediate setup
+    console.log('[DEBUG] About to setup drag and drop');
     this.setupDragAndDrop();
+    this.setupTauriFileDrop();
+    console.log('[DEBUG] Drag and drop setup completed');
     
     // Splitter and scroll sync
     this.setupSplitter();
@@ -2246,8 +2249,10 @@ class MarkdownEditor extends BaseComponent {
         // Focus the window
         this.focusWindow();
       });
+      console.log('[DEBUG] Single instance listener registered');
       
-// Single instance handler set up
+
+      
     } catch (error) {
       console.error('[MarkdownEditor] Error setting up single instance handler:', error);
     }
@@ -2267,64 +2272,93 @@ class MarkdownEditor extends BaseComponent {
   }
 
   setupDragAndDrop() {
-    let dragCounter = 0;
+    console.log('[DEBUG] Setting up HTML5 drag and drop handlers');
     
-    document.addEventListener('dragenter', (e) => {
+    // Test if events are working at all
+    document.addEventListener('click', () => {
+      console.log('[DEBUG] Click event works - DOM is ready');
+    }, { once: true });
+    
+    const dragEnterHandler = (e) => {
+      console.log('[DEBUG] DRAGENTER triggered on:', e.target.tagName);
       e.preventDefault();
-      dragCounter++;
+      e.stopPropagation();
       document.body.classList.add('drag-over');
-    });
+    };
     
-    document.addEventListener('dragleave', (e) => {
+    const dragOverHandler = (e) => {
+      console.log('[DEBUG] DRAGOVER triggered');
       e.preventDefault();
-      dragCounter--;
-      if (dragCounter === 0) {
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+    };
+    
+    const dragLeaveHandler = (e) => {
+      console.log('[DEBUG] DRAGLEAVE triggered');
+      e.preventDefault();
+      e.stopPropagation();
+      // Only remove if leaving the window entirely
+      if (!e.relatedTarget || !document.contains(e.relatedTarget)) {
         document.body.classList.remove('drag-over');
       }
-    });
+    };
     
-    document.addEventListener('dragover', (e) => {
+    const dropHandler = async (e) => {
+      console.log('[DEBUG] DROP triggered with files:', e.dataTransfer?.files?.length || 0);
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-    });
-    
-    document.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      dragCounter = 0;
+      e.stopPropagation();
       document.body.classList.remove('drag-over');
       
       const files = Array.from(e.dataTransfer?.files || []);
-      if (files.length === 0) return;
-      
-      try {
-        const documentState = this.documentComponent.getDocumentState();
-        
-        // Welcome screen: open .md files
-        if (!documentState.hasDocument) {
-          const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f.name));
-          if (mdFile) {
-            const content = await mdFile.text();
-            this.documentComponent.setContent(content);
-            this.documentComponent.emit('document-new', { content });
-          }
-          return;
-        }
-        
-        // Code mode: insert file paths
-        if (this.currentMode === 'code') {
-          const filePaths = files.map(f => f.name);
-          const insertText = filePaths.join('\n');
-          
-          // Insert at current cursor position
-          const currentContent = this.editorComponent.getContent();
-          const newContent = currentContent + '\n' + insertText;
-          this.editorComponent.setContent(newContent);
-          this.documentComponent.handleContentChange(newContent);
-        }
-      } catch (error) {
-        console.error('[MarkdownEditor] Error processing drop:', error);
+      if (files.length === 0) {
+        console.log('[DEBUG] No files in drop event');
+        return;
       }
-    });
+      
+      console.log('[DEBUG] Processing files:', files.map(f => f.name));
+      
+      // Welcome screen: open .md files
+      const welcomePage = document.getElementById('welcome-page');
+      const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
+      
+      if (isWelcomeVisible || !this.tabManager.hasTabs()) {
+        const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f.name));
+        if (mdFile) {
+          const content = await mdFile.text();
+          this.tabManager.createNewTab(content);
+          this.setMode(this.defaultMode);
+        }
+        return;
+      }
+      
+      // Code mode: insert file paths
+      if (this.currentMode === 'code' && this.editorComponent.isMonacoLoaded) {
+        const editor = this.editorComponent.monacoEditor;
+        const position = editor.getPosition();
+        const filePaths = files.map(f => f.name);
+        const insertText = filePaths.join('\n');
+        
+        editor.executeEdits('drag-drop', [{
+          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+          text: insertText
+        }]);
+        
+        this.documentComponent.handleContentChange(editor.getValue());
+      }
+    };
+    
+    // Add listeners to document and body
+    document.addEventListener('dragenter', dragEnterHandler, true);
+    document.addEventListener('dragover', dragOverHandler, true);
+    document.addEventListener('dragleave', dragLeaveHandler, true);
+    document.addEventListener('drop', dropHandler, true);
+    
+    document.body.addEventListener('dragenter', dragEnterHandler);
+    document.body.addEventListener('dragover', dragOverHandler);
+    document.body.addEventListener('dragleave', dragLeaveHandler);
+    document.body.addEventListener('drop', dropHandler);
+    
+    console.log('[DEBUG] All drag handlers attached');
   }
 
   async checkStartupFile() {
@@ -2343,6 +2377,8 @@ class MarkdownEditor extends BaseComponent {
           return true;
         }
       }
+      
+
     } catch (error) {
       console.error('[MarkdownEditor] Error checking startup file:', error);
     }
@@ -3478,6 +3514,61 @@ class MarkdownEditor extends BaseComponent {
     });
   }
   
+  async setupTauriFileDrop() {
+    if (!window.__TAURI__?.event) {
+      console.log('[DEBUG] Tauri not available');
+      return;
+    }
+    
+    console.log('[DEBUG] Setting up Tauri file drop');
+    const { listen } = window.__TAURI__.event;
+    
+    try {
+      await listen('tauri://file-drop', async (event) => {
+        console.log('[DEBUG] TAURI FILE DROP:', event.payload);
+        const files = event.payload;
+        if (!Array.isArray(files) || files.length === 0) return;
+        
+        const welcomePage = document.getElementById('welcome-page');
+        const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
+        
+        if (isWelcomeVisible || !this.tabManager.hasTabs()) {
+          const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f));
+          if (mdFile) {
+            await this.documentComponent.openFile(mdFile);
+          }
+        } else if (this.currentMode === 'code' && this.editorComponent.isMonacoLoaded) {
+          const editor = this.editorComponent.monacoEditor;
+          const position = editor.getPosition();
+          const insertText = files.join('\n');
+          
+          editor.executeEdits('tauri-file-drop', [{
+            range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+            text: insertText
+          }]);
+          
+          this.documentComponent.handleContentChange(editor.getValue());
+        }
+      });
+      console.log('[DEBUG] Tauri file-drop listener registered');
+      
+      await listen('tauri://file-drop-hover', () => {
+        console.log('[DEBUG] TAURI HOVER');
+        document.body.classList.add('drag-over');
+      });
+      console.log('[DEBUG] Tauri hover listener registered');
+      
+      await listen('tauri://file-drop-cancelled', () => {
+        console.log('[DEBUG] TAURI CANCELLED');
+        document.body.classList.remove('drag-over');
+      });
+      console.log('[DEBUG] Tauri cancelled listener registered');
+      
+    } catch (error) {
+      console.error('[DEBUG] Error setting up Tauri listeners:', error);
+    }
+  }
+
   // Utility function for debouncing
   debounce(func, wait) {
     let timeout;

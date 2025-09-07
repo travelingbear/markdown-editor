@@ -73,7 +73,7 @@ class PerformanceOptimizer {
     // Monitor memory pressure and tab virtualization
     this.memoryPressureMonitor = setInterval(() => {
       this.checkMemoryPressure();
-    }, 5000); // Check every 5 seconds for faster response
+    }, 30000); // Check every 30 seconds
     
 
   }
@@ -271,7 +271,7 @@ class PerformanceOptimizer {
   startMemoryMonitoring() {
     this.memoryMonitor = setInterval(() => {
       this.checkMemoryUsage();
-    }, 30000); // Check every 30 seconds
+    }, 120000); // Check every 2 minutes
   }
   
   stopMemoryMonitoring() {
@@ -549,10 +549,10 @@ class PerformanceOptimizer {
     // Create performance dashboard in settings modal
     this.createPerformanceDashboard();
     
-    // Update dashboard every 5 seconds
+    // Update dashboard every 30 seconds
     this.dashboardUpdateInterval = setInterval(() => {
       this.updatePerformanceDashboard();
-    }, 5000);
+    }, 30000);
     
 
   }
@@ -731,7 +731,7 @@ class PerformanceOptimizer {
     clearInterval(this.memoryMonitor);
     this.memoryMonitor = setInterval(() => {
       this.checkMemoryUsage();
-    }, 60000); // Check every minute instead of 30 seconds
+    }, 300000); // Check every 5 minutes
     
     // More aggressive cleanup
     this.setupAggressiveCleanup();
@@ -744,7 +744,7 @@ class PerformanceOptimizer {
     // Clean up more frequently in low-power mode
     setInterval(() => {
       this.performMemoryCleanup();
-    }, 120000); // Every 2 minutes
+    }, 300000); // Every 5 minutes
   }
 
   // Detect if running on older hardware

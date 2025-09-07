@@ -49,37 +49,11 @@ class PreviewComponent extends BaseComponent {
   }
 
   async initializeAdvancedFeatures() {
-    try {
-      // Load Mermaid
-      try {
-        const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs');
-        this.mermaid = mermaidModule.default;
-        this.mermaid.initialize({
-          startOnLoad: false,
-          theme: this.theme === 'dark' ? 'dark' : 'default',
-          securityLevel: 'loose',
-          fontFamily: 'inherit',
-          pie: { useMaxWidth: true }
-        });
-        this.mermaidInitialized = true;
-      } catch (error) {
-        console.warn('[Preview] Failed to load Mermaid:', error);
-        this.mermaidInitialized = false;
-      }
-      
-      // Load KaTeX
-      try {
-        const katexModule = await import('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.mjs');
-        this.katex = katexModule.default;
-        this.katexInitialized = true;
-      } catch (error) {
-        console.warn('[Preview] Failed to load KaTeX:', error);
-        this.katexInitialized = false;
-      }
-      
-    } catch (error) {
-      console.error('[Preview] Error initializing advanced features:', error);
-    }
+    // Libraries will be loaded lazily when needed
+    this.mermaidInitialized = false;
+    this.katexInitialized = false;
+    this.mermaid = null;
+    this.katex = null;
   }
 
   setupEventListeners() {
@@ -131,8 +105,8 @@ class PreviewComponent extends BaseComponent {
       let html = marked.parse(markdown);
       
       // Process advanced features
-      html = this.processMathInHtml(html);
-      html = this.processMermaidInHtml(html);
+      html = await this.processMathInHtml(html);
+      html = await this.processMermaidInHtml(html);
       html = this.processTaskListsInHtml(html);
       html = this.processFootnotesInHtml(html);
       html = this.processSupSubScript(html);
@@ -142,15 +116,9 @@ class PreviewComponent extends BaseComponent {
       // Set the HTML content
       this.preview.innerHTML = html;
       
-      // Remove disabled attribute from checkboxes and ensure they're properly set up
+      // Remove disabled attribute from checkboxes
       this.preview.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.removeAttribute('disabled');
-        // Ensure checkbox has proper attributes for accessibility
-        if (!checkbox.id && checkbox.nextElementSibling?.tagName === 'LABEL') {
-          const id = 'task-' + Math.random().toString(36).substring(2, 11);
-          checkbox.id = id;
-          checkbox.nextElementSibling.setAttribute('for', id);
-        }
       });
       
       // Render advanced features
@@ -214,16 +182,60 @@ class PreviewComponent extends BaseComponent {
     }
   }
 
-  processMathInHtml(html) {
+  async loadMermaid() {
+    if (this.mermaidInitialized) return;
+    
+    try {
+      const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs');
+      this.mermaid = mermaidModule.default;
+      this.mermaid.initialize({
+        startOnLoad: false,
+        theme: this.theme === 'dark' ? 'dark' : 'default',
+        securityLevel: 'loose',
+        fontFamily: 'inherit',
+        pie: { useMaxWidth: true }
+      });
+      this.mermaidInitialized = true;
+    } catch (error) {
+      console.warn('[Preview] Failed to load Mermaid:', error);
+      this.mermaidInitialized = false;
+    }
+  }
+
+  async loadKaTeX() {
+    if (this.katexInitialized) return;
+    
+    try {
+      const katexModule = await import('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.mjs');
+      this.katex = katexModule.default;
+      this.katexInitialized = true;
+    } catch (error) {
+      console.warn('[Preview] Failed to load KaTeX:', error);
+      this.katexInitialized = false;
+    }
+  }
+
+  async processMathInHtml(html) {
+    // Check if math expressions exist before loading KaTeX
+    const hasMath = html.includes('$$') || /\$[^$]+\$/.test(html);
+    if (!hasMath) return html;
+    
+    // Lazy load KaTeX when needed
+    if (!this.katexInitialized) {
+      await this.loadKaTeX();
+    }
+    
     if (this.katexInitialized && this.katex) {
       // Process display math: $$...$$
-      html = html.replace(/\$\$([^$]+)\$\$/g, (match, math, offset, string) => {
+      html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match, math, offset, string) => {
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match;
         }
         
         try {
-          const rendered = this.katex.renderToString(math.trim(), {
+          // Decode HTML entities and tags that markdown parser added
+          const decodedMath = math.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/<br\s*\/?>/gi, '\n');
+          const rendered = this.katex.renderToString(decodedMath.trim(), {
             displayMode: true,
             throwOnError: false
           });
@@ -234,13 +246,15 @@ class PreviewComponent extends BaseComponent {
       });
       
       // Process inline math: $...$
-      html = html.replace(/\$([^$\n]+)\$/g, (match, math, offset, string) => {
+      html = html.replace(/\$([^$\n]+?)\$/g, (match, math, offset, string) => {
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match;
         }
         
         try {
-          const rendered = this.katex.renderToString(math.trim(), {
+          // Decode HTML entities and tags that markdown parser added
+          const decodedMath = math.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/<br\s*\/?>/gi, '\n');
+          const rendered = this.katex.renderToString(decodedMath.trim(), {
             displayMode: false,
             throwOnError: false
           });
@@ -251,14 +265,14 @@ class PreviewComponent extends BaseComponent {
       });
     } else {
       // Fallback styling
-      html = html.replace(/\$\$([^$]+)\$\$/g, (match, math, offset, string) => {
+      html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match, math, offset, string) => {
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match;
         }
         return `<div class="math-display math-fallback"><code>${math.trim()}</code></div>`;
       });
       
-      html = html.replace(/\$([^$\n]+)\$/g, (match, math, offset, string) => {
+      html = html.replace(/\$([^$\n]+?)\$/g, (match, math, offset, string) => {
         if (this.isInsideCodeBlock(string, offset, match.length)) {
           return match;
         }
@@ -269,7 +283,16 @@ class PreviewComponent extends BaseComponent {
     return html;
   }
 
-  processMermaidInHtml(html) {
+  async processMermaidInHtml(html) {
+    // Check if mermaid diagrams exist before loading
+    const hasMermaid = html.includes('language-mermaid');
+    if (!hasMermaid) return html;
+    
+    // Lazy load Mermaid when needed
+    if (!this.mermaidInitialized) {
+      await this.loadMermaid();
+    }
+    
     if (this.mermaidInitialized && this.mermaid) {
       html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
         const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
@@ -323,12 +346,12 @@ class PreviewComponent extends BaseComponent {
             const nestedIsChecked = nestedChecked === 'x';
             const nestedId = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
             taskCount++;
-            return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}><label for="${nestedId}">${nestedLiContent}</label></div>`;
+            return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}> <label for="${nestedId}">${nestedLiContent}</label></div>`;
           });
           return `<div class="task-list-nested"><${nestedTag}${nestedAttrs}>${processedNestedContent}</${nestedTag}></div>`;
         });
         
-        return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}><label for="${id}">${processedLiContent}</label></div>`;
+        return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${processedLiContent}</label></div>`;
       });
       
       // Only wrap if we actually processed task items
@@ -357,7 +380,7 @@ class PreviewComponent extends BaseComponent {
       const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
       taskCount++;
       
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}><label for="${id}">${content}</label></div>`;
+      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
     });
     
     // Handle standalone checkbox patterns
@@ -371,7 +394,7 @@ class PreviewComponent extends BaseComponent {
       const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
       taskCount++;
       
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}><label for="${id}">${cleanContent}</label></div>`;
+      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
     });
     
     return html;
@@ -503,27 +526,7 @@ class PreviewComponent extends BaseComponent {
     
     checkboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', (e) => {
-        // Get the label element which contains the actual task text
-        const label = e.target.parentElement.querySelector('label');
-        let taskText = '';
-        
-        if (label) {
-          // Get text content from label, preserving inner HTML structure
-          taskText = label.textContent || label.innerText || '';
-        } else {
-          // Fallback: get text from parent element, excluding the checkbox
-          const parent = e.target.parentElement;
-          const clone = parent.cloneNode(true);
-          // Remove the checkbox from the clone
-          const checkboxClone = clone.querySelector('input[type="checkbox"]');
-          if (checkboxClone) {
-            checkboxClone.remove();
-          }
-          taskText = clone.textContent || clone.innerText || '';
-        }
-        
-        // Clean up the task text
-        taskText = taskText.trim();
+        const taskText = e.target.parentElement.textContent.trim();
         
         this.emit('task-toggled', {
           taskText: taskText,

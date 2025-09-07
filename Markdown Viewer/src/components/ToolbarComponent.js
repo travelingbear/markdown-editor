@@ -347,6 +347,7 @@ class ToolbarComponent extends BaseComponent {
     this.isDirty = state.isDirty;
     
     this.updateModeButtons();
+    this.updateZoomControlsVisibility();
     
     // Update save button state
     if (this.saveBtn) {

@@ -28,6 +28,7 @@ class MarkdownEditor extends BaseComponent {
     this.mdToolbarSize = localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium';
     this.statusBarSize = localStorage.getItem('markdownViewer_statusBarSize') || 'medium';
     this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
+    this.pinnedTabsEnabled = localStorage.getItem('markdownViewer_pinnedTabs') === 'true';
     
     // Enhanced tab features state
     this.contextMenuTabId = null;
@@ -151,6 +152,11 @@ class MarkdownEditor extends BaseComponent {
       
       this.updateTabUI();
       this.switchToTab(data.tab.id);
+      
+      // Switch to default mode when first document is opened
+      if (this.currentMode === 'preview' && this.tabManager.getTabsCount() === 1) {
+        this.setMode(this.defaultMode);
+      }
     });
     
     this.tabManager.on('tab-removed', (data) => {
@@ -210,6 +216,11 @@ class MarkdownEditor extends BaseComponent {
       this.tabManager.openFileInTab(data.filePath, data.content);
       this.lastFileOpenTime = performance.now();
       
+      // Switch to default mode when first document is opened
+      if (this.currentMode === 'preview' && currentTabCount === 0) {
+        this.setMode(this.defaultMode);
+      }
+      
       // Phase 6: Track file open performance for all file opens (including from Explorer)
       if (this.performanceOptimizer && this.tabManager.getTabsCount() > currentTabCount) {
         this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
@@ -219,7 +230,7 @@ class MarkdownEditor extends BaseComponent {
     this.documentComponent.on('document-new', (data) => {
       // Create new tab
       this.tabManager.createNewTab(data.content);
-      this.setMode('code'); // New files start in code mode
+      this.setMode(this.defaultMode); // New files start in default mode
     });
     
     this.documentComponent.on('document-closed', () => {
@@ -413,10 +424,13 @@ class MarkdownEditor extends BaseComponent {
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
     document.body.setAttribute('data-status-bar-size', this.statusBarSize);
     
-    // Show welcome page initially
+    // Apply pinned tabs visibility
+    this.applyPinnedTabsVisibility();
+    
+    // Show welcome page initially - always show in preview pane regardless of default mode
     this.previewComponent.showWelcome();
     
-    // Set initial mode and ensure proper pane visibility
+    // Set initial mode to preview for welcome screen, will switch to default mode when document opens
     this.currentMode = 'preview';
     const editorPane = document.querySelector('.editor-pane');
     const previewPane = document.querySelector('.preview-pane');
@@ -428,7 +442,7 @@ class MarkdownEditor extends BaseComponent {
       splitter.style.display = 'none';
     }
     
-    // Update main content and body classes
+    // Update main content and body classes for welcome screen
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
       mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
@@ -449,7 +463,7 @@ class MarkdownEditor extends BaseComponent {
       isDirty: false 
     });
     
-    // Notify toolbar of current mode
+    // Notify toolbar of current mode (preview for welcome screen)
     this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
     // Update theme button
@@ -477,6 +491,9 @@ class MarkdownEditor extends BaseComponent {
     // Splitter and scroll sync
     this.setupSplitter();
     this.setupScrollSync();
+    
+    // Scroll sync button
+    this.setupScrollSyncButton();
     
     // Modal event handlers
     this.setupModalEventHandlers();
@@ -632,8 +649,8 @@ class MarkdownEditor extends BaseComponent {
     // Always create new tab for new files
     this.tabManager.createNewTab();
     
-    // Switch to code mode for new files
-    this.setMode('code');
+    // Switch to default mode for new files
+    this.setMode(this.defaultMode);
     
     // Phase 6: Track tab creation performance
     if (this.performanceOptimizer) {
@@ -695,11 +712,17 @@ class MarkdownEditor extends BaseComponent {
   async closeFile() {
     const activeTab = this.tabManager.getActiveTab();
     if (activeTab) {
-      // Add close animation
+      // Check for unsaved changes first, before animation
+      if (activeTab.isDirty) {
+        const shouldClose = await this.tabManager.confirmCloseUnsaved(activeTab);
+        if (!shouldClose) return;
+      }
+      
+      // Add close animation only after confirmation
       const mainContent = document.querySelector('.main-content');
       if (mainContent) {
-        mainContent.style.animation = 'fadeOut 0.3s ease-out';
-        await new Promise(resolve => setTimeout(resolve, 300));
+        mainContent.style.animation = 'fadeOut 0.2s ease-out';
+        await new Promise(resolve => setTimeout(resolve, 200));
         mainContent.style.animation = '';
       }
       
@@ -708,7 +731,8 @@ class MarkdownEditor extends BaseComponent {
         this.performanceOptimizer.cleanupTabTracking(activeTab.id);
       }
       
-      await this.tabManager.closeTab(activeTab.id);
+      // Remove tab without additional confirmation since we already confirmed
+      this.tabManager.tabCollection.removeTab(activeTab.id);
     }
   }
 
@@ -795,6 +819,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Notify toolbar component
     this.toolbarComponent.emit('mode-changed', { mode });
+    
+    // Update scroll sync button visibility and tooltip
+    this.updateScrollSyncButton();
     
     // Layout update is now handled in the display logic above
     
@@ -1675,6 +1702,8 @@ class MarkdownEditor extends BaseComponent {
       'layout-off-btn': !this.centeredLayoutEnabled,
       'toolbar-on-btn': this.isToolbarEnabled,
       'toolbar-off-btn': !this.isToolbarEnabled,
+      'pinned-tabs-on-btn': this.pinnedTabsEnabled,
+      'pinned-tabs-off-btn': !this.pinnedTabsEnabled,
       'splash-on-btn': this.isSplashEnabled,
       'splash-off-btn': !this.isSplashEnabled
     };
@@ -1944,6 +1973,19 @@ class MarkdownEditor extends BaseComponent {
           this.isToolbarEnabled = id === 'toolbar-on-btn';
           localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
           this.applyMarkdownToolbarVisibility();
+          this.updateSettingsDisplay();
+        });
+      }
+    });
+    
+    // Pinned tabs controls
+    ['pinned-tabs-on-btn', 'pinned-tabs-off-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          this.pinnedTabsEnabled = id === 'pinned-tabs-on-btn';
+          localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
+          this.applyPinnedTabsVisibility();
           this.updateSettingsDisplay();
         });
       }
@@ -2315,6 +2357,75 @@ class MarkdownEditor extends BaseComponent {
       previewPane.addEventListener('scroll', syncPreviewToEditor);
     }
   }
+  
+  setupScrollSyncButton() {
+    const scrollSyncBtn = document.getElementById('scroll-sync-btn');
+    if (!scrollSyncBtn) return;
+    
+    scrollSyncBtn.addEventListener('click', () => {
+      this.performManualScrollSync();
+    });
+  }
+  
+  performManualScrollSync() {
+    const editor = this.editorComponent.monacoEditor;
+    const previewPane = document.querySelector('.preview-pane');
+    
+    if (!editor || !previewPane) return;
+    
+    if (this.currentMode === 'preview') {
+      // Sync from Code to Preview: use editor's stored scroll position
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab && activeTab.editorViewState) {
+        const editorScrollTop = activeTab.editorViewState.viewState?.firstPosition?.lineNumber || 1;
+        const totalLines = editor.getModel()?.getLineCount() || 1;
+        const scrollRatio = Math.max(0, (editorScrollTop - 1) / Math.max(1, totalLines - 1));
+        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
+        
+        if (previewScrollHeight > 0) {
+          previewPane.scrollTop = scrollRatio * previewScrollHeight;
+          // Update tab's preview scroll position
+          this.tabManager.updateTabScroll(activeTab.id, null, previewPane.scrollTop);
+        }
+      }
+    } else if (this.currentMode === 'code') {
+      // Sync from Preview to Code: use preview's stored scroll position
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab && activeTab.scrollPosition?.preview !== undefined) {
+        const previewScrollTop = activeTab.scrollPosition.preview;
+        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
+        const scrollRatio = previewScrollHeight > 0 ? previewScrollTop / previewScrollHeight : 0;
+        const editorScrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
+        
+        if (editorScrollHeight > 0) {
+          editor.setScrollTop(scrollRatio * editorScrollHeight);
+          // Save the new editor state
+          const viewState = editor.saveViewState();
+          this.tabManager.saveTabEditorState(activeTab.id, viewState);
+        }
+      }
+    }
+  }
+  
+  updateScrollSyncButton() {
+    const scrollSyncBtn = document.getElementById('scroll-sync-btn');
+    if (!scrollSyncBtn) return;
+    
+    const hasDocument = this.tabManager.hasTabs();
+    const welcomePage = document.getElementById('welcome-page');
+    const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
+    const showButton = hasDocument && !isWelcomeVisible && (this.currentMode === 'code' || this.currentMode === 'preview');
+    
+    scrollSyncBtn.style.display = showButton ? 'inline-flex' : 'none';
+    
+    if (showButton) {
+      if (this.currentMode === 'preview') {
+        scrollSyncBtn.setAttribute('title', 'Sync from Code position');
+      } else if (this.currentMode === 'code') {
+        scrollSyncBtn.setAttribute('title', 'Sync from Preview position');
+      }
+    }
+  }
 
   // Tab Management Methods - Phase 6 Enhanced
   switchToTab(tabId) {
@@ -2479,6 +2590,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Force update tab UI to show Welcome instead of tabs
     this.updateTabUIForWelcome();
+    
+    // Update scroll sync button
+    this.updateScrollSyncButton();
   }
   
   updateTabUI() {
@@ -2487,6 +2601,11 @@ class MarkdownEditor extends BaseComponent {
     const tabMoreBtn = document.getElementById('tab-more-btn');
     
     if (!filenameBtn || !tabDropdownList || !tabMoreBtn) return;
+    
+    // Update pinned tabs if enabled
+    if (this.pinnedTabsEnabled) {
+      this.updatePinnedTabs();
+    }
     
     const tabs = this.tabManager.getAllTabs();
     const activeTab = this.tabManager.getActiveTab();
@@ -2500,6 +2619,7 @@ class MarkdownEditor extends BaseComponent {
       filenameBtn.textContent = 'Welcome';
       filenameBtn.classList.remove('has-tabs');
       tabMoreBtn.style.display = 'none';
+      this.updateScrollSyncButton();
       return;
     }
     
@@ -2528,6 +2648,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Show/hide more button
     tabMoreBtn.style.display = showMoreBtn ? 'block' : 'none';
+    
+    // Update scroll sync button
+    this.updateScrollSyncButton();
   }
   
   updateTabUIForWelcome() {
@@ -2867,6 +2990,7 @@ class MarkdownEditor extends BaseComponent {
         <button class="tab-context-item" data-action="close-others">Close Others</button>
         <button class="tab-context-item" data-action="close-all">Close All</button>
         <div class="tab-context-separator"></div>
+        <button class="tab-context-item" data-action="toggle-pinned">Toggle Pinned Tabs</button>
         <button class="tab-context-item" data-action="duplicate">Duplicate Tab</button>
         <button class="tab-context-item" data-action="reveal">Reveal in Explorer</button>
       `;
@@ -3119,6 +3243,62 @@ class MarkdownEditor extends BaseComponent {
       this.tabManager.persistTabs();
       this.updateTabUI();
     }
+  }
+  
+  // Pinned Tabs Methods
+  applyPinnedTabsVisibility() {
+    const pinnedTabsBar = document.getElementById('pinned-tabs-bar');
+    if (pinnedTabsBar) {
+      pinnedTabsBar.style.display = this.pinnedTabsEnabled ? 'flex' : 'none';
+    }
+  }
+  
+  togglePinnedTabs() {
+    this.pinnedTabsEnabled = !this.pinnedTabsEnabled;
+    localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
+    this.applyPinnedTabsVisibility();
+    this.updateSettingsDisplay();
+  }
+  
+  updatePinnedTabs() {
+    const pinnedTabsList = document.getElementById('pinned-tabs-list');
+    if (!pinnedTabsList) return;
+    
+    pinnedTabsList.innerHTML = '';
+    
+    const tabs = this.tabManager.getAllTabs();
+    const activeTab = this.tabManager.getActiveTab();
+    
+    tabs.forEach(tab => {
+      const pinnedTab = document.createElement('div');
+      pinnedTab.className = `pinned-tab ${tab.id === activeTab?.id ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
+      
+      const tabName = document.createElement('div');
+      tabName.className = 'pinned-tab-name';
+      tabName.textContent = tab.fileName;
+      tabName.title = tab.filePath || tab.fileName;
+      pinnedTab.appendChild(tabName);
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'pinned-tab-close';
+      closeBtn.innerHTML = '×';
+      closeBtn.title = 'Close tab';
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.tabManager.closeTab(tab.id);
+      };
+      pinnedTab.appendChild(closeBtn);
+      
+      pinnedTab.onclick = () => {
+        this.switchToTab(tab.id);
+      };
+      
+      pinnedTab.oncontextmenu = (e) => {
+        this.showTabContextMenu(e, tab.id);
+      };
+      
+      pinnedTabsList.appendChild(pinnedTab);
+    });
   }
   
   onDestroy() {

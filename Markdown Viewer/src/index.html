@@ -281,12 +281,20 @@
         </div>
       </div>
 
+      <!-- Pinned Tabs Bar -->
+      <div id="pinned-tabs-bar" class="pinned-tabs-bar" style="display: none;">
+        <div id="pinned-tabs-list" class="pinned-tabs-list"></div>
+      </div>
+
       <!-- Status Bar -->
       <div class="status-bar">
         <div class="status-left">
           <span id="cursor-pos">Line 1, Col 1</span>
         </div>
         <div class="status-center">
+          <button id="scroll-sync-btn" class="status-btn sync-btn" style="display: none;" title="Sync scroll position">
+            ⤻⃔
+          </button>
           <div id="font-size-controls" class="font-size-controls" style="display: none;">
             <button id="font-size-decrease" class="status-btn font-btn" title="Decrease Font Size">A-</button>
             <span id="font-size-display" class="font-size-display">14px</span>
@@ -370,6 +378,14 @@
                 <div class="setting-control">
                   <button id="toolbar-on-btn" class="setting-btn">Enabled</button>
                   <button id="toolbar-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <label>Pinned Tabs</label>
+                <div class="setting-control">
+                  <button id="pinned-tabs-on-btn" class="setting-btn">Enabled</button>
+                  <button id="pinned-tabs-off-btn" class="setting-btn">Disabled</button>
                 </div>
               </div>
 

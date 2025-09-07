@@ -27,6 +27,9 @@ class DocumentComponent extends BaseComponent {
     
     // Initialize file history display
     this.updateFileHistoryDisplay();
+    
+    // Set up file watching
+    this.setupFileWatcher();
   }
 
   setupEventListeners() {
@@ -95,7 +98,7 @@ class DocumentComponent extends BaseComponent {
       
       if (!selectedFile && window.__TAURI__) {
         selectedFile = await window.__TAURI__.dialog.open({
-          multiple: false,
+          multiple: true,
           filters: [{
             name: 'Markdown',
             extensions: ['md', 'markdown']
@@ -104,19 +107,19 @@ class DocumentComponent extends BaseComponent {
       }
 
       if (selectedFile) {
-        const content = await this.readFile(selectedFile);
+        const files = Array.isArray(selectedFile) ? selectedFile : [selectedFile];
         
-        this.currentFile = selectedFile;
-        this.content = content;
-        this.markClean();
-        
-        this.addToFileHistory(selectedFile);
-        
-        this.emit('document-opened', {
-          filePath: selectedFile,
-          content: this.content,
-          fileName: this.getFilenameFromPath(selectedFile)
-        });
+        for (const file of files) {
+          const content = await this.readFile(file);
+          
+          this.addToFileHistory(file);
+          
+          this.emit('document-opened', {
+            filePath: file,
+            content: content,
+            fileName: this.getFilenameFromPath(file)
+          });
+        }
       }
     } catch (error) {
       this.emit('document-error', { 
@@ -417,7 +420,38 @@ class DocumentComponent extends BaseComponent {
     return date.toLocaleDateString();
   }
 
+  setupFileWatcher() {
+    // Poll for file changes every 2 seconds
+    this.fileWatchInterval = setInterval(() => {
+      if (this.currentFile && !this.isDirty) {
+        this.checkForExternalChanges();
+      }
+    }, 2000);
+  }
+  
+  async checkForExternalChanges() {
+    if (!this.currentFile) return;
+    
+    try {
+      const newContent = await this.readFile(this.currentFile);
+      if (newContent !== this.content) {
+        this.isLoading = true;
+        this.content = newContent;
+        this.markClean();
+        this.emit('document-content-updated', { content: this.content });
+        this.isLoading = false;
+      }
+    } catch (error) {
+      // File might be deleted or inaccessible
+    }
+  }
+
   onDestroy() {
+    // Clean up file watcher
+    if (this.fileWatchInterval) {
+      clearInterval(this.fileWatchInterval);
+    }
+    
     // Clean up any resources
     this.currentFile = null;
     this.content = '';

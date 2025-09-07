@@ -21,6 +21,7 @@
 - **Real-Time Preview**: GitHub-flavored markdown with live updates
 - **Advanced Rendering**: KaTeX math expressions and Mermaid diagrams
 - **Interactive Elements**: Clickable task lists with state persistence
+- **Scroll Position Memory**: Reliable scroll position preservation in Code mode; limited reliability in Preview mode when switching between modes
 
 ### User Experience
 - **GitHub-Style Themes**: Light, Dark, and Retro themes with perfect synchronization

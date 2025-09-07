@@ -11,6 +11,8 @@ class TabState {
     this.isActive = options.isActive || false;
     this.cursorPosition = options.cursorPosition || { line: 1, col: 1 };
     this.scrollPosition = options.scrollPosition || { editor: 0, preview: 0 };
+    this.editorViewState = options.editorViewState || null;
+    this.monacoModel = null;
     this.createdAt = options.createdAt || Date.now();
     this.lastModified = options.lastModified || Date.now();
   }
@@ -45,6 +47,27 @@ class TabState {
     if (preview !== null) this.scrollPosition.preview = preview;
   }
 
+  // Set Monaco Editor view state
+  setEditorViewState(viewState) {
+    this.editorViewState = viewState;
+  }
+
+  // Get or create Monaco model for this tab
+  getMonacoModel() {
+    if (!this.monacoModel && typeof monaco !== 'undefined') {
+      this.monacoModel = monaco.editor.createModel(this.content, 'markdown');
+    }
+    return this.monacoModel;
+  }
+
+  // Update model content
+  updateModelContent(content) {
+    if (this.monacoModel) {
+      this.monacoModel.setValue(content);
+    }
+    this.setContent(content);
+  }
+
   // Set active state
   setActive(active) {
     this.isActive = active;
@@ -76,6 +99,7 @@ class TabState {
       isDirty: this.isDirty,
       cursorPosition: this.cursorPosition,
       scrollPosition: this.scrollPosition,
+      editorViewState: this.editorViewState,
       createdAt: this.createdAt,
       lastModified: this.lastModified
     };
@@ -90,6 +114,7 @@ class TabState {
       isDirty: data.isDirty,
       cursorPosition: data.cursorPosition,
       scrollPosition: data.scrollPosition,
+      editorViewState: data.editorViewState,
       createdAt: data.createdAt,
       lastModified: data.lastModified
     });

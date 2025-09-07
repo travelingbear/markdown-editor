@@ -352,6 +352,21 @@ class EditorComponent extends BaseComponent {
   }
 
   /**
+   * Set Monaco model for tab (preserves undo/redo)
+   */
+  setMonacoModel(model, viewState = null) {
+    if (this.isMonacoLoaded && this.monacoEditor && model) {
+      this.monacoEditor.setModel(model);
+      this.currentContent = model.getValue();
+      
+      // Restore view state if available
+      if (viewState) {
+        this.monacoEditor.restoreViewState(viewState);
+      }
+    }
+  }
+
+  /**
    * Show Monaco editor
    */
   showMonaco() {

@@ -575,53 +575,9 @@ class PerformanceOptimizer {
     console.log('[PerformanceOptimizer] Performance dashboard initialized');
   }
   
-  // Phase 6: Create performance dashboard UI
+  // Phase 6: Create performance dashboard UI - use existing HTML section
   createPerformanceDashboard() {
-    const settingsModal = document.getElementById('settings-modal');
-    if (!settingsModal) return;
-    
-    // Check if we're in debug mode (console accessible)
-    const isDebugMode = this.isDebugMode();
-    
-    // Find or create performance section
-    let perfSection = settingsModal.querySelector('.performance-section');
-    if (!perfSection) {
-      perfSection = document.createElement('div');
-      perfSection.className = 'performance-section';
-      perfSection.innerHTML = `
-        <h3>Performance Monitor</h3>
-        <div class="performance-grid">
-          <div class="perf-metric">
-            <label>Memory Usage</label>
-            <div id="perf-memory" class="perf-value">--</div>
-          </div>
-          <div class="perf-metric">
-            <label>Active Tabs</label>
-            <div id="perf-tabs" class="perf-value">--</div>
-          </div>
-          <div class="perf-metric">
-            <label>Tab Switch Avg</label>
-            <div id="perf-switch" class="perf-value">--</div>
-          </div>
-          <div class="perf-metric">
-            <label>Memory Pressure</label>
-            <div id="perf-pressure" class="perf-value">--</div>
-          </div>
-        </div>
-        <div class="performance-actions">
-          <button id="perf-cleanup-btn" class="perf-action-btn">Force Cleanup</button>
-          ${isDebugMode ? '<button id="perf-report-btn" class="perf-action-btn">View Report</button>' : ''}
-        </div>
-      `;
-      
-      // Insert as its own section in settings content
-      const settingsContent = settingsModal.querySelector('.settings-content');
-      if (settingsContent) {
-        settingsContent.appendChild(perfSection);
-      }
-    }
-    
-    // Add event listeners
+    // Just add event listeners to existing HTML elements
     const cleanupBtn = document.getElementById('perf-cleanup-btn');
     const reportBtn = document.getElementById('perf-report-btn');
     
@@ -632,18 +588,10 @@ class PerformanceOptimizer {
       });
     }
     
-    if (reportBtn && isDebugMode) {
+    if (reportBtn) {
       reportBtn.addEventListener('click', () => {
         const report = this.getPerformanceReport();
         console.log('[Performance Report]', report);
-        
-        // Debug tab manager connection
-        console.log('[Debug] Tab Manager Available:', !!window.markdownEditor?.tabManager);
-        if (window.markdownEditor?.tabManager) {
-          console.log('[Debug] Actual Tab Count:', window.markdownEditor.tabManager.getTabsCount());
-          console.log('[Debug] All Tabs:', window.markdownEditor.tabManager.getAllTabs().map(t => ({id: t.id, fileName: t.fileName})));
-        }
-        
         alert('Performance report logged to console (F12)');
       });
     }
@@ -671,10 +619,10 @@ class PerformanceOptimizer {
   
   // Phase 6: Update performance dashboard
   updatePerformanceDashboard() {
-    const memoryEl = document.getElementById('perf-memory');
-    const tabsEl = document.getElementById('perf-tabs');
-    const switchEl = document.getElementById('perf-switch');
-    const pressureEl = document.getElementById('perf-pressure');
+    const memoryEl = document.getElementById('memory-usage');
+    const tabsEl = document.getElementById('active-tabs-count');
+    const switchEl = document.getElementById('tab-switch-avg');
+    const pressureEl = document.getElementById('memory-pressure');
     
     if (!memoryEl) return; // Dashboard not created yet
     

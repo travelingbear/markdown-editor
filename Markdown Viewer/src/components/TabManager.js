@@ -129,12 +129,26 @@ class TabManager extends BaseComponent {
     return true;
   }
 
+  // Save Monaco Editor view state
+  saveTabEditorState(tabId, viewState) {
+    const tab = this.tabCollection.getTab(tabId);
+    if (!tab) return false;
+
+    tab.setEditorViewState(viewState);
+    return true;
+  }
+
   // Update tab scroll position
   updateTabScroll(tabId, editor = null, preview = null) {
     const tab = this.tabCollection.getTab(tabId);
     if (!tab) return false;
 
-    tab.setScrollPosition(editor, preview);
+    if (editor !== null) {
+      tab.scrollPosition.editor = editor;
+    }
+    if (preview !== null) {
+      tab.scrollPosition.preview = preview;
+    }
     return true;
   }
 

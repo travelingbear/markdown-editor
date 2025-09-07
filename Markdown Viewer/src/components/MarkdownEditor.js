@@ -256,17 +256,34 @@ class MarkdownEditor extends BaseComponent {
       this.handleError(new Error(data.error), data.type);
     });
     
+    this.documentComponent.on('document-content-updated', (data) => {
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        activeTab.setContent(data.content);
+        this.editorComponent.emit('set-content', data);
+        this.previewComponent.emit('update-preview', data);
+      }
+    });
+    
     // Editor Component Events
     this.editorComponent.on('content-changed', (data) => {
       // Update active tab content
       const activeTab = this.tabManager.getActiveTab();
       if (activeTab) {
-        this.tabManager.updateTabContent(activeTab.id, data.content);
+        // Update tab content but don't update the Monaco model since it's the source
+        activeTab.setContent(data.content);
+        this.tabManager.persistTabs();
         // Also update document component to keep it in sync
         this.documentComponent.content = data.content;
       }
       this.documentComponent.emit('content-changed', data);
       this.previewComponent.emit('update-preview', data);
+      
+      // Immediately update toolbar state for save button color
+      this.toolbarComponent.emit('document-state-changed', { 
+        hasDocument: true, 
+        isDirty: true 
+      });
     });
     
     this.editorComponent.on('cursor-position-changed', (data) => {
@@ -368,6 +385,14 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent.on('markdown-action', (data) => {
       this.handleMarkdownAction(data.action);
     });
+    
+    this.toolbarComponent.on('find-replace-requested', () => {
+      this.openFindReplace();
+    });
+    
+    this.toolbarComponent.on('file-reload-requested', () => {
+      this.reloadCurrentFile();
+    });
   }
 
   applyInitialSettings() {
@@ -427,6 +452,9 @@ class MarkdownEditor extends BaseComponent {
     // Notify toolbar of current mode
     this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
+    // Update theme button
+    this.toolbarComponent.updateThemeButton(this.theme, this.isRetroTheme);
+    
     // Initialize tab UI
     this.updateTabUI();
   }
@@ -484,16 +512,22 @@ class MarkdownEditor extends BaseComponent {
           this.closeFile();
           break;
         case '1':
-          e.preventDefault();
-          this.setMode('code');
+          if (!e.shiftKey) {
+            e.preventDefault();
+            this.setMode('code');
+          }
           break;
         case '2':
-          e.preventDefault();
-          this.setMode('preview');
+          if (!e.shiftKey) {
+            e.preventDefault();
+            this.setMode('preview');
+          }
           break;
         case '3':
-          e.preventDefault();
-          this.setMode('split');
+          if (!e.shiftKey) {
+            e.preventDefault();
+            this.setMode('split');
+          }
           break;
         case 't':
         case '/':
@@ -514,6 +548,19 @@ class MarkdownEditor extends BaseComponent {
           if (e.shiftKey) {
             e.preventDefault();
             this.exportToHtml();
+          }
+          break;
+        case 'f':
+          if (this.currentMode !== 'preview') {
+            e.preventDefault();
+            this.openFindReplace();
+          }
+          break;
+        case '/':
+        case '?':
+          if (e.shiftKey) {
+            e.preventDefault();
+            this.toggleMarkdownToolbar();
           }
           break;
 
@@ -540,7 +587,7 @@ class MarkdownEditor extends BaseComponent {
         break;
       case 'F5':
         e.preventDefault();
-        this.refreshPreview();
+        this.reloadCurrentFile();
         break;
       case 'F11':
         e.preventDefault();
@@ -648,6 +695,14 @@ class MarkdownEditor extends BaseComponent {
   async closeFile() {
     const activeTab = this.tabManager.getActiveTab();
     if (activeTab) {
+      // Add close animation
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.style.animation = 'fadeOut 0.3s ease-out';
+        await new Promise(resolve => setTimeout(resolve, 300));
+        mainContent.style.animation = '';
+      }
+      
       // Phase 6: Clean up performance tracking for closed tab
       if (this.performanceOptimizer) {
         this.performanceOptimizer.cleanupTabTracking(activeTab.id);
@@ -669,8 +724,11 @@ class MarkdownEditor extends BaseComponent {
       return;
     }
     
-    // Save current scroll position
-    this.saveCurrentScrollPosition();
+    // Save current scroll position to active tab
+    const activeTab = this.tabManager.getActiveTab();
+    if (activeTab) {
+      this.saveScrollPositionToTab(activeTab);
+    }
     
     // Load Monaco Editor lazily when switching to code or split mode
     if ((mode === 'code' || mode === 'split') && !this.editorComponent.isMonacoLoaded) {
@@ -703,37 +761,36 @@ class MarkdownEditor extends BaseComponent {
     const splitter = document.getElementById('splitter');
     
     if (editorPane && previewPane && splitter) {
-      // Use requestAnimationFrame to ensure proper rendering order
-      requestAnimationFrame(() => {
-        // Reset all displays first to prevent dual pane issues
-        editorPane.style.display = 'none';
-        previewPane.style.display = 'none';
-        splitter.style.display = 'none';
-        
-        // Apply mode-specific display settings after a brief delay
+      // Immediately reset all displays to prevent dual pane issues
+      editorPane.style.display = 'none';
+      previewPane.style.display = 'none';
+      splitter.style.display = 'none';
+      
+      // Force a reflow to ensure the reset takes effect
+      editorPane.offsetHeight;
+      previewPane.offsetHeight;
+      
+      // Apply mode-specific display settings
+      switch (mode) {
+        case 'code':
+          editorPane.style.display = 'block';
+          break;
+        case 'preview':
+          previewPane.style.display = 'block';
+          break;
+        case 'split':
+          editorPane.style.display = 'block';
+          previewPane.style.display = 'block';
+          splitter.style.display = 'block';
+          break;
+      }
+      
+      // Trigger Monaco layout after display changes
+      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
         setTimeout(() => {
-          switch (mode) {
-            case 'code':
-              editorPane.style.display = 'block';
-              break;
-            case 'preview':
-              previewPane.style.display = 'block';
-              break;
-            case 'split':
-              editorPane.style.display = 'block';
-              previewPane.style.display = 'block';
-              splitter.style.display = 'block';
-              break;
-          }
-          
-          // Trigger Monaco layout after display changes
-          if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-            setTimeout(() => {
-              this.editorComponent.monacoEditor.layout();
-            }, 50);
-          }
-        }, 10);
-      });
+          this.editorComponent.monacoEditor.layout();
+        }, 50);
+      }
     }
     
     // Notify toolbar component
@@ -742,46 +799,40 @@ class MarkdownEditor extends BaseComponent {
     // Layout update is now handled in the display logic above
     
     // Restore scroll position after layout
-    setTimeout(() => this.restoreScrollPosition(), 100);
+    setTimeout(() => {
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        this.restoreScrollPositionFromTab(activeTab);
+      }
+    }, 100);
     
     this.lastModeSwitchTime = performance.now() - startTime;
   }
   
-  saveCurrentScrollPosition() {
-    if (!this.scrollPosition) this.scrollPosition = 0;
-    
+  saveScrollPositionToTab(tab) {
     const editor = this.editorComponent.monacoEditor;
     const previewPane = document.querySelector('.preview-pane');
     
-    if (this.currentMode === 'code' && editor) {
-      const scrollTop = editor.getScrollTop();
-      const scrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
-      this.scrollPosition = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
-    } else if (this.currentMode === 'preview' && previewPane) {
-      const scrollTop = previewPane.scrollTop;
-      const scrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
-      this.scrollPosition = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+    if (editor) {
+      const viewState = editor.saveViewState();
+      this.tabManager.saveTabEditorState(tab.id, viewState);
+    }
+    
+    if (previewPane) {
+      this.tabManager.updateTabScroll(tab.id, null, previewPane.scrollTop);
     }
   }
   
-  restoreScrollPosition() {
-    if (!this.scrollPosition) return;
-    
+  restoreScrollPositionFromTab(tab) {
     const editor = this.editorComponent.monacoEditor;
     const previewPane = document.querySelector('.preview-pane');
     
-    if ((this.currentMode === 'code' || this.currentMode === 'split') && editor) {
-      const scrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
-      if (scrollHeight > 0) {
-        editor.setScrollTop(this.scrollPosition * scrollHeight);
-      }
+    if ((this.currentMode === 'code' || this.currentMode === 'split') && editor && tab.editorViewState) {
+      editor.restoreViewState(tab.editorViewState);
     }
     
-    if ((this.currentMode === 'preview' || this.currentMode === 'split') && previewPane) {
-      const scrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
-      if (scrollHeight > 0) {
-        previewPane.scrollTop = this.scrollPosition * scrollHeight;
-      }
+    if ((this.currentMode === 'preview' || this.currentMode === 'split') && previewPane && tab.scrollPosition?.preview) {
+      previewPane.scrollTop = tab.scrollPosition.preview;
     }
   }
 
@@ -1094,50 +1145,35 @@ class MarkdownEditor extends BaseComponent {
         
       // Text alignment
       case 'align-left':
-        if (selectedText) {
-          // Remove any existing alignment
-          let cleanText = selectedText
-            .replace(/<div align="(center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
-            .trim();
-          replacement = cleanText;
-        } else {
-          return; // Do nothing for left align without selection
-        }
-        break;
       case 'align-center':
-        if (selectedText) {
-          let cleanText = selectedText
-            .replace(/<div align="(left|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
-            .trim();
-          replacement = `<div align="center">\n${cleanText}\n</div>`;
-          insertAtNewLine = true;
-        } else {
-          replacement = '<div align="center">\nText aligned center\n</div>';
-          insertAtNewLine = true;
-        }
-        break;
       case 'align-right':
-        if (selectedText) {
-          let cleanText = selectedText
-            .replace(/<div align="(left|center|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
-            .trim();
-          replacement = `<div align="right">\n${cleanText}\n</div>`;
-          insertAtNewLine = true;
-        } else {
-          replacement = '<div align="right">\nText aligned right\n</div>';
-          insertAtNewLine = true;
-        }
-        break;
       case 'align-justify':
-        if (selectedText) {
-          let cleanText = selectedText
-            .replace(/<div align="(left|center|right)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
-            .trim();
-          replacement = `<div align="justify">\n${cleanText}\n</div>`;
-          insertAtNewLine = true;
+        if (isMultiLine) {
+          this.handleMultiLineAlignment(editor, selection, action);
+          return;
+        }
+        
+        if (action === 'align-left') {
+          if (selectedText) {
+            let cleanText = selectedText
+              .replace(/<div align="(center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
+              .trim();
+            replacement = cleanText;
+          } else {
+            return;
+          }
         } else {
-          replacement = '<div align="justify">\nText justified\n</div>';
-          insertAtNewLine = true;
+          const alignType = action.replace('align-', '');
+          if (selectedText) {
+            let cleanText = selectedText
+              .replace(/<div align="(left|center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
+              .trim();
+            replacement = `<div align="${alignType}">\n${cleanText}\n</div>`;
+            insertAtNewLine = true;
+          } else {
+            replacement = `<div align="${alignType}">\nText aligned ${alignType}\n</div>`;
+            insertAtNewLine = true;
+          }
         }
         break;
         
@@ -1240,6 +1276,36 @@ class MarkdownEditor extends BaseComponent {
     }
     
     editor.executeEdits('markdown-toolbar-multiline', edits);
+    this.documentComponent.handleContentChange(editor.getValue());
+  }
+  
+  handleMultiLineAlignment(editor, selection, action) {
+    const model = editor.getModel();
+    const edits = [];
+    const alignType = action.replace('align-', '');
+    
+    for (let lineNum = selection.startLineNumber; lineNum <= selection.endLineNumber; lineNum++) {
+      const lineContent = model.getLineContent(lineNum);
+      if (lineContent.trim() === '') continue;
+      
+      let newContent = '';
+      
+      if (alignType === 'left') {
+        // Remove existing alignment
+        newContent = lineContent.replace(/<div align="(center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2').trim();
+      } else {
+        // Remove existing alignment first, then apply new alignment
+        let cleanContent = lineContent.replace(/<div align="(left|center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2').trim();
+        newContent = `<div align="${alignType}">${cleanContent}</div>`;
+      }
+      
+      edits.push({
+        range: new monaco.Range(lineNum, 1, lineNum, lineContent.length + 1),
+        text: newContent
+      });
+    }
+    
+    editor.executeEdits('markdown-toolbar-alignment', edits);
     this.documentComponent.handleContentChange(editor.getValue());
   }
 
@@ -1366,6 +1432,57 @@ class MarkdownEditor extends BaseComponent {
       }
     } catch (error) {
       console.error('[MarkdownEditor] Error opening external link:', error);
+    }
+  }
+  
+  openFindReplace() {
+    if (this.currentMode === 'preview') {
+      // Use browser's native find for preview mode
+      document.execCommand('find');
+      return;
+    }
+    
+    if (!this.editorComponent.isMonacoLoaded || !this.editorComponent.monacoEditor) {
+      return;
+    }
+    
+    // Open Monaco's find and replace widget for code/split mode
+    const editor = this.editorComponent.monacoEditor;
+    const findController = editor.getContribution('editor.contrib.findController');
+    if (findController) {
+      findController.start({
+        forceRevealReplace: true,
+        seedSearchStringFromSelection: 'single',
+        seedSearchStringFromNonEmptySelection: true,
+        shouldFocus: 1
+      });
+    }
+    editor.focus();
+  }
+  
+  toggleMarkdownToolbar() {
+    this.isToolbarEnabled = !this.isToolbarEnabled;
+    localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
+    this.applyMarkdownToolbarVisibility();
+    this.toolbarComponent.isToolbarEnabled = this.isToolbarEnabled;
+    this.toolbarComponent.updateToolbarVisibility();
+  }
+  
+  async reloadCurrentFile() {
+    const activeTab = this.tabManager.getActiveTab();
+    if (activeTab && activeTab.filePath) {
+      try {
+        const newContent = await this.documentComponent.readFile(activeTab.filePath);
+        if (newContent !== activeTab.content) {
+          activeTab.setContent(newContent);
+          this.editorComponent.emit('set-content', { content: newContent });
+          this.previewComponent.emit('update-preview', { content: newContent });
+          this.documentComponent.content = newContent;
+          this.documentComponent.markClean();
+        }
+      } catch (error) {
+        console.error('Failed to reload file:', error);
+      }
     }
   }
 
@@ -1512,7 +1629,8 @@ class MarkdownEditor extends BaseComponent {
     const themeButtons = {
       'theme-light-btn': this.theme === 'light' && !this.isRetroTheme,
       'theme-dark-btn': this.theme === 'dark' && !this.isRetroTheme,
-      'theme-retro-btn': this.isRetroTheme
+      'theme-retro-btn': this.isRetroTheme,
+      'theme-contrast-btn': this.theme === 'contrast' && !this.isRetroTheme
     };
     
     Object.entries(themeButtons).forEach(([id, active]) => {
@@ -1720,7 +1838,7 @@ class MarkdownEditor extends BaseComponent {
   
   setupSettingsControls() {
     // Theme controls
-    const themeBtns = ['theme-light-btn', 'theme-dark-btn', 'theme-retro-btn'];
+    const themeBtns = ['theme-light-btn', 'theme-dark-btn', 'theme-retro-btn', 'theme-contrast-btn'];
     themeBtns.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
@@ -1731,6 +1849,10 @@ class MarkdownEditor extends BaseComponent {
             document.body.classList.remove('retro-theme');
           } else if (id === 'theme-dark-btn') {
             this.theme = 'dark';
+            this.isRetroTheme = false;
+            document.body.classList.remove('retro-theme');
+          } else if (id === 'theme-contrast-btn') {
+            this.theme = 'contrast';
             this.isRetroTheme = false;
             document.body.classList.remove('retro-theme');
           } else {
@@ -1750,6 +1872,9 @@ class MarkdownEditor extends BaseComponent {
           if (activeTab) {
             this.previewComponent.emit('update-preview', { content: activeTab.content });
           }
+          
+          // Update theme button
+          this.toolbarComponent.updateThemeButton(this.theme, this.isRetroTheme);
           
           this.updateSettingsDisplay();
         });
@@ -2197,10 +2322,19 @@ class MarkdownEditor extends BaseComponent {
     const currentTab = this.tabManager.getActiveTab();
     const currentTabId = currentTab?.id;
     
-    // Save current tab's cursor position before switching
-    if (currentTab && this.editorComponent.isMonacoLoaded) {
-      const cursorPos = this.editorComponent.getCursorPosition();
-      this.tabManager.updateTabCursor(currentTab.id, cursorPos.line, cursorPos.col);
+    // Save current tab's cursor position and editor state before switching
+    if (currentTab && this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
+      // Save Monaco Editor view state to preserve undo/redo history and scroll position
+      const viewState = this.editorComponent.monacoEditor.saveViewState();
+      this.tabManager.saveTabEditorState(currentTab.id, viewState);
+    }
+    
+    // Save preview pane scroll position
+    if (currentTab) {
+      const previewPane = document.querySelector('.preview-pane');
+      if (previewPane) {
+        this.tabManager.updateTabScroll(currentTab.id, null, previewPane.scrollTop);
+      }
     }
     
     // Phase 6: Track tab access and performance
@@ -2256,12 +2390,19 @@ class MarkdownEditor extends BaseComponent {
   
   // Phase 6: Full tab content loading
   loadTabContentFull(tab) {
-    // Load tab content into editor and preview
-    this.editorComponent.emit('set-content', { content: tab.content });
+    // Load tab content into editor with model preservation
+    if (this.editorComponent.isMonacoLoaded) {
+      const model = tab.getMonacoModel();
+      this.editorComponent.setMonacoModel(model, tab.editorViewState);
+    } else {
+      this.editorComponent.emit('set-content', { content: tab.content });
+    }
     this.previewComponent.emit('update-preview', { content: tab.content });
     
-    // Ensure preview is shown and welcome is hidden
-    this.previewComponent.showPreview();
+    // Only show preview if we're in preview or split mode
+    if (this.currentMode === 'preview' || this.currentMode === 'split') {
+      this.previewComponent.showPreview();
+    }
     
     // Update filename and document state
     this.updateFilename(tab.fileName, tab.isDirty);
@@ -2270,13 +2411,17 @@ class MarkdownEditor extends BaseComponent {
       isDirty: tab.isDirty 
     });
     
-    // Restore cursor position if available
-    if (tab.cursorPosition) {
+    // Ensure current mode is maintained after tab switch
+    setTimeout(() => {
+      this.setMode(this.currentMode);
+    }, 10);
+    
+    // Restore preview scroll position
+    if (tab.scrollPosition?.preview) {
       setTimeout(() => {
-        try {
-          this.editorComponent.setCursorPosition(tab.cursorPosition.line, tab.cursorPosition.col);
-        } catch (error) {
-          console.warn('[MarkdownEditor] Failed to restore cursor position:', error);
+        const previewPane = document.querySelector('.preview-pane');
+        if (previewPane) {
+          previewPane.scrollTop = tab.scrollPosition.preview;
         }
       }, 100);
     }
@@ -2293,19 +2438,30 @@ class MarkdownEditor extends BaseComponent {
     
     // Defer heavy operations
     requestIdleCallback(() => {
-      this.editorComponent.emit('set-content', { content: tab.content });
+      if (this.editorComponent.isMonacoLoaded) {
+        const model = tab.getMonacoModel();
+        this.editorComponent.setMonacoModel(model, tab.editorViewState);
+      } else {
+        this.editorComponent.emit('set-content', { content: tab.content });
+      }
       this.previewComponent.emit('update-preview', { content: tab.content });
-      this.previewComponent.showPreview();
       
-      // Restore cursor position
-      if (tab.cursorPosition) {
+      // Only show preview if we're in preview or split mode
+      if (this.currentMode === 'preview' || this.currentMode === 'split') {
+        this.previewComponent.showPreview();
+      }
+      
+      // Ensure current mode is maintained after tab switch
+      this.setMode(this.currentMode);
+      
+      // Restore preview scroll position
+      if (tab.scrollPosition?.preview) {
         setTimeout(() => {
-          try {
-            this.editorComponent.setCursorPosition(tab.cursorPosition.line, tab.cursorPosition.col);
-          } catch (error) {
-            console.warn('[MarkdownEditor] Failed to restore cursor position:', error);
+          const previewPane = document.querySelector('.preview-pane');
+          if (previewPane) {
+            previewPane.scrollTop = tab.scrollPosition.preview;
           }
-        }, 50);
+        }, 100);
       }
     }, { timeout: 1000 });
   }

@@ -94,6 +94,8 @@
 
 ### Application
 - **Ctrl+T** or **Ctrl+/** - Toggle theme
+- **Ctrl+Shift+/** - Toggle markdown toolbar
+- **Ctrl+F** - Find & Replace
 - **Ctrl+,** - Open settings
 - **F1** - Show help
 - **F11** - Toggle fullscreen

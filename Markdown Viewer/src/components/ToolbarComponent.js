@@ -48,6 +48,7 @@ class ToolbarComponent extends BaseComponent {
     this.themeBtn = document.getElementById('theme-btn');
     this.settingsBtn = document.getElementById('settings-btn');
     this.helpStatusBtn = document.getElementById('help-status-btn');
+    this.reloadBtn = document.getElementById('reload-btn');
     
     // Mode buttons
     this.codeBtn = document.getElementById('code-btn');
@@ -73,6 +74,9 @@ class ToolbarComponent extends BaseComponent {
     // Undo/Redo controls
     this.undoBtn = document.getElementById('undo-btn');
     this.redoBtn = document.getElementById('redo-btn');
+    
+    // Find/Replace control
+    this.findReplaceBtn = document.getElementById('find-replace-btn');
     
     if (!this.newBtn || !this.codeBtn) {
       throw new Error('Toolbar elements not found');
@@ -153,6 +157,10 @@ class ToolbarComponent extends BaseComponent {
       this.emit('help-show');
     });
     
+    this.reloadBtn.addEventListener('click', () => {
+      this.emit('file-reload-requested');
+    });
+    
     // Font size controls
     if (this.fontSizeIncrease) {
       this.fontSizeIncrease.addEventListener('click', () => {
@@ -201,6 +209,13 @@ class ToolbarComponent extends BaseComponent {
     if (this.redoBtn) {
       this.redoBtn.addEventListener('click', () => {
         this.emit('editor-redo');
+      });
+    }
+    
+    // Find/Replace control
+    if (this.findReplaceBtn) {
+      this.findReplaceBtn.addEventListener('click', () => {
+        this.emit('find-replace-requested');
       });
     }
     
@@ -303,6 +318,18 @@ class ToolbarComponent extends BaseComponent {
       this.saveBtn, this.saveAsBtn, this.closeBtn,
       this.exportBtn, this.exportHtmlBtn, this.exportPdfBtn
     ];
+    
+    // Update reload button separately (in status bar)
+    if (this.reloadBtn) {
+      this.reloadBtn.style.display = this.hasDocument ? 'inline-block' : 'none';
+    }
+    
+    // Update cursor position visibility
+    const cursorPos = document.getElementById('cursor-pos');
+    if (cursorPos) {
+      const shouldShow = this.hasDocument && (this.currentMode === 'code' || this.currentMode === 'split');
+      cursorPos.style.display = shouldShow ? 'block' : 'none';
+    }
     
     buttons.forEach(btn => {
       if (btn) {
@@ -493,6 +520,8 @@ class ToolbarComponent extends BaseComponent {
   updateThemeButton(theme, isRetro = false) {
     if (isRetro) {
       this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle;"><g fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></g></svg>';
+    } else if (theme === 'contrast') {
+      this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;"><circle cx="8" cy="8" r="8" fill="currentColor"/><path d="M8 0a8 8 0 0 0 0 16V0z" fill="white"/></svg>';
     } else {
       this.themeBtn.textContent = theme === 'light' ? '🌙' : '☀️';
     }

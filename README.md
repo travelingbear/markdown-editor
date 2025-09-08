@@ -10,7 +10,7 @@
 
 ### Multi-Tab Interface
 - **Smart Tab Management**: Open multiple files with intelligent tab organization
-- **Performance Optimized**: Handles 100+ tabs with virtualization and lazy loading
+- **Performance Optimized**: Handles up to 50 tabs with virtualization and lazy loading
 - **Tab Navigation**: Quick access dropdown for recent 9 tabs, modal for all tabs
 - **Context Menus**: Right-click tabs for advanced operations (move, close, duplicate)
 - **Keyboard Shortcuts**: Alt+1-9 for numbered tabs, Ctrl+Tab for navigation
@@ -21,7 +21,7 @@
 - **Real-Time Preview**: GitHub-flavored markdown with live updates
 - **Advanced Rendering**: KaTeX math expressions and Mermaid diagrams
 - **Interactive Elements**: Clickable task lists with state persistence
-- **Scroll Position Memory**: Reliable scroll position preservation in Code mode; limited reliability in Preview mode when switching between modes
+- **Scroll Position Memory**: Scroll position preservation in Code mode; limited reliability in Preview mode when switching between modes
 
 ### User Experience
 - **GitHub-Style Themes**: Light, Dark, and Retro themes with perfect synchronization
@@ -39,6 +39,8 @@
 - **Lightning Fast Performance**: <60ms startup time, <35ms tab switching
 - **Memory Optimized**: Smart tab virtualization and memory pressure detection
 - **Performance Monitoring**: Real-time performance dashboard in settings
+
+(Works better with Windows. Some functionalities, such as file association, might not work well on MacOS. I have been testing on Windows, and Ubuntu Linux. Sometimes I test in a MacOS and most of the functionalities are there)
 
 ## 🚀 Quick Start
 

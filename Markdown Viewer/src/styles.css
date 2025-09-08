@@ -1825,11 +1825,11 @@ body.retro-theme.distraction-free .preview-content {
   color: #000000 !important;
 }
 
-/* Fix retro theme preview mode to fill entire window */
+/* Fix retro theme preview mode to fill entire window
 body.retro-theme.preview-mode .preview-pane {
   background: #ffffff !important;
   min-height: 100vh;
-}
+} */
 
 body.retro-theme.preview-mode .preview-content {
   background: #ffffff !important;
@@ -1837,11 +1837,11 @@ body.retro-theme.preview-mode .preview-content {
   min-height: calc(100vh - 32px); /* Account for any padding */
 }
 
-/* Ensure retro theme welcome page fills window */
+/* Ensure retro theme welcome page fills window
 body.retro-theme .welcome-page {
   background: #c0c0c0 !important;
   min-height: 100vh;
-}
+} */
 
 body.retro-theme .welcome-content h1 {
   color: #000080;
@@ -2544,6 +2544,8 @@ body.distraction-free .main-content {
 /* Distraction-free mode for Preview mode */
 body.distraction-free.preview-mode .preview-pane {
   width: 100% !important;
+  display: flex !important;
+  flex-direction: column;
 }
 
 body.distraction-free.preview-mode .editor-pane,
@@ -2597,6 +2599,8 @@ body.distraction-free.preview-mode .preview-content {
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Centered layout in distraction-free mode */
@@ -2973,8 +2977,8 @@ body:has(.markdown-toolbar.pinned) .main-content {
 }
 
 /* Show toolbar in code and split modes */
-.main-content.code-mode .markdown-toolbar,
-.main-content.split-mode .markdown-toolbar {
+/* .main-content.split-mode .markdown-toolbar */
+.main-content.code-mode .markdown-toolbar {
   display: block;
 }
 

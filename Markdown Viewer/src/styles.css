@@ -226,6 +226,16 @@ body.retro-theme .toolbar-btn.dirty:active {
   text-decoration: line-through;
 }
 
+/* Monaco Find Widget Overlay */
+.monaco-editor .find-widget {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  z-index: 1000 !important;
+  margin: 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
 /* Fallback Editor */
 #editor {
   flex: 1;

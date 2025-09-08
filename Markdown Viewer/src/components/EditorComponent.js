@@ -203,7 +203,12 @@ class EditorComponent extends BaseComponent {
           showSnippets: this.suggestionsEnabled,
           showWords: this.suggestionsEnabled
         },
-        quickSuggestions: this.suggestionsEnabled
+        quickSuggestions: this.suggestionsEnabled,
+        find: {
+          addExtraSpaceOnTop: false,
+          autoFindInSelection: 'never',
+          seedSearchStringFromSelection: 'always'
+        }
       };
       
       this.monacoEditor = monaco.editor.create(this.monacoContainer, editorOptions);

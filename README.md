@@ -29,6 +29,7 @@
 - **Export Options**: HTML export and PDF printing
 - **Font Size Controls**: Adjustable font size (10px-24px) in markdown toolbar
 - **Preview Zoom**: Zoom controls (50%-300%) with keyboard shortcuts
+- **Find & Replace**: Toggle find widget with Ctrl+F/Cmd+F, appears as overlay without disrupting layout
 - **Undo/Redo Buttons**: Quick access undo/redo in markdown toolbar
 - **Toolbar Sizing**: Configurable toolbar sizes (Small/Medium/Large)
 

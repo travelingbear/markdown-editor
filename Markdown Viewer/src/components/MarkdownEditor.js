@@ -1672,16 +1672,20 @@ class MarkdownEditor extends BaseComponent {
       return;
     }
     
-    // Open Monaco's find and replace widget for code/split mode
+    // Toggle Monaco's find widget
     const editor = this.editorComponent.monacoEditor;
     const findController = editor.getContribution('editor.contrib.findController');
     if (findController) {
-      findController.start({
-        forceRevealReplace: true,
-        seedSearchStringFromSelection: 'single',
-        seedSearchStringFromNonEmptySelection: true,
-        shouldFocus: 1
-      });
+      if (findController.getState().isRevealed) {
+        findController.closeFindWidget();
+      } else {
+        findController.start({
+          forceRevealReplace: true,
+          seedSearchStringFromSelection: 'single',
+          seedSearchStringFromNonEmptySelection: true,
+          shouldFocus: 1
+        });
+      }
     }
     editor.focus();
   }

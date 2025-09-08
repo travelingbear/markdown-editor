@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 3.1.3 (2025-01-07)
+
+### Improvements
+- **Find Widget Toggle**: Enhanced Find & Replace functionality with proper toggle behavior - clicking the Find button or pressing Ctrl+F/Cmd+F now opens and closes the find widget
+- **Find Widget Overlay**: Find widget now appears as an overlay in the top-right corner without pushing editor content down
+- **Monaco Editor Configuration**: Added find widget overlay configuration to prevent layout disruption
+
+### Technical Changes
+- Enhanced Monaco Editor find widget configuration with `addExtraSpaceOnTop: false`
+- Improved find widget CSS positioning for overlay behavior
+- Updated find widget toggle logic using Monaco's internal state management
+
 ## Version 3.1.2 (2025-01-07)
 
 ### Improvements

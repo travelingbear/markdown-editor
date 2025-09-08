@@ -268,15 +268,15 @@ class EditorComponent extends BaseComponent {
     });
     
     // Headers
-    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit1, () => {
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Digit1, () => {
       this.emit('markdown-action', { action: 'h1' });
     });
     
-    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit2, () => {
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Digit2, () => {
       this.emit('markdown-action', { action: 'h2' });
     });
     
-    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Digit3, () => {
+    this.monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Digit3, () => {
       this.emit('markdown-action', { action: 'h3' });
     });
     

@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 3.1.2 (2025-01-07)
+
+### Improvements
+- **Extended Tab Shortcuts**: Extended tab switching shortcuts from Alt+1-5 to Alt+1-9 (Cmd+1-9 on macOS) to support cycling through more tabs
+- **Auto-scroll Enhancement**: Added auto-scrolling functionality for pinned tabs and dropdown lists when cycling through tabs beyond visible window
+- **Keyboard Shortcut Optimization**: Swapped mode switching shortcuts (now Ctrl+Shift+1-3) with heading shortcuts (now Ctrl+1-3) to make headings more accessible in code mode
+
+### Technical Changes
+- Enhanced tab management with auto-scroll support for better navigation
+- Improved keyboard shortcut handling for more intuitive editing experience
+- Updated help modal and documentation to reflect new shortcut mappings
+
 ## Version 3.1.1 (2025-01-07)
 
 ### Bug Fixes

@@ -551,23 +551,23 @@ class MarkdownEditor extends BaseComponent {
       }
     }
     
-    // Mode switching: always use Ctrl+1-3 (even on macOS)
+    // Mode switching: always use Ctrl+Shift+1-3 (even on macOS)
     if (useCtrlForModes) {
       switch (e.key) {
         case '1':
-          if (!e.shiftKey) {
+          if (e.shiftKey) {
             e.preventDefault();
             this.setMode('code');
           }
           break;
         case '2':
-          if (!e.shiftKey) {
+          if (e.shiftKey) {
             e.preventDefault();
             this.setMode('preview');
           }
           break;
         case '3':
-          if (!e.shiftKey) {
+          if (e.shiftKey) {
             e.preventDefault();
             this.setMode('split');
           }
@@ -2829,9 +2829,9 @@ class MarkdownEditor extends BaseComponent {
     // Clear existing dropdown items
     tabDropdownList.innerHTML = '';
     
-    // Show up to 5 most recent tabs in dropdown (newest first)
-    const visibleTabs = tabs.slice(0, 5);
-    const showMoreBtn = tabs.length > 5;
+    // Show up to 9 most recent tabs in dropdown (newest first)
+    const visibleTabs = tabs.slice(0, 9);
+    const showMoreBtn = tabs.length > 9;
     
     visibleTabs.forEach((tab, index) => {
       const tabElement = this.createDropdownTabElement(tab, activeTab, index);
@@ -2840,6 +2840,19 @@ class MarkdownEditor extends BaseComponent {
     
     // Show/hide more button
     tabMoreBtn.style.display = showMoreBtn ? 'block' : 'none';
+    
+    // Auto-scroll dropdown to active tab if dropdown is open
+    if (activeTab) {
+      setTimeout(() => {
+        const tabDropdownMenu = document.getElementById('tab-dropdown-menu');
+        if (tabDropdownMenu && tabDropdownMenu.classList.contains('show')) {
+          const activeElement = tabDropdownList.querySelector('.tab-dropdown-item.active');
+          if (activeElement) {
+            activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      }, 50);
+    }
     
     // Update scroll sync button
     this.updateScrollSyncButton();
@@ -2990,6 +3003,15 @@ class MarkdownEditor extends BaseComponent {
     const tabDropdownMenu = document.getElementById('tab-dropdown-menu');
     if (tabDropdownMenu) {
       tabDropdownMenu.classList.add('show');
+      
+      // Auto-scroll to active tab when dropdown opens
+      setTimeout(() => {
+        const tabDropdownList = document.getElementById('tab-dropdown-list');
+        const activeElement = tabDropdownList?.querySelector('.tab-dropdown-item.active');
+        if (activeElement) {
+          activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 50);
     }
   }
   
@@ -3050,12 +3072,12 @@ class MarkdownEditor extends BaseComponent {
     const item = document.createElement('div');
     item.className = `tab-modal-item ${tab.id === activeTab?.id ? 'active' : ''}`;
     
-    // Check if this tab is in the top 5 (dropdown)
+    // Check if this tab is in the top 9 (dropdown)
     const allTabs = this.tabManager.getAllTabs();
     const tabIndex = allTabs.findIndex(t => t.id === tab.id);
-    const isInDropdown = tabIndex < 5;
+    const isInDropdown = tabIndex < 9;
     
-    // Add position number for top 5 tabs
+    // Add position number for top 9 tabs
     if (isInDropdown) {
       const number = document.createElement('div');
       number.className = 'tab-modal-number';
@@ -3113,20 +3135,20 @@ class MarkdownEditor extends BaseComponent {
   // Enhanced Tab Features - Phase 4
   
   setupTabKeyboardShortcuts() {
-    // Alt+1-5 for switching to numbered tabs in dropdown (most recent first)
-    // On macOS, also support Cmd+1-5 as an alternative
+    // Alt+1-9 for switching to numbered tabs in dropdown (most recent first)
+    // On macOS, also support Cmd+1-9 as an alternative
     document.addEventListener('keydown', (e) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const useAltKey = e.altKey || (isMac && e.metaKey);
       
-      if (useAltKey && e.key >= '1' && e.key <= '5') {
+      if (useAltKey && e.key >= '1' && e.key <= '9') {
         const tabIndex = parseInt(e.key) - 1;
         const tabs = this.tabManager.getAllTabs();
-        const visibleTabs = tabs.slice(0, 5); // First 5 tabs (most recent first)
+        const availableTabs = tabs.slice(0, 9); // First 9 tabs (most recent first)
         
-        if (visibleTabs[tabIndex]) {
+        if (availableTabs[tabIndex]) {
           e.preventDefault();
-          this.switchToTab(visibleTabs[tabIndex].id);
+          this.switchToTab(availableTabs[tabIndex].id);
         }
       }
     });
@@ -3476,8 +3498,8 @@ class MarkdownEditor extends BaseComponent {
       const pinnedTab = document.createElement('div');
       pinnedTab.className = `pinned-tab ${tab.id === activeTab?.id ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
       
-      // Add number for first 5 tabs
-      if (index < 5) {
+      // Add number for first 9 tabs
+      if (index < 9) {
         const tabNumber = document.createElement('div');
         tabNumber.className = 'pinned-tab-number';
         tabNumber.textContent = (index + 1).toString();
@@ -3510,6 +3532,16 @@ class MarkdownEditor extends BaseComponent {
       
       pinnedTabsList.appendChild(pinnedTab);
     });
+    
+    // Auto-scroll to active tab
+    if (activeTab) {
+      setTimeout(() => {
+        const activeElement = pinnedTabsList.querySelector('.pinned-tab.active');
+        if (activeElement) {
+          activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+      }, 50);
+    }
   }
   
   async setupTauriFileDrop() {

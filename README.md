@@ -11,9 +11,9 @@
 ### Multi-Tab Interface
 - **Smart Tab Management**: Open multiple files with intelligent tab organization
 - **Performance Optimized**: Handles 100+ tabs with virtualization and lazy loading
-- **Tab Navigation**: Quick access dropdown for recent 5 tabs, modal for all tabs
+- **Tab Navigation**: Quick access dropdown for recent 9 tabs, modal for all tabs
 - **Context Menus**: Right-click tabs for advanced operations (move, close, duplicate)
-- **Keyboard Shortcuts**: Alt+1-5 for numbered tabs, Ctrl+Tab for navigation
+- **Keyboard Shortcuts**: Alt+1-9 for numbered tabs, Ctrl+Tab for navigation
 
 ### Core Functionality
 - **Three-Mode Interface**: Code, Preview, and Split view modes
@@ -69,7 +69,7 @@
 3. **Navigate tabs** - Click filename for recent tabs, Ctrl+Shift+Tab for all tabs
 4. **Choose your mode** - Code for editing, Preview for reading, Split for both
 5. **Customize settings** - Press Ctrl+, to configure theme, toolbar sizes, and preferences
-6. **Use shortcuts** - Alt+1-5 for tab switching, Ctrl+=/-/0 for zoom, right-click for context menus
+6. **Use shortcuts** - Alt+1-9 for tab switching, Ctrl+=/-/0 for zoom, right-click for context menus
 
 ### Architecture
 - **Frontend**: Component-based architecture with Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js

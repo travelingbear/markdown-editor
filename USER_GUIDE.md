@@ -79,20 +79,27 @@
 - **Ctrl+W** - Close current tab
 
 ### View Modes
-- **Ctrl+1** - Code mode
-- **Ctrl+2** - Preview mode
-- **Ctrl+3** - Split mode
+- **Ctrl+Shift+1** - Code mode
+- **Ctrl+Shift+2** - Preview mode
+- **Ctrl+Shift+3** - Split mode
 
 ### Tab Navigation
 - **Ctrl+Tab** - Switch to next tab
 - **Ctrl+Shift+Tab** - Open tab modal (search all tabs)
-- **Alt+1-5** - Switch to numbered tab (1st-5th in dropdown)
+- **Alt+1-9** - Switch to numbered tab (1st-9th in dropdown)
 
 ### Editor Controls
 - **Ctrl+=** - Zoom in preview
 - **Ctrl+-** - Zoom out preview
 - **Ctrl+0** - Reset preview zoom
 - **F5** - Refresh preview
+
+### Markdown Editing (Code Mode)
+- **Ctrl+1** - Insert H1 heading
+- **Ctrl+2** - Insert H2 heading
+- **Ctrl+3** - Insert H3 heading
+- **Ctrl+B** - Bold text
+- **Ctrl+I** - Italic text
 
 ### Application
 - **Ctrl+T** or **Ctrl+/** - Toggle theme
@@ -117,8 +124,8 @@
 ## 📁 Tab Management
 
 ### Tab Interface
-- **Status Bar Dropdown**: Shows first 5 most recent tabs with numbers 1-5
-- **More Button**: Appears when you have more than 5 tabs open
+- **Status Bar Dropdown**: Shows first 9 most recent tabs with numbers 1-9
+- **More Button**: Appears when you have more than 9 tabs open
 - **Tab Modal**: Search and navigate through all open tabs
 
 ### Tab Operations
@@ -128,11 +135,11 @@
 - **Tab Persistence**: All tabs restore when you restart the app
 
 ### Smart Tab Behavior
-- **Numbered Access**: Alt+1-5 switches to numbered tabs in dropdown
+- **Numbered Access**: Alt+1-9 switches to numbered tabs in dropdown
 - **Dynamic Updates**: Selecting tabs from modal (not in dropdown) moves them to #1
-- **Context Menu**: Right-click tabs for close, duplicate, reveal in explorer, and "Move to..." positions 1-5
+- **Context Menu**: Right-click tabs for close, duplicate, reveal in explorer, and "Move to..." positions 1-9
 - **Search**: Use tab modal to search through all open files
-- **Tab Reordering**: Use "Move to..." context menu to move tabs to specific positions (1-5)
+- **Tab Reordering**: Use "Move to..." context menu to move tabs to specific positions (1-9)
 
 ### Tab Limits & Performance
 - **Maximum**: 100+ tabs can be open simultaneously

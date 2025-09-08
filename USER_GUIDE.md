@@ -79,13 +79,14 @@
 - **Ctrl+W** - Close current tab
 
 ### View Modes
-- **Ctrl+Shift+1** - Code mode
-- **Ctrl+Shift+2** - Preview mode
-- **Ctrl+Shift+3** - Split mode
+- **Ctrl+1** - Code mode
+- **Ctrl+2** - Preview mode
+- **Ctrl+3** - Split mode
 
 ### Tab Navigation
 - **Ctrl+Tab** - Switch to next tab
-- **Ctrl+Shift+Tab** - Open tab modal (search all tabs)
+- **Ctrl+Shift+Tab** - Switch to previous tab
+- **Ctrl+Shift+M** - Open tab modal (search all tabs)
 - **Alt+1-9** - Switch to numbered tab (1st-9th in dropdown)
 
 ### Editor Controls
@@ -94,10 +95,15 @@
 - **Ctrl+0** - Reset preview zoom
 - **F5** - Refresh preview
 
+### Mouse Wheel Shortcuts
+- **Ctrl+Mouse scroll up/down** - Increase/decrease font size in Code mode, zoom in/out in Preview mode
+- **Ctrl+Shift+Mouse scroll up/down** - Switch between modes (Code/Preview/Split)
+- **Alt+Mouse scroll up/down** (Cmd on macOS) - Cycle between tabs forward/backward
+
 ### Markdown Editing (Code Mode)
-- **Ctrl+1** - Insert H1 heading
-- **Ctrl+2** - Insert H2 heading
-- **Ctrl+3** - Insert H3 heading
+- **Ctrl+Shift+1** - Insert H1 heading
+- **Ctrl+Shift+2** - Insert H2 heading
+- **Ctrl+Shift+3** - Insert H3 heading
 - **Ctrl+B** - Bold text
 - **Ctrl+I** - Italic text
 

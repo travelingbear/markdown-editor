@@ -494,6 +494,11 @@ class MarkdownEditor extends BaseComponent {
       this.handleKeyboardShortcuts(e);
     });
     
+    // Mouse wheel shortcuts
+    document.addEventListener('wheel', (e) => {
+      this.handleMouseWheelShortcuts(e);
+    }, { passive: false });
+    
     // Window close handler
     this.setupWindowCloseHandler();
     
@@ -551,23 +556,23 @@ class MarkdownEditor extends BaseComponent {
       }
     }
     
-    // Mode switching: always use Ctrl+Shift+1-3 (even on macOS)
+    // Mode switching: always use Ctrl+1-3 (even on macOS)
     if (useCtrlForModes) {
       switch (e.key) {
         case '1':
-          if (e.shiftKey) {
+          if (!e.shiftKey) {
             e.preventDefault();
             this.setMode('code');
           }
           break;
         case '2':
-          if (e.shiftKey) {
+          if (!e.shiftKey) {
             e.preventDefault();
             this.setMode('preview');
           }
           break;
         case '3':
-          if (e.shiftKey) {
+          if (!e.shiftKey) {
             e.preventDefault();
             this.setMode('split');
           }
@@ -585,6 +590,13 @@ class MarkdownEditor extends BaseComponent {
         case ',':
           e.preventDefault();
           this.showSettings();
+          break;
+        case 'm':
+        case 'M':
+          if (e.shiftKey) {
+            e.preventDefault();
+            this.showTabModal();
+          }
           break;
         case 'p':
           if (e.shiftKey) {
@@ -624,7 +636,7 @@ class MarkdownEditor extends BaseComponent {
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
       if (e.shiftKey) {
-        this.showTabModal();
+        this.switchToPreviousTab();
       } else {
         this.switchToNextTab();
       }
@@ -667,6 +679,58 @@ class MarkdownEditor extends BaseComponent {
           document.exitFullscreen();
         }
         break;
+    }
+  }
+
+  handleMouseWheelShortcuts(e) {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    
+    // Ctrl+Mouse wheel: Font size in Code mode, Zoom in Preview mode
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) { // Scroll up
+        if (this.currentMode === 'code') {
+          this.toolbarComponent.changeFontSize(2);
+        } else if (this.currentMode === 'preview' || this.currentMode === 'split') {
+          this.toolbarComponent.changeZoom(0.1);
+        }
+      } else if (e.deltaY > 0) { // Scroll down
+        if (this.currentMode === 'code') {
+          this.toolbarComponent.changeFontSize(-2);
+        } else if (this.currentMode === 'preview' || this.currentMode === 'split') {
+          this.toolbarComponent.changeZoom(-0.1);
+        }
+      }
+      return;
+    }
+    
+    // Ctrl+Shift+Mouse wheel: Switch between modes
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+      e.preventDefault();
+      const modes = ['code', 'preview', 'split'];
+      const currentIndex = modes.indexOf(this.currentMode);
+      
+      if (e.deltaY < 0) { // Scroll up - next mode
+        const nextIndex = (currentIndex + 1) % modes.length;
+        this.setMode(modes[nextIndex]);
+      } else if (e.deltaY > 0) { // Scroll down - previous mode
+        const prevIndex = currentIndex === 0 ? modes.length - 1 : currentIndex - 1;
+        this.setMode(modes[prevIndex]);
+      }
+      return;
+    }
+    
+    // Alt+Mouse wheel (Cmd+Mouse wheel on macOS): Cycle between tabs
+    const useAltKey = e.altKey || (isMac && e.metaKey && !e.ctrlKey);
+    if (useAltKey && this.tabManager.hasTabs()) {
+      e.preventDefault();
+      
+      if (e.deltaY < 0) { // Scroll up - next tab
+        this.switchToNextTab();
+      } else if (e.deltaY > 0) { // Scroll down - previous tab
+        this.switchToPreviousTab();
+      }
+      return;
     }
   }
 

@@ -3544,6 +3544,7 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
 }
 
 .performance-actions {
+  margin-top: 10px;
   display: flex;
   gap: 8px;
   justify-content: center;

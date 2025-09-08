@@ -735,10 +735,10 @@ class MarkdownEditor extends BaseComponent {
     if (useAltKey && this.tabManager.hasTabs()) {
       e.preventDefault();
       
-      if (e.deltaY < 0) { // Scroll up - next tab
-        this.switchToNextTab();
-      } else if (e.deltaY > 0) { // Scroll down - previous tab
+      if (e.deltaY < 0) { // Scroll up - previous tab
         this.switchToPreviousTab();
+      } else if (e.deltaY > 0) { // Scroll down - next tab
+        this.switchToNextTab();
       }
       return;
     }

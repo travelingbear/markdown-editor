@@ -419,6 +419,10 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent.on('file-reload-requested', () => {
       this.reloadCurrentFile();
     });
+    
+    this.toolbarComponent.on('markdown-insert', (data) => {
+      this.insertMarkdownText(data.text);
+    });
   }
 
   applyInitialSettings() {
@@ -666,6 +670,8 @@ class MarkdownEditor extends BaseComponent {
         const settingsModal = document.getElementById('settings-modal');
         const helpModal = document.getElementById('help-modal');
         const aboutModal = document.getElementById('about-modal');
+        const linkModal = document.getElementById('link-modal');
+        const imageModal = document.getElementById('image-modal');
         
         if (settingsModal && settingsModal.style.display === 'flex') {
           this.hideSettings();
@@ -673,6 +679,10 @@ class MarkdownEditor extends BaseComponent {
           this.hideHelp();
         } else if (aboutModal && aboutModal.style.display === 'flex') {
           this.hideAbout();
+        } else if (linkModal && linkModal.style.display === 'flex') {
+          this.toolbarComponent.hideLinkModal();
+        } else if (imageModal && imageModal.style.display === 'flex') {
+          this.toolbarComponent.hideImageModal();
         } else if (this.isDistractionFree) {
           this.exitDistractionFree();
         } else if (document.fullscreenElement) {
@@ -1435,6 +1445,23 @@ class MarkdownEditor extends BaseComponent {
     }
     
     editor.executeEdits('markdown-toolbar-alignment', edits);
+    this.documentComponent.handleContentChange(editor.getValue());
+  }
+  
+  insertMarkdownText(text) {
+    if (!this.editorComponent.isMonacoLoaded || !this.editorComponent.monacoEditor) {
+      return;
+    }
+    
+    const editor = this.editorComponent.monacoEditor;
+    const position = editor.getPosition();
+    
+    editor.executeEdits('markdown-insert', [{
+      range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+      text: text
+    }]);
+    
+    editor.focus();
     this.documentComponent.handleContentChange(editor.getValue());
   }
 

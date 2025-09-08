@@ -250,8 +250,8 @@ class ToolbarComponent extends BaseComponent {
   setupMarkdownToolbarEvents() {
     if (!this.markdownToolbar) return;
     
-    // Markdown formatting buttons
-    const mdButtons = this.markdownToolbar.querySelectorAll('.md-btn');
+    // Markdown formatting buttons (excluding dropdown buttons)
+    const mdButtons = this.markdownToolbar.querySelectorAll('.md-btn:not(.md-dropdown-arrow)');
     mdButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -269,6 +269,142 @@ class ToolbarComponent extends BaseComponent {
         }
       });
     });
+    
+    // Setup dropdown functionality
+    this.setupMarkdownDropdowns();
+    
+    // Setup modal functionality
+    this.setupMarkdownModals();
+  }
+  
+  setupMarkdownDropdowns() {
+    // Link dropdown
+    const linkDropdownArrow = document.getElementById('link-dropdown-arrow');
+    const linkDropdownMenu = document.getElementById('link-dropdown-menu');
+    const linkInsertBtn = document.getElementById('link-insert-btn');
+    
+    if (linkDropdownArrow && linkDropdownMenu) {
+      linkDropdownArrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleMarkdownDropdown('link');
+      });
+    }
+    
+    if (linkInsertBtn) {
+      linkInsertBtn.addEventListener('click', () => {
+        this.hideMarkdownDropdown('link');
+        this.showLinkModal();
+      });
+    }
+    
+    // Image dropdown
+    const imageDropdownArrow = document.getElementById('image-dropdown-arrow');
+    const imageDropdownMenu = document.getElementById('image-dropdown-menu');
+    const imageOpenBtn = document.getElementById('image-open-btn');
+    
+    if (imageDropdownArrow && imageDropdownMenu) {
+      imageDropdownArrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleMarkdownDropdown('image');
+      });
+    }
+    
+    if (imageOpenBtn) {
+      imageOpenBtn.addEventListener('click', () => {
+        this.hideMarkdownDropdown('image');
+        this.showImageModal();
+      });
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.md-dropdown-container')) {
+        this.hideAllMarkdownDropdowns();
+      }
+    });
+  }
+  
+  setupMarkdownModals() {
+    // Link modal
+    const linkModal = document.getElementById('link-modal');
+    const linkModalClose = document.getElementById('link-modal-close');
+    const linkCancelBtn = document.getElementById('link-cancel-btn');
+    const linkInsertConfirmBtn = document.getElementById('link-insert-confirm-btn');
+    const linkModalOverlay = linkModal?.querySelector('.link-modal-overlay');
+    
+    if (linkModalClose) {
+      linkModalClose.addEventListener('click', () => this.hideLinkModal());
+    }
+    if (linkCancelBtn) {
+      linkCancelBtn.addEventListener('click', () => this.hideLinkModal());
+    }
+    if (linkModalOverlay) {
+      linkModalOverlay.addEventListener('click', () => this.hideLinkModal());
+    }
+    if (linkInsertConfirmBtn) {
+      linkInsertConfirmBtn.addEventListener('click', () => this.insertLink());
+    }
+    
+    // Image modal
+    const imageModal = document.getElementById('image-modal');
+    const imageModalClose = document.getElementById('image-modal-close');
+    const imageCancelBtn = document.getElementById('image-cancel-btn');
+    const imageInsertBtn = document.getElementById('image-insert-btn');
+    const imageModalOverlay = imageModal?.querySelector('.image-modal-overlay');
+    
+    if (imageModalClose) {
+      imageModalClose.addEventListener('click', () => this.hideImageModal());
+    }
+    if (imageCancelBtn) {
+      imageCancelBtn.addEventListener('click', () => this.hideImageModal());
+    }
+    if (imageModalOverlay) {
+      imageModalOverlay.addEventListener('click', () => this.hideImageModal());
+    }
+    if (imageInsertBtn) {
+      imageInsertBtn.addEventListener('click', () => this.insertImage());
+    }
+    
+    // Image modal tabs
+    const imageTabs = document.querySelectorAll('.image-tab');
+    imageTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        this.switchImageTab(tabName);
+      });
+    });
+    
+    // File drop zone
+    const dropZone = document.getElementById('image-drop-zone');
+    const fileInput = document.getElementById('image-file-input');
+    
+    if (dropZone && fileInput) {
+      dropZone.addEventListener('click', () => fileInput.click());
+      
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+      
+      dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+      });
+      
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          this.handleImageFile(files[0]);
+        }
+      });
+      
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          this.handleImageFile(e.target.files[0]);
+        }
+      });
+    }
   }
 
   /**
@@ -528,6 +664,207 @@ class ToolbarComponent extends BaseComponent {
     }
   }
 
+  // Dropdown methods
+  toggleMarkdownDropdown(type) {
+    const menu = document.getElementById(`${type}-dropdown-menu`);
+    if (menu) {
+      if (menu.classList.contains('show')) {
+        this.hideMarkdownDropdown(type);
+      } else {
+        this.hideAllMarkdownDropdowns();
+        this.showMarkdownDropdown(type);
+      }
+    }
+  }
+  
+  showMarkdownDropdown(type) {
+    const menu = document.getElementById(`${type}-dropdown-menu`);
+    const button = document.getElementById(`${type}-dropdown-arrow`);
+    if (menu && button) {
+      // Move to body to escape stacking context
+      document.body.appendChild(menu);
+      
+      const rect = button.getBoundingClientRect();
+      menu.style.left = rect.left + 'px';
+      menu.style.top = (rect.bottom + 2) + 'px';
+      menu.style.width = (rect.width + button.previousElementSibling.getBoundingClientRect().width) + 'px';
+      menu.style.zIndex = '2147483647'; // Maximum z-index
+      menu.classList.add('show');
+    }
+  }
+  
+  hideMarkdownDropdown(type) {
+    const menu = document.getElementById(`${type}-dropdown-menu`);
+    if (menu) {
+      menu.classList.remove('show');
+      // Move back to original container
+      const container = document.getElementById(`${type}-dropdown-container`);
+      if (container && menu.parentNode !== container) {
+        container.appendChild(menu);
+      }
+    }
+  }
+  
+  hideAllMarkdownDropdowns() {
+    this.hideMarkdownDropdown('link');
+    this.hideMarkdownDropdown('image');
+  }
+  
+  // Modal methods
+  showLinkModal() {
+    const modal = document.getElementById('link-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      // Focus on first input
+      const linkText = document.getElementById('link-text');
+      if (linkText) {
+        setTimeout(() => linkText.focus(), 100);
+      }
+    }
+  }
+  
+  hideLinkModal() {
+    const modal = document.getElementById('link-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      // Clear form
+      document.getElementById('link-text').value = '';
+      document.getElementById('link-url').value = '';
+      document.getElementById('link-title').value = '';
+    }
+  }
+  
+  showImageModal() {
+    const modal = document.getElementById('image-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      // Reset to URL tab
+      this.switchImageTab('url');
+    }
+  }
+  
+  hideImageModal() {
+    const modal = document.getElementById('image-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      // Clear form
+      document.getElementById('image-url').value = '';
+      document.getElementById('image-alt').value = '';
+      document.getElementById('image-title').value = '';
+      document.getElementById('image-link').value = '';
+      document.getElementById('file-image-alt').value = '';
+      document.getElementById('file-image-link').value = '';
+      document.getElementById('image-file-input').value = '';
+      document.getElementById('file-alt-group').style.display = 'none';
+      document.getElementById('file-link-group').style.display = 'none';
+    }
+  }
+  
+  switchImageTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.image-tab').forEach(tab => {
+      tab.classList.remove('active');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+      pane.classList.remove('active');
+    });
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+  }
+  
+  insertLink() {
+    const linkText = document.getElementById('link-text').value.trim();
+    const linkUrl = document.getElementById('link-url').value.trim();
+    const linkTitle = document.getElementById('link-title').value.trim();
+    
+    if (!linkUrl) {
+      alert('Please enter a URL');
+      return;
+    }
+    
+    const text = linkText || linkUrl;
+    const title = linkTitle ? ` "${linkTitle}"` : '';
+    const markdown = `[${text}](${linkUrl}${title})`;
+    
+    this.emit('markdown-insert', { text: markdown });
+    this.hideLinkModal();
+  }
+  
+  insertImage() {
+    const activeTab = document.querySelector('.image-tab.active').getAttribute('data-tab');
+    
+    if (activeTab === 'url') {
+      const imageUrl = document.getElementById('image-url').value.trim();
+      const imageAlt = document.getElementById('image-alt').value.trim();
+      const imageTitle = document.getElementById('image-title').value.trim();
+      const imageLink = document.getElementById('image-link').value.trim();
+      
+      if (!imageUrl) {
+        alert('Please enter an image URL');
+        return;
+      }
+      
+      const alt = imageAlt || 'Image';
+      const title = imageTitle ? ` "${imageTitle}"` : '';
+      let markdown = `![${alt}](${imageUrl}${title})`;
+      
+      if (imageLink) {
+        markdown = `[${markdown}](${imageLink})`;
+      }
+      
+      this.emit('markdown-insert', { text: markdown });
+      this.hideImageModal();
+    } else if (activeTab === 'file') {
+      const fileInput = document.getElementById('image-file-input');
+      const fileAlt = document.getElementById('file-image-alt').value.trim();
+      const fileLink = document.getElementById('file-image-link').value.trim();
+      
+      if (!fileInput.files.length) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      const file = fileInput.files[0];
+      const alt = fileAlt || file.name.split('.')[0];
+      
+      let markdown = `![${alt}](${file.name})`;
+      
+      if (fileLink) {
+        markdown = `[${markdown}](${fileLink})`;
+      }
+      
+      this.emit('markdown-insert', { text: markdown });
+      this.hideImageModal();
+    }
+  }
+  
+  handleImageFile(file) {
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
+    // Show the alt text and link inputs
+    document.getElementById('file-alt-group').style.display = 'block';
+    document.getElementById('file-link-group').style.display = 'block';
+    
+    // Set default alt text to filename without extension
+    const altInput = document.getElementById('file-image-alt');
+    altInput.value = file.name.split('.')[0];
+    
+    // Update drop zone to show selected file
+    const dropZone = document.getElementById('image-drop-zone');
+    const dropText = dropZone.querySelector('.drop-text');
+    const dropStatus = dropZone.querySelector('.drop-status');
+    
+    if (dropText && dropStatus) {
+      dropText.textContent = file.name;
+      dropStatus.textContent = 'File selected';
+    }
+  }
+  
   onDestroy() {
     // Clean up any resources
     this.currentMode = 'preview';

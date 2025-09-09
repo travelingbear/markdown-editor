@@ -1354,7 +1354,8 @@ kbd {
   .status-bar,
   .welcome-page,
   .splitter,
-  .markdown-toolbar {
+  .markdown-toolbar,
+  .pinned-tabs-bar {
     display: none !important;
   }
   

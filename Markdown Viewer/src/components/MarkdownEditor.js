@@ -6,20 +6,23 @@ class MarkdownEditor extends BaseComponent {
   constructor(options = {}) {
     super('MarkdownEditor', options);
     
+    // Extract controllers from options or set to null for default creation
+    this.controllers = options.controllers || {};
+    
     // Component instances
     this.documentComponent = null;
     this.editorComponent = null;
     this.previewComponent = null;
     this.toolbarComponent = null;
     this.tabManager = null;
-    this.fileController = null;
-    this.uiController = null;
-    this.keyboardController = null;
-    this.settingsController = null;
-    this.tabUIController = null;
-    this.modeController = null;
-    this.markdownActionController = null;
-    this.exportController = null;
+    this.fileController = this.controllers.fileController || null;
+    this.uiController = this.controllers.uiController || null;
+    this.keyboardController = this.controllers.keyboardController || null;
+    this.settingsController = this.controllers.settingsController || null;
+    this.tabUIController = this.controllers.tabUIController || null;
+    this.modeController = this.controllers.modeController || null;
+    this.markdownActionController = this.controllers.markdownActionController || null;
+    this.exportController = this.controllers.exportController || null;
     
     // Performance tracking
     this.startupTime = 0;
@@ -106,18 +109,24 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async createComponents() {
-    // Create settings controller first
-    this.settingsController = new SettingsController();
+    // Create settings controller first (or use injected one)
+    if (!this.settingsController) {
+      this.settingsController = new SettingsController();
+    }
     this.addChild(this.settingsController);
     await this.settingsController.init();
     
-    // Create UI controller
-    this.uiController = new UIController();
+    // Create UI controller (or use injected one)
+    if (!this.uiController) {
+      this.uiController = new UIController();
+    }
     this.addChild(this.uiController);
     await this.uiController.init();
     
-    // Create file controller
-    this.fileController = new FileController();
+    // Create file controller (or use injected one)
+    if (!this.fileController) {
+      this.fileController = new FileController();
+    }
     this.addChild(this.fileController);
     await this.fileController.init();
     this.fileController.setPerformanceOptimizer(this.performanceOptimizer);
@@ -147,26 +156,34 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.toolbarComponent);
     await this.toolbarComponent.init();
     
-    // Create mode controller (needs all components)
-    this.modeController = new ModeController();
+    // Create mode controller (or use injected one)
+    if (!this.modeController) {
+      this.modeController = new ModeController();
+    }
     this.addChild(this.modeController);
     await this.modeController.init();
     this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
     
-    // Create tab UI controller
-    this.tabUIController = new TabUIController();
+    // Create tab UI controller (or use injected one)
+    if (!this.tabUIController) {
+      this.tabUIController = new TabUIController();
+    }
     this.addChild(this.tabUIController);
     await this.tabUIController.init();
     this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
     
-    // Create markdown action controller
-    this.markdownActionController = new MarkdownActionController();
+    // Create markdown action controller (or use injected one)
+    if (!this.markdownActionController) {
+      this.markdownActionController = new MarkdownActionController();
+    }
     this.addChild(this.markdownActionController);
     await this.markdownActionController.init();
     this.markdownActionController.setDependencies(this.editorComponent, this.documentComponent);
     
-    // Create export controller
-    this.exportController = new ExportController();
+    // Create export controller (or use injected one)
+    if (!this.exportController) {
+      this.exportController = new ExportController();
+    }
     this.addChild(this.exportController);
     await this.exportController.init();
     this.exportController.setDependencies(this.editorComponent);
@@ -1882,5 +1899,17 @@ class MarkdownEditor extends BaseComponent {
   }
 }
 
+// Factory function for creating MarkdownEditor with default controllers
+function createMarkdownEditor(options = {}) {
+  // Create default controllers if not provided
+  const controllers = options.controllers || {};
+  
+  return new MarkdownEditor({
+    ...options,
+    controllers
+  });
+}
+
 // Export for use in main application
 window.MarkdownEditor = MarkdownEditor;
+window.createMarkdownEditor = createMarkdownEditor;

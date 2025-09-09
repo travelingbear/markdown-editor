@@ -8,9 +8,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('[App] Starting component-based markdown editor...');
     
-    // Create and initialize the main markdown editor component
-    markdownEditor = new MarkdownEditor({
+    // Create and initialize the main markdown editor component using factory
+    markdownEditor = createMarkdownEditor({
       // Pass any configuration options here
+      // controllers: {} // Custom controllers can be injected here
     });
     
     // Initialize the editor

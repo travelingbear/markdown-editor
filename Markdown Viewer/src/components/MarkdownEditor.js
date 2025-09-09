@@ -1989,7 +1989,7 @@ class MarkdownEditor extends BaseComponent {
         scrollRatio = editorScrollTop / editorMaxScroll;
       }
       
-      const amplifiedRatio = Math.min(1, scrollRatio * 1.3);
+      const amplifiedRatio = scrollRatio;
       
       const previewHeight = previewPane.clientHeight;
       const previewScrollHeight = previewPane.scrollHeight;

@@ -1389,6 +1389,17 @@ kbd {
     display: none !important;
   }
   
+  /* Ensure code mode prints full content */
+  .main-content.code-mode .editor-pane {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .main-content.code-mode .monaco-editor-container {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
   .preview-content,
   .monaco-editor-container,
   #editor {
@@ -1452,6 +1463,11 @@ kbd {
     padding: 12px !important;
     border-radius: 4px !important;
     overflow: visible !important;
+  }
+  
+  /* Hide code block UI elements */
+  .code-block-buttons {
+    display: none !important;
   }
   
   pre code {
@@ -1572,6 +1588,22 @@ kbd {
   .hljs-title { color: #6f42c1 !important; }
   .hljs-attr { color: #e36209 !important; }
   .hljs-built_in { color: #005cc5 !important; }
+  
+  /* Monaco editor print styles */
+  .monaco-editor {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .monaco-editor .view-lines {
+    color: black !important;
+  }
+  
+  .monaco-editor .mtk1,
+  .monaco-editor .mtk4,
+  .monaco-editor .mtk22 {
+    color: black !important;
+  }
   
   /* Math expressions */
   .math-display, .math-inline {

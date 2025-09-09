@@ -33,17 +33,39 @@ class ExportController extends BaseComponent {
 
   async exportToPdf() {
     try {
-      // Hide pinned tabs during print
+      // Hide pinned tabs and UI elements during print
       const pinnedTabs = document.getElementById('pinned-tabs-bar');
-      const originalDisplay = pinnedTabs?.style.display;
+      const codeButtons = document.querySelectorAll('.code-block-buttons');
+      const originalPinnedDisplay = pinnedTabs?.style.display;
+      
       if (pinnedTabs) pinnedTabs.style.display = 'none';
+      codeButtons.forEach(btn => btn.style.display = 'none');
+      
+      // Add print-friendly styles for code mode
+      const printStyle = document.createElement('style');
+      printStyle.id = 'temp-print-styles';
+      printStyle.textContent = `
+        @media print {
+          .monaco-editor .view-lines { color: black !important; }
+          .monaco-editor .mtk1, .monaco-editor .mtk4, .monaco-editor .mtk22 { color: black !important; }
+          .hljs-keyword { color: #d73a49 !important; }
+          .hljs-string { color: #032f62 !important; }
+          .hljs-comment { color: #6a737d !important; }
+        }`;
+      document.head.appendChild(printStyle);
       
       window.print();
       
-      // Restore pinned tabs
-      if (pinnedTabs && originalDisplay !== undefined) {
-        pinnedTabs.style.display = originalDisplay;
+      // Restore elements
+      if (pinnedTabs && originalPinnedDisplay !== undefined) {
+        pinnedTabs.style.display = originalPinnedDisplay;
       }
+      codeButtons.forEach(btn => btn.style.display = '');
+      
+      // Remove temporary styles
+      const tempStyle = document.getElementById('temp-print-styles');
+      if (tempStyle) tempStyle.remove();
+      
     } catch (error) {
       this.emit('export-error', { error, type: 'PDF Export' });
     }
@@ -101,9 +123,9 @@ class ExportController extends BaseComponent {
   }
 
   cleanPreviewHtml(previewClone) {
-    // Remove copy buttons and other UI elements
-    const copyButtons = previewClone.querySelectorAll('.copy-btn, .wrap-btn, .code-actions');
-    copyButtons.forEach(btn => btn.remove());
+    // Remove all UI elements from code blocks
+    const uiElements = previewClone.querySelectorAll('.copy-btn, .wrap-btn, .code-actions, .code-block-buttons');
+    uiElements.forEach(element => element.remove());
     
     return previewClone;
   }

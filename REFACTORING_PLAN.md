@@ -299,6 +299,131 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 
 ---
 
+## Phase 2.5: CSS Architecture Refactoring
+
+### Step 2.5.1: Extract Theme-Specific CSS Files
+**Branch:** `refactor/extract-theme-css`
+
+**Changes:**
+- Create `src/styles/themes/` directory structure
+- Extract light, dark, retro, and contrast theme styles into separate files
+- Create theme-specific CSS files with proper imports
+
+**Files Modified:**
+- `src/styles/themes/light.css` (new)
+- `src/styles/themes/dark.css` (new)
+- `src/styles/themes/retro.css` (new)
+- `src/styles/themes/contrast.css` (new)
+- `src/styles.css` (modified - remove theme-specific styles)
+- `src/index.html` (modified - update CSS imports)
+
+**Commit Message:** `refactor: extract theme-specific CSS into separate files`
+
+**User Validation Required:**
+- [ ] Test all themes render identically (light/dark/retro/contrast)
+- [ ] Verify theme switching works without visual changes
+- [ ] Test application startup with new CSS structure
+- [ ] Confirm no missing styles or broken layouts
+
+**Proceed Criteria:** All themes work identically to before
+
+**Estimated Reduction:** ~2000 lines from main styles.css
+
+---
+
+### Step 2.5.2: Organize Component-Based Stylesheets
+**Branch:** `refactor/organize-component-css`
+
+**Changes:**
+- Create `src/styles/components/` directory
+- Extract component-specific styles (toolbar, editor, preview, modals, tabs)
+- Create `src/styles/base/` for core styles (variables, reset, layout)
+- Create `src/styles/print/` for print-specific styles
+
+**Files Modified:**
+- `src/styles/base/variables.css` (new)
+- `src/styles/base/reset.css` (new)
+- `src/styles/base/layout.css` (new)
+- `src/styles/components/toolbar.css` (new)
+- `src/styles/components/editor.css` (new)
+- `src/styles/components/preview.css` (new)
+- `src/styles/components/modals.css` (new)
+- `src/styles/components/tabs.css` (new)
+- `src/styles/print/print.css` (new)
+- `src/styles.css` (modified - becomes main import file)
+
+**Commit Message:** `refactor: organize CSS into component-based structure`
+
+**User Validation Required:**
+- [ ] Test all UI components render correctly
+- [ ] Verify modal dialogs, toolbars, and tabs work
+- [ ] Test editor and preview pane functionality
+- [ ] Confirm print styles work for PDF export
+- [ ] Test responsive design on different screen sizes
+
+**Proceed Criteria:** All components and layouts work identically
+
+**Estimated Reduction:** ~3000 lines reorganized into logical files
+
+---
+
+### Step 2.5.3: Create Modular CSS Import System
+**Branch:** `refactor/modular-css-imports`
+
+**Changes:**
+- Create centralized CSS import system in main styles.css
+- Add CSS loading order optimization
+- Create plugin-ready CSS architecture
+- Add CSS build system preparation
+
+**Files Modified:**
+- `src/styles/main.css` (new - centralized imports)
+- `src/styles.css` (becomes lightweight import orchestrator)
+- `src/index.html` (modified - single CSS import)
+- Documentation for CSS architecture
+
+**Commit Message:** `refactor: implement modular CSS import system`
+
+**User Validation Required:**
+- [ ] Test complete application functionality
+- [ ] Verify CSS load order and performance
+- [ ] Test all themes and components work
+- [ ] Confirm no CSS conflicts or missing styles
+- [ ] Validate CSS architecture supports future plugins
+
+**Proceed Criteria:** Application works identically with new CSS architecture
+
+**Benefits for Plugin System:**
+- Plugins can easily add theme-specific styles
+- Component-based CSS supports plugin stylesheets
+- Modular structure enables CSS hot-reloading
+- Clean separation supports theme plugins
+
+**Final CSS Structure:**
+```
+src/styles/
+├── main.css (imports all)
+├── base/
+│   ├── variables.css
+│   ├── reset.css
+│   └── layout.css
+├── components/
+│   ├── toolbar.css
+│   ├── editor.css
+│   ├── preview.css
+│   ├── modals.css
+│   └── tabs.css
+├── themes/
+│   ├── light.css
+│   ├── dark.css
+│   ├── retro.css
+│   └── contrast.css
+└── print/
+    └── print.css
+```
+
+---
+
 ## Phase 3: Extension Points
 
 ### Step 3.1: Add Hook System to BaseComponent

@@ -159,6 +159,12 @@ class MarkdownEditor extends BaseComponent {
       }
       
       this.updateTabUI();
+      
+      // Update pinned tabs
+      if (this.settingsController.getPinnedTabsEnabled()) {
+        this.updatePinnedTabs();
+      }
+      
       this.switchToTab(data.tab.id);
       
       // Switch to default mode when first document is opened
@@ -170,6 +176,11 @@ class MarkdownEditor extends BaseComponent {
     
     this.tabManager.on('tab-removed', (data) => {
       this.updateTabUI();
+      
+      // Update pinned tabs
+      if (this.settingsController.getPinnedTabsEnabled()) {
+        this.updatePinnedTabs();
+      }
       
       // Update tab modal if it's open
       const tabModal = document.getElementById('tab-modal');

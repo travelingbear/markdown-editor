@@ -154,8 +154,8 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 
 ---
 
-### Step 1.6: Extract ModeController
-**Branch:** `refactor/extract-mode-controller`
+### Step 1.6: Extract ModeController ✅
+**Branch:** `refactor/extract-mode-controller` (merged)
 
 **Changes:**
 - Create `src/components/controllers/ModeController.js`
@@ -163,21 +163,26 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 - Move scroll position management and layout updates
 
 **Files Modified:**
-- `src/components/controllers/ModeController.js` (new)
-- `src/components/MarkdownEditor.js` (modified)
+- `src/components/controllers/ModeController.js` (new - 198 lines)
+- `src/components/MarkdownEditor.js` (modified - reduced ~57 lines)
 - `src/index.html` (modified)
 
 **Commit Message:** `refactor: extract mode management into ModeController`
 
 **User Validation Required:**
-- [ ] Test mode switching (code/preview/split)
-- [ ] Test scroll position preservation between modes
-- [ ] Test layout updates and pane visibility
-- [ ] Test Monaco editor loading in code/split modes
+- [x] Test mode switching (code/preview/split)
+- [x] Test scroll position preservation between modes
+- [x] Test layout updates and pane visibility
+- [x] Test Monaco editor loading in code/split modes
 
 **Proceed Criteria:** Mode switching works identically to before
 
-**Estimated Lines Reduced:** ~200 lines
+**Status:** ✅ COMPLETED & MERGED
+
+**Known Issues:**
+- Manual scroll sync accuracy needs improvement (deferred)
+
+**Actual Lines Reduced:** ~57 lines
 
 ---
 
@@ -461,7 +466,7 @@ After completing all phases:
 ## Current Status
 
 **Phase:** Phase 1 - Foundation Refactoring (Extended)  
-**Current Step:** Step 1.5 ✅ MERGED - Ready for Step 1.6  
+**Current Step:** Step 1.6 ✅ MERGED - Ready for Step 1.7  
 **Estimated Remaining Reduction:** ~500+ lines from MarkdownEditor.js  
 **Last Updated:** 2024-12-19 18:45
 

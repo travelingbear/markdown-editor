@@ -15,6 +15,7 @@ class MarkdownEditor extends BaseComponent {
     this.fileController = null;
     this.uiController = null;
     this.keyboardController = null;
+    this.settingsController = null;
     
     // Application state
     this.currentMode = 'preview';
@@ -73,6 +74,7 @@ class MarkdownEditor extends BaseComponent {
       
       // Complete initialization
       this.startupTime = performance.now() - startupStartTime;
+      this.settingsController.setStartupTime(this.startupTime);
       
       this.updateSplashProgress(100, 'Ready!');
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -82,8 +84,9 @@ class MarkdownEditor extends BaseComponent {
       await this.checkStartupFile();
       
       // Play retro sound if enabled
-      if (this.isRetroTheme) {
-        this.playRetroStartupSound();
+      const themeData = this.settingsController.getTheme();
+      if (themeData.isRetroTheme) {
+        this.settingsController.playRetroStartupSound();
       }
       
       console.log(`[MarkdownEditor] Initialized in ${this.startupTime.toFixed(2)}ms`);
@@ -105,7 +108,12 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async createComponents() {
-    // Create UI controller first
+    // Create settings controller first
+    this.settingsController = new SettingsController();
+    this.addChild(this.settingsController);
+    await this.settingsController.init();
+    
+    // Create UI controller
     this.uiController = new UIController();
     this.addChild(this.uiController);
     await this.uiController.init();
@@ -155,7 +163,7 @@ class MarkdownEditor extends BaseComponent {
       
       // Switch to default mode when first document is opened
       if (this.currentMode === 'preview' && this.tabManager.getTabsCount() === 1) {
-        const defaultMode = this.uiController.defaultMode;
+        const defaultMode = this.settingsController.getDefaultMode();
         this.setMode(defaultMode);
       }
     });
@@ -221,10 +229,11 @@ class MarkdownEditor extends BaseComponent {
       // Open file in new tab or existing tab
       this.tabManager.openFileInTab(data.filePath, data.content);
       this.lastFileOpenTime = performance.now();
+      this.settingsController.setLastFileOpenTime(this.lastFileOpenTime);
       
       // Switch to default mode when first document is opened
       if (this.currentMode === 'preview' && currentTabCount === 0) {
-        const defaultMode = this.uiController.defaultMode;
+        const defaultMode = this.settingsController.getDefaultMode();
         this.setMode(defaultMode);
       }
       
@@ -448,11 +457,31 @@ class MarkdownEditor extends BaseComponent {
     this.uiController.on('suggestions-changed', (data) => {
       this.editorComponent.emit('suggestions-changed', data);
     });
+    
+    // Settings Controller Events
+    this.settingsController.on('theme-changed', (data) => {
+      this.handleThemeChange(data);
+    });
+    
+    this.settingsController.on('suggestions-changed', (data) => {
+      this.editorComponent.emit('suggestions-changed', data);
+    });
+    
+    this.settingsController.on('toolbar-enabled-changed', (data) => {
+      this.toolbarComponent.isToolbarEnabled = data.enabled;
+      this.toolbarComponent.updateToolbarVisibility();
+    });
+    
+    this.settingsController.on('pinned-tabs-changed', (data) => {
+      if (data.enabled) {
+        this.updatePinnedTabs();
+      }
+    });
   }
 
   applyInitialSettings() {
-    // UI Controller handles all UI settings
-    // Theme, layout, toolbar sizes, etc. are managed by UIController
+    // Apply settings through controllers
+    this.settingsController.applySettings();
     
     // Show welcome page initially - always show in preview pane regardless of default mode
     this.previewComponent.showWelcome();
@@ -494,7 +523,7 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
     // Update theme button
-    const themeData = this.uiController.getTheme();
+    const themeData = this.settingsController.getTheme();
     this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
     
     // Initialize tab UI
@@ -852,6 +881,7 @@ class MarkdownEditor extends BaseComponent {
     }, 100);
     
     this.lastModeSwitchTime = performance.now() - startTime;
+    this.settingsController.setLastModeSwitchTime(this.lastModeSwitchTime);
   }
   
   saveScrollPositionToTab(tab) {
@@ -1516,8 +1546,10 @@ class MarkdownEditor extends BaseComponent {
   }
   
   toggleMarkdownToolbar() {
-    const currentEnabled = this.uiController.isToolbarEnabled;
-    this.uiController.setToolbarEnabled(!currentEnabled);
+    const currentEnabled = this.settingsController.getToolbarEnabled();
+    this.settingsController.isToolbarEnabled = !currentEnabled;
+    localStorage.setItem('markdownViewer_toolbarEnabled', (!currentEnabled).toString());
+    this.settingsController.applyMarkdownToolbarVisibility();
     this.toolbarComponent.isToolbarEnabled = !currentEnabled;
     this.toolbarComponent.updateToolbarVisibility();
   }
@@ -1620,215 +1652,12 @@ class MarkdownEditor extends BaseComponent {
 
   
   updateSettingsDisplay() {
-    const themeButtons = {
-      'theme-light-btn': this.theme === 'light' && !this.isRetroTheme,
-      'theme-dark-btn': this.theme === 'dark' && !this.isRetroTheme,
-      'theme-retro-btn': this.isRetroTheme,
-      'theme-contrast-btn': this.theme === 'contrast' && !this.isRetroTheme
-    };
-    
-    Object.entries(themeButtons).forEach(([id, active]) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.toggle('active', active);
-      }
-    });
-    
-    // Show/hide retro sound setting
-    const retroSoundSetting = document.querySelector('.retro-sound-setting');
-    if (retroSoundSetting) {
-      retroSoundSetting.style.display = this.isRetroTheme ? 'flex' : 'none';
-    }
-    
-    // Update retro sound checkbox
-    const retroSoundCheckbox = document.getElementById('retro-sound-checkbox');
-    if (retroSoundCheckbox) {
-      const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
-      retroSoundCheckbox.checked = soundEnabled;
-    }
-    
-    // Update mode buttons
-    const modeButtons = {
-      'mode-code-btn': this.defaultMode === 'code',
-      'mode-preview-btn': this.defaultMode === 'preview',
-      'mode-split-btn': this.defaultMode === 'split'
-    };
-    
-    Object.entries(modeButtons).forEach(([id, active]) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.toggle('active', active);
-      }
-    });
-    
-    // Update all other settings buttons
-    const allSettings = {
-      'suggestions-on-btn': this.suggestionsEnabled,
-      'suggestions-off-btn': !this.suggestionsEnabled,
-      'layout-on-btn': this.centeredLayoutEnabled,
-      'layout-off-btn': !this.centeredLayoutEnabled,
-      'toolbar-on-btn': this.isToolbarEnabled,
-      'toolbar-off-btn': !this.isToolbarEnabled,
-      'pinned-tabs-on-btn': this.pinnedTabsEnabled,
-      'pinned-tabs-off-btn': !this.pinnedTabsEnabled,
-      'splash-on-btn': this.isSplashEnabled,
-      'splash-off-btn': !this.isSplashEnabled
-    };
-    
-    Object.entries(allSettings).forEach(([id, active]) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.toggle('active', active);
-      }
-    });
-    
-    // Update splash duration buttons
-    for (let i = 1; i <= 5; i++) {
-      const btn = document.getElementById(`splash-${i}s-btn`);
-      if (btn) {
-        btn.classList.toggle('active', this.splashDuration === i);
-      }
-    }
-    
-    // Show/hide splash duration setting
-    const durationSetting = document.getElementById('splash-duration-setting');
-    if (durationSetting) {
-      durationSetting.style.display = this.isSplashEnabled ? 'flex' : 'none';
-    }
-    
-    // Update page size buttons and visibility
-    const pageSizeButtons = {
-      'page-a4-btn': this.currentPageSize === 'a4',
-      'page-letter-btn': this.currentPageSize === 'letter',
-      'page-a3-btn': this.currentPageSize === 'a3'
-    };
-    
-    Object.entries(pageSizeButtons).forEach(([id, active]) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.toggle('active', active);
-      }
-    });
-    
-    // Show/hide page size section based on centered layout setting
-    const pageA4Btn = document.getElementById('page-a4-btn');
-    if (pageA4Btn) {
-      const pageSizeSetting = pageA4Btn.closest('.setting-item');
-      if (pageSizeSetting) {
-        pageSizeSetting.style.display = this.centeredLayoutEnabled ? 'flex' : 'none';
-      }
-    }
-    
-    // Update toolbar size buttons
-    const toolbarSizeButtons = {
-      'main-toolbar-small': this.mainToolbarSize === 'small',
-      'main-toolbar-medium': this.mainToolbarSize === 'medium',
-      'main-toolbar-large': this.mainToolbarSize === 'large',
-      'md-toolbar-small': this.mdToolbarSize === 'small',
-      'md-toolbar-medium': this.mdToolbarSize === 'medium',
-      'md-toolbar-large': this.mdToolbarSize === 'large',
-      'status-bar-small': this.statusBarSize === 'small',
-      'status-bar-medium': this.statusBarSize === 'medium',
-      'status-bar-large': this.statusBarSize === 'large'
-    };
-    
-    Object.entries(toolbarSizeButtons).forEach(([id, active]) => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.toggle('active', active);
-      }
-    });
-    
-    // Update performance dashboard through performance optimizer
-    if (this.performanceOptimizer) {
-      this.performanceOptimizer.updatePerformanceDashboard();
-    } else {
-      // Fallback: Update performance info manually if optimizer not available
-      const tabCount = this.tabManager.getTabsCount();
-      const performanceInfo = {
-        'perf-tab-count': `${tabCount} (0 virtual)`,
-        'perf-memory': this.getMemoryUsage(),
-        'perf-startup': this.startupTime ? `${this.startupTime.toFixed(2)}ms` : 'N/A',
-        'perf-tab-switch': this.lastModeSwitchTime ? `${this.lastModeSwitchTime.toFixed(2)}ms` : 'N/A'
-      };
-      
-      Object.entries(performanceInfo).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-          element.textContent = value;
-        }
-      });
-      
-      // Update performance status
-      const perfStatus = document.getElementById('perf-status');
-      if (perfStatus) {
-        let status = 'Good';
-        let statusClass = 'status-good';
-        
-        if (tabCount > 50) {
-          status = 'Warning';
-          statusClass = 'status-warning';
-        }
-        if (tabCount > 100) {
-          status = 'Critical';
-          statusClass = 'status-critical';
-        }
-        
-        perfStatus.textContent = status;
-        perfStatus.className = statusClass;
-      }
-    }
-    
-    // Update system info
-    const systemInfo = {
-      'info-default-mode': this.defaultMode,
-      'info-current-mode': this.currentMode,
-      'info-monaco': this.editorComponent.isMonacoLoaded ? 'Loaded' : 'Not Loaded',
-      'info-mermaid': this.previewComponent.mermaidInitialized ? 'Loaded' : 'Not Loaded',
-      'info-katex': this.previewComponent.katexInitialized ? 'Loaded' : 'Not Loaded'
-    };
-    
-    Object.entries(systemInfo).forEach(([id, value]) => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.textContent = value;
-      }
-    });
+    this.settingsController.updateSettingsDisplay();
+    this.settingsController.updatePerformanceDashboard(this.performanceOptimizer, this.tabManager);
+    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
   }
   
-  getMemoryUsage() {
-    if (performance.memory) {
-      const used = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
-      const total = Math.round(performance.memory.totalJSHeapSize / 1024 / 1024);
-      return `${used}MB / ${total}MB`;
-    }
-    return 'Not Available';
-  }
-  
-  async playRetroStartupSound() {
-    const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
-    if (!soundEnabled) return;
-    
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const response = await fetch('assets/windows95_startup_hifi.mp3');
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const source = audioContext.createBufferSource();
-      const gainNode = audioContext.createGain();
-      
-      source.buffer = audioBuffer;
-      gainNode.gain.value = 0.5;
-      
-      source.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      source.start(0);
-    } catch (error) {
-      console.warn('[MarkdownEditor] Retro sound failed:', error);
-    }
-  }
+
   
   clearFileHistory() {
     this.documentComponent.fileHistory = [];
@@ -1836,212 +1665,7 @@ class MarkdownEditor extends BaseComponent {
     this.documentComponent.updateFileHistoryDisplay();
   }
   
-  setupSettingsControls() {
-    // Theme controls
-    const themeBtns = ['theme-light-btn', 'theme-dark-btn', 'theme-retro-btn', 'theme-contrast-btn'];
-    themeBtns.forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          if (id === 'theme-light-btn') {
-            this.theme = 'light';
-            this.isRetroTheme = false;
-            document.body.classList.remove('retro-theme');
-          } else if (id === 'theme-dark-btn') {
-            this.theme = 'dark';
-            this.isRetroTheme = false;
-            document.body.classList.remove('retro-theme');
-          } else if (id === 'theme-contrast-btn') {
-            this.theme = 'contrast';
-            this.isRetroTheme = false;
-            document.body.classList.remove('retro-theme');
-          } else {
-            this.theme = 'light';
-            this.isRetroTheme = true;
-            document.body.classList.add('retro-theme');
-            this.playRetroStartupSound();
-          }
-          localStorage.setItem('markdownViewer_defaultTheme', this.theme);
-          localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());
-          this.applyTheme();
-          this.editorComponent.emit('theme-changed', { theme: this.theme });
-          this.previewComponent.emit('theme-changed', { theme: this.theme });
-          
-          // Refresh preview if we have active tab content
-          const activeTab = this.tabManager.getActiveTab();
-          if (activeTab) {
-            this.previewComponent.emit('update-preview', { 
-              content: activeTab.content,
-              filePath: activeTab.filePath 
-            });
-          }
-          
-          // Update theme button
-          this.toolbarComponent.updateThemeButton(this.theme, this.isRetroTheme);
-          
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Mode controls
-    ['mode-code-btn', 'mode-preview-btn', 'mode-split-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          const mode = id.replace('mode-', '').replace('-btn', '');
-          this.defaultMode = mode;
-          localStorage.setItem('markdownViewer_defaultMode', mode);
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Retro sound controls
-    const retroSoundCheckbox = document.getElementById('retro-sound-checkbox');
-    const testSoundBtn = document.getElementById('test-startup-sound-btn');
-    
-    if (retroSoundCheckbox) {
-      retroSoundCheckbox.addEventListener('change', (e) => {
-        localStorage.setItem('markdownViewer_retroSound', e.target.checked.toString());
-      });
-    }
-    
-    if (testSoundBtn) {
-      testSoundBtn.addEventListener('click', () => {
-        this.playRetroStartupSound();
-      });
-    }
-    
-    // Suggestions controls
-    ['suggestions-on-btn', 'suggestions-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.suggestionsEnabled = id === 'suggestions-on-btn';
-          localStorage.setItem('markdownViewer_suggestionsEnabled', this.suggestionsEnabled.toString());
-          this.editorComponent.emit('suggestions-changed', { enabled: this.suggestionsEnabled });
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Layout controls
-    ['layout-on-btn', 'layout-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.centeredLayoutEnabled = id === 'layout-on-btn';
-          localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
-          this.applyCenteredLayout();
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Toolbar controls
-    ['toolbar-on-btn', 'toolbar-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.isToolbarEnabled = id === 'toolbar-on-btn';
-          localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
-          this.applyMarkdownToolbarVisibility();
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Pinned tabs controls
-    ['pinned-tabs-on-btn', 'pinned-tabs-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.pinnedTabsEnabled = id === 'pinned-tabs-on-btn';
-          localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
-          this.applyPinnedTabsVisibility();
-          if (this.pinnedTabsEnabled) {
-            this.updatePinnedTabs();
-          }
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Splash controls
-    ['splash-on-btn', 'splash-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.isSplashEnabled = id === 'splash-on-btn';
-          localStorage.setItem('markdownViewer_splashEnabled', this.isSplashEnabled.toString());
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Splash duration controls
-    for (let i = 1; i <= 5; i++) {
-      const btn = document.getElementById(`splash-${i}s-btn`);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.splashDuration = i;
-          localStorage.setItem('markdownViewer_splashDuration', i.toString());
-          this.updateSettingsDisplay();
-        });
-      }
-    }
-    
-    // Page size controls
-    ['page-a4-btn', 'page-letter-btn', 'page-a3-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.currentPageSize = id.replace('page-', '').replace('-btn', '');
-          localStorage.setItem('markdownViewer_pageSize', this.currentPageSize);
-          this.applyPageSize();
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Toolbar size controls
-    ['main-toolbar-small', 'main-toolbar-medium', 'main-toolbar-large'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.mainToolbarSize = id.replace('main-toolbar-', '');
-          localStorage.setItem('markdownViewer_mainToolbarSize', this.mainToolbarSize);
-          document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    ['md-toolbar-small', 'md-toolbar-medium', 'md-toolbar-large'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.mdToolbarSize = id.replace('md-toolbar-', '');
-          localStorage.setItem('markdownViewer_mdToolbarSize', this.mdToolbarSize);
-          document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    ['status-bar-small', 'status-bar-medium', 'status-bar-large'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.statusBarSize = id.replace('status-bar-', '');
-          localStorage.setItem('markdownViewer_statusBarSize', this.statusBarSize);
-          document.body.setAttribute('data-status-bar-size', this.statusBarSize);
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-  }
+
 
   async handleUnsavedChanges() {
     try {
@@ -3317,18 +2941,14 @@ class MarkdownEditor extends BaseComponent {
   }
   
   // Pinned Tabs Methods
-  applyPinnedTabsVisibility() {
-    const pinnedTabsBar = document.getElementById('pinned-tabs-bar');
-    if (pinnedTabsBar) {
-      pinnedTabsBar.style.display = this.pinnedTabsEnabled ? 'flex' : 'none';
-    }
-  }
+
   
   togglePinnedTabs() {
-    this.pinnedTabsEnabled = !this.pinnedTabsEnabled;
-    localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
-    this.applyPinnedTabsVisibility();
-    if (this.pinnedTabsEnabled) {
+    const currentEnabled = this.settingsController.getPinnedTabsEnabled();
+    this.settingsController.pinnedTabsEnabled = !currentEnabled;
+    localStorage.setItem('markdownViewer_pinnedTabs', (!currentEnabled).toString());
+    this.settingsController.applyPinnedTabsVisibility();
+    if (!currentEnabled) {
       this.updatePinnedTabs();
     }
     this.updateSettingsDisplay();

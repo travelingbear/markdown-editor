@@ -138,7 +138,7 @@ class MarkdownActionController extends BaseComponent {
         if (action === 'align-left') {
           if (selectedText) {
             let cleanText = selectedText
-              .replace(/<div align="(center|right|justify)">[\s\S]*?<\/div>/gi, '$2')
+              .replace(/<div align="(center|right|justify)">([\s\S]*?)<\/div>/gi, '$2')
               .replace(/^\s+|\s+$/g, '');
             replacement = cleanText;
           } else {
@@ -148,7 +148,7 @@ class MarkdownActionController extends BaseComponent {
           const alignType = action.replace('align-', '');
           if (selectedText) {
             let cleanText = selectedText
-              .replace(/<div align="(left|center|right|justify)">[\s\S]*?<\/div>/gi, '$2')
+              .replace(/<div align="(left|center|right|justify)">([\s\S]*?)<\/div>/gi, '$2')
               .replace(/^\s+|\s+$/g, '');
             replacement = `<div align="${alignType}">${cleanText}</div>`;
           } else {
@@ -272,10 +272,10 @@ class MarkdownActionController extends BaseComponent {
       
       if (alignType === 'left') {
         // Remove existing alignment
-        newContent = lineContent.replace(/<div align="(center|right|justify)">[\s\S]*?<\/div>/gi, '$2').trim();
+        newContent = lineContent.replace(/<div align="(center|right|justify)">([\s\S]*?)<\/div>/gi, '$2').trim();
       } else {
         // Remove existing alignment first, then apply new alignment
-        let cleanContent = lineContent.replace(/<div align="(left|center|right|justify)">[\s\S]*?<\/div>/gi, '$2').trim();
+        let cleanContent = lineContent.replace(/<div align="(left|center|right|justify)">([\s\S]*?)<\/div>/gi, '$2').trim();
         newContent = `<div align="${alignType}">${cleanContent}</div>`;
       }
       

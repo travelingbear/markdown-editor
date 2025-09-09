@@ -953,8 +953,25 @@ class MarkdownEditor extends BaseComponent {
   
   openFindReplace() {
     if (this.modeController.getCurrentMode() === 'preview') {
+      // Get selected text from code mode if available
+      let searchText = '';
+      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
+        const selection = this.editorComponent.monacoEditor.getSelection();
+        if (selection && !selection.isEmpty()) {
+          searchText = this.editorComponent.monacoEditor.getModel().getValueInRange(selection);
+        }
+      }
+      
       // Use browser's native find for preview mode
-      document.execCommand('find');
+      if (searchText && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(searchText).then(() => {
+          document.execCommand('find');
+        }).catch(() => {
+          document.execCommand('find');
+        });
+      } else {
+        document.execCommand('find');
+      }
       return;
     }
     

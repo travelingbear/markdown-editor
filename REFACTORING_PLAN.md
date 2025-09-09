@@ -3,6 +3,8 @@
 ## Overview
 This plan refactors the monolithic `MarkdownEditor` class into a plugin-ready architecture through incremental, validated steps.
 
+IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes → 3. Commit → 4. User Validation → 5. Confirm Proceed → 6. Merge → 7. Update Plan → 8. Next Step
+
 ---
 
 ## Phase 1: Foundation Refactoring

@@ -13,23 +13,10 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent = null;
     this.tabManager = null;
     this.fileController = null;
+    this.uiController = null;
     
     // Application state
     this.currentMode = 'preview';
-    this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
-    this.isRetroTheme = localStorage.getItem('markdownViewer_retroTheme') === 'true';
-    this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
-    this.isDistractionFree = false;
-    this.centeredLayoutEnabled = localStorage.getItem('markdownViewer_centeredLayout') === 'true';
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') === 'true';
-    this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
-    this.isSplashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
-    this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
-    this.mainToolbarSize = localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium';
-    this.mdToolbarSize = localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium';
-    this.statusBarSize = localStorage.getItem('markdownViewer_statusBarSize') || 'medium';
-    this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
-    this.pinnedTabsEnabled = localStorage.getItem('markdownViewer_pinnedTabs') === 'true';
     
     // Enhanced tab features state
     this.contextMenuTabId = null;
@@ -117,7 +104,12 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async createComponents() {
-    // Create file controller first
+    // Create UI controller first
+    this.uiController = new UIController();
+    this.addChild(this.uiController);
+    await this.uiController.init();
+    
+    // Create file controller
     this.fileController = new FileController();
     this.addChild(this.fileController);
     await this.fileController.init();
@@ -393,19 +385,20 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.toolbarComponent.on('distraction-free-toggle', () => {
-      this.toggleDistractionFree();
+      this.uiController.toggleDistractionFree();
     });
     
     this.toolbarComponent.on('theme-toggle', () => {
-      this.toggleTheme();
+      const themeData = this.uiController.toggleTheme();
+      this.handleThemeChange(themeData);
     });
     
     this.toolbarComponent.on('settings-show', () => {
-      this.showSettings();
+      this.uiController.showSettings();
     });
     
     this.toolbarComponent.on('help-show', () => {
-      this.showHelp();
+      this.uiController.showHelp();
     });
     
     this.toolbarComponent.on('font-size-changed', (data) => {
@@ -439,28 +432,24 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent.on('markdown-insert', (data) => {
       this.insertMarkdownText(data.text);
     });
+    
+    // UI Controller Events
+    this.uiController.on('theme-changed', (data) => {
+      this.handleThemeChange(data);
+    });
+    
+    this.uiController.on('distraction-free-changed', (data) => {
+      this.toolbarComponent.emit('distraction-free-changed', data);
+    });
+    
+    this.uiController.on('suggestions-changed', (data) => {
+      this.editorComponent.emit('suggestions-changed', data);
+    });
   }
 
   applyInitialSettings() {
-    // Apply theme
-    this.applyTheme();
-    
-    // Apply centered layout
-    this.applyCenteredLayout();
-    
-    // Apply page size
-    this.applyPageSize();
-    
-    // Apply markdown toolbar visibility
-    this.applyMarkdownToolbarVisibility();
-    
-    // Apply toolbar sizes
-    document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
-    document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
-    document.body.setAttribute('data-status-bar-size', this.statusBarSize);
-    
-    // Apply pinned tabs visibility
-    this.applyPinnedTabsVisibility();
+    // UI Controller handles all UI settings
+    // Theme, layout, toolbar sizes, etc. are managed by UIController
     
     // Show welcome page initially - always show in preview pane regardless of default mode
     this.previewComponent.showWelcome();
@@ -502,7 +491,8 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
     // Update theme button
-    this.toolbarComponent.updateThemeButton(this.theme, this.isRetroTheme);
+    const themeData = this.uiController.getTheme();
+    this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
     
     // Initialize tab UI
     this.updateTabUI();
@@ -538,9 +528,6 @@ class MarkdownEditor extends BaseComponent {
     
     // Modal event handlers
     this.setupModalEventHandlers();
-    
-    // Settings controls
-    this.setupSettingsControls();
     
     // Tab dropdown
     this.setupTabDropdown();
@@ -605,11 +592,12 @@ class MarkdownEditor extends BaseComponent {
         case 't':
         case '/':
           e.preventDefault();
-          this.toggleTheme();
+          const themeData = this.uiController.toggleTheme();
+          this.handleThemeChange(themeData);
           break;
         case ',':
           e.preventDefault();
-          this.showSettings();
+          this.uiController.showSettings();
           break;
         case 'm':
         case 'M':
@@ -667,7 +655,7 @@ class MarkdownEditor extends BaseComponent {
     switch (e.key) {
       case 'F1':
         e.preventDefault();
-        this.showHelp();
+        this.uiController.showHelp();
         break;
       case 'F5':
         e.preventDefault();
@@ -676,7 +664,7 @@ class MarkdownEditor extends BaseComponent {
       case 'F11':
         e.preventDefault();
         if (e.shiftKey) {
-          this.toggleDistractionFree();
+          this.uiController.toggleDistractionFree();
         } else {
           this.toggleFullscreen();
         }
@@ -690,17 +678,17 @@ class MarkdownEditor extends BaseComponent {
         const imageModal = document.getElementById('image-modal');
         
         if (settingsModal && settingsModal.style.display === 'flex') {
-          this.hideSettings();
+          this.uiController.hideSettings();
         } else if (helpModal && helpModal.style.display === 'flex') {
-          this.hideHelp();
+          this.uiController.hideHelp();
         } else if (aboutModal && aboutModal.style.display === 'flex') {
-          this.hideAbout();
+          this.uiController.hideAbout();
         } else if (linkModal && linkModal.style.display === 'flex') {
           this.toolbarComponent.hideLinkModal();
         } else if (imageModal && imageModal.style.display === 'flex') {
           this.toolbarComponent.hideImageModal();
-        } else if (this.isDistractionFree) {
-          this.exitDistractionFree();
+        } else if (this.uiController.isDistractionFree) {
+          this.uiController.exitDistractionFree();
         } else if (document.fullscreenElement) {
           document.exitFullscreen();
         }
@@ -889,27 +877,12 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  // Theme Management
-  toggleTheme() {
-    const isRetro = document.body.classList.contains('retro-theme');
-    if (isRetro) {
-      // Exit retro mode and go to light theme
-      document.body.classList.remove('retro-theme');
-      localStorage.setItem('markdownViewer_retroTheme', 'false');
-      this.theme = 'light';
-      localStorage.setItem('markdownViewer_defaultTheme', 'light');
-      this.isRetroTheme = false;
-    } else {
-      this.theme = this.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('markdownViewer_defaultTheme', this.theme);
-    }
-    
-    this.applyTheme();
-    
+  // Theme change handler
+  handleThemeChange(themeData) {
     // Notify components
-    this.editorComponent.emit('theme-changed', { theme: this.theme });
-    this.previewComponent.emit('theme-changed', { theme: this.theme });
-    this.toolbarComponent.updateThemeButton(this.theme, this.isRetroTheme);
+    this.editorComponent.emit('theme-changed', { theme: themeData.theme });
+    this.previewComponent.emit('theme-changed', { theme: themeData.theme });
+    this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
     
     // Refresh preview if we have active tab content
     const activeTab = this.tabManager.getActiveTab();
@@ -921,74 +894,7 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  applyTheme() {
-    document.documentElement.setAttribute('data-theme', this.theme);
-    
-    if (this.isRetroTheme) {
-      document.body.classList.add('retro-theme');
-    }
-  }
 
-  // Distraction-Free Mode
-  toggleDistractionFree() {
-    if (this.isDistractionFree) {
-      this.exitDistractionFree();
-    } else {
-      this.enterDistractionFree();
-    }
-  }
-
-  enterDistractionFree() {
-    this.isDistractionFree = true;
-    document.body.classList.add('distraction-free');
-    document.body.classList.add(`${this.currentMode}-mode`);
-    
-    this.toolbarComponent.emit('distraction-free-changed', { 
-      isDistractionFree: true 
-    });
-  }
-
-  exitDistractionFree() {
-    this.isDistractionFree = false;
-    document.body.classList.remove('distraction-free');
-    
-    this.toolbarComponent.emit('distraction-free-changed', { 
-      isDistractionFree: false 
-    });
-  }
-
-  // Layout Management
-  applyCenteredLayout() {
-    if (this.centeredLayoutEnabled) {
-      document.body.classList.add('centered-layout');
-    } else {
-      document.body.classList.remove('centered-layout');
-    }
-  }
-
-  applyPageSize() {
-    const pageSizeMap = {
-      'a4': 'var(--page-width-a4)',
-      'letter': 'var(--page-width-letter)',
-      'a3': 'var(--page-width-a3)'
-    };
-    
-    const pageWidth = pageSizeMap[this.currentPageSize] || 'var(--page-width-a4)';
-    document.documentElement.style.setProperty('--current-page-width', pageWidth);
-  }
-
-  applyMarkdownToolbarVisibility() {
-    const markdownToolbar = document.getElementById('markdown-toolbar');
-    if (markdownToolbar) {
-      if (this.isToolbarEnabled) {
-        markdownToolbar.classList.add('visible');
-        markdownToolbar.style.display = '';
-      } else {
-        markdownToolbar.classList.remove('visible');
-        markdownToolbar.style.display = 'none';
-      }
-    }
-  }
 
   // Export Functions
   async exportToHtml() {
@@ -1608,10 +1514,9 @@ class MarkdownEditor extends BaseComponent {
   }
   
   toggleMarkdownToolbar() {
-    this.isToolbarEnabled = !this.isToolbarEnabled;
-    localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
-    this.applyMarkdownToolbarVisibility();
-    this.toolbarComponent.isToolbarEnabled = this.isToolbarEnabled;
+    const currentEnabled = this.uiController.isToolbarEnabled;
+    this.uiController.setToolbarEnabled(!currentEnabled);
+    this.toolbarComponent.isToolbarEnabled = !currentEnabled;
     this.toolbarComponent.updateToolbarVisibility();
   }
   
@@ -1680,36 +1585,6 @@ class MarkdownEditor extends BaseComponent {
   }
 
   setupModalEventHandlers() {
-    // Settings modal
-    const settingsCloseBtn = document.getElementById('settings-close-btn');
-    const settingsOverlay = document.querySelector('.settings-overlay');
-    if (settingsCloseBtn) {
-      settingsCloseBtn.addEventListener('click', () => this.hideSettings());
-    }
-    if (settingsOverlay) {
-      settingsOverlay.addEventListener('click', () => this.hideSettings());
-    }
-    
-    // Help modal
-    const helpCloseBtn = document.getElementById('help-close-btn');
-    const helpOverlay = document.querySelector('.help-overlay');
-    if (helpCloseBtn) {
-      helpCloseBtn.addEventListener('click', () => this.hideHelp());
-    }
-    if (helpOverlay) {
-      helpOverlay.addEventListener('click', () => this.hideHelp());
-    }
-    
-    // About modal
-    const aboutCloseBtn = document.getElementById('about-close-btn');
-    const aboutOverlay = document.querySelector('.about-overlay');
-    if (aboutCloseBtn) {
-      aboutCloseBtn.addEventListener('click', () => this.hideAbout());
-    }
-    if (aboutOverlay) {
-      aboutOverlay.addEventListener('click', () => this.hideAbout());
-    }
-    
     // Welcome page buttons
     const welcomeNewBtn = document.getElementById('welcome-new-btn');
     const welcomeOpenBtn = document.getElementById('welcome-open-btn');
@@ -1718,19 +1593,19 @@ class MarkdownEditor extends BaseComponent {
     const welcomeSettingsBtn = document.getElementById('welcome-settings-btn');
     
     if (welcomeNewBtn) {
-      welcomeNewBtn.addEventListener('click', () => this.newFile());
+      welcomeNewBtn.addEventListener('click', () => this.fileController.newFile(this.tabManager));
     }
     if (welcomeOpenBtn) {
-      welcomeOpenBtn.addEventListener('click', () => this.openFile());
+      welcomeOpenBtn.addEventListener('click', () => this.fileController.openFile(this.documentComponent, this.tabManager));
     }
     if (welcomeHelpBtn) {
-      welcomeHelpBtn.addEventListener('click', () => this.showHelp());
+      welcomeHelpBtn.addEventListener('click', () => this.uiController.showHelp());
     }
     if (welcomeAboutBtn) {
-      welcomeAboutBtn.addEventListener('click', () => this.showAbout());
+      welcomeAboutBtn.addEventListener('click', () => this.uiController.showAbout());
     }
     if (welcomeSettingsBtn) {
-      welcomeSettingsBtn.addEventListener('click', () => this.showSettings());
+      welcomeSettingsBtn.addEventListener('click', () => this.uiController.showSettings());
     }
     
     // Clear history button
@@ -1740,48 +1615,7 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  showSettings() {
-    const settingsModal = document.getElementById('settings-modal');
-    if (settingsModal) {
-      settingsModal.style.display = 'flex';
-      this.updateSettingsDisplay();
-    }
-  }
-  
-  hideSettings() {
-    const settingsModal = document.getElementById('settings-modal');
-    if (settingsModal) {
-      settingsModal.style.display = 'none';
-    }
-  }
 
-  showHelp() {
-    const helpModal = document.getElementById('help-modal');
-    if (helpModal) {
-      helpModal.style.display = 'flex';
-    }
-  }
-  
-  hideHelp() {
-    const helpModal = document.getElementById('help-modal');
-    if (helpModal) {
-      helpModal.style.display = 'none';
-    }
-  }
-  
-  showAbout() {
-    const aboutModal = document.getElementById('about-modal');
-    if (aboutModal) {
-      aboutModal.style.display = 'flex';
-    }
-  }
-  
-  hideAbout() {
-    const aboutModal = document.getElementById('about-modal');
-    if (aboutModal) {
-      aboutModal.style.display = 'none';
-    }
-  }
   
   updateSettingsDisplay() {
     const themeButtons = {

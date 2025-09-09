@@ -1119,6 +1119,15 @@ class MarkdownEditor extends BaseComponent {
     if (clearHistoryBtn) {
       clearHistoryBtn.addEventListener('click', () => this.clearFileHistory());
     }
+    
+    // Theme button
+    const themeBtn = document.getElementById('theme-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        const themeData = this.uiController.toggleTheme();
+        this.handleThemeChange(themeData);
+      });
+    }
   }
 
 

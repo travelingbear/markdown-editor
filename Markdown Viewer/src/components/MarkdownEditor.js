@@ -476,13 +476,9 @@ class MarkdownEditor extends BaseComponent {
       this.uiController.toggleDistractionFree();
     });
     
-    this.toolbarComponent.on('theme-toggle', async () => {
-      try {
-        const themeData = await this.uiController.toggleTheme();
-        this.handleThemeChange(themeData);
-      } catch (error) {
-        console.error('Theme toggle error:', error);
-      }
+    this.toolbarComponent.on('theme-toggle', () => {
+      const themeData = this.uiController.toggleTheme();
+      this.handleThemeChange(themeData);
     });
     
     this.toolbarComponent.on('settings-show', () => {
@@ -740,11 +736,8 @@ class MarkdownEditor extends BaseComponent {
         case 't':
         case '/':
           e.preventDefault();
-          this.uiController.toggleTheme().then(themeData => {
-            this.handleThemeChange(themeData);
-          }).catch(error => {
-            console.error('Theme toggle error:', error);
-          });
+          const themeData = this.uiController.toggleTheme();
+          this.handleThemeChange(themeData);
           break;
         case ',':
           e.preventDefault();

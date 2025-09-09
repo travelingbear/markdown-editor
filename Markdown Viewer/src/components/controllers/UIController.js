@@ -38,8 +38,8 @@ class UIController extends BaseComponent {
   }
 
   // Theme Management
-  async toggleTheme() {
-    await this.executeHook('beforeThemeToggle', { currentTheme: this.theme, isRetroTheme: this.isRetroTheme });
+  toggleTheme() {
+    this.executeHook('beforeThemeToggle', { currentTheme: this.theme, isRetroTheme: this.isRetroTheme });
     
     const isRetro = document.body.classList.contains('retro-theme');
     if (isRetro) {
@@ -56,7 +56,7 @@ class UIController extends BaseComponent {
     
     this.applyTheme();
     
-    await this.executeHook('afterThemeToggle', { theme: this.theme, isRetroTheme: this.isRetroTheme });
+    this.executeHook('afterThemeToggle', { theme: this.theme, isRetroTheme: this.isRetroTheme });
     
     // Emit theme change event
     this.emit('theme-changed', { theme: this.theme, isRetroTheme: this.isRetroTheme });
@@ -64,8 +64,8 @@ class UIController extends BaseComponent {
     return { theme: this.theme, isRetroTheme: this.isRetroTheme };
   }
 
-  async setTheme(theme, isRetro = false) {
-    await this.executeHook('beforeThemeChange', { oldTheme: this.theme, newTheme: theme, oldRetro: this.isRetroTheme, newRetro: isRetro });
+  setTheme(theme, isRetro = false) {
+    this.executeHook('beforeThemeChange', { oldTheme: this.theme, newTheme: theme, oldRetro: this.isRetroTheme, newRetro: isRetro });
     
     this.theme = theme;
     this.isRetroTheme = isRetro;
@@ -82,7 +82,7 @@ class UIController extends BaseComponent {
     
     this.applyTheme();
     
-    await this.executeHook('afterThemeChange', { theme: this.theme, isRetroTheme: this.isRetroTheme });
+    this.executeHook('afterThemeChange', { theme: this.theme, isRetroTheme: this.isRetroTheme });
     this.emit('theme-changed', { theme: this.theme, isRetroTheme: this.isRetroTheme });
   }
 
@@ -345,15 +345,15 @@ class UIController extends BaseComponent {
     themeBtns.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
-        btn.addEventListener('click', async () => {
+        btn.addEventListener('click', () => {
           if (id === 'theme-light-btn') {
-            await this.setTheme('light', false);
+            this.setTheme('light', false);
           } else if (id === 'theme-dark-btn') {
-            await this.setTheme('dark', false);
+            this.setTheme('dark', false);
           } else if (id === 'theme-contrast-btn') {
-            await this.setTheme('contrast', false);
+            this.setTheme('contrast', false);
           } else {
-            await this.setTheme('light', true);
+            this.setTheme('light', true);
           }
           this.updateSettingsDisplay();
         });

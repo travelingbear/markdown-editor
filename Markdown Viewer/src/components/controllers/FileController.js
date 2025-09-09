@@ -1,0 +1,180 @@
+/**
+ * File Controller
+ * Handles all file operations for the markdown editor
+ */
+class FileController extends BaseComponent {
+  constructor(options = {}) {
+    super('FileController', options);
+    
+    // File operation state
+    this.performanceOptimizer = null;
+  }
+
+  async onInit() {
+    // Initialize performance optimizer reference
+    this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
+  }
+
+  setPerformanceOptimizer(optimizer) {
+    this.performanceOptimizer = optimizer;
+  }
+
+  async newFile(tabManager) {
+    const startTime = performance.now();
+    
+    // Check tab limits for performance
+    const currentTabCount = tabManager.getTabsCount();
+    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
+      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more tabs may affect performance. Continue?`);
+      if (!shouldContinue) return;
+    }
+    
+    // Always create new tab for new files
+    tabManager.createNewTab();
+    
+    // Track tab creation performance
+    if (this.performanceOptimizer) {
+      this.performanceOptimizer.benchmarkTabOperation('Tab Create', startTime, currentTabCount + 1);
+    }
+
+    this.emit('file-new-completed');
+  }
+
+  async openFile(documentComponent, tabManager) {
+    // Check tab limits before opening
+    const currentTabCount = tabManager.getTabsCount();
+    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
+      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more files may affect performance. Continue?`);
+      if (!shouldContinue) return;
+    }
+    
+    const startTime = performance.now();
+    await documentComponent.openFile();
+    
+    // Track file open performance only if file was actually opened
+    if (this.performanceOptimizer && tabManager.getTabsCount() > currentTabCount) {
+      this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
+    }
+
+    this.emit('file-open-completed');
+  }
+
+  async saveFile(documentComponent, tabManager) {
+    const activeTab = tabManager.getActiveTab();
+    if (activeTab) {
+      // Update document component with active tab content
+      documentComponent.currentFile = activeTab.filePath;
+      documentComponent.content = activeTab.content;
+      documentComponent.isDirty = activeTab.isDirty;
+      
+      try {
+        await documentComponent.saveFile();
+        tabManager.markTabSaved(activeTab.id, documentComponent.currentFile);
+        this.emit('file-save-completed', { filePath: documentComponent.currentFile });
+      } catch (error) {
+        this.emit('file-error', { error, type: 'Save' });
+      }
+    }
+  }
+
+  async saveAsFile(documentComponent, tabManager) {
+    const activeTab = tabManager.getActiveTab();
+    if (activeTab) {
+      // Update document component with active tab content
+      documentComponent.currentFile = activeTab.filePath;
+      documentComponent.content = activeTab.content;
+      documentComponent.isDirty = activeTab.isDirty;
+      
+      try {
+        await documentComponent.saveAsFile();
+        tabManager.markTabSaved(activeTab.id, documentComponent.currentFile);
+        this.emit('file-save-as-completed', { filePath: documentComponent.currentFile });
+      } catch (error) {
+        this.emit('file-error', { error, type: 'Save As' });
+      }
+    }
+  }
+
+  async closeFile(tabManager, performanceOptimizer) {
+    const activeTab = tabManager.getActiveTab();
+    if (activeTab) {
+      // Check for unsaved changes first, before animation
+      if (activeTab.isDirty) {
+        const shouldClose = await tabManager.confirmCloseUnsaved(activeTab);
+        if (!shouldClose) return;
+      }
+      
+      // Add close animation only after confirmation
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.style.animation = 'fadeOut 0.2s ease-out';
+        await new Promise(resolve => setTimeout(resolve, 200));
+        mainContent.style.animation = '';
+      }
+      
+      // Clean up performance tracking for closed tab
+      if (performanceOptimizer) {
+        performanceOptimizer.cleanupTabTracking(activeTab.id);
+      }
+      
+      // Remove tab without additional confirmation since we already confirmed
+      tabManager.tabCollection.removeTab(activeTab.id);
+      this.emit('file-close-completed');
+    }
+  }
+
+  async reloadCurrentFile(documentComponent, tabManager, editorComponent, previewComponent) {
+    const activeTab = tabManager.getActiveTab();
+    if (activeTab && activeTab.filePath) {
+      try {
+        const newContent = await documentComponent.readFile(activeTab.filePath);
+        if (newContent !== activeTab.content) {
+          activeTab.setContent(newContent);
+          editorComponent.emit('set-content', { content: newContent });
+          previewComponent.emit('update-preview', { 
+            content: newContent,
+            filePath: activeTab.filePath 
+          });
+          documentComponent.content = newContent;
+          documentComponent.markClean();
+        }
+        this.emit('file-reload-completed');
+      } catch (error) {
+        this.emit('file-error', { error, type: 'Reload' });
+      }
+    }
+  }
+
+  async checkStartupFile(documentComponent) {
+    try {
+      if (window.__TAURI__?.core?.invoke) {
+        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
+        
+        if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
+          await documentComponent.openFile(startupFile);
+          
+          try {
+            await window.__TAURI__.core.invoke('clear_startup_file');
+          } catch (clearError) {
+            console.warn('[FileController] Failed to clear startup file:', clearError);
+          }
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('[FileController] Error checking startup file:', error);
+    }
+    
+    return false;
+  }
+
+  clearFileHistory(documentComponent) {
+    documentComponent.fileHistory = [];
+    localStorage.removeItem('markdownViewer_fileHistory');
+    documentComponent.updateFileHistoryDisplay();
+    this.emit('file-history-cleared');
+  }
+}
+
+// Export for use in other components
+window.FileController = FileController;

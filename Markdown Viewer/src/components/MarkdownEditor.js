@@ -12,6 +12,7 @@ class MarkdownEditor extends BaseComponent {
     this.previewComponent = null;
     this.toolbarComponent = null;
     this.tabManager = null;
+    this.fileController = null;
     
     // Application state
     this.currentMode = 'preview';
@@ -116,7 +117,13 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async createComponents() {
-    // Create tab manager first
+    // Create file controller first
+    this.fileController = new FileController();
+    this.addChild(this.fileController);
+    await this.fileController.init();
+    this.fileController.setPerformanceOptimizer(this.performanceOptimizer);
+    
+    // Create tab manager
     this.tabManager = new TabManager();
     this.addChild(this.tabManager);
     await this.tabManager.init();
@@ -343,25 +350,34 @@ class MarkdownEditor extends BaseComponent {
       this.handleError(new Error(data.error), 'Preview');
     });
     
+    // File Controller Events
+    this.fileController.on('file-new-completed', () => {
+      this.setMode('code');
+    });
+    
+    this.fileController.on('file-error', (data) => {
+      this.handleError(data.error, data.type);
+    });
+    
     // Toolbar Component Events
     this.toolbarComponent.on('file-new-requested', () => {
-      this.newFile();
+      this.fileController.newFile(this.tabManager);
     });
     
     this.toolbarComponent.on('file-open-requested', () => {
-      this.openFile();
+      this.fileController.openFile(this.documentComponent, this.tabManager);
     });
     
     this.toolbarComponent.on('file-save-requested', () => {
-      this.saveFile();
+      this.fileController.saveFile(this.documentComponent, this.tabManager);
     });
     
     this.toolbarComponent.on('file-save-as-requested', () => {
-      this.saveAsFile();
+      this.fileController.saveAsFile(this.documentComponent, this.tabManager);
     });
     
     this.toolbarComponent.on('file-close-requested', () => {
-      this.closeFile();
+      this.fileController.closeFile(this.tabManager, this.performanceOptimizer);
     });
     
     this.toolbarComponent.on('mode-change-requested', (data) => {
@@ -539,23 +555,23 @@ class MarkdownEditor extends BaseComponent {
       switch (e.key) {
         case 'n':
           e.preventDefault();
-          this.newFile();
+          this.fileController.newFile(this.tabManager);
           break;
         case 'o':
           e.preventDefault();
-          this.openFile();
+          this.fileController.openFile(this.documentComponent, this.tabManager);
           break;
         case 's':
           e.preventDefault();
           if (e.shiftKey) {
-            this.saveAsFile();
+            this.fileController.saveAsFile(this.documentComponent, this.tabManager);
           } else {
-            this.saveFile();
+            this.fileController.saveFile(this.documentComponent, this.tabManager);
           }
           break;
         case 'w':
           e.preventDefault();
-          this.closeFile();
+          this.fileController.closeFile(this.tabManager, this.performanceOptimizer);
           break;
       }
     }
@@ -744,106 +760,7 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  // File Operations - Phase 6 Enhanced
-  async newFile() {
-    const startTime = performance.now();
-    
-    // Phase 6: Check tab limits for performance
-    const currentTabCount = this.tabManager.getTabsCount();
-    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
-      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more tabs may affect performance. Continue?`);
-      if (!shouldContinue) return;
-    }
-    
-    // Always create new tab for new files
-    this.tabManager.createNewTab();
-    
-    // Always switch to code mode for new files (bypass default mode)
-    this.setMode('code');
-    
-    // Phase 6: Track tab creation performance
-    if (this.performanceOptimizer) {
-      this.performanceOptimizer.benchmarkTabOperation('Tab Create', startTime, currentTabCount + 1);
-    }
-  }
 
-  async openFile() {
-    // Phase 6: Check tab limits before opening
-    const currentTabCount = this.tabManager.getTabsCount();
-    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
-      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more files may affect performance. Continue?`);
-      if (!shouldContinue) return;
-    }
-    
-    const startTime = performance.now();
-    await this.documentComponent.openFile();
-    
-    // Phase 6: Track file open performance only if file was actually opened
-    if (this.performanceOptimizer && this.tabManager.getTabsCount() > currentTabCount) {
-      this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
-    }
-  }
-
-  async saveFile() {
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
-      // Update document component with active tab content
-      this.documentComponent.currentFile = activeTab.filePath;
-      this.documentComponent.content = activeTab.content;
-      this.documentComponent.isDirty = activeTab.isDirty;
-      
-      try {
-        await this.documentComponent.saveFile();
-        this.tabManager.markTabSaved(activeTab.id, this.documentComponent.currentFile);
-      } catch (error) {
-        this.handleError(error, 'Save');
-      }
-    }
-  }
-
-  async saveAsFile() {
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
-      // Update document component with active tab content
-      this.documentComponent.currentFile = activeTab.filePath;
-      this.documentComponent.content = activeTab.content;
-      this.documentComponent.isDirty = activeTab.isDirty;
-      
-      try {
-        await this.documentComponent.saveAsFile();
-        this.tabManager.markTabSaved(activeTab.id, this.documentComponent.currentFile);
-      } catch (error) {
-        this.handleError(error, 'Save As');
-      }
-    }
-  }
-
-  async closeFile() {
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
-      // Check for unsaved changes first, before animation
-      if (activeTab.isDirty) {
-        const shouldClose = await this.tabManager.confirmCloseUnsaved(activeTab);
-        if (!shouldClose) return;
-      }
-      
-      // Add close animation only after confirmation
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent) {
-        mainContent.style.animation = 'fadeOut 0.2s ease-out';
-        await new Promise(resolve => setTimeout(resolve, 200));
-        mainContent.style.animation = '';
-      }
-      
-      // Phase 6: Clean up performance tracking for closed tab
-      if (this.performanceOptimizer) {
-        this.performanceOptimizer.cleanupTabTracking(activeTab.id);
-      }
-      
-      // Remove tab without additional confirmation since we already confirmed
-      this.tabManager.tabCollection.removeTab(activeTab.id);
-    }
-  }
 
   // Mode Management
   async setMode(mode) {

@@ -253,26 +253,35 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 
 ## Phase 2: Dependency Injection
 
-### Step 2.1: Add Constructor Injection
-**Branch:** `refactor/add-dependency-injection`
+### Step 2.1: Add Constructor Injection ✅
+**Branch:** `refactor/add-dependency-injection` (merged)
 
 **Changes:**
 - Modify `MarkdownEditor` constructor to accept controller dependencies
 - Create factory function for default controller creation
 - Update initialization in `main.js`
+- Fix text alignment regex bug (capture groups)
+- Fix Ctrl+F in preview mode to use selected text from code mode
 
 **Files Modified:**
 - `src/components/MarkdownEditor.js` (modified)
 - `src/main.js` (modified)
+- `src/components/controllers/MarkdownActionController.js` (bug fixes)
 
 **Commit Message:** `refactor: add dependency injection for controllers`
 
 **User Validation Required:**
-- [ ] Test complete application functionality
-- [ ] Verify no performance regression
-- [ ] Test with different controller combinations
+- [x] Test complete application functionality
+- [x] Verify no performance regression
+- [x] Test with different controller combinations
 
 **Proceed Criteria:** App works identically with new injection system
+
+**Status:** ✅ COMPLETED & MERGED
+
+**Bug Fixes Included:**
+- Text alignment buttons now work correctly for multiple alignment changes
+- Ctrl+F in preview mode copies selected text from code mode to clipboard
 
 ---
 
@@ -599,9 +608,9 @@ After completing all phases:
 ## Current Status
 
 **Phase:** Phase 1 - Foundation Refactoring (Extended)  
-**Current Step:** Step 1.8 ✅ MERGED - Phase 1 COMPLETE  
+**Current Step:** Step 2.1 ✅ MERGED - Dependency Injection Started  
 **Total Reduction Achieved:** ~1000+ lines from MarkdownEditor.js  
-**Last Updated:** 2024-12-19 19:45
+**Last Updated:** 2024-12-19 20:15
 
 ## Notes
 

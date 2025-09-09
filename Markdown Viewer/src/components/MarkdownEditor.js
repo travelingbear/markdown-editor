@@ -9,6 +9,9 @@ class MarkdownEditor extends BaseComponent {
     // Controller registry for dynamic management
     this.registry = options.registry || new ControllerRegistry();
     
+    // Plugin manager for plugin lifecycle
+    this.pluginManager = new PluginManager(this);
+    
     // Extract controllers from options or set to null for default creation
     this.controllers = options.controllers || {};
     
@@ -75,6 +78,10 @@ class MarkdownEditor extends BaseComponent {
       this.setupGlobalEventHandlers();
       
       this.updateSplashProgress(95, 'Finalizing...');
+      
+      // Initialize plugin manager
+      this.updateSplashProgress(90, 'Initializing plugins...');
+      // Plugin manager is ready for plugin registration
       
       // Complete initialization
       this.startupTime = performance.now() - startupStartTime;
@@ -1910,6 +1917,11 @@ class MarkdownEditor extends BaseComponent {
     // Phase 6: Clean up performance optimizer
     if (this.performanceOptimizer) {
       this.performanceOptimizer.destroy();
+    }
+    
+    // Clean up plugin manager
+    if (this.pluginManager) {
+      await this.pluginManager.destroy();
     }
     
     // Clean up controller registry

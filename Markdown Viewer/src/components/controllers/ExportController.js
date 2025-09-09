@@ -33,42 +33,49 @@ class ExportController extends BaseComponent {
 
   async exportToPdf() {
     try {
-      // Hide pinned tabs and UI elements during print
+      // Hide pinned tabs during print
       const pinnedTabs = document.getElementById('pinned-tabs-bar');
-      const codeButtons = document.querySelectorAll('.code-block-buttons');
       const originalPinnedDisplay = pinnedTabs?.style.display;
-      
       if (pinnedTabs) pinnedTabs.style.display = 'none';
-      codeButtons.forEach(btn => btn.style.display = 'none');
       
-      // Add print-friendly styles for code mode
-      const printStyle = document.createElement('style');
-      printStyle.id = 'temp-print-styles';
-      printStyle.textContent = `
-        @media print {
-          .monaco-editor .view-lines { color: black !important; }
-          .monaco-editor .mtk1, .monaco-editor .mtk4, .monaco-editor .mtk22 { color: black !important; }
-          .hljs-keyword { color: #d73a49 !important; }
-          .hljs-string { color: #032f62 !important; }
-          .hljs-comment { color: #6a737d !important; }
-        }`;
-      document.head.appendChild(printStyle);
+      // For code mode, create temporary HTML version
+      const currentMode = document.body.classList.contains('code-mode');
+      let tempDiv = null;
+      let originalEditor = null;
+      
+      if (currentMode) {
+        const content = this.editorComponent.getContent();
+        tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `<pre style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; color: black; background: white; padding: 20px; margin: 0;">${this.escapeHtml(content)}</pre>`;
+        
+        originalEditor = document.querySelector('.monaco-editor-container');
+        if (originalEditor) {
+          originalEditor.style.display = 'none';
+          originalEditor.parentNode.appendChild(tempDiv);
+        }
+      }
       
       window.print();
       
-      // Restore elements
+      // Restore everything
       if (pinnedTabs && originalPinnedDisplay !== undefined) {
         pinnedTabs.style.display = originalPinnedDisplay;
       }
-      codeButtons.forEach(btn => btn.style.display = '');
       
-      // Remove temporary styles
-      const tempStyle = document.getElementById('temp-print-styles');
-      if (tempStyle) tempStyle.remove();
+      if (tempDiv && originalEditor) {
+        tempDiv.remove();
+        originalEditor.style.display = '';
+      }
       
     } catch (error) {
       this.emit('export-error', { error, type: 'PDF Export' });
     }
+  }
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   createExportHtmlDocument(previewHtml) {

@@ -265,9 +265,9 @@ class SettingsController extends BaseComponent {
     const systemInfo = {
       'info-default-mode': this.defaultMode,
       'info-current-mode': currentMode,
-      'info-monaco': editorComponent?.isMonacoLoaded ? 'Loaded' : 'Not Loaded',
-      'info-mermaid': previewComponent?.mermaidInitialized ? 'Loaded' : 'Not Loaded',
-      'info-katex': previewComponent?.katexInitialized ? 'Loaded' : 'Not Loaded'
+      'info-monaco': (editorComponent && editorComponent.isMonacoLoaded) ? 'Loaded' : 'Not Loaded',
+      'info-mermaid': (previewComponent && previewComponent.mermaidInitialized) ? 'Loaded' : 'Not Loaded',
+      'info-katex': (previewComponent && previewComponent.katexInitialized) ? 'Loaded' : 'Not Loaded'
     };
     
     Object.entries(systemInfo).forEach(([id, value]) => {

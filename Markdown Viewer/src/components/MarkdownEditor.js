@@ -17,9 +17,7 @@ class MarkdownEditor extends BaseComponent {
     this.keyboardController = null;
     this.settingsController = null;
     this.tabUIController = null;
-    
-    // Application state
-    this.currentMode = 'preview';
+    this.modeController = null;
     
 
     
@@ -129,12 +127,6 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.tabManager);
     await this.tabManager.init();
     
-    // Create tab UI controller
-    this.tabUIController = new TabUIController();
-    this.addChild(this.tabUIController);
-    await this.tabUIController.init();
-    this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
-    
     // Create document component
     this.documentComponent = new DocumentComponent();
     this.addChild(this.documentComponent);
@@ -154,6 +146,18 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent = new ToolbarComponent();
     this.addChild(this.toolbarComponent);
     await this.toolbarComponent.init();
+    
+    // Create mode controller (needs editor, preview, toolbar components)
+    this.modeController = new ModeController();
+    this.addChild(this.modeController);
+    await this.modeController.init();
+    this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
+    
+    // Create tab UI controller
+    this.tabUIController = new TabUIController();
+    this.addChild(this.tabUIController);
+    await this.tabUIController.init();
+    this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
   }
 
   setupComponentCommunication() {
@@ -174,9 +178,9 @@ class MarkdownEditor extends BaseComponent {
       this.switchToTab(data.tab.id);
       
       // Switch to default mode when first document is opened
-      if (this.currentMode === 'preview' && this.tabManager.getTabsCount() === 1) {
+      if (this.modeController.getCurrentMode() === 'preview' && this.tabManager.getTabsCount() === 1) {
         const defaultMode = this.settingsController.getDefaultMode();
-        this.setMode(defaultMode);
+        this.modeController.setMode(defaultMode);
       }
     });
     
@@ -254,9 +258,9 @@ class MarkdownEditor extends BaseComponent {
       this.settingsController.setLastFileOpenTime(this.lastFileOpenTime);
       
       // Switch to default mode when first document is opened
-      if (this.currentMode === 'preview' && currentTabCount === 0) {
+      if (this.modeController.getCurrentMode() === 'preview' && currentTabCount === 0) {
         const defaultMode = this.settingsController.getDefaultMode();
-        this.setMode(defaultMode);
+        this.modeController.setMode(defaultMode);
       }
       
       // Phase 6: Track file open performance for all file opens (including from Explorer)
@@ -268,7 +272,7 @@ class MarkdownEditor extends BaseComponent {
     this.documentComponent.on('document-new', (data) => {
       // Create new tab
       this.tabManager.createNewTab(data.content);
-      this.setMode('code'); // New files always start in code mode
+      this.modeController.setMode('code'); // New files always start in code mode
     });
     
     this.documentComponent.on('document-closed', () => {
@@ -354,7 +358,7 @@ class MarkdownEditor extends BaseComponent {
     
     this.editorComponent.on('monaco-loaded', () => {
       // Monaco editor loaded successfully
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
     });
     
     this.editorComponent.on('markdown-action', (data) => {
@@ -378,16 +382,16 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.previewComponent.on('mermaid-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
     });
     
     this.previewComponent.on('katex-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
     });
     
     // File Controller Events
     this.fileController.on('file-new-completed', () => {
-      this.setMode('code');
+      this.modeController.setMode('code');
     });
     
     this.fileController.on('file-error', (data) => {
@@ -416,7 +420,7 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.toolbarComponent.on('mode-change-requested', (data) => {
-      this.setMode(data.mode);
+      this.modeController.setMode(data.mode);
     });
     
     this.toolbarComponent.on('export-html-requested', () => {
@@ -511,7 +515,12 @@ class MarkdownEditor extends BaseComponent {
     
     // Update system info when settings change
     this.settingsController.on('settings-changed', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    });
+    
+    // Mode Controller Events
+    this.modeController.on('mode-changed', (data) => {
+      this.updateScrollSyncButton();
     });
     
     // Tab UI Controller Events
@@ -541,25 +550,7 @@ class MarkdownEditor extends BaseComponent {
     this.previewComponent.showWelcome();
     
     // Set initial mode to preview for welcome screen, will switch to default mode when document opens
-    this.currentMode = 'preview';
-    const editorPane = document.querySelector('.editor-pane');
-    const previewPane = document.querySelector('.preview-pane');
-    const splitter = document.getElementById('splitter');
-    
-    if (editorPane && previewPane && splitter) {
-      editorPane.style.display = 'none';
-      previewPane.style.display = 'block';
-      splitter.style.display = 'none';
-    }
-    
-    // Update main content and body classes for welcome screen
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      mainContent.classList.add('preview-mode');
-    }
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-    document.body.classList.add('preview-mode');
+    this.modeController.setMode('preview');
     
     // Update filename
     this.updateFilename('Welcome', false);
@@ -584,7 +575,7 @@ class MarkdownEditor extends BaseComponent {
     this.tabUIController.updateTabUI();
     
     // Initialize system info
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
   }
 
   setupGlobalEventHandlers() {
@@ -658,19 +649,19 @@ class MarkdownEditor extends BaseComponent {
         case '1':
           if (!e.shiftKey) {
             e.preventDefault();
-            this.setMode('code');
+            this.modeController.setMode('code');
           }
           break;
         case '2':
           if (!e.shiftKey) {
             e.preventDefault();
-            this.setMode('preview');
+            this.modeController.setMode('preview');
           }
           break;
         case '3':
           if (!e.shiftKey) {
             e.preventDefault();
-            this.setMode('split');
+            this.modeController.setMode('split');
           }
           break;
       }
@@ -708,7 +699,7 @@ class MarkdownEditor extends BaseComponent {
           }
           break;
         case 'f':
-          if (this.currentMode !== 'preview') {
+          if (this.modeController.getCurrentMode() !== 'preview') {
             e.preventDefault();
             this.openFindReplace();
           }
@@ -792,15 +783,15 @@ class MarkdownEditor extends BaseComponent {
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
       e.preventDefault();
       if (e.deltaY < 0) { // Scroll up
-        if (this.currentMode === 'code') {
+        if (this.modeController.getCurrentMode() === 'code') {
           this.toolbarComponent.changeFontSize(2);
-        } else if (this.currentMode === 'preview' || this.currentMode === 'split') {
+        } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
           this.toolbarComponent.changeZoom(0.1);
         }
       } else if (e.deltaY > 0) { // Scroll down
-        if (this.currentMode === 'code') {
+        if (this.modeController.getCurrentMode() === 'code') {
           this.toolbarComponent.changeFontSize(-2);
-        } else if (this.currentMode === 'preview' || this.currentMode === 'split') {
+        } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
           this.toolbarComponent.changeZoom(-0.1);
         }
       }
@@ -810,15 +801,11 @@ class MarkdownEditor extends BaseComponent {
     // Ctrl+Shift+Mouse wheel: Switch between modes
     if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
       e.preventDefault();
-      const modes = ['code', 'preview', 'split'];
-      const currentIndex = modes.indexOf(this.currentMode);
       
       if (e.deltaY < 0) { // Scroll up - next mode
-        const nextIndex = (currentIndex + 1) % modes.length;
-        this.setMode(modes[nextIndex]);
+        this.modeController.cycleMode(1);
       } else if (e.deltaY > 0) { // Scroll down - previous mode
-        const prevIndex = currentIndex === 0 ? modes.length - 1 : currentIndex - 1;
-        this.setMode(modes[prevIndex]);
+        this.modeController.cycleMode(-1);
       }
       return;
     }
@@ -839,136 +826,7 @@ class MarkdownEditor extends BaseComponent {
 
 
 
-  // Mode Management
-  async setMode(mode) {
-    if (this.currentMode === mode) return;
-    
-    const startTime = performance.now();
-    
-    // Check if we have tabs or document content
-    const hasContent = this.tabManager.hasTabs() || this.documentComponent.getDocumentState().hasDocument;
-    if (!hasContent && (mode === 'code' || mode === 'split')) {
-      return;
-    }
-    
-    // Save current scroll position to active tab
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
-      this.saveScrollPositionToTab(activeTab);
-    }
-    
-    // Load Monaco Editor lazily when switching to code or split mode
-    if ((mode === 'code' || mode === 'split') && !this.editorComponent.isMonacoLoaded) {
-      try {
-        await this.editorComponent.loadMonacoEditor();
-      } catch (error) {
-        console.error('[MarkdownEditor] Failed to load Monaco Editor:', error);
-        mode = 'preview'; // Fall back to preview mode
-      }
-    }
-    
-    this.currentMode = mode;
-    
 
-    
-    // Update main content class
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      mainContent.classList.add(`${mode}-mode`);
-    }
-    
-    // Update body class for CSS selectors
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-    document.body.classList.add(`${mode}-mode`);
-    
-    // Show/hide appropriate panes based on mode
-    const editorPane = document.querySelector('.editor-pane');
-    const previewPane = document.querySelector('.preview-pane');
-    const splitter = document.getElementById('splitter');
-    
-    if (editorPane && previewPane && splitter) {
-      // Immediately reset all displays to prevent dual pane issues
-      editorPane.style.display = 'none';
-      previewPane.style.display = 'none';
-      splitter.style.display = 'none';
-      
-      // Force a reflow to ensure the reset takes effect
-      editorPane.offsetHeight;
-      previewPane.offsetHeight;
-      
-      // Apply mode-specific display settings
-      switch (mode) {
-        case 'code':
-          editorPane.style.display = 'block';
-          break;
-        case 'preview':
-          previewPane.style.display = 'block';
-          break;
-        case 'split':
-          editorPane.style.display = 'block';
-          previewPane.style.display = 'block';
-          splitter.style.display = 'block';
-          break;
-      }
-      
-      // Trigger Monaco layout after display changes
-      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-        setTimeout(() => {
-          this.editorComponent.monacoEditor.layout();
-        }, 50);
-      }
-    }
-    
-    // Notify toolbar component
-    this.toolbarComponent.emit('mode-changed', { mode });
-    
-    // Update system info with new mode
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
-    
-    // Update scroll sync button visibility and tooltip
-    this.updateScrollSyncButton();
-    
-    // Layout update is now handled in the display logic above
-    
-    // Restore scroll position after layout
-    setTimeout(() => {
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        this.restoreScrollPositionFromTab(activeTab);
-      }
-    }, 100);
-    
-    this.lastModeSwitchTime = performance.now() - startTime;
-    this.settingsController.setLastModeSwitchTime(this.lastModeSwitchTime);
-  }
-  
-  saveScrollPositionToTab(tab) {
-    const editor = this.editorComponent.monacoEditor;
-    const previewPane = document.querySelector('.preview-pane');
-    
-    if (editor) {
-      const viewState = editor.saveViewState();
-      this.tabManager.saveTabEditorState(tab.id, viewState);
-    }
-    
-    if (previewPane) {
-      this.tabManager.updateTabScroll(tab.id, null, previewPane.scrollTop);
-    }
-  }
-  
-  restoreScrollPositionFromTab(tab) {
-    const editor = this.editorComponent.monacoEditor;
-    const previewPane = document.querySelector('.preview-pane');
-    
-    if ((this.currentMode === 'code' || this.currentMode === 'split') && editor && tab.editorViewState) {
-      editor.restoreViewState(tab.editorViewState);
-    }
-    
-    if ((this.currentMode === 'preview' || this.currentMode === 'split') && previewPane && tab.scrollPosition?.preview) {
-      previewPane.scrollTop = tab.scrollPosition.preview;
-    }
-  }
 
   // Theme change handler
   handleThemeChange(themeData) {
@@ -1713,7 +1571,7 @@ class MarkdownEditor extends BaseComponent {
   updateSettingsDisplay() {
     this.settingsController.updateSettingsDisplay();
     this.settingsController.updatePerformanceDashboard(this.performanceOptimizer, this.tabManager);
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
   }
   
 
@@ -2520,7 +2378,6 @@ class MarkdownEditor extends BaseComponent {
     }
     
     // Reset state
-    this.currentMode = 'preview';
     this.isDistractionFree = false;
   }
 }

@@ -89,6 +89,7 @@ IMPORTANT! These are the steps for each phase/step: New Branch â†’ 2. Changes â†
 - Monaco Editor F1 override (capture phase not working inside Monaco)
 - Monaco Editor mouse wheel font size (Monaco intercepts Ctrl+Scroll)
 - Mode switching direction preference (Ctrl+Shift+Scroll)
+- Markdown toolbar buttons lose cursor focus after formatting actions
 
 ---
 

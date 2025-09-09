@@ -332,6 +332,7 @@ class MarkdownEditor extends BaseComponent {
     
     this.editorComponent.on('monaco-loaded', () => {
       // Monaco editor loaded successfully
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
     });
     
     this.editorComponent.on('markdown-action', (data) => {
@@ -352,6 +353,14 @@ class MarkdownEditor extends BaseComponent {
     
     this.previewComponent.on('preview-error', (data) => {
       this.handleError(new Error(data.error), 'Preview');
+    });
+    
+    this.previewComponent.on('mermaid-loaded', () => {
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+    });
+    
+    this.previewComponent.on('katex-loaded', () => {
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
     });
     
     // File Controller Events
@@ -482,6 +491,11 @@ class MarkdownEditor extends BaseComponent {
   applyInitialSettings() {
     // Apply settings through controllers
     this.settingsController.applySettings();
+    
+    // Initialize pinned tabs if enabled
+    if (this.settingsController.getPinnedTabsEnabled()) {
+      this.updatePinnedTabs();
+    }
     
     // Show welcome page initially - always show in preview pane regardless of default mode
     this.previewComponent.showWelcome();
@@ -866,6 +880,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Notify toolbar component
     this.toolbarComponent.emit('mode-changed', { mode });
+    
+    // Update system info with new mode
+    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
     
     // Update scroll sync button visibility and tooltip
     this.updateScrollSyncButton();

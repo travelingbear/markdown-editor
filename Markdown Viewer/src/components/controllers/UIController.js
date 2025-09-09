@@ -345,15 +345,15 @@ class UIController extends BaseComponent {
     themeBtns.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
           if (id === 'theme-light-btn') {
-            this.setTheme('light', false);
+            await this.setTheme('light', false);
           } else if (id === 'theme-dark-btn') {
-            this.setTheme('dark', false);
+            await this.setTheme('dark', false);
           } else if (id === 'theme-contrast-btn') {
-            this.setTheme('contrast', false);
+            await this.setTheme('contrast', false);
           } else {
-            this.setTheme('light', true);
+            await this.setTheme('light', true);
           }
           this.updateSettingsDisplay();
         });

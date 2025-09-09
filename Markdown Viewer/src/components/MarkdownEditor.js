@@ -477,8 +477,12 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.toolbarComponent.on('theme-toggle', async () => {
-      const themeData = await this.uiController.toggleTheme();
-      this.handleThemeChange(themeData);
+      try {
+        const themeData = await this.uiController.toggleTheme();
+        this.handleThemeChange(themeData);
+      } catch (error) {
+        console.error('Theme toggle error:', error);
+      }
     });
     
     this.toolbarComponent.on('settings-show', () => {
@@ -738,6 +742,8 @@ class MarkdownEditor extends BaseComponent {
           e.preventDefault();
           this.uiController.toggleTheme().then(themeData => {
             this.handleThemeChange(themeData);
+          }).catch(error => {
+            console.error('Theme toggle error:', error);
           });
           break;
         case ',':
@@ -1451,6 +1457,14 @@ class MarkdownEditor extends BaseComponent {
     const previewPane = document.querySelector('.preview-pane');
     if (previewPane) {
       previewPane.addEventListener('scroll', syncPreviewToEditor);
+      
+      // Save scroll position for active tab
+      previewPane.addEventListener('scroll', () => {
+        const activeTab = this.tabManager.getActiveTab();
+        if (activeTab) {
+          this.tabManager.updateTabScroll(activeTab.id, null, previewPane.scrollTop);
+        }
+      });
     }
   }
   
@@ -1575,7 +1589,7 @@ class MarkdownEditor extends BaseComponent {
     // Save preview pane scroll position
     if (currentTab) {
       const previewPane = document.querySelector('.preview-pane');
-      if (previewPane) {
+      if (previewPane && previewPane.style.display !== 'none') {
         this.tabManager.updateTabScroll(currentTab.id, null, previewPane.scrollTop);
       }
     }
@@ -1650,10 +1664,10 @@ class MarkdownEditor extends BaseComponent {
     }, 10);
     
     // Restore preview scroll position
-    if (tab.scrollPosition?.preview) {
+    if (tab.scrollPosition?.preview !== undefined) {
       setTimeout(() => {
         const previewPane = document.querySelector('.preview-pane');
-        if (previewPane) {
+        if (previewPane && previewPane.style.display !== 'none') {
           previewPane.scrollTop = tab.scrollPosition.preview;
         }
       }, 100);
@@ -1692,10 +1706,10 @@ class MarkdownEditor extends BaseComponent {
       this.modeController.setMode(this.modeController.getCurrentMode());
       
       // Restore preview scroll position
-      if (tab.scrollPosition?.preview) {
+      if (tab.scrollPosition?.preview !== undefined) {
         setTimeout(() => {
           const previewPane = document.querySelector('.preview-pane');
-          if (previewPane) {
+          if (previewPane && previewPane.style.display !== 'none') {
             previewPane.scrollTop = tab.scrollPosition.preview;
           }
         }, 100);

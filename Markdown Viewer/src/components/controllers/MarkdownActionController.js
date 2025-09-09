@@ -13,6 +13,28 @@ class MarkdownActionController extends BaseComponent {
 
   async onInit() {
     // Controller is ready
+    this.setupExtensionPoints();
+  }
+
+  setupExtensionPoints() {
+    // Markdown action extension points
+    this.addHook('beforeMarkdownAction', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.beforeMarkdownAction) {
+          await ext.instance.beforeMarkdownAction(data);
+        }
+      }
+    });
+
+    this.addHook('afterMarkdownAction', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.afterMarkdownAction) {
+          await ext.instance.afterMarkdownAction(data);
+        }
+      }
+    });
   }
 
   setDependencies(editorComponent, documentComponent) {
@@ -492,6 +514,28 @@ class MarkdownActionController extends BaseComponent {
     
     // Show modal
     modal.style.display = 'flex';
+  }
+
+  // Extension API methods
+  addMarkdownExtension(name, extension) {
+    this.registerExtension(name, extension);
+    if (extension.activate) {
+      this.extensionAPI.activate(name);
+    }
+  }
+
+  removeMarkdownExtension(name) {
+    return this.unregisterExtension(name);
+  }
+
+  // Get available markdown actions for extensions
+  getAvailableActions() {
+    return [
+      'bold', 'italic', 'strikethrough', 'underline',
+      'h1', 'h2', 'h3', 'link', 'image', 'ul', 'ol', 'task',
+      'table', 'code', 'codeblock', 'quote',
+      'align-left', 'align-center', 'align-right', 'align-justify'
+    ];
   }
 }
 

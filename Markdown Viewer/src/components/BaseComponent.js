@@ -14,6 +14,9 @@ class BaseComponent {
     // Hook system for extensibility
     this.hooks = new Map();
     
+    // Extension system
+    this.extensionAPI = new ExtensionAPI();
+    
     // Performance tracking
     this.performanceMetrics = {
       initTime: 0,
@@ -250,6 +253,39 @@ class BaseComponent {
   }
 
   /**
+   * Register an extension
+   */
+  registerExtension(name, extension) {
+    this.extensionAPI.register(name, extension);
+    this.emit('extension-registered', { name, extension });
+  }
+
+  /**
+   * Unregister an extension
+   */
+  unregisterExtension(name) {
+    const success = this.extensionAPI.unregister(name);
+    if (success) {
+      this.emit('extension-unregistered', { name });
+    }
+    return success;
+  }
+
+  /**
+   * Get extension
+   */
+  getExtension(name) {
+    return this.extensionAPI.get(name);
+  }
+
+  /**
+   * Get all extensions
+   */
+  getExtensions() {
+    return this.extensionAPI.getAll();
+  }
+
+  /**
    * Cleanup resources
    */
   cleanup() {
@@ -258,6 +294,11 @@ class BaseComponent {
     
     // Clear hooks
     this.hooks.clear();
+    
+    // Destroy extensions
+    if (this.extensionAPI) {
+      this.extensionAPI.destroy();
+    }
     
     // Destroy child components
     this.childComponents.forEach(component => {
@@ -282,6 +323,7 @@ class BaseComponent {
       eventListenerCount: Array.from(this.eventListeners.values()).reduce((sum, arr) => sum + arr.length, 0),
       hookCount: Array.from(this.hooks.values()).reduce((sum, arr) => sum + arr.length, 0),
       hooks: this.getHooks(),
+      extensionCount: this.extensionAPI.getAll().length,
       performanceMetrics: this.getPerformanceMetrics()
     };
   }

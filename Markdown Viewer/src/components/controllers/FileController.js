@@ -13,10 +13,82 @@ class FileController extends BaseComponent {
   async onInit() {
     // Initialize performance optimizer reference
     this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
+    
+    // Set up extension points
+    this.setupExtensionPoints();
+  }
+
+  setupExtensionPoints() {
+    // File operation extension points
+    this.addHook('beforeNewFile', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.beforeNewFile) {
+          await ext.instance.beforeNewFile(data);
+        }
+      }
+    });
+
+    this.addHook('afterNewFile', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.afterNewFile) {
+          await ext.instance.afterNewFile(data);
+        }
+      }
+    });
+
+    this.addHook('beforeOpenFile', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.beforeOpenFile) {
+          await ext.instance.beforeOpenFile(data);
+        }
+      }
+    });
+
+    this.addHook('afterOpenFile', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.afterOpenFile) {
+          await ext.instance.afterOpenFile(data);
+        }
+      }
+    });
+
+    this.addHook('beforeSaveFile', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.beforeSaveFile) {
+          await ext.instance.beforeSaveFile(data);
+        }
+      }
+    });
+
+    this.addHook('afterSaveFile', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.afterSaveFile) {
+          await ext.instance.afterSaveFile(data);
+        }
+      }
+    });
   }
 
   setPerformanceOptimizer(optimizer) {
     this.performanceOptimizer = optimizer;
+  }
+
+  // Extension API methods
+  addFileExtension(name, extension) {
+    this.registerExtension(name, extension);
+    if (extension.activate) {
+      this.extensionAPI.activate(name);
+    }
+  }
+
+  removeFileExtension(name) {
+    return this.unregisterExtension(name);
   }
 
   async newFile(tabManager) {

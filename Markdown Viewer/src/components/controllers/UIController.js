@@ -35,6 +35,46 @@ class UIController extends BaseComponent {
     this.setupModalEventHandlers();
     this.setupSettingsControls();
     this.applyInitialSettings();
+    this.setupExtensionPoints();
+  }
+
+  setupExtensionPoints() {
+    // Theme extension points
+    this.addHook('beforeThemeToggle', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.beforeThemeToggle) {
+          await ext.instance.beforeThemeToggle(data);
+        }
+      }
+    });
+
+    this.addHook('afterThemeToggle', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.afterThemeToggle) {
+          await ext.instance.afterThemeToggle(data);
+        }
+      }
+    });
+
+    this.addHook('beforeThemeChange', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.beforeThemeChange) {
+          await ext.instance.beforeThemeChange(data);
+        }
+      }
+    });
+
+    this.addHook('afterThemeChange', async (data) => {
+      const extensions = this.getExtensions().filter(ext => ext.active);
+      for (const ext of extensions) {
+        if (ext.instance.afterThemeChange) {
+          await ext.instance.afterThemeChange(data);
+        }
+      }
+    });
   }
 
   // Theme Management
@@ -635,6 +675,18 @@ class UIController extends BaseComponent {
       mdToolbarSize: this.mdToolbarSize,
       statusBarSize: this.statusBarSize
     };
+  }
+
+  // Extension API methods
+  addUIExtension(name, extension) {
+    this.registerExtension(name, extension);
+    if (extension.activate) {
+      this.extensionAPI.activate(name);
+    }
+  }
+
+  removeUIExtension(name) {
+    return this.unregisterExtension(name);
   }
 }
 

@@ -218,33 +218,36 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 
 ---
 
-### Step 1.8: Extract ExportController (Optional)
-**Branch:** `refactor/extract-export-controller`
+### Step 1.8: Extract ExportController ✅
+**Branch:** `refactor/extract-export-controller` (merged)
 
 **Changes:**
 - Create `src/components/controllers/ExportController.js`
 - Move export functionality from `MarkdownEditor.js` to `ExportController`
 - Move HTML/PDF export logic
+- Fix PDF printing issues (full content, no UI elements)
 
 **Files Modified:**
-- `src/components/controllers/ExportController.js` (new)
-- `src/components/MarkdownEditor.js` (modified)
+- `src/components/controllers/ExportController.js` (new - 154 lines)
+- `src/components/MarkdownEditor.js` (modified - reduced ~71 lines)
 - `src/index.html` (modified)
+- `src/styles.css` (modified - print improvements)
 
 **Commit Message:** `refactor: extract export functionality into ExportController`
 
 **User Validation Required:**
-- [ ] Test HTML export functionality
-- [ ] Test PDF export (print) functionality
-- [ ] Verify export file dialogs work
+- [x] Test HTML export functionality
+- [x] Test PDF export (print) functionality
+- [x] Verify export file dialogs work
 
 **Proceed Criteria:** Export functions work identically
 
-**Estimated Lines Reduced:** ~100 lines
-
-**Status:** OPTIONAL - Can be done later if needed
-
 **Status:** ✅ COMPLETED & MERGED
+
+**Known Issues:**
+- Code mode PDF syntax highlighting colors (deferred to later phase)
+
+**Actual Lines Reduced:** ~71 lines
 
 ---
 
@@ -471,9 +474,9 @@ After completing all phases:
 ## Current Status
 
 **Phase:** Phase 1 - Foundation Refactoring (Extended)  
-**Current Step:** Step 1.7 ✅ MERGED - Ready for Step 1.8  
-**Estimated Remaining Reduction:** ~100+ lines from MarkdownEditor.js  
-**Last Updated:** 2024-12-19 19:15
+**Current Step:** Step 1.8 ✅ MERGED - Phase 1 COMPLETE  
+**Total Reduction Achieved:** ~1000+ lines from MarkdownEditor.js  
+**Last Updated:** 2024-12-19 19:45
 
 ## Notes
 

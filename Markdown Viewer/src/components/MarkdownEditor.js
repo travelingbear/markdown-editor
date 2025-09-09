@@ -6,6 +6,9 @@ class MarkdownEditor extends BaseComponent {
   constructor(options = {}) {
     super('MarkdownEditor', options);
     
+    // Controller registry for dynamic management
+    this.registry = options.registry || new ControllerRegistry();
+    
     // Extract controllers from options or set to null for default creation
     this.controllers = options.controllers || {};
     
@@ -109,23 +112,32 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async createComponents() {
+    // Register default controllers in registry
+    this.registry.register('settings', SettingsController);
+    this.registry.register('ui', UIController);
+    this.registry.register('file', FileController);
+    this.registry.register('mode', ModeController);
+    this.registry.register('tabUI', TabUIController);
+    this.registry.register('markdownAction', MarkdownActionController);
+    this.registry.register('export', ExportController);
+    
     // Create settings controller first (or use injected one)
     if (!this.settingsController) {
-      this.settingsController = new SettingsController();
+      this.settingsController = this.registry.createInstance('settings');
     }
     this.addChild(this.settingsController);
     await this.settingsController.init();
     
     // Create UI controller (or use injected one)
     if (!this.uiController) {
-      this.uiController = new UIController();
+      this.uiController = this.registry.createInstance('ui');
     }
     this.addChild(this.uiController);
     await this.uiController.init();
     
     // Create file controller (or use injected one)
     if (!this.fileController) {
-      this.fileController = new FileController();
+      this.fileController = this.registry.createInstance('file');
     }
     this.addChild(this.fileController);
     await this.fileController.init();
@@ -158,7 +170,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Create mode controller (or use injected one)
     if (!this.modeController) {
-      this.modeController = new ModeController();
+      this.modeController = this.registry.createInstance('mode');
     }
     this.addChild(this.modeController);
     await this.modeController.init();
@@ -166,7 +178,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Create tab UI controller (or use injected one)
     if (!this.tabUIController) {
-      this.tabUIController = new TabUIController();
+      this.tabUIController = this.registry.createInstance('tabUI');
     }
     this.addChild(this.tabUIController);
     await this.tabUIController.init();
@@ -174,7 +186,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Create markdown action controller (or use injected one)
     if (!this.markdownActionController) {
-      this.markdownActionController = new MarkdownActionController();
+      this.markdownActionController = this.registry.createInstance('markdownAction');
     }
     this.addChild(this.markdownActionController);
     await this.markdownActionController.init();
@@ -182,7 +194,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Create export controller (or use injected one)
     if (!this.exportController) {
-      this.exportController = new ExportController();
+      this.exportController = this.registry.createInstance('export');
     }
     this.addChild(this.exportController);
     await this.exportController.init();
@@ -1892,6 +1904,11 @@ class MarkdownEditor extends BaseComponent {
       this.performanceOptimizer.destroy();
     }
     
+    // Clean up controller registry
+    if (this.registry) {
+      this.registry.destroy();
+    }
+    
 
     
     // Clean up all child components
@@ -1920,10 +1937,12 @@ class MarkdownEditor extends BaseComponent {
 function createMarkdownEditor(options = {}) {
   // Create default controllers if not provided
   const controllers = options.controllers || {};
+  const registry = options.registry || new ControllerRegistry();
   
   return new MarkdownEditor({
     ...options,
-    controllers
+    controllers,
+    registry
   });
 }
 

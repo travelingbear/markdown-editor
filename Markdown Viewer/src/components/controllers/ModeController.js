@@ -33,16 +33,18 @@ class ModeController extends BaseComponent {
     
     const startTime = performance.now();
     
-    // Check if we have tabs or document content
-    const hasContent = this.tabManager.hasTabs();
+    // Check if we have tabs or document content for code/split modes
+    const hasContent = this.tabManager && this.tabManager.hasTabs();
     if (!hasContent && (mode === 'code' || mode === 'split')) {
       return;
     }
     
     // Save current scroll position to active tab
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
-      this.saveScrollPositionToTab(activeTab);
+    if (this.tabManager) {
+      const activeTab = this.tabManager.getActiveTab();
+      if (activeTab) {
+        this.saveScrollPositionToTab(activeTab);
+      }
     }
     
     // Load Monaco Editor lazily when switching to code or split mode
@@ -114,9 +116,11 @@ class ModeController extends BaseComponent {
     
     // Restore scroll position after layout
     setTimeout(() => {
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        this.restoreScrollPositionFromTab(activeTab);
+      if (this.tabManager) {
+        const activeTab = this.tabManager.getActiveTab();
+        if (activeTab) {
+          this.restoreScrollPositionFromTab(activeTab);
+        }
       }
     }, 100);
     
@@ -128,7 +132,9 @@ class ModeController extends BaseComponent {
   }
   
   saveScrollPositionToTab(tab) {
-    const editor = this.editorComponent.monacoEditor;
+    if (!this.tabManager) return;
+    
+    const editor = this.editorComponent && this.editorComponent.monacoEditor;
     const previewPane = document.querySelector('.preview-pane');
     
     if (editor) {
@@ -142,7 +148,7 @@ class ModeController extends BaseComponent {
   }
   
   restoreScrollPositionFromTab(tab) {
-    const editor = this.editorComponent.monacoEditor;
+    const editor = this.editorComponent && this.editorComponent.monacoEditor;
     const previewPane = document.querySelector('.preview-pane');
     
     if ((this.currentMode === 'code' || this.currentMode === 'split') && editor && tab.editorViewState) {

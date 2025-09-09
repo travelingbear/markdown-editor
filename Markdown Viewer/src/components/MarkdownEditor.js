@@ -147,7 +147,7 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.toolbarComponent);
     await this.toolbarComponent.init();
     
-    // Create mode controller (needs editor, preview, toolbar components)
+    // Create mode controller (needs all components)
     this.modeController = new ModeController();
     this.addChild(this.modeController);
     await this.modeController.init();
@@ -549,8 +549,26 @@ class MarkdownEditor extends BaseComponent {
     // Show welcome page initially - always show in preview pane regardless of default mode
     this.previewComponent.showWelcome();
     
-    // Set initial mode to preview for welcome screen, will switch to default mode when document opens
-    this.modeController.setMode('preview');
+    // Set initial mode to preview for welcome screen manually (avoid ModeController during init)
+    this.modeController.currentMode = 'preview';
+    const editorPane = document.querySelector('.editor-pane');
+    const previewPane = document.querySelector('.preview-pane');
+    const splitter = document.getElementById('splitter');
+    
+    if (editorPane && previewPane && splitter) {
+      editorPane.style.display = 'none';
+      previewPane.style.display = 'block';
+      splitter.style.display = 'none';
+    }
+    
+    // Update main content and body classes for welcome screen
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      mainContent.classList.add('preview-mode');
+    }
+    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+    document.body.classList.add('preview-mode');
     
     // Update filename
     this.updateFilename('Welcome', false);

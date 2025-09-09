@@ -284,7 +284,7 @@ class MarkdownEditor extends BaseComponent {
       const activeTab = this.tabManager.getActiveTab();
       if (activeTab) {
         activeTab.isDirty = data.isDirty;
-        this.updateTabUI();
+        this.tabUIController.updateTabUI();
         this.updateFilename(null, data.isDirty);
         this.toolbarComponent.emit('document-state-changed', { 
           hasDocument: true, 
@@ -2363,6 +2363,10 @@ class MarkdownEditor extends BaseComponent {
       case 'move-to-3':
       case 'move-to-4':
       case 'move-to-5':
+      case 'move-to-6':
+      case 'move-to-7':
+      case 'move-to-8':
+      case 'move-to-9':
         const position = parseInt(action.split('-')[2]) - 1; // Convert to 0-based index
         this.moveTabToPosition(tabId, position);
         // Refresh modal if it's open

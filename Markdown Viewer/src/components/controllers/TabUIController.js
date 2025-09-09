@@ -400,6 +400,10 @@ class TabUIController extends BaseComponent {
             <button class="tab-context-item" data-action="move-to-3">Position 3</button>
             <button class="tab-context-item" data-action="move-to-4">Position 4</button>
             <button class="tab-context-item" data-action="move-to-5">Position 5</button>
+            <button class="tab-context-item" data-action="move-to-6">Position 6</button>
+            <button class="tab-context-item" data-action="move-to-7">Position 7</button>
+            <button class="tab-context-item" data-action="move-to-8">Position 8</button>
+            <button class="tab-context-item" data-action="move-to-9">Position 9</button>
           </div>
         </div>
         <div class="tab-context-separator"></div>
@@ -476,6 +480,17 @@ class TabUIController extends BaseComponent {
     left = Math.max(10, left);
     top = Math.max(10, top);
     
+    // Position submenu to avoid overflow
+    const submenu = contextMenu.querySelector('.tab-context-submenu');
+    if (submenu) {
+      const submenuRect = submenu.getBoundingClientRect();
+      if (left + menuRect.width + submenuRect.width > viewportWidth) {
+        submenu.style.left = `-${submenuRect.width}px`;
+      } else {
+        submenu.style.left = '100%';
+      }
+    }
+    
     contextMenu.style.left = `${left}px`;
     contextMenu.style.top = `${top}px`;
     
@@ -487,7 +502,7 @@ class TabUIController extends BaseComponent {
     const revealBtn = contextMenu.querySelector('[data-action="reveal"]');
     
     // Update position buttons - disable current position
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 9; i++) {
       const posBtn = contextMenu.querySelector(`[data-action="move-to-${i}"]`);
       if (posBtn) {
         posBtn.disabled = tabIndex === (i - 1);

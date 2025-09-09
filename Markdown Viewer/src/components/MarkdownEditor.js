@@ -154,7 +154,8 @@ class MarkdownEditor extends BaseComponent {
       
       // Switch to default mode when first document is opened
       if (this.currentMode === 'preview' && this.tabManager.getTabsCount() === 1) {
-        this.setMode(this.defaultMode);
+        const defaultMode = this.uiController.defaultMode;
+        this.setMode(defaultMode);
       }
     });
     
@@ -222,7 +223,8 @@ class MarkdownEditor extends BaseComponent {
       
       // Switch to default mode when first document is opened
       if (this.currentMode === 'preview' && currentTabCount === 0) {
-        this.setMode(this.defaultMode);
+        const defaultMode = this.uiController.defaultMode;
+        this.setMode(defaultMode);
       }
       
       // Phase 6: Track file open performance for all file opens (including from Explorer)
@@ -549,6 +551,7 @@ class MarkdownEditor extends BaseComponent {
           this.fileController.openFile(this.documentComponent, this.tabManager);
           break;
         case 's':
+        case 'S':
           e.preventDefault();
           if (e.shiftKey) {
             this.fileController.saveAsFile(this.documentComponent, this.tabManager);
@@ -1118,8 +1121,8 @@ class MarkdownEditor extends BaseComponent {
         if (action === 'align-left') {
           if (selectedText) {
             let cleanText = selectedText
-              .replace(/<div align="(center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
-              .trim();
+              .replace(/<div align="(center|right|justify)">([\s\S]*?)<\/div>/gi, '$2')
+              .replace(/^\s+|\s+$/g, '');
             replacement = cleanText;
           } else {
             return;
@@ -1128,13 +1131,11 @@ class MarkdownEditor extends BaseComponent {
           const alignType = action.replace('align-', '');
           if (selectedText) {
             let cleanText = selectedText
-              .replace(/<div align="(left|center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2')
-              .trim();
-            replacement = `<div align="${alignType}">\n${cleanText}\n</div>`;
-            insertAtNewLine = true;
+              .replace(/<div align="(left|center|right|justify)">([\s\S]*?)<\/div>/gi, '$2')
+              .replace(/^\s+|\s+$/g, '');
+            replacement = `<div align="${alignType}">${cleanText}</div>`;
           } else {
-            replacement = `<div align="${alignType}">\nText aligned ${alignType}\n</div>`;
-            insertAtNewLine = true;
+            replacement = `<div align="${alignType}">Text aligned ${alignType}</div>`;
           }
         }
         break;
@@ -1254,10 +1255,10 @@ class MarkdownEditor extends BaseComponent {
       
       if (alignType === 'left') {
         // Remove existing alignment
-        newContent = lineContent.replace(/<div align="(center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2').trim();
+        newContent = lineContent.replace(/<div align="(center|right|justify)">([\s\S]*?)<\/div>/gi, '$2').trim();
       } else {
         // Remove existing alignment first, then apply new alignment
-        let cleanContent = lineContent.replace(/<div align="(left|center|right|justify)">\s*([\s\S]*?)\s*<\/div>/gi, '$2').trim();
+        let cleanContent = lineContent.replace(/<div align="(left|center|right|justify)">([\s\S]*?)<\/div>/gi, '$2').trim();
         newContent = `<div align="${alignType}">${cleanContent}</div>`;
       }
       
@@ -2170,7 +2171,8 @@ class MarkdownEditor extends BaseComponent {
         if (mdFile) {
           const content = await mdFile.text();
           this.tabManager.createNewTab(content);
-          this.setMode(this.defaultMode);
+          const defaultMode = this.uiController.defaultMode;
+          this.setMode(defaultMode);
         }
         return;
       }

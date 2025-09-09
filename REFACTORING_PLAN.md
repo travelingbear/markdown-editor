@@ -314,33 +314,31 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 
 ## Phase 2.5: CSS Architecture Refactoring
 
-### Step 2.5.1: Extract Theme-Specific CSS Files
-**Branch:** `refactor/extract-theme-css`
+### Step 2.5.1: Extract Theme-Specific CSS Files ❌ FAILED
+**Branch:** `refactor/extract-theme-css` (merged with rollback)
 
-**Changes:**
-- Create `src/styles/themes/` directory structure
-- Extract light, dark, retro, and contrast theme styles into separate files
-- Create theme-specific CSS files with proper imports
+**Issue Encountered:**
+- CSS @import statements caused loading issues in Tauri app
+- Theme toggle button stopped working
+- UI elements became unstyled or displaced
+- Splash screen failed to display
 
-**Files Modified:**
-- `src/styles/themes/light.css` (new)
-- `src/styles/themes/dark.css` (new)
-- `src/styles/themes/retro.css` (new)
-- `src/styles/themes/contrast.css` (new)
-- `src/styles.css` (modified - remove theme-specific styles)
-- `src/index.html` (modified - update CSS imports)
+**Rollback Applied:**
+- Restored original styles.css functionality
+- Kept theme files for future reference
+- All functionality now works as before
 
-**Commit Message:** `refactor: extract theme-specific CSS into separate files`
+**Lesson Learned:**
+- CSS @import may not work reliably in Tauri applications
+- Need alternative approach for CSS organization
+- Consider build-time CSS concatenation instead
 
-**User Validation Required:**
-- [ ] Test all themes render identically (light/dark/retro/contrast)
-- [ ] Verify theme switching works without visual changes
-- [ ] Test application startup with new CSS structure
-- [ ] Confirm no missing styles or broken layouts
+**Status:** ❌ FAILED - Rolled back to working state
 
-**Proceed Criteria:** All themes work identically to before
-
-**Estimated Reduction:** ~2000 lines from main styles.css
+**Alternative Approach Needed:**
+- Skip CSS file extraction for now
+- Focus on JavaScript architecture completion
+- Defer CSS organization to later phase or different method
 
 ---
 
@@ -611,10 +609,11 @@ After completing all phases:
 
 ## Current Status
 
-**Phase:** Phase 1 - Foundation Refactoring (Extended)  
-**Current Step:** Step 2.2 ✅ MERGED - Controller Registry Complete  
+**Phase:** Phase 2.5 - CSS Architecture Refactoring  
+**Current Step:** Step 2.5.1 ❌ FAILED - CSS Import Issues  
 **Total Reduction Achieved:** ~1000+ lines from MarkdownEditor.js  
-**Last Updated:** 2024-12-19 20:30
+**Next Action:** Skip CSS refactoring, proceed to Phase 3 Extension Points  
+**Last Updated:** 2024-12-19 21:15
 
 ## Notes
 

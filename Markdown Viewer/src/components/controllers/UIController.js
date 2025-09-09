@@ -38,7 +38,9 @@ class UIController extends BaseComponent {
   }
 
   // Theme Management
-  toggleTheme() {
+  async toggleTheme() {
+    await this.executeHook('beforeThemeToggle', { currentTheme: this.theme, isRetroTheme: this.isRetroTheme });
+    
     const isRetro = document.body.classList.contains('retro-theme');
     if (isRetro) {
       // Exit retro mode and go to light theme
@@ -54,13 +56,17 @@ class UIController extends BaseComponent {
     
     this.applyTheme();
     
+    await this.executeHook('afterThemeToggle', { theme: this.theme, isRetroTheme: this.isRetroTheme });
+    
     // Emit theme change event
     this.emit('theme-changed', { theme: this.theme, isRetroTheme: this.isRetroTheme });
     
     return { theme: this.theme, isRetroTheme: this.isRetroTheme };
   }
 
-  setTheme(theme, isRetro = false) {
+  async setTheme(theme, isRetro = false) {
+    await this.executeHook('beforeThemeChange', { oldTheme: this.theme, newTheme: theme, oldRetro: this.isRetroTheme, newRetro: isRetro });
+    
     this.theme = theme;
     this.isRetroTheme = isRetro;
     
@@ -75,6 +81,8 @@ class UIController extends BaseComponent {
     localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());
     
     this.applyTheme();
+    
+    await this.executeHook('afterThemeChange', { theme: this.theme, isRetroTheme: this.isRetroTheme });
     this.emit('theme-changed', { theme: this.theme, isRetroTheme: this.isRetroTheme });
   }
 

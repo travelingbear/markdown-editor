@@ -476,8 +476,8 @@ class MarkdownEditor extends BaseComponent {
       this.uiController.toggleDistractionFree();
     });
     
-    this.toolbarComponent.on('theme-toggle', () => {
-      const themeData = this.uiController.toggleTheme();
+    this.toolbarComponent.on('theme-toggle', async () => {
+      const themeData = await this.uiController.toggleTheme();
       this.handleThemeChange(themeData);
     });
     
@@ -505,8 +505,8 @@ class MarkdownEditor extends BaseComponent {
       this.editorComponent.redo();
     });
     
-    this.toolbarComponent.on('markdown-action', (data) => {
-      this.markdownActionController.handleMarkdownAction(data.action);
+    this.toolbarComponent.on('markdown-action', async (data) => {
+      await this.markdownActionController.handleMarkdownAction(data.action);
     });
     
     this.toolbarComponent.on('find-replace-requested', () => {
@@ -736,8 +736,9 @@ class MarkdownEditor extends BaseComponent {
         case 't':
         case '/':
           e.preventDefault();
-          const themeData = this.uiController.toggleTheme();
-          this.handleThemeChange(themeData);
+          this.uiController.toggleTheme().then(themeData => {
+            this.handleThemeChange(themeData);
+          });
           break;
         case ',':
           e.preventDefault();

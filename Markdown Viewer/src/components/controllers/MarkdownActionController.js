@@ -20,8 +20,10 @@ class MarkdownActionController extends BaseComponent {
     this.documentComponent = documentComponent;
   }
 
-  handleMarkdownAction(action) {
+  async handleMarkdownAction(action) {
     if (!this.editorComponent.isMonacoLoaded || !this.editorComponent.monacoEditor) return;
+    
+    await this.executeHook('beforeMarkdownAction', { action });
     
     const editor = this.editorComponent.monacoEditor;
     const model = editor.getModel();
@@ -198,6 +200,8 @@ class MarkdownActionController extends BaseComponent {
     
     editor.focus();
     this.documentComponent.handleContentChange(editor.getValue());
+    
+    await this.executeHook('afterMarkdownAction', { action, selectedText, isMultiLine });
   }
   
   handleMultiLineFormatting(editor, selection, action) {

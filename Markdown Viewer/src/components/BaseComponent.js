@@ -11,6 +11,9 @@ class BaseComponent {
     this.childComponents = new Map();
     this.parentComponent = null;
     
+    // Hook system for extensibility
+    this.hooks = new Map();
+    
     // Performance tracking
     this.performanceMetrics = {
       initTime: 0,
@@ -27,9 +30,11 @@ class BaseComponent {
     const startTime = performance.now();
     
     try {
+      await this.executeHook('beforeInit');
       await this.onInit();
       this.isInitialized = true;
       this.performanceMetrics.initTime = performance.now() - startTime;
+      await this.executeHook('afterInit');
       this.emit('initialized', { component: this.name });
     } catch (error) {
       console.error(`[${this.name}] Initialization failed:`, error);
@@ -79,6 +84,7 @@ class BaseComponent {
    */
   destroy() {
     try {
+      this.executeHook('beforeDestroy');
       this.onDestroy();
       this.cleanup();
       this.emit('destroyed', { component: this.name });
@@ -178,11 +184,80 @@ class BaseComponent {
   }
 
   /**
+   * Register a hook callback
+   */
+  addHook(hookName, callback, priority = 10) {
+    if (!this.hooks.has(hookName)) {
+      this.hooks.set(hookName, []);
+    }
+    
+    const hookEntry = { callback, priority };
+    const hooks = this.hooks.get(hookName);
+    
+    // Insert based on priority (lower numbers = higher priority)
+    let inserted = false;
+    for (let i = 0; i < hooks.length; i++) {
+      if (priority < hooks[i].priority) {
+        hooks.splice(i, 0, hookEntry);
+        inserted = true;
+        break;
+      }
+    }
+    
+    if (!inserted) {
+      hooks.push(hookEntry);
+    }
+  }
+
+  /**
+   * Remove a hook callback
+   */
+  removeHook(hookName, callback) {
+    if (this.hooks.has(hookName)) {
+      const hooks = this.hooks.get(hookName);
+      const index = hooks.findIndex(entry => entry.callback === callback);
+      if (index > -1) {
+        hooks.splice(index, 1);
+      }
+    }
+  }
+
+  /**
+   * Execute all callbacks for a hook
+   */
+  async executeHook(hookName, data = {}) {
+    if (this.hooks.has(hookName)) {
+      const hooks = this.hooks.get(hookName);
+      for (const { callback } of hooks) {
+        try {
+          await callback(data, this);
+        } catch (error) {
+          console.error(`[${this.name}] Hook '${hookName}' callback error:`, error);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get all registered hooks for debugging
+   */
+  getHooks() {
+    const result = {};
+    this.hooks.forEach((hooks, hookName) => {
+      result[hookName] = hooks.length;
+    });
+    return result;
+  }
+
+  /**
    * Cleanup resources
    */
   cleanup() {
     // Clear event listeners
     this.eventListeners.clear();
+    
+    // Clear hooks
+    this.hooks.clear();
     
     // Destroy child components
     this.childComponents.forEach(component => {
@@ -205,6 +280,8 @@ class BaseComponent {
       isInitialized: this.isInitialized,
       childCount: this.childComponents.size,
       eventListenerCount: Array.from(this.eventListeners.values()).reduce((sum, arr) => sum + arr.length, 0),
+      hookCount: Array.from(this.hooks.values()).reduce((sum, arr) => sum + arr.length, 0),
+      hooks: this.getHooks(),
       performanceMetrics: this.getPerformanceMetrics()
     };
   }

@@ -22,6 +22,8 @@ class FileController extends BaseComponent {
   async newFile(tabManager) {
     const startTime = performance.now();
     
+    await this.executeHook('beforeNewFile', { tabManager });
+    
     // Check tab limits for performance
     const currentTabCount = tabManager.getTabsCount();
     if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
@@ -37,10 +39,13 @@ class FileController extends BaseComponent {
       this.performanceOptimizer.benchmarkTabOperation('Tab Create', startTime, currentTabCount + 1);
     }
 
+    await this.executeHook('afterNewFile', { tabManager });
     this.emit('file-new-completed');
   }
 
   async openFile(documentComponent, tabManager) {
+    await this.executeHook('beforeOpenFile', { documentComponent, tabManager });
+    
     // Check tab limits before opening
     const currentTabCount = tabManager.getTabsCount();
     if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
@@ -56,12 +61,15 @@ class FileController extends BaseComponent {
       this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
     }
 
+    await this.executeHook('afterOpenFile', { documentComponent, tabManager });
     this.emit('file-open-completed');
   }
 
   async saveFile(documentComponent, tabManager) {
     const activeTab = tabManager.getActiveTab();
     if (activeTab) {
+      await this.executeHook('beforeSaveFile', { documentComponent, tabManager, activeTab });
+      
       // Update document component with active tab content
       documentComponent.currentFile = activeTab.filePath;
       documentComponent.content = activeTab.content;
@@ -70,6 +78,7 @@ class FileController extends BaseComponent {
       try {
         await documentComponent.saveFile();
         tabManager.markTabSaved(activeTab.id, documentComponent.currentFile);
+        await this.executeHook('afterSaveFile', { documentComponent, tabManager, activeTab });
         this.emit('file-save-completed', { filePath: documentComponent.currentFile });
       } catch (error) {
         this.emit('file-error', { error, type: 'Save' });

@@ -109,10 +109,14 @@ class ModeController extends BaseComponent {
     }
     
     // Notify toolbar component
-    this.toolbarComponent.emit('mode-changed', { mode });
+    if (this.toolbarComponent) {
+      this.toolbarComponent.emit('mode-changed', { mode });
+    }
     
     // Update system info with new mode
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+    if (this.settingsController) {
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+    }
     
     // Restore scroll position after layout
     setTimeout(() => {
@@ -125,7 +129,9 @@ class ModeController extends BaseComponent {
     }, 100);
     
     this.lastModeSwitchTime = performance.now() - startTime;
-    this.settingsController.setLastModeSwitchTime(this.lastModeSwitchTime);
+    if (this.settingsController) {
+      this.settingsController.setLastModeSwitchTime(this.lastModeSwitchTime);
+    }
     
     // Emit mode change event
     this.emit('mode-changed', { mode });

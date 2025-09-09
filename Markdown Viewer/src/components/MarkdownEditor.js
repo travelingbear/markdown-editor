@@ -1452,7 +1452,7 @@ class MarkdownEditor extends BaseComponent {
   }
   
   openFindReplace() {
-    if (this.currentMode === 'preview') {
+    if (this.modeController.getCurrentMode() === 'preview') {
       // Use browser's native find for preview mode
       document.execCommand('find');
       return;
@@ -1732,13 +1732,13 @@ class MarkdownEditor extends BaseComponent {
           const content = await mdFile.text();
           this.tabManager.createNewTab(content);
           const defaultMode = this.uiController.defaultMode;
-          this.setMode(defaultMode);
+          this.modeController.setMode(defaultMode);
         }
         return;
       }
       
       // Code mode: insert file paths
-      if (this.currentMode === 'code' && this.editorComponent.isMonacoLoaded) {
+      if (this.modeController.getCurrentMode() === 'code' && this.editorComponent.isMonacoLoaded) {
         const editor = this.editorComponent.monacoEditor;
         const position = editor.getPosition();
         const filePaths = files.map(f => f.name);
@@ -1867,7 +1867,7 @@ class MarkdownEditor extends BaseComponent {
     let isScrolling = false;
     
     const syncEditorToPreview = () => {
-      if (isScrolling || this.currentMode !== 'split') return;
+      if (isScrolling || this.modeController.getCurrentMode() !== 'split') return;
       isScrolling = true;
       
       const editor = this.editorComponent.monacoEditor;
@@ -1888,7 +1888,7 @@ class MarkdownEditor extends BaseComponent {
     };
     
     const syncPreviewToEditor = () => {
-      if (isScrolling || this.currentMode !== 'split') return;
+      if (isScrolling || this.modeController.getCurrentMode() !== 'split') return;
       isScrolling = true;
       
       const editor = this.editorComponent.monacoEditor;
@@ -1942,7 +1942,7 @@ class MarkdownEditor extends BaseComponent {
       return;
     }
     
-    if (this.currentMode === 'code' && activeTab.scrollPosition?.preview !== undefined) {
+    if (this.modeController.getCurrentMode() === 'code' && activeTab.scrollPosition?.preview !== undefined) {
       // Sync from Preview to Code
       let previewScroll = activeTab.scrollPosition.preview;
       
@@ -1965,7 +1965,6 @@ class MarkdownEditor extends BaseComponent {
       const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
       
       let scrollRatio = previewMaxScroll > 0 ? previewScroll / previewMaxScroll : 0;
-      scrollRatio = Math.min(1, scrollRatio * 5);
       
       const editorScrollHeight = editor.getScrollHeight();
       const editorHeight = editor.getLayoutInfo().height;
@@ -1978,7 +1977,7 @@ class MarkdownEditor extends BaseComponent {
         previewPane.style.display = 'none';
       }
       
-    } else if (this.currentMode === 'preview') {
+    } else if (this.modeController.getCurrentMode() === 'preview') {
       // Sync from Code to Preview
       const editorScrollTop = editor.getScrollTop();
       const editorHeight = editor.getLayoutInfo().height;
@@ -2008,14 +2007,14 @@ class MarkdownEditor extends BaseComponent {
     const hasDocument = this.tabManager.hasTabs();
     const welcomePage = document.getElementById('welcome-page');
     const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
-    const showButton = hasDocument && !isWelcomeVisible && (this.currentMode === 'code' || this.currentMode === 'preview');
+    const showButton = hasDocument && !isWelcomeVisible && (this.modeController.getCurrentMode() === 'code' || this.modeController.getCurrentMode() === 'preview');
     
     scrollSyncBtn.style.display = showButton ? 'inline-flex' : 'none';
     
     if (showButton) {
-      if (this.currentMode === 'code') {
+      if (this.modeController.getCurrentMode() === 'code') {
         scrollSyncBtn.setAttribute('title', 'Sync from Preview');
-      } else if (this.currentMode === 'preview') {
+      } else if (this.modeController.getCurrentMode() === 'preview') {
         scrollSyncBtn.setAttribute('title', 'Sync from Code');
       }
     }
@@ -2104,7 +2103,7 @@ class MarkdownEditor extends BaseComponent {
     });
     
     // Only show preview if we're in preview or split mode
-    if (this.currentMode === 'preview' || this.currentMode === 'split') {
+    if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
       this.previewComponent.showPreview();
     }
     
@@ -2117,7 +2116,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Ensure current mode is maintained after tab switch
     setTimeout(() => {
-      this.setMode(this.currentMode);
+      this.modeController.setMode(this.modeController.getCurrentMode());
     }, 10);
     
     // Restore preview scroll position
@@ -2155,12 +2154,12 @@ class MarkdownEditor extends BaseComponent {
       });
       
       // Only show preview if we're in preview or split mode
-      if (this.currentMode === 'preview' || this.currentMode === 'split') {
+      if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
         this.previewComponent.showPreview();
       }
       
       // Ensure current mode is maintained after tab switch
-      this.setMode(this.currentMode);
+      this.modeController.setMode(this.modeController.getCurrentMode());
       
       // Restore preview scroll position
       if (tab.scrollPosition?.preview) {
@@ -2186,7 +2185,7 @@ class MarkdownEditor extends BaseComponent {
       hasDocument: false, 
       isDirty: false 
     });
-    this.setMode('preview');
+    this.modeController.setMode('preview');
     
     // Force update tab UI to show Welcome instead of tabs
     this.tabUIController.updateTabUIForWelcome();
@@ -2320,7 +2319,7 @@ class MarkdownEditor extends BaseComponent {
           if (mdFile) {
             await this.documentComponent.openFile(mdFile);
           }
-        } else if (this.currentMode === 'code' && this.editorComponent.isMonacoLoaded) {
+        } else if (this.modeController.getCurrentMode() === 'code' && this.editorComponent.isMonacoLoaded) {
           const editor = this.editorComponent.monacoEditor;
           const position = editor.getPosition();
           const insertText = files.join('\n');

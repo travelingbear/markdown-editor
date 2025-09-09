@@ -26,14 +26,14 @@ class KeyboardController extends BaseComponent {
   }
 
   setupKeyboardEventHandlers() {
-    // Use capture phase to intercept events before Monaco editor
+    // Use capture phase for keyboard to intercept F1 before Monaco
     document.addEventListener('keydown', (e) => {
       this.handleKeyboardShortcuts(e);
     }, true);
     
     document.addEventListener('wheel', (e) => {
       this.handleMouseWheelShortcuts(e);
-    }, { passive: false, capture: true });
+    }, { passive: false });
     
     this.setupTabKeyboardShortcuts();
   }
@@ -205,10 +205,9 @@ class KeyboardController extends BaseComponent {
   handleMouseWheelShortcuts(e) {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     
-    // Font size and zoom controls (works inside Monaco too)
+    // Font size and zoom controls
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
       e.preventDefault();
-      e.stopPropagation();
       if (e.deltaY < 0) {
         if (this.markdownEditor.currentMode === 'code') {
           this.markdownEditor.toolbarComponent.changeFontSize(2);
@@ -225,19 +224,18 @@ class KeyboardController extends BaseComponent {
       return;
     }
     
-    // Mode switching (reversed direction)
+    // Mode switching (original behavior)
     if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
       e.preventDefault();
-      e.stopPropagation();
       const modes = ['code', 'preview', 'split'];
       const currentIndex = modes.indexOf(this.markdownEditor.currentMode);
       
       if (e.deltaY < 0) {
-        const prevIndex = currentIndex === 0 ? modes.length - 1 : currentIndex - 1;
-        this.markdownEditor.setMode(modes[prevIndex]);
-      } else if (e.deltaY > 0) {
         const nextIndex = (currentIndex + 1) % modes.length;
         this.markdownEditor.setMode(modes[nextIndex]);
+      } else if (e.deltaY > 0) {
+        const prevIndex = currentIndex === 0 ? modes.length - 1 : currentIndex - 1;
+        this.markdownEditor.setMode(modes[prevIndex]);
       }
       return;
     }
@@ -318,6 +316,8 @@ class KeyboardController extends BaseComponent {
       items[index].scrollIntoView({ block: 'nearest' });
     }
   }
+
+
 }
 
 window.KeyboardController = KeyboardController;

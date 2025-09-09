@@ -26,13 +26,14 @@ class KeyboardController extends BaseComponent {
   }
 
   setupKeyboardEventHandlers() {
+    // Use capture phase to intercept events before Monaco editor
     document.addEventListener('keydown', (e) => {
       this.handleKeyboardShortcuts(e);
-    });
+    }, true);
     
     document.addEventListener('wheel', (e) => {
       this.handleMouseWheelShortcuts(e);
-    }, { passive: false });
+    }, { passive: false, capture: true });
     
     this.setupTabKeyboardShortcuts();
   }
@@ -41,6 +42,14 @@ class KeyboardController extends BaseComponent {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const useCtrlForModes = e.ctrlKey || (!isMac && e.metaKey);
     const useCtrlForOther = e.ctrlKey || e.metaKey;
+    
+    // Handle F1 globally to override Monaco's command palette
+    if (e.key === 'F1') {
+      e.preventDefault();
+      e.stopPropagation();
+      this.uiController.showHelp();
+      return;
+    }
     
     if (useCtrlForOther) {
       switch (e.key) {
@@ -150,10 +159,7 @@ class KeyboardController extends BaseComponent {
     
     // Function keys
     switch (e.key) {
-      case 'F1':
-        e.preventDefault();
-        this.uiController.showHelp();
-        break;
+      // F1 is handled at the top of the function
       case 'F5':
         e.preventDefault();
         this.markdownEditor.reloadCurrentFile();
@@ -199,8 +205,10 @@ class KeyboardController extends BaseComponent {
   handleMouseWheelShortcuts(e) {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     
+    // Font size and zoom controls (works inside Monaco too)
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
       e.preventDefault();
+      e.stopPropagation();
       if (e.deltaY < 0) {
         if (this.markdownEditor.currentMode === 'code') {
           this.markdownEditor.toolbarComponent.changeFontSize(2);
@@ -217,17 +225,19 @@ class KeyboardController extends BaseComponent {
       return;
     }
     
+    // Mode switching (reversed direction)
     if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
       e.preventDefault();
+      e.stopPropagation();
       const modes = ['code', 'preview', 'split'];
       const currentIndex = modes.indexOf(this.markdownEditor.currentMode);
       
       if (e.deltaY < 0) {
-        const nextIndex = (currentIndex + 1) % modes.length;
-        this.markdownEditor.setMode(modes[nextIndex]);
-      } else if (e.deltaY > 0) {
         const prevIndex = currentIndex === 0 ? modes.length - 1 : currentIndex - 1;
         this.markdownEditor.setMode(modes[prevIndex]);
+      } else if (e.deltaY > 0) {
+        const nextIndex = (currentIndex + 1) % modes.length;
+        this.markdownEditor.setMode(modes[nextIndex]);
       }
       return;
     }

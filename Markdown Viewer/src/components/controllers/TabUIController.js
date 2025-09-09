@@ -480,19 +480,20 @@ class TabUIController extends BaseComponent {
     left = Math.max(10, left);
     top = Math.max(10, top);
     
-    // Position submenu to avoid overflow
-    const submenu = contextMenu.querySelector('.tab-context-submenu');
-    if (submenu) {
-      const submenuRect = submenu.getBoundingClientRect();
-      if (left + menuRect.width + submenuRect.width > viewportWidth) {
-        submenu.style.left = `-${submenuRect.width}px`;
-      } else {
-        submenu.style.left = '100%';
-      }
-    }
-    
     contextMenu.style.left = `${left}px`;
     contextMenu.style.top = `${top}px`;
+    
+    // Position submenu to avoid overflow after menu is positioned
+    setTimeout(() => {
+      const submenu = contextMenu.querySelector('.tab-context-submenu');
+      if (submenu) {
+        submenu.style.left = '100%';
+        const submenuRect = submenu.getBoundingClientRect();
+        if (submenuRect.right > viewportWidth) {
+          submenu.style.left = `-${submenuRect.width}px`;
+        }
+      }
+    }, 0);
     
     // Update menu items based on context
     const tabs = this.tabManager.getAllTabs();

@@ -14,6 +14,7 @@ class MarkdownEditor extends BaseComponent {
     this.tabManager = null;
     this.fileController = null;
     this.uiController = null;
+    this.keyboardController = null;
     
     // Application state
     this.currentMode = 'preview';

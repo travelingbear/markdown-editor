@@ -100,6 +100,7 @@ class SettingsController extends BaseComponent {
   }
 
   updateSettingsDisplay() {
+    this.updateSystemInfo();
     const themeButtons = {
       'theme-light-btn': this.theme === 'light' && !this.isRetroTheme,
       'theme-dark-btn': this.theme === 'dark' && !this.isRetroTheme,
@@ -261,13 +262,18 @@ class SettingsController extends BaseComponent {
     }
   }
 
-  updateSystemInfo(editorComponent, previewComponent, currentMode) {
+  updateSystemInfo(editorComponent = null, previewComponent = null, currentMode = null) {
+    // Use stored references if not provided
+    if (!editorComponent || !previewComponent || !currentMode) {
+      // Will be called from MarkdownEditor with proper references
+      return;
+    }
     const systemInfo = {
       'info-default-mode': this.defaultMode,
-      'info-current-mode': currentMode,
-      'info-monaco': (editorComponent && editorComponent.isMonacoLoaded) ? 'Loaded' : 'Not Loaded',
-      'info-mermaid': (previewComponent && previewComponent.mermaidInitialized) ? 'Loaded' : 'Not Loaded',
-      'info-katex': (previewComponent && previewComponent.katexInitialized) ? 'Loaded' : 'Not Loaded'
+      'info-current-mode': currentMode || 'preview',
+      'info-monaco': (editorComponent && editorComponent.isMonacoLoaded === true) ? 'Loaded' : 'Not Loaded',
+      'info-mermaid': (previewComponent && previewComponent.mermaidInitialized === true) ? 'Loaded' : 'Not Loaded',
+      'info-katex': (previewComponent && previewComponent.katexInitialized === true) ? 'Loaded' : 'Not Loaded'
     };
     
     Object.entries(systemInfo).forEach(([id, value]) => {
@@ -356,6 +362,7 @@ class SettingsController extends BaseComponent {
           this.defaultMode = mode;
           localStorage.setItem('markdownViewer_defaultMode', mode);
           this.updateSettingsDisplay();
+          this.emit('settings-changed');
         });
       }
     });

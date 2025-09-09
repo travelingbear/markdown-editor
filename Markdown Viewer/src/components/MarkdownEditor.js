@@ -217,6 +217,11 @@ class MarkdownEditor extends BaseComponent {
         this.performanceOptimizer.clearAllVirtualTabs();
       }
       
+      // Update pinned tabs
+      if (this.settingsController.getPinnedTabsEnabled()) {
+        this.updatePinnedTabs();
+      }
+      
       this.showWelcomePage();
       this.updateTabUI();
     });
@@ -486,6 +491,11 @@ class MarkdownEditor extends BaseComponent {
         this.updatePinnedTabs();
       }
     });
+    
+    // Update system info when settings change
+    this.settingsController.on('settings-changed', () => {
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
+    });
   }
 
   applyInitialSettings() {
@@ -542,6 +552,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Initialize tab UI
     this.updateTabUI();
+    
+    // Initialize system info
+    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
   }
 
   setupGlobalEventHandlers() {

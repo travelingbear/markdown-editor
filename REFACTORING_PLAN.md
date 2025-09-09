@@ -121,6 +121,116 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 
 ---
 
+### Step 1.5: Extract TabUIController
+**Branch:** `refactor/extract-tab-ui-controller`
+
+**Changes:**
+- Create `src/components/controllers/TabUIController.js`
+- Move tab UI management from `MarkdownEditor.js` to `TabUIController`
+- Move tab dropdown/modal, context menu, pinned tabs functionality
+
+**Files Modified:**
+- `src/components/controllers/TabUIController.js` (new)
+- `src/components/MarkdownEditor.js` (modified)
+- `src/index.html` (modified)
+
+**Commit Message:** `refactor: extract tab UI management into TabUIController`
+
+**User Validation Required:**
+- [ ] Test tab dropdown and modal functionality
+- [ ] Test tab context menu operations (move, close, duplicate)
+- [ ] Test pinned tabs toggle and display
+- [ ] Test tab navigation and keyboard shortcuts
+- [ ] Verify tab search and filtering works
+
+**Proceed Criteria:** All tab UI interactions work without issues
+
+**Estimated Lines Reduced:** ~500 lines
+
+---
+
+### Step 1.6: Extract ModeController
+**Branch:** `refactor/extract-mode-controller`
+
+**Changes:**
+- Create `src/components/controllers/ModeController.js`
+- Move mode switching logic from `MarkdownEditor.js` to `ModeController`
+- Move scroll position management and layout updates
+
+**Files Modified:**
+- `src/components/controllers/ModeController.js` (new)
+- `src/components/MarkdownEditor.js` (modified)
+- `src/index.html` (modified)
+
+**Commit Message:** `refactor: extract mode management into ModeController`
+
+**User Validation Required:**
+- [ ] Test mode switching (code/preview/split)
+- [ ] Test scroll position preservation between modes
+- [ ] Test layout updates and pane visibility
+- [ ] Test Monaco editor loading in code/split modes
+
+**Proceed Criteria:** Mode switching works identically to before
+
+**Estimated Lines Reduced:** ~200 lines
+
+---
+
+### Step 1.7: Extract MarkdownActionController
+**Branch:** `refactor/extract-markdown-action-controller`
+
+**Changes:**
+- Create `src/components/controllers/MarkdownActionController.js`
+- Move markdown formatting actions from `MarkdownEditor.js` to `MarkdownActionController`
+- Move text insertion, task list updates, multi-line formatting
+
+**Files Modified:**
+- `src/components/controllers/MarkdownActionController.js` (new)
+- `src/components/MarkdownEditor.js` (modified)
+- `src/index.html` (modified)
+
+**Commit Message:** `refactor: extract markdown actions into MarkdownActionController`
+
+**User Validation Required:**
+- [ ] Test all markdown formatting buttons (bold, italic, headers, etc.)
+- [ ] Test multi-line formatting operations
+- [ ] Test task list checkbox interactions
+- [ ] Test text insertion and cursor positioning
+
+**Proceed Criteria:** All markdown formatting works correctly
+
+**Estimated Lines Reduced:** ~300 lines
+
+---
+
+### Step 1.8: Extract ExportController (Optional)
+**Branch:** `refactor/extract-export-controller`
+
+**Changes:**
+- Create `src/components/controllers/ExportController.js`
+- Move export functionality from `MarkdownEditor.js` to `ExportController`
+- Move HTML/PDF export logic
+
+**Files Modified:**
+- `src/components/controllers/ExportController.js` (new)
+- `src/components/MarkdownEditor.js` (modified)
+- `src/index.html` (modified)
+
+**Commit Message:** `refactor: extract export functionality into ExportController`
+
+**User Validation Required:**
+- [ ] Test HTML export functionality
+- [ ] Test PDF export (print) functionality
+- [ ] Verify export file dialogs work
+
+**Proceed Criteria:** Export functions work identically
+
+**Estimated Lines Reduced:** ~100 lines
+
+**Status:** OPTIONAL - Can be done later if needed
+
+---
+
 ## Phase 2: Dependency Injection
 
 ### Step 2.1: Add Constructor Injection
@@ -343,9 +453,10 @@ After completing all phases:
 
 ## Current Status
 
-**Phase:** Phase 1 - Foundation Refactoring  
-**Current Step:** Step 1.4 ✅ MERGED - Ready for Step 2.1  
-**Last Updated:** 2024-12-19 16:45
+**Phase:** Phase 1 - Foundation Refactoring (Extended)  
+**Current Step:** Step 1.4 ✅ MERGED - Ready for Step 1.5  
+**Estimated Remaining Reduction:** ~1000+ lines from MarkdownEditor.js  
+**Last Updated:** 2024-12-19 17:30
 
 ## Notes
 
@@ -353,3 +464,11 @@ After completing all phases:
 - No step should be merged without passing all validation criteria
 - Document any issues or deviations from the plan
 - Update this file after each completed step
+
+### Phase 1 Extension Notes
+
+- **Steps 1.5-1.8 added** based on code analysis showing MarkdownEditor.js still >2000 lines
+- **No impact on Phase 2+** since dependency injection hasn't started yet
+- **Priority order:** TabUIController (highest impact), ModeController, MarkdownActionController, ExportController (optional)
+- **Total estimated reduction:** ~1000+ lines, leaving MarkdownEditor as pure orchestrator
+- **Step 1.8 is optional** and can be deferred if Phase 1 goals are met with steps 1.5-1.7

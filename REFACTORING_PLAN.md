@@ -71,16 +71,26 @@ IMPORTANT! These are the steps for each phase/step: New Branch → 2. Changes �
 **Files Modified:**
 - `src/components/controllers/KeyboardController.js` (new)
 - `src/components/MarkdownEditor.js` (modified)
+- `src/index.html` (modified)
 
 **Commit Message:** `refactor: extract keyboard handling into KeyboardController`
 
 **User Validation Required:**
-- [ ] Test all keyboard shortcuts (Ctrl+N, Ctrl+O, Ctrl+S, etc.)
-- [ ] Test mode switching shortcuts (Ctrl+1,2,3)
-- [ ] Test tab navigation (Alt+1-9, Ctrl+Tab)
-- [ ] Test markdown shortcuts in editor
+- [x] Test all keyboard shortcuts (Ctrl+N, Ctrl+O, Ctrl+S, etc.)
+- [x] Test mode switching shortcuts (Ctrl+1,2,3)
+- [x] Test tab navigation (Alt+1-9, Ctrl+Tab)
+- [x] Test markdown shortcuts in editor
 
 **Proceed Criteria:** All keyboard shortcuts function correctly
+
+**Status:** ✅ COMPLETED & MERGED
+
+**Known Issues for Later Phases:**
+- Monaco Editor F1 override (capture phase not working inside Monaco)
+- Monaco Editor mouse wheel font size (Monaco intercepts Ctrl+Scroll)
+- Mode switching direction preference (Ctrl+Shift+Scroll)
+
+---
 
 ---
 

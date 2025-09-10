@@ -498,6 +498,17 @@
             </div>
             
             <div class="settings-section">
+              <h3>Plugins</h3>
+              <div id="plugin-list" class="plugin-list">
+                <!-- Plugin controls will be populated here -->
+              </div>
+              <div class="plugin-actions">
+                <button id="refresh-plugins-btn" class="settings-btn">Refresh Plugins</button>
+                <button id="reset-plugin-config-btn" class="settings-btn">Reset Plugin Config</button>
+              </div>
+            </div>
+            
+            <div class="settings-section">
               <h3>System Info</h3>
               <div class="system-info">
                 <div class="info-item">
@@ -814,6 +825,7 @@
     <!-- Load core architecture -->
     <script src="/core/ExtensionAPI.js"></script>
     <script src="/core/ControllerRegistry.js"></script>
+    <script src="/core/PluginConfig.js"></script>
     <script src="/core/PluginManager.js"></script>
     
     <!-- Load component architecture -->

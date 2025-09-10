@@ -566,6 +566,11 @@ class MarkdownEditor extends BaseComponent {
       this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
     });
     
+    // Plugin Manager Events
+    if (this.pluginManager) {
+      this.pluginManager.on = this.pluginManager.on || (() => {}); // Ensure event support
+    }
+    
     // Mode Controller Events
     this.modeController.on('mode-changed', (data) => {
       this.updateScrollSyncButton();
@@ -1126,6 +1131,62 @@ class MarkdownEditor extends BaseComponent {
     this.settingsController.updateSettingsDisplay();
     this.settingsController.updatePerformanceDashboard(this.performanceOptimizer, this.tabManager);
     this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    this.updatePluginDisplay();
+  }
+  
+  updatePluginDisplay() {
+    if (!this.pluginManager) return;
+    
+    const pluginList = document.getElementById('plugin-list');
+    if (!pluginList) return;
+    
+    const plugins = this.pluginManager.getAllPlugins();
+    
+    pluginList.innerHTML = '';
+    
+    if (plugins.length === 0) {
+      pluginList.innerHTML = '<div class="no-plugins">No plugins available</div>';
+      return;
+    }
+    
+    plugins.forEach(plugin => {
+      const pluginItem = document.createElement('div');
+      pluginItem.className = 'plugin-item';
+      
+      const isEnabled = this.pluginManager.isPluginEnabled(plugin.id);
+      const isActive = this.pluginManager.isPluginActive(plugin.id);
+      
+      pluginItem.innerHTML = `
+        <div class="plugin-info">
+          <div class="plugin-name">${plugin.metadata.name}</div>
+          <div class="plugin-version">v${plugin.metadata.version}</div>
+          <div class="plugin-description">${plugin.metadata.description}</div>
+        </div>
+        <div class="plugin-controls">
+          <button class="setting-btn ${isEnabled ? 'active' : ''}" 
+                  onclick="window.markdownEditor.togglePlugin('${plugin.id}')">
+            ${isEnabled ? 'Enabled' : 'Disabled'}
+          </button>
+          <span class="plugin-status ${isActive ? 'active' : 'inactive'}">
+            ${isActive ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      `;
+      
+      pluginList.appendChild(pluginItem);
+    });
+  }
+  
+  togglePlugin(pluginId) {
+    if (!this.pluginManager) return;
+    
+    if (this.pluginManager.isPluginEnabled(pluginId)) {
+      this.pluginManager.disablePlugin(pluginId);
+    } else {
+      this.pluginManager.enablePlugin(pluginId);
+    }
+    
+    this.updatePluginDisplay();
   }
   
 

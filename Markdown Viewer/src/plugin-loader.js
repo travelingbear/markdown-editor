@@ -44,6 +44,8 @@ function loadSamplePlugin() {
 function initSamplePlugin() {
   if (window.markdownEditor && window.markdownEditor.pluginManager) {
     loadSamplePlugin();
+    // Auto-activate enabled plugins
+    window.markdownEditor.pluginManager.autoActivatePlugins();
   } else {
     // Wait for markdown editor to be ready
     setTimeout(initSamplePlugin, 100);

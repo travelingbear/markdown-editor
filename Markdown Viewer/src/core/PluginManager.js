@@ -7,6 +7,7 @@ class PluginManager {
     this.plugins = new Map();
     this.activePlugins = new Set();
     this.pluginAPI = null;
+    this.pluginConfig = new PluginConfig();
     
     this.initializeAPI();
   }
@@ -172,6 +173,39 @@ class PluginManager {
     return this.activePlugins.has(pluginId);
   }
 
+  isPluginEnabled(pluginId) {
+    return this.pluginConfig.isPluginEnabled(pluginId);
+  }
+
+  enablePlugin(pluginId) {
+    const enabled = this.pluginConfig.enablePlugin(pluginId);
+    if (enabled && this.plugins.has(pluginId)) {
+      this.activatePlugin(pluginId);
+    }
+    return enabled;
+  }
+
+  disablePlugin(pluginId) {
+    const disabled = this.pluginConfig.disablePlugin(pluginId);
+    if (disabled && this.activePlugins.has(pluginId)) {
+      this.deactivatePlugin(pluginId);
+    }
+    return disabled;
+  }
+
+  getPluginConfig() {
+    return this.pluginConfig;
+  }
+
+  async autoActivatePlugins() {
+    const enabledPlugins = this.pluginConfig.getEnabledPlugins();
+    for (const pluginId of enabledPlugins) {
+      if (this.plugins.has(pluginId) && !this.activePlugins.has(pluginId)) {
+        await this.activatePlugin(pluginId);
+      }
+    }
+  }
+
   async destroy() {
     // Deactivate all plugins
     for (const pluginId of this.activePlugins) {
@@ -181,6 +215,7 @@ class PluginManager {
     this.plugins.clear();
     this.activePlugins.clear();
     this.pluginAPI = null;
+    this.pluginConfig = null;
   }
 }
 

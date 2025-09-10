@@ -79,27 +79,30 @@ class UIController extends BaseComponent {
 
   // Theme Management
   toggleTheme() {
-    this.executeHook('beforeThemeToggle', { currentTheme: this.theme, isRetroTheme: this.isRetroTheme });
+    // Define rotation order for extensibility
+    const THEME_ROTATION = ['light', 'dark'];
     
-    const isRetro = document.body.classList.contains('retro-theme');
-    if (isRetro) {
-      // Exit retro mode and go to light theme
-      document.body.classList.remove('retro-theme');
-      localStorage.setItem('markdownViewer_retroTheme', 'false');
-      this.theme = 'light';
-      localStorage.setItem('markdownViewer_defaultTheme', 'light');
-      this.isRetroTheme = false;
+    // Get current theme from localStorage (always fresh)
+    const currentTheme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+    const isRetro = localStorage.getItem('markdownViewer_retroTheme') === 'true';
+    
+    this.executeHook('beforeThemeToggle', { currentTheme, isRetroTheme: isRetro });
+    
+    // Simple rotation logic: cycle through THEME_ROTATION, non-rotation themes go to light
+    let newTheme;
+    if (!isRetro && THEME_ROTATION.includes(currentTheme)) {
+      const currentIndex = THEME_ROTATION.indexOf(currentTheme);
+      const nextIndex = (currentIndex + 1) % THEME_ROTATION.length;
+      newTheme = THEME_ROTATION[nextIndex];
     } else {
-      this.theme = this.theme === 'light' ? 'dark' : 'light';
-      localStorage.setItem('markdownViewer_defaultTheme', this.theme);
+      // Any non-rotation theme (retro, contrast, etc.) goes to light
+      newTheme = 'light';
     }
     
-    this.applyTheme();
+    // Use setTheme() method for consistent DOM manipulation
+    this.setTheme(newTheme, false);
     
     this.executeHook('afterThemeToggle', { theme: this.theme, isRetroTheme: this.isRetroTheme });
-    
-    // Emit theme change event
-    this.emit('theme-changed', { theme: this.theme, isRetroTheme: this.isRetroTheme });
     
     return { theme: this.theme, isRetroTheme: this.isRetroTheme };
   }
@@ -107,32 +110,32 @@ class UIController extends BaseComponent {
   setTheme(theme, isRetro = false) {
     this.executeHook('beforeThemeChange', { oldTheme: this.theme, newTheme: theme, oldRetro: this.isRetroTheme, newRetro: isRetro });
     
+    // Update internal state
     this.theme = theme;
     this.isRetroTheme = isRetro;
     
-    if (isRetro) {
-      document.body.classList.add('retro-theme');
-      this.playRetroStartupSound();
-    } else {
-      document.body.classList.remove('retro-theme');
-    }
-    
+    // Update localStorage
     localStorage.setItem('markdownViewer_defaultTheme', this.theme);
     localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());
     
-    this.applyTheme();
+    // Apply theme using SAME method as SettingsController.applyTheme()
+    document.body.classList.remove('light-theme', 'dark-theme', 'contrast-theme', 'retro-theme');
+    if (this.isRetroTheme) {
+      document.body.classList.add('retro-theme');
+      this.playRetroStartupSound();
+    } else {
+      document.body.classList.add(`${this.theme}-theme`);
+    }
+    document.body.setAttribute('data-theme', this.theme);
+    
+    // Also update documentElement for compatibility
+    document.documentElement.setAttribute('data-theme', this.theme);
     
     this.executeHook('afterThemeChange', { theme: this.theme, isRetroTheme: this.isRetroTheme });
     this.emit('theme-changed', { theme: this.theme, isRetroTheme: this.isRetroTheme });
   }
 
-  applyTheme() {
-    document.documentElement.setAttribute('data-theme', this.theme);
-    
-    if (this.isRetroTheme) {
-      document.body.classList.add('retro-theme');
-    }
-  }
+
 
   // Distraction-Free Mode
   toggleDistractionFree() {
@@ -327,7 +330,7 @@ class UIController extends BaseComponent {
 
   applyInitialSettings() {
     // Apply theme
-    this.applyTheme();
+    this.setTheme(this.theme, this.isRetroTheme);
     
     // Apply centered layout
     this.applyCenteredLayout();

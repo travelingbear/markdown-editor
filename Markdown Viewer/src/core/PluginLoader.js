@@ -69,6 +69,7 @@ class PluginLoader {
       
       // Validate plugin before loading
       const validationResult = await this.validatePlugin(pluginPath);
+      console.log(`[PluginLoader] Validation result for ${pluginPath}:`, validationResult);
       if (!validationResult.isValid) {
         console.error(`[PluginLoader] Plugin validation failed for ${pluginPath}:`, validationResult.errors);
         if (validationResult.warnings.length > 0) {

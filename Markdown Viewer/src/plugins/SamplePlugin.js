@@ -45,6 +45,14 @@ class SamplePlugin {
   }
   
   removeToolbarButton() {
+    // Remove any existing sample plugin buttons
+    const existingButtons = document.querySelectorAll('.sample-plugin-btn');
+    existingButtons.forEach(btn => {
+      if (btn.parentNode) {
+        btn.parentNode.removeChild(btn);
+      }
+    });
+    
     if (this.toolbarButton && this.toolbarButton.parentNode) {
       this.toolbarButton.parentNode.removeChild(this.toolbarButton);
       this.toolbarButton = null;

@@ -42,14 +42,9 @@ function loadSamplePlugin() {
 
 // Auto-load sample plugin when markdown editor is ready
 function initSamplePlugin() {
-  if (window.markdownEditor && window.markdownEditor.pluginManager) {
-    loadSamplePlugin();
-    // Auto-activate enabled plugins
-    window.markdownEditor.pluginManager.autoActivatePlugins();
-  } else {
-    // Wait for markdown editor to be ready
-    setTimeout(initSamplePlugin, 100);
-  }
+  // Plugin loading is now handled in MarkdownEditor component
+  // This function is kept for backward compatibility
+  console.log('[PluginLoader] Plugin loading handled by MarkdownEditor component');
 }
 
 // Test functions for console

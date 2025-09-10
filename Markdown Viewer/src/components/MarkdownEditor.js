@@ -83,6 +83,14 @@ class MarkdownEditor extends BaseComponent {
       this.updateSplashProgress(90, 'Initializing plugins...');
       this.pluginManager = new PluginManager(this);
       
+      // Register sample plugin
+      if (window.SamplePlugin) {
+        this.pluginManager.registerPlugin('sample-plugin', window.SamplePlugin, window.SamplePlugin.metadata);
+      }
+      
+      // Auto-activate enabled plugins
+      await this.pluginManager.autoActivatePlugins();
+      
       // Complete initialization
       this.startupTime = performance.now() - startupStartTime;
       this.settingsController.setStartupTime(this.startupTime);
@@ -490,6 +498,10 @@ class MarkdownEditor extends BaseComponent {
     
     this.toolbarComponent.on('settings-show', () => {
       this.uiController.showSettings();
+      // Update plugin display when settings modal opens
+      setTimeout(() => {
+        this.updatePluginDisplay();
+      }, 100);
     });
     
     this.toolbarComponent.on('help-show', () => {
@@ -1131,6 +1143,8 @@ class MarkdownEditor extends BaseComponent {
     this.settingsController.updateSettingsDisplay();
     this.settingsController.updatePerformanceDashboard(this.performanceOptimizer, this.tabManager);
     this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    
+    // Update plugin display when settings modal is shown
     this.updatePluginDisplay();
   }
   

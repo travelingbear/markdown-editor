@@ -2274,6 +2274,48 @@ body.retro-theme .about-close-btn:active {
   margin-top: 10px;
 }
 
+/* Retro theme plugin styles */
+body.retro-theme .plugin-list {
+  background: transparent;
+  border: 2px inset #c0c0c0;
+}
+
+body.retro-theme .plugin-item {
+  background: #ffffff;
+  border-bottom: 1px solid #808080;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
+}
+
+body.retro-theme .plugin-name {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
+  font-weight: normal;
+}
+
+body.retro-theme .plugin-version,
+body.retro-theme .plugin-description {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #404040;
+}
+
+body.retro-theme .plugin-status.active {
+  background: #008000;
+  color: #ffffff;
+  border: 1px outset #008000;
+}
+
+body.retro-theme .plugin-status.inactive {
+  background: #808000;
+  color: #ffffff;
+  border: 1px outset #808000;
+}
+
+body.retro-theme .no-plugins {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
+}
+
 /* Responsive Design for Advanced Features */
 @media (max-width: 768px) {
   .welcome-content {

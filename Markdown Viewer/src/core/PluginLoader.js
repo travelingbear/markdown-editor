@@ -9,6 +9,7 @@ class PluginLoader {
       './plugins'
     ];
     this.loadedPlugins = new Set();
+    this.validator = new PluginValidator();
   }
 
   async discoverPlugins() {
@@ -67,9 +68,12 @@ class PluginLoader {
       }
       
       // Validate plugin before loading
-      const isValid = await this.validatePlugin(pluginPath);
-      if (!isValid) {
-        console.error(`[PluginLoader] Plugin validation failed for ${pluginPath}`);
+      const validationResult = await this.validatePlugin(pluginPath);
+      if (!validationResult.isValid) {
+        console.error(`[PluginLoader] Plugin validation failed for ${pluginPath}:`, validationResult.errors);
+        if (validationResult.warnings.length > 0) {
+          console.warn(`[PluginLoader] Plugin warnings for ${pluginPath}:`, validationResult.warnings);
+        }
         return null;
       }
       
@@ -86,7 +90,8 @@ class PluginLoader {
           path: pluginPath,
           class: pluginClass,
           metadata: metadata,
-          isLoaded: true
+          isLoaded: true,
+          validationResult: validationResult
         };
       }
       
@@ -110,21 +115,28 @@ class PluginLoader {
 
   async validatePlugin(pluginPath) {
     try {
-      // Basic validation - check if plugin file exists and has required structure
-      // In a real implementation, this would check the actual file content
-      
       const pluginId = this.extractPluginId(pluginPath);
       
-      // For known plugins, validate they exist in window
-      if (pluginId === 'sample-plugin') {
-        return typeof window.SamplePlugin === 'function' && 
-               window.SamplePlugin.metadata;
+      // For known plugins, validate using enhanced validator
+      if (pluginId === 'sample-plugin' && window.SamplePlugin) {
+        const pluginClass = window.SamplePlugin;
+        const metadata = pluginClass.metadata || {};
+        
+        return await this.validator.validatePlugin(pluginClass, metadata, pluginId);
       }
       
-      return false;
+      return {
+        isValid: false,
+        errors: ['Unknown plugin or plugin not loaded'],
+        warnings: []
+      };
     } catch (error) {
       console.error(`[PluginLoader] Plugin validation error:`, error);
-      return false;
+      return {
+        isValid: false,
+        errors: [`Validation error: ${error.message}`],
+        warnings: []
+      };
     }
   }
 
@@ -139,7 +151,8 @@ class PluginLoader {
           const registered = this.pluginManager.registerPlugin(
             plugin.id,
             plugin.class,
-            plugin.metadata
+            plugin.metadata,
+            plugin.validationResult
           );
           
           if (registered) {

@@ -1171,11 +1171,15 @@ class MarkdownEditor extends BaseComponent {
       const isEnabled = this.pluginManager.isPluginEnabled(plugin.id);
       const isActive = this.pluginManager.isPluginActive(plugin.id);
       
+      const hasWarnings = plugin.validationResult?.warnings?.length > 0;
+      const warningsText = hasWarnings ? ` (${plugin.validationResult.warnings.length} warnings)` : '';
+      
       pluginItem.innerHTML = `
         <div class="plugin-info">
           <div class="plugin-name">${plugin.metadata.name}</div>
-          <div class="plugin-version">v${plugin.metadata.version}</div>
+          <div class="plugin-version">v${plugin.metadata.version}${warningsText}</div>
           <div class="plugin-description">${plugin.metadata.description}</div>
+          ${hasWarnings ? `<div class="plugin-warnings" title="${plugin.validationResult.warnings.join('; ')}">⚠️ Warnings</div>` : ''}
         </div>
         <div class="plugin-controls">
           <button class="setting-btn ${isEnabled ? 'active' : ''}" 

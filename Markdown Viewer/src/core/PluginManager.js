@@ -62,7 +62,7 @@ class PluginManager {
     }
   }
 
-  registerPlugin(pluginId, pluginClass, metadata = {}) {
+  registerPlugin(pluginId, pluginClass, metadata = {}, validationResult = null) {
     if (this.plugins.has(pluginId)) {
       console.warn(`[PluginManager] Plugin ${pluginId} already registered`);
       return false;
@@ -80,6 +80,7 @@ class PluginManager {
           author: metadata.author || '',
           ...metadata
         },
+        validationResult: validationResult,
         isActive: false
       };
 

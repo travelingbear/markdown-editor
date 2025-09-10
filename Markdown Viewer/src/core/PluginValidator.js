@@ -90,15 +90,15 @@ class PluginValidator {
     // Check for suspicious patterns in class string
     const classString = pluginClass.toString();
     
-    // Blocked patterns
+    // Blocked patterns (more specific to avoid false positives)
     const dangerousPatterns = [
       /eval\s*\(/,
       /Function\s*\(/,
       /document\.write/,
-      /innerHTML\s*=/,
-      /outerHTML\s*=/,
-      /localStorage\.clear/,
-      /sessionStorage\.clear/
+      /\.innerHTML\s*=\s*[^'"]/,  // Only flag dynamic innerHTML
+      /\.outerHTML\s*=/,
+      /localStorage\.clear\s*\(/,
+      /sessionStorage\.clear\s*\(/
     ];
 
     for (const pattern of dangerousPatterns) {

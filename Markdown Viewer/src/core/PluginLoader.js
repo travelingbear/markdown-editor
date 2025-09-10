@@ -63,8 +63,7 @@ class PluginLoader {
       const pluginId = this.extractPluginId(pluginPath);
       
       if (this.loadedPlugins.has(pluginId)) {
-        console.warn(`[PluginLoader] Plugin ${pluginId} already loaded`);
-        return null;
+        return null; // Silently skip already loaded plugins
       }
       
       // Validate plugin before loading

@@ -1332,25 +1332,25 @@ class MarkdownEditor extends BaseComponent {
     
     // Test if events are working at all
     document.addEventListener('click', () => {
-      console.log('[DEBUG] Click event works - DOM is ready');
+      // console.log('[DEBUG] Click event works - DOM is ready');
     }, { once: true });
     
     const dragEnterHandler = (e) => {
-      console.log('[DEBUG] DRAGENTER triggered on:', e.target.tagName);
+      // console.log('[DEBUG] DRAGENTER triggered on:', e.target.tagName);
       e.preventDefault();
       e.stopPropagation();
       document.body.classList.add('drag-over');
     };
     
     const dragOverHandler = (e) => {
-      console.log('[DEBUG] DRAGOVER triggered');
+      // console.log('[DEBUG] DRAGOVER triggered');
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = 'copy';
     };
     
     const dragLeaveHandler = (e) => {
-      console.log('[DEBUG] DRAGLEAVE triggered');
+      // console.log('[DEBUG] DRAGLEAVE triggered');
       e.preventDefault();
       e.stopPropagation();
       // Only remove if leaving the window entirely
@@ -1360,18 +1360,18 @@ class MarkdownEditor extends BaseComponent {
     };
     
     const dropHandler = async (e) => {
-      console.log('[DEBUG] DROP triggered with files:', e.dataTransfer?.files?.length || 0);
+      // console.log('[DEBUG] DROP triggered with files:', e.dataTransfer?.files?.length || 0);
       e.preventDefault();
       e.stopPropagation();
       document.body.classList.remove('drag-over');
       
       const files = Array.from(e.dataTransfer?.files || []);
       if (files.length === 0) {
-        console.log('[DEBUG] No files in drop event');
+        // console.log('[DEBUG] No files in drop event');
         return;
       }
       
-      console.log('[DEBUG] Processing files:', files.map(f => f.name));
+      // console.log('[DEBUG] Processing files:', files.map(f => f.name));
       
       // Welcome screen: open .md files
       const welcomePage = document.getElementById('welcome-page');
@@ -1957,7 +1957,7 @@ class MarkdownEditor extends BaseComponent {
   
   async setupTauriFileDrop() {
     if (!window.__TAURI__?.event) {
-      console.log('[DEBUG] Tauri not available');
+      // console.log('[DEBUG] Tauri not available');
       return;
     }
     
@@ -1966,7 +1966,7 @@ class MarkdownEditor extends BaseComponent {
     
     try {
       await listen('tauri://file-drop', async (event) => {
-        console.log('[DEBUG] TAURI FILE DROP:', event.payload);
+        // console.log('[DEBUG] TAURI FILE DROP:', event.payload);
         const files = event.payload;
         if (!Array.isArray(files) || files.length === 0) return;
         
@@ -1994,13 +1994,13 @@ class MarkdownEditor extends BaseComponent {
 
       
       await listen('tauri://file-drop-hover', () => {
-        console.log('[DEBUG] TAURI HOVER');
+        // console.log('[DEBUG] TAURI HOVER');
         document.body.classList.add('drag-over');
       });
 
       
       await listen('tauri://file-drop-cancelled', () => {
-        console.log('[DEBUG] TAURI CANCELLED');
+        // console.log('[DEBUG] TAURI CANCELLED');
         document.body.classList.remove('drag-over');
       });
 

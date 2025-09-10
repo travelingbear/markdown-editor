@@ -176,6 +176,12 @@ class PluginLoader {
     // Clear loaded plugins cache
     this.loadedPlugins.clear();
     
+    // Clear registered plugins from manager
+    const allPlugins = this.pluginManager.getAllPlugins();
+    for (const plugin of allPlugins) {
+      this.pluginManager.unregisterPlugin(plugin.id);
+    }
+    
     // Reload all plugins
     return await this.loadAndRegisterPlugins();
   }

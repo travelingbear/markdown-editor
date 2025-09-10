@@ -1164,7 +1164,7 @@ class MarkdownEditor extends BaseComponent {
         </div>
         <div class="plugin-controls">
           <button class="setting-btn ${isEnabled ? 'active' : ''}" 
-                  onclick="window.markdownEditor.togglePlugin('${plugin.id}')">
+                  data-plugin-id="${plugin.id}">
             ${isEnabled ? 'Enabled' : 'Disabled'}
           </button>
           <span class="plugin-status ${isActive ? 'active' : 'inactive'}">
@@ -1173,8 +1173,31 @@ class MarkdownEditor extends BaseComponent {
         </div>
       `;
       
+      // Add click handler to the button
+      const button = pluginItem.querySelector('.setting-btn');
+      button.addEventListener('click', () => {
+        this.togglePlugin(plugin.id);
+      });
+      
       pluginList.appendChild(pluginItem);
     });
+    
+    // Add event handlers for plugin action buttons
+    const refreshBtn = document.getElementById('refresh-plugins-btn');
+    const resetBtn = document.getElementById('reset-plugin-config-btn');
+    
+    if (refreshBtn) {
+      refreshBtn.onclick = () => this.updatePluginDisplay();
+    }
+    
+    if (resetBtn) {
+      resetBtn.onclick = () => {
+        if (confirm('Reset all plugin configurations?')) {
+          this.pluginManager.getPluginConfig().resetAllConfig();
+          this.updatePluginDisplay();
+        }
+      };
+    }
   }
   
   togglePlugin(pluginId) {

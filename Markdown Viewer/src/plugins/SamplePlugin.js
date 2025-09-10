@@ -23,6 +23,9 @@ class SamplePlugin {
   }
 
   addToolbarButton() {
+    // Remove existing button if it exists
+    this.removeToolbarButton();
+    
     // Create sample button
     this.toolbarButton = document.createElement('button');
     this.toolbarButton.className = 'toolbar-btn sample-plugin-btn';
@@ -38,6 +41,13 @@ class SamplePlugin {
     const toolbarRight = document.querySelector('.toolbar-right');
     if (toolbarRight) {
       toolbarRight.insertBefore(this.toolbarButton, toolbarRight.firstChild);
+    }
+  }
+  
+  removeToolbarButton() {
+    if (this.toolbarButton && this.toolbarButton.parentNode) {
+      this.toolbarButton.parentNode.removeChild(this.toolbarButton);
+      this.toolbarButton = null;
     }
   }
 
@@ -91,10 +101,7 @@ class SamplePlugin {
     console.log('[SamplePlugin] Destroying...');
     
     // Remove toolbar button
-    if (this.toolbarButton && this.toolbarButton.parentNode) {
-      this.toolbarButton.parentNode.removeChild(this.toolbarButton);
-      this.toolbarButton = null;
-    }
+    this.removeToolbarButton();
     
     this.isActive = false;
     console.log('[SamplePlugin] Destroyed successfully');

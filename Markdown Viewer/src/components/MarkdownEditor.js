@@ -83,10 +83,11 @@ class MarkdownEditor extends BaseComponent {
       this.updateSplashProgress(90, 'Initializing plugins...');
       this.pluginManager = new PluginManager(this);
       
-      // Register sample plugin
-      if (window.SamplePlugin) {
-        this.pluginManager.registerPlugin('sample-plugin', window.SamplePlugin, window.SamplePlugin.metadata);
-      }
+      // Initialize plugin loader
+      this.pluginLoader = new PluginLoader(this.pluginManager);
+      
+      // Discover and register plugins
+      await this.pluginLoader.loadAndRegisterPlugins();
       
       // Auto-activate enabled plugins
       await this.pluginManager.autoActivatePlugins();
@@ -1201,7 +1202,7 @@ class MarkdownEditor extends BaseComponent {
     const resetBtn = document.getElementById('reset-plugin-config-btn');
     
     if (refreshBtn) {
-      refreshBtn.onclick = () => this.updatePluginDisplay();
+      refreshBtn.onclick = () => this.refreshPlugins();
     }
     
     if (resetBtn) {
@@ -1224,6 +1225,18 @@ class MarkdownEditor extends BaseComponent {
     }
     
     this.updatePluginDisplay();
+  }
+  
+  async refreshPlugins() {
+    if (!this.pluginLoader) return;
+    
+    try {
+      await this.pluginLoader.reloadPlugins();
+      this.updatePluginDisplay();
+      console.log('[MarkdownEditor] Plugins refreshed successfully');
+    } catch (error) {
+      console.error('[MarkdownEditor] Failed to refresh plugins:', error);
+    }
   }
   
 
@@ -2017,9 +2030,12 @@ class MarkdownEditor extends BaseComponent {
       this.performanceOptimizer.destroy();
     }
     
-    // Clean up plugin manager
+    // Clean up plugin manager and loader
     if (this.pluginManager) {
       this.pluginManager.destroy();
+    }
+    if (this.pluginLoader) {
+      this.pluginLoader = null;
     }
     
     // Clean up controller registry

@@ -286,6 +286,23 @@
     --page-width-legal: 8.5in;
   }
   
+  /* Retro theme print overrides - remove borders */
+  body.retro-theme .preview-content,
+  body.retro-theme .editor-pane,
+  body.retro-theme .preview-pane {
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  
+  body.retro-theme .preview-content pre,
+  body.retro-theme .preview-content code,
+  body.retro-theme .preview-content blockquote,
+  body.retro-theme .preview-content table {
+    border: 1px solid #ccc !important;
+    background: #f8f9fa !important;
+  }
+  
   /* Hide any remaining UI elements */
   .no-print,
   .dropdown-menu,

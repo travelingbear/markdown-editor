@@ -82,7 +82,7 @@
 }
 
 .pinned-tab.dirty .pinned-tab-name::after {
-  content: ' •';
+  content: ' 🖫';
   color: #ff6b6b;
 }
 
@@ -201,7 +201,7 @@
 }
 
 .tab-dropdown-name.dirty::after {
-  content: ' •';
+  content: ' 🖫';
   color: #f85149;
   font-weight: bold;
 }
@@ -398,6 +398,17 @@
 
 .tab-modal-item.active .tab-modal-close-btn:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.tab-modal-name.dirty::after {
+  content: ' 🖫';
+  color: #f85149;
+  font-size: 14px;
+  margin-left: 4px;
+}
+
+.tab-modal-item.active .tab-modal-name.dirty::after {
+  color: #ffcccb;
 }
 
 /* Enhanced Tab Features - Phase 4 */

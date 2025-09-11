@@ -325,8 +325,8 @@ class TabUIController extends BaseComponent {
     info.className = 'tab-modal-info';
     
     const name = document.createElement('div');
-    name.className = 'tab-modal-name';
-    name.textContent = `${tab.fileName}${tab.isDirty ? ' •' : ''}`;
+    name.className = `tab-modal-name ${tab.isDirty ? 'dirty' : ''}`;
+    name.textContent = tab.fileName;
     info.appendChild(name);
     
     if (tab.filePath) {

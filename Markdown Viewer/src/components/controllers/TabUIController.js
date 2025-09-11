@@ -16,6 +16,11 @@ class TabUIController extends BaseComponent {
   }
 
   async onInit() {
+    // Load tab system CSS
+    if (window.styleManager) {
+      await window.styleManager.loadTabSystem();
+    }
+    
     this.setupTabDropdown();
     this.setupTabKeyboardShortcuts();
     this.setupTabContextMenu();
@@ -417,11 +422,27 @@ class TabUIController extends BaseComponent {
       `;
       document.body.appendChild(contextMenu);
       
-      // Add submenu hover functionality
+      // Add submenu hover functionality with dynamic positioning
       const submenuParent = contextMenu.querySelector('.submenu-parent');
       if (submenuParent) {
         submenuParent.addEventListener('mouseenter', () => {
-          submenuParent.classList.add('submenu-open');
+          const submenu = submenuParent.querySelector('.tab-context-submenu');
+          if (submenu) {
+            // Reset positioning
+            submenu.style.left = '100%';
+            submenu.style.right = 'auto';
+            
+            submenuParent.classList.add('submenu-open');
+            
+            // Check if submenu overflows after it's visible
+            setTimeout(() => {
+              const submenuRect = submenu.getBoundingClientRect();
+              if (submenuRect.right > window.innerWidth - 10) {
+                submenu.style.left = 'auto';
+                submenu.style.right = '100%';
+              }
+            }, 0);
+          }
         });
         submenuParent.addEventListener('mouseleave', () => {
           submenuParent.classList.remove('submenu-open');
@@ -483,17 +504,7 @@ class TabUIController extends BaseComponent {
     contextMenu.style.left = `${left}px`;
     contextMenu.style.top = `${top}px`;
     
-    // Position submenu to avoid overflow after menu is positioned
-    setTimeout(() => {
-      const submenu = contextMenu.querySelector('.tab-context-submenu');
-      if (submenu) {
-        submenu.style.left = '100%';
-        const submenuRect = submenu.getBoundingClientRect();
-        if (submenuRect.right > viewportWidth) {
-          submenu.style.left = `-${submenuRect.width}px`;
-        }
-      }
-    }, 0);
+
     
     // Update menu items based on context
     const tabs = this.tabManager.getAllTabs();

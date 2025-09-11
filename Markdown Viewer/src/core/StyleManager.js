@@ -87,6 +87,13 @@ class StyleManager {
   }
 
   /**
+   * Load tab system styles
+   */
+  async loadTabSystem() {
+    await this.loadFeature('tab-system', 'features');
+  }
+
+  /**
    * Check if a feature is loaded
    * @param {string} featureName - Feature name to check
    * @returns {boolean}

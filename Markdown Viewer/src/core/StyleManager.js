@@ -31,14 +31,15 @@ class StyleManager {
 
   /**
    * Load a feature CSS file
-   * @param {string} featureName - Feature name (print, settings-modal, etc.)
+   * @param {string} featureName - Feature name (print, markdown-toolbar, settings-modal, etc.)
+   * @param {string} type - Type of feature ('utilities' or 'features')
    */
-  async loadFeature(featureName) {
+  async loadFeature(featureName, type = 'utilities') {
     if (!this.loadedFeatures.has(featureName)) {
       return new Promise((resolve, reject) => {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = `./styles/utilities/${featureName}.css`;
+        link.href = `./styles/${type}/${featureName}.css`;
         link.setAttribute('data-feature', featureName);
         
         link.onload = () => {
@@ -68,7 +69,14 @@ class StyleManager {
    * Load print styles when printing
    */
   async loadPrintStyles() {
-    await this.loadFeature('print');
+    await this.loadFeature('print', 'utilities');
+  }
+
+  /**
+   * Load markdown toolbar styles
+   */
+  async loadMarkdownToolbar() {
+    await this.loadFeature('markdown-toolbar', 'features');
   }
 
   /**

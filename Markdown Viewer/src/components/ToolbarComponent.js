@@ -21,6 +21,11 @@ class ToolbarComponent extends BaseComponent {
   }
 
   async onInit() {
+    // Load markdown toolbar CSS
+    if (window.styleManager) {
+      await window.styleManager.loadMarkdownToolbar();
+    }
+    
     // Initialize DOM elements
     this.initializeElements();
     

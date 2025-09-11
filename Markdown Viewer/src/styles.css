@@ -1,3 +1,6 @@
+/* Theme Imports */
+@import url('./themes/contrast.css');
+
 :root {
   --bg-primary: #f5f5f5;
   --bg-secondary: #e8e8e8;
@@ -801,77 +804,7 @@ body.retro-theme .preview-content pre code.hljs {
   background-color: #ebebeb !important;
 }
 
-/* High Contrast Theme */
-[data-theme="contrast"] {
-  --bg-primary: #000000;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #333333;
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --border-primary: #ffffff;
-  --border-secondary: #cccccc;
-  --accent-primary: #ffff00;
-  --accent-hover: #ffff99;
-}
 
-[data-theme="contrast"] .preview-content code {
-  background-color: #333333;
-  color: #ffff00;
-  border: 1px solid #ffffff;
-}
-
-[data-theme="contrast"] .preview-content pre {
-  background-color: #1a1a1a;
-  border: 2px solid #ffffff;
-}
-
-[data-theme="contrast"] .preview-content a {
-  color: #ffff00;
-}
-
-[data-theme="contrast"] .preview-content a:hover {
-  color: #ffff99;
-}
-
-/* High contrast Monaco Editor */
-[data-theme="contrast"] .monaco-editor {
-  background-color: #000000 !important;
-}
-
-[data-theme="contrast"] .monaco-editor .monaco-editor-background {
-  background-color: #000000 !important;
-}
-
-[data-theme="contrast"] .monaco-editor .view-lines {
-  color: #ffffff !important;
-}
-
-[data-theme="contrast"] .monaco-editor .view-line {
-  color: #ffffff !important;
-}
-
-[data-theme="contrast"] .monaco-editor .mtk1 {
-  color: #ffffff !important;
-}
-
-[data-theme="contrast"] .monaco-editor .margin {
-  background-color: #1a1a1a !important;
-}
-
-[data-theme="contrast"] .monaco-editor .token.string,
-[data-theme="contrast"] .monaco-editor .token.string.md,
-[data-theme="contrast"] .monaco-editor .token.code,
-[data-theme="contrast"] .monaco-editor .token.code.md,
-[data-theme="contrast"] .monaco-editor .mtk4,
-[data-theme="contrast"] .monaco-editor .mtk22,
-[data-theme="contrast"] .monaco-editor [class*="mtk"] {
-  color: #ffff00 !important;
-}
-
-[data-theme="contrast"] .monaco-editor .token.code,
-[data-theme="contrast"] .monaco-editor .token.code.md {
-  background-color: #333333 !important;
-}
 
 /* Enhanced Tables */
 .preview-content table {

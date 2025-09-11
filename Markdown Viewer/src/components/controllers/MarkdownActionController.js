@@ -70,22 +70,54 @@ class MarkdownActionController extends BaseComponent {
     let cursorOffset = 0;
     
     switch (action) {
-      // Text formatting
+      // Text formatting with toggle support
       case 'bold':
-        replacement = selectedText ? `**${selectedText}**` : '**text**';
-        cursorOffset = selectedText ? 0 : -6;
+        if (selectedText) {
+          if (selectedText.startsWith('**') && selectedText.endsWith('**') && selectedText.length > 4) {
+            replacement = selectedText.slice(2, -2);
+          } else {
+            replacement = `**${selectedText}**`;
+          }
+        } else {
+          replacement = '**text**';
+          cursorOffset = -6;
+        }
         break;
       case 'italic':
-        replacement = selectedText ? `*${selectedText}*` : '*text*';
-        cursorOffset = selectedText ? 0 : -5;
+        if (selectedText) {
+          if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length > 2 && !selectedText.startsWith('**')) {
+            replacement = selectedText.slice(1, -1);
+          } else {
+            replacement = `*${selectedText}*`;
+          }
+        } else {
+          replacement = '*text*';
+          cursorOffset = -5;
+        }
         break;
       case 'strikethrough':
-        replacement = selectedText ? `~~${selectedText}~~` : '~~text~~';
-        cursorOffset = selectedText ? 0 : -6;
+        if (selectedText) {
+          if (selectedText.startsWith('~~') && selectedText.endsWith('~~') && selectedText.length > 4) {
+            replacement = selectedText.slice(2, -2);
+          } else {
+            replacement = `~~${selectedText}~~`;
+          }
+        } else {
+          replacement = '~~text~~';
+          cursorOffset = -6;
+        }
         break;
       case 'underline':
-        replacement = selectedText ? `<u>${selectedText}</u>` : '<u>text</u>';
-        cursorOffset = selectedText ? 0 : -7;
+        if (selectedText) {
+          if (selectedText.startsWith('<u>') && selectedText.endsWith('</u>') && selectedText.length > 7) {
+            replacement = selectedText.slice(3, -4);
+          } else {
+            replacement = `<u>${selectedText}</u>`;
+          }
+        } else {
+          replacement = '<u>text</u>';
+          cursorOffset = -7;
+        }
         break;
         
       // Paragraph - removes any heading
@@ -277,16 +309,32 @@ class MarkdownActionController extends BaseComponent {
       
       switch (action) {
         case 'bold':
-          newContent = `**${lineContent}**`;
+          if (lineContent.startsWith('**') && lineContent.endsWith('**') && lineContent.length > 4) {
+            newContent = lineContent.slice(2, -2);
+          } else {
+            newContent = `**${lineContent}**`;
+          }
           break;
         case 'italic':
-          newContent = `*${lineContent}*`;
+          if (lineContent.startsWith('*') && lineContent.endsWith('*') && lineContent.length > 2 && !lineContent.startsWith('**')) {
+            newContent = lineContent.slice(1, -1);
+          } else {
+            newContent = `*${lineContent}*`;
+          }
           break;
         case 'strikethrough':
-          newContent = `~~${lineContent}~~`;
+          if (lineContent.startsWith('~~') && lineContent.endsWith('~~') && lineContent.length > 4) {
+            newContent = lineContent.slice(2, -2);
+          } else {
+            newContent = `~~${lineContent}~~`;
+          }
           break;
         case 'underline':
-          newContent = `<u>${lineContent}</u>`;
+          if (lineContent.startsWith('<u>') && lineContent.endsWith('</u>') && lineContent.length > 7) {
+            newContent = lineContent.slice(3, -4);
+          } else {
+            newContent = `<u>${lineContent}</u>`;
+          }
           break;
         case 'paragraph':
           const paragraphMatch = lineContent.match(/^(#{1,6})\s*(.*)$/);

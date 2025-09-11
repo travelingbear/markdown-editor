@@ -81,9 +81,19 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
-.pinned-tab.dirty .pinned-tab-name::after {
-  content: ' 🖫';
-  color: #ff6b6b;
+.pinned-tab.dirty {
+  position: relative;
+}
+
+.pinned-tab.dirty::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ff6b6b;
+  border-radius: 4px 4px 0 0;
 }
 
 /* Tab Dropdown Styles */
@@ -201,7 +211,7 @@
 }
 
 .tab-dropdown-name.dirty::after {
-  content: ' 🖫';
+  content: ' *';
   color: #f85149;
   font-weight: bold;
 }
@@ -401,9 +411,10 @@
 }
 
 .tab-modal-name.dirty::after {
-  content: ' 🖫';
+  content: ' *';
   color: #f85149;
   font-size: 14px;
+  font-weight: bold;
   margin-left: 4px;
 }
 

@@ -359,7 +359,12 @@ class MarkdownEditor extends BaseComponent {
       const activeTab = this.tabManager.getActiveTab();
       if (activeTab) {
         activeTab.isDirty = data.isDirty;
+        // Immediately update tab UI for instant visual feedback
         this.tabUIController.updateTabUI();
+        // Also update pinned tabs if enabled
+        if (this.settingsController.getPinnedTabsEnabled()) {
+          this.tabUIController.updatePinnedTabs();
+        }
         this.updateFilename(null, data.isDirty);
         this.toolbarComponent.emit('document-state-changed', { 
           hasDocument: true, 
@@ -402,6 +407,12 @@ class MarkdownEditor extends BaseComponent {
         this.tabManager.persistTabs();
         // Also update document component to keep it in sync
         this.documentComponent.content = data.content;
+        // Immediately update tab UI for instant visual feedback
+        this.tabUIController.updateTabUI();
+        // Also update pinned tabs if enabled
+        if (this.settingsController.getPinnedTabsEnabled()) {
+          this.tabUIController.updatePinnedTabs();
+        }
       }
       this.documentComponent.emit('content-changed', data);
       

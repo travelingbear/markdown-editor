@@ -88,17 +88,36 @@ class MarkdownActionController extends BaseComponent {
         cursorOffset = selectedText ? 0 : -7;
         break;
         
-      // Headings
+      // Headings - with cycling support
       case 'h1':
-        replacement = selectedText ? `# ${selectedText}` : '# Heading 1';
-        insertAtNewLine = true;
-        break;
       case 'h2':
-        replacement = selectedText ? `## ${selectedText}` : '## Heading 2';
-        insertAtNewLine = true;
-        break;
       case 'h3':
-        replacement = selectedText ? `### ${selectedText}` : '### Heading 3';
+        if (isMultiLine) {
+          this.handleMultiLineFormatting(editor, selection, action);
+          return;
+        }
+        
+        const targetLevel = parseInt(action.substring(1));
+        if (selectedText) {
+          // Check if selected text already has heading
+          const headingMatch = selectedText.match(/^(#{1,6})\s*(.*)$/);
+          if (headingMatch) {
+            const currentLevel = headingMatch[1].length;
+            const content = headingMatch[2];
+            if (currentLevel === targetLevel) {
+              // Same level - remove heading
+              replacement = content;
+            } else {
+              // Different level - change to target level
+              replacement = '#'.repeat(targetLevel) + ' ' + content;
+            }
+          } else {
+            // No existing heading - add new one
+            replacement = '#'.repeat(targetLevel) + ' ' + selectedText;
+          }
+        } else {
+          replacement = '#'.repeat(targetLevel) + ` Heading ${targetLevel}`;
+        }
         insertAtNewLine = true;
         break;
         
@@ -250,13 +269,24 @@ class MarkdownActionController extends BaseComponent {
           newContent = `<u>${lineContent}</u>`;
           break;
         case 'h1':
-          newContent = `# ${lineContent}`;
-          break;
         case 'h2':
-          newContent = `## ${lineContent}`;
-          break;
         case 'h3':
-          newContent = `### ${lineContent}`;
+          const targetLevel = parseInt(action.substring(1));
+          const headingMatch = lineContent.match(/^(#{1,6})\s*(.*)$/);
+          if (headingMatch) {
+            const currentLevel = headingMatch[1].length;
+            const content = headingMatch[2];
+            if (currentLevel === targetLevel) {
+              // Same level - remove heading
+              newContent = content;
+            } else {
+              // Different level - change to target level
+              newContent = '#'.repeat(targetLevel) + ' ' + content;
+            }
+          } else {
+            // No existing heading - add new one
+            newContent = '#'.repeat(targetLevel) + ' ' + lineContent;
+          }
           break;
         case 'ul':
           newContent = `- ${lineContent}`;

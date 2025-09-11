@@ -96,14 +96,15 @@ class FileController extends BaseComponent {
     
     await this.executeHook('beforeNewFile', { documentComponent, tabManager });
     
-    // Check tab limits for performance - warn at 50, block at 100
+    // Check tab limits for performance - warn at 45, block at 50
     const currentTabCount = tabManager.getTabsCount();
-    if (this.performanceOptimizer && currentTabCount >= 50) {
-      if (currentTabCount >= 100) {
-        const shouldContinue = confirm(`You have ${currentTabCount} tabs open. This may cause performance issues. Continue?`);
-        if (!shouldContinue) return;
-      } else if (currentTabCount >= 50) {
-        console.warn(`[FileController] High tab count: ${currentTabCount} tabs open`);
+    if (this.performanceOptimizer && currentTabCount >= 45) {
+      if (currentTabCount >= 50) {
+        alert(`Maximum tab limit reached (${currentTabCount}/50). Please close some tabs before creating new ones.`);
+        return;
+      } else if (currentTabCount >= 45) {
+        console.warn(`[FileController] Approaching tab limit: ${currentTabCount}/50 tabs open`);
+        alert(`Warning: You have ${currentTabCount} tabs open. Consider closing some tabs for better performance.`);
       }
     }
     
@@ -122,14 +123,15 @@ class FileController extends BaseComponent {
   async openFile(documentComponent, tabManager) {
     await this.executeHook('beforeOpenFile', { documentComponent, tabManager });
     
-    // Check tab limits before opening - warn at 50, block at 100
+    // Check tab limits before opening - warn at 45, block at 50
     const currentTabCount = tabManager.getTabsCount();
-    if (this.performanceOptimizer && currentTabCount >= 50) {
-      if (currentTabCount >= 100) {
-        const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more files may affect performance. Continue?`);
-        if (!shouldContinue) return;
-      } else if (currentTabCount >= 50) {
-        console.warn(`[FileController] High tab count: ${currentTabCount} tabs open`);
+    if (this.performanceOptimizer && currentTabCount >= 45) {
+      if (currentTabCount >= 50) {
+        alert(`Maximum tab limit reached (${currentTabCount}/50). Please close some tabs before opening more files.`);
+        return;
+      } else if (currentTabCount >= 45) {
+        console.warn(`[FileController] Approaching tab limit: ${currentTabCount}/50 tabs open`);
+        alert(`Warning: You have ${currentTabCount} tabs open. Consider closing some tabs for better performance.`);
       }
     }
     

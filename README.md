@@ -10,7 +10,7 @@
 
 ### Multi-Tab Interface
 - **Smart Tab Management**: Open multiple files with intelligent tab organization
-- **Performance Optimized**: Handles up to 50 tabs with virtualization and lazy loading
+- **Performance Optimized**: Handles up to 50 tabs with dynamic CSS loading and virtualization
 - **Tab Navigation**: Quick access dropdown for recent 9 tabs, modal for all tabs
 - **Context Menus**: Right-click tabs for advanced operations (move, close, duplicate)
 - **Keyboard Shortcuts**: Alt+1-9 for numbered tabs, Ctrl+Tab for navigation
@@ -24,7 +24,7 @@
 - **Scroll Position Memory**: Scroll position preservation in Code mode; limited reliability in Preview mode when switching between modes
 
 ### User Experience
-- **GitHub-Style Themes**: Light, Dark, and Retro themes with perfect synchronization
+- **Dynamic Themes**: Light, Dark, Retro, and High Contrast themes with on-demand loading
 - **Drag & Drop**: Native file drag-drop with absolute path support
 - **Export Options**: HTML export and PDF printing
 - **Font Size Controls**: Adjustable font size (10px-24px) in markdown toolbar
@@ -78,7 +78,7 @@
 - **Frontend**: Component-based architecture with Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js
 - **Backend**: Rust/Tauri for native file operations and system integration
 - **Tab System**: Smart tab management with virtualization and performance optimization
-- **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, handles 100+ tabs
+- **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, 50 tab limit with warnings
 - **Bundle Size**: < 50MB across all platforms
 - **Security**: Sandboxed file access with CSP protection
 

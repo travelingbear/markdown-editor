@@ -1,5 +1,44 @@
 # Changelog
 
+## Version 3.2.0 (2025-01-07)
+
+### Major Features
+- **Dynamic CSS Loading Architecture**: Complete CSS refactoring with on-demand theme and feature loading
+- **Modular CSS System**: Themes and features now load dynamically, reducing initial bundle size by 50%
+- **Enhanced Performance**: Faster startup with lean core CSS (~500 lines) and dynamic loading
+- **Tab Limit Enforcement**: Proper 50 tab limit with warnings at 45 tabs and blocking at 50 tabs
+- **Comprehensive Documentation**: Added detailed CSS architecture and development guides
+
+### CSS Architecture Improvements
+- **StyleManager**: New dynamic CSS loading system with smooth transitions
+- **Theme Extraction**: Dark, Retro, and Contrast themes now load on-demand
+- **Feature Extraction**: Markdown toolbar, settings modal, and tab system CSS extracted to separate files
+- **Print Optimization**: Print styles now load only when printing
+- **Bundle Analysis**: Added script to measure CSS optimization results
+
+### Performance Enhancements
+- **Theme Preloading**: Popular themes preloaded for faster switching
+- **Smooth Transitions**: CSS transition effects for theme switching
+- **Memory Optimization**: Reduced memory usage with modular loading
+- **Performance Metrics**: Enhanced performance tracking and reporting
+
+### Bug Fixes
+- **Tab Limit Issues**: Fixed New File button not working at 49+ tabs
+- **Theme Compatibility**: Fixed theme CSS files to support both class and data-attribute selectors
+- **Performance Dashboard**: Updated status thresholds to match 50 tab limit
+
+### Documentation
+- **CSS Architecture Guide**: Complete guide to dynamic CSS system and development
+- **Examples & Tutorials**: Practical examples for theme and feature development
+- **Extension Guidelines**: Comprehensive plugin and extension development guide
+
+### Technical Changes
+- Extracted 1000+ lines of CSS to modular files
+- Implemented StyleManager with async loading and error handling
+- Added performance optimization with dark theme preloading
+- Updated PerformanceOptimizer with proper 50 tab limit enforcement
+- Enhanced FileController with proper tab limit warnings and blocking
+
 ## Version 3.1.3 (2025-01-07)
 
 ### Improvements

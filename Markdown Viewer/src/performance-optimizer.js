@@ -695,22 +695,77 @@ class PerformanceOptimizer {
       switchEl.className = switchClass;
     }
     
-    // Update performance status
+    // Update performance status based on actual performance metrics
     let status = 'Good';
     let statusClass = 'status-good';
     
-    if (actualTabCount >= 45) {
-      status = 'Warning';
-      statusClass = 'status-warning';
+    let warningFactors = 0;
+    let criticalFactors = 0;
+    
+    // Check memory pressure
+    if (memoryInfo && memoryInfo.pressure > 0.7) {
+      warningFactors++;
+      if (memoryInfo.pressure > 0.85) criticalFactors++;
     }
-    if (actualTabCount >= 50) {
+    
+    // Check tab switch performance
+    if (recentSwitches.length > 0) {
+      const avgSwitchTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
+      if (avgSwitchTime > 100) {
+        warningFactors++;
+        if (avgSwitchTime > 200) criticalFactors++;
+      }
+    }
+    
+    // Check startup time
+    if (startupTime && startupTime > 1000) {
+      warningFactors++;
+      if (startupTime > 2000) criticalFactors++;
+    }
+    
+    // Check memory usage
+    if (memoryInfo && memoryInfo.used > 150) {
+      warningFactors++;
+      if (memoryInfo.used > 250) criticalFactors++;
+    }
+    
+    // Build tooltip with performance details
+    const issues = [];
+    if (memoryInfo && memoryInfo.pressure > 0.85) issues.push('High memory pressure');
+    else if (memoryInfo && memoryInfo.pressure > 0.7) issues.push('Elevated memory pressure');
+    
+    if (recentSwitches.length > 0) {
+      const avgSwitchTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
+      if (avgSwitchTime > 200) issues.push('Very slow tab switching');
+      else if (avgSwitchTime > 100) issues.push('Slow tab switching');
+    }
+    
+    if (startupTime && startupTime > 2000) issues.push('Very slow startup');
+    else if (startupTime && startupTime > 1000) issues.push('Slow startup');
+    
+    if (memoryInfo && memoryInfo.used > 250) issues.push('Very high memory usage');
+    else if (memoryInfo && memoryInfo.used > 150) issues.push('High memory usage');
+    
+    // Determine status based on performance factors
+    let tooltip = 'Performance is good';
+    if (criticalFactors > 0) {
       status = 'Critical';
       statusClass = 'status-critical';
+      tooltip = 'Critical issues: ' + issues.join(', ');
+    } else if (warningFactors >= 2) {
+      status = 'Warning';
+      statusClass = 'status-warning';
+      tooltip = 'Multiple issues: ' + issues.join(', ');
+    } else if (warningFactors >= 1) {
+      status = 'Warning';
+      statusClass = 'status-warning';
+      tooltip = 'Issue detected: ' + issues.join(', ');
     }
     
     if (perfStatus) {
       perfStatus.textContent = status;
       perfStatus.className = statusClass;
+      perfStatus.title = tooltip;
     }
   }
 

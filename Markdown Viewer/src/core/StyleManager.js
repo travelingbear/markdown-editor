@@ -80,6 +80,13 @@ class StyleManager {
   }
 
   /**
+   * Load settings modal styles
+   */
+  async loadSettingsModal() {
+    await this.loadFeature('settings-modal', 'features');
+  }
+
+  /**
    * Check if a feature is loaded
    * @param {string} featureName - Feature name to check
    * @returns {boolean}

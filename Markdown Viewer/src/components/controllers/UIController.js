@@ -252,7 +252,12 @@ class UIController extends BaseComponent {
   }
 
   // Modal Management
-  showSettings() {
+  async showSettings() {
+    // Load settings modal CSS
+    if (window.styleManager) {
+      await window.styleManager.loadSettingsModal();
+    }
+    
     const settingsModal = document.getElementById('settings-modal');
     if (settingsModal) {
       settingsModal.style.display = 'flex';

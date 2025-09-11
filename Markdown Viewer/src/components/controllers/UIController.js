@@ -124,7 +124,10 @@ class UIController extends BaseComponent {
     if (this.isRetroTheme) {
       document.body.classList.add('retro-theme');
       this.playRetroStartupSound();
-      // Load retro theme dynamically when implemented
+      // Load retro theme dynamically
+      if (window.styleManager) {
+        await window.styleManager.loadTheme('retro');
+      }
     } else {
       document.body.classList.add(`${this.theme}-theme`);
       // Load theme dynamically if not light

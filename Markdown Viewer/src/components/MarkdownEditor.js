@@ -1128,7 +1128,13 @@ class MarkdownEditor extends BaseComponent {
       welcomeAboutBtn.addEventListener('click', () => this.uiController.showAbout());
     }
     if (welcomeSettingsBtn) {
-      welcomeSettingsBtn.addEventListener('click', () => this.uiController.showSettings());
+      welcomeSettingsBtn.addEventListener('click', async () => {
+        await this.uiController.showSettings();
+        // Update plugin display when settings modal opens
+        setTimeout(() => {
+          this.updatePluginDisplay();
+        }, 100);
+      });
     }
     
     // Clear history button

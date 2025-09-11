@@ -513,7 +513,8 @@ class ToolbarComponent extends BaseComponent {
       const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && this.isToolbarEnabled;
       
       if (shouldShow) {
-        this.markdownToolbar.style.display = 'block';
+        this.markdownToolbar.style.setProperty('display', 'block', 'important');
+        this.markdownToolbar.style.setProperty('visibility', 'visible', 'important');
         this.markdownToolbar.classList.add('visible');
       } else {
         this.markdownToolbar.style.display = 'none';

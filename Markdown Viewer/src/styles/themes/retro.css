@@ -1203,3 +1203,47 @@ body.retro-theme .file-drop-zone {
   background: #ffffff;
   border-radius: 0;
 }
+/* Retro theme preview context menu */
+body.retro-theme .preview-context-menu {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  border-radius: 0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+body.retro-theme .context-menu-item {
+  background: #c0c0c0;
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  font-size: 11px;
+  border-radius: 0;
+}
+
+body.retro-theme .context-menu-item:hover {
+  background: #000080;
+  color: #ffffff;
+}
+
+body.retro-theme .context-menu-separator {
+  background: #808080;
+  height: 1px;
+  margin: 2px 8px;
+}
+
+body.retro-theme .context-submenu {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  border-radius: 0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+body.retro-theme .context-submenu .context-menu-item {
+  background: #c0c0c0;
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  font-size: 11px;
+}
+body.retro-theme .context-submenu .context-menu-item:hover {
+  background: #000080;
+  color: #ffffff;
+}

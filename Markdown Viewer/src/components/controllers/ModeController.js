@@ -85,18 +85,18 @@ class ModeController extends BaseComponent {
       editorPane.offsetHeight;
       previewPane.offsetHeight;
       
-      // Apply mode-specific display settings
+      // Apply mode-specific display settings with !important to override any CSS conflicts
       switch (mode) {
         case 'code':
-          editorPane.style.display = 'block';
+          editorPane.style.setProperty('display', 'flex', 'important');
           break;
         case 'preview':
-          previewPane.style.display = 'block';
+          previewPane.style.setProperty('display', 'block', 'important');
           break;
         case 'split':
-          editorPane.style.display = 'block';
-          previewPane.style.display = 'block';
-          splitter.style.display = 'block';
+          editorPane.style.setProperty('display', 'flex', 'important');
+          previewPane.style.setProperty('display', 'block', 'important');
+          splitter.style.setProperty('display', 'block', 'important');
           break;
       }
       

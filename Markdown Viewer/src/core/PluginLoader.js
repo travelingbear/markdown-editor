@@ -173,17 +173,47 @@ class PluginLoader {
   }
 
   async reloadPlugins() {
+    // Save current plugin states
+    const allPlugins = this.pluginManager.getAllPlugins();
+    const pluginStates = new Map();
+    
+    for (const plugin of allPlugins) {
+      pluginStates.set(plugin.id, {
+        enabled: this.pluginManager.isPluginEnabled(plugin.id),
+        active: this.pluginManager.isPluginActive(plugin.id)
+      });
+    }
+    
     // Clear loaded plugins cache
     this.loadedPlugins.clear();
     
     // Clear registered plugins from manager
-    const allPlugins = this.pluginManager.getAllPlugins();
     for (const plugin of allPlugins) {
       this.pluginManager.unregisterPlugin(plugin.id);
     }
     
     // Reload all plugins
-    return await this.loadAndRegisterPlugins();
+    const reloadedPlugins = await this.loadAndRegisterPlugins();
+    
+    // Restore plugin states
+    for (const plugin of reloadedPlugins) {
+      const savedState = pluginStates.get(plugin.id);
+      if (savedState) {
+        if (savedState.enabled) {
+          // Enable plugin first
+          this.pluginManager.enablePlugin(plugin.id);
+          // Then activate if it was active
+          if (savedState.active) {
+            await this.pluginManager.activatePlugin(plugin.id);
+          }
+        } else {
+          // Ensure plugin stays disabled
+          this.pluginManager.disablePlugin(plugin.id);
+        }
+      }
+    }
+    
+    return reloadedPlugins;
   }
 
   getLoadedPlugins() {

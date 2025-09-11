@@ -358,7 +358,7 @@
 
 .plugin-status {
   font-size: 0.8em;
-  padding: 2px 6px;
+  padding: 6px 12px;
   border-radius: 3px;
 }
 
@@ -382,6 +382,7 @@
   display: flex;
   gap: 10px;
   margin-top: 10px;
+  justify-content: center;
 }
 
 /* Responsive design */

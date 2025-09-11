@@ -445,6 +445,27 @@ class MarkdownEditor extends BaseComponent {
       this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
     });
     
+    // Preview Context Menu Events
+    this.previewComponent.on('reload-file-requested', () => {
+      this.reloadCurrentFile();
+    });
+    
+    this.previewComponent.on('sync-from-code-requested', () => {
+      this.syncFromCode();
+    });
+    
+    this.previewComponent.on('restart-app-requested', () => {
+      this.restartApplication();
+    });
+    
+    this.previewComponent.on('export-html-requested', () => {
+      this.exportController.exportToHtml();
+    });
+    
+    this.previewComponent.on('export-pdf-requested', () => {
+      this.exportController.exportToPdf();
+    });
+    
     // File Controller Events
     this.fileController.on('file-new-completed', () => {
       this.modeController.setMode('code');
@@ -1062,6 +1083,57 @@ class MarkdownEditor extends BaseComponent {
       }
     }
   }
+  
+  syncFromCode() {
+    const content = this.editorComponent.getContent();
+    const activeTab = this.tabManager.getActiveTab();
+    
+    // Update preview content
+    this.previewComponent.emit('update-preview', { 
+      content,
+      filePath: activeTab?.filePath 
+    });
+    
+    // Sync scroll position from editor to preview
+    setTimeout(() => {
+      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
+        const editor = this.editorComponent.monacoEditor;
+        const previewPane = document.querySelector('.preview-pane');
+        
+        if (editor && previewPane) {
+          const editorScrollTop = editor.getScrollTop();
+          const editorHeight = editor.getLayoutInfo().height;
+          const editorScrollHeight = editor.getScrollHeight();
+          const editorMaxScroll = Math.max(0, editorScrollHeight - editorHeight);
+          
+          let scrollRatio = 0;
+          if (editorMaxScroll > 0) {
+            scrollRatio = editorScrollTop / editorMaxScroll;
+          }
+          
+          const previewHeight = previewPane.clientHeight;
+          const previewScrollHeight = previewPane.scrollHeight;
+          const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
+          const targetScroll = scrollRatio * previewMaxScroll;
+          
+          previewPane.scrollTop = Math.max(0, Math.min(targetScroll, previewMaxScroll));
+        }
+      }
+    }, 100);
+  }
+  
+  async restartApplication() {
+    try {
+      if (window.__TAURI__?.process) {
+        await window.__TAURI__.process.relaunch();
+      } else {
+        location.reload();
+      }
+    } catch (error) {
+      console.error('Failed to restart application:', error);
+      location.reload();
+    }
+  }
 
   refreshPreview() {
     const content = this.editorComponent.getContent();
@@ -1189,7 +1261,7 @@ class MarkdownEditor extends BaseComponent {
         <div class="plugin-controls">
           <button class="setting-btn ${isEnabled ? 'active' : ''}" 
                   data-plugin-id="${plugin.id}">
-            ${isEnabled ? 'Enabled' : 'Disabled'}
+            ${isEnabled ? 'Disable' : 'Enable'}
           </button>
           <span class="plugin-status ${isActive ? 'active' : 'inactive'}">
             ${isActive ? 'Active' : 'Inactive'}
@@ -1201,6 +1273,8 @@ class MarkdownEditor extends BaseComponent {
       const button = pluginItem.querySelector('.setting-btn');
       button.addEventListener('click', () => {
         this.togglePlugin(plugin.id);
+        // Update display immediately after toggle
+        setTimeout(() => this.updatePluginDisplay(), 50);
       });
       
       pluginList.appendChild(pluginItem);
@@ -1211,7 +1285,11 @@ class MarkdownEditor extends BaseComponent {
     const resetBtn = document.getElementById('reset-plugin-config-btn');
     
     if (refreshBtn) {
-      refreshBtn.onclick = () => this.refreshPlugins();
+      refreshBtn.onclick = () => {
+        this.refreshPlugins();
+        // Update display after refresh
+        setTimeout(() => this.updatePluginDisplay(), 100);
+      };
     }
     
     if (resetBtn) {

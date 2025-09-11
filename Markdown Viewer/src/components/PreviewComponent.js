@@ -74,6 +74,9 @@ class PreviewComponent extends BaseComponent {
     this.on('zoom-changed', (data) => {
       this.updateZoom(data.zoom);
     });
+    
+    // Setup context menu
+    this.setupContextMenu();
   }
 
   /**
@@ -902,6 +905,88 @@ class PreviewComponent extends BaseComponent {
     }
   }
 
+  setupContextMenu() {
+    // Create context menu
+    this.contextMenu = document.createElement('div');
+    this.contextMenu.className = 'preview-context-menu';
+    this.contextMenu.style.display = 'none';
+    this.contextMenu.innerHTML = `
+      <div class="context-menu-item" data-action="reload-file">Reload File</div>
+      <div class="context-menu-item" data-action="sync-from-code">Sync from Code</div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item submenu-parent" data-action="export">
+        Export
+        <span class="submenu-arrow">▶</span>
+        <div class="context-submenu">
+          <div class="context-menu-item" data-action="export-html">HTML</div>
+          <div class="context-menu-item" data-action="export-pdf">PDF</div>
+        </div>
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="restart-app">Restart Application</div>
+    `;
+    document.body.appendChild(this.contextMenu);
+    
+    // Context menu event handlers
+    this.preview.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      this.showContextMenu(e.clientX, e.clientY);
+    });
+    
+    // Hide context menu on click outside
+    document.addEventListener('click', () => {
+      this.hideContextMenu();
+    });
+    
+    // Context menu item clicks
+    this.contextMenu.addEventListener('click', (e) => {
+      const action = e.target.dataset.action;
+      if (action && action !== 'export') {
+        this.handleContextMenuAction(action);
+        this.hideContextMenu();
+      }
+    });
+  }
+  
+  showContextMenu(x, y) {
+    this.contextMenu.style.left = x + 'px';
+    this.contextMenu.style.top = y + 'px';
+    this.contextMenu.style.display = 'block';
+    
+    // Adjust position if menu goes off screen
+    const rect = this.contextMenu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+      this.contextMenu.style.left = (x - rect.width) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+      this.contextMenu.style.top = (y - rect.height) + 'px';
+    }
+  }
+  
+  hideContextMenu() {
+    this.contextMenu.style.display = 'none';
+  }
+  
+  handleContextMenuAction(action) {
+    switch (action) {
+      case 'reload-file':
+        this.emit('reload-file-requested');
+        break;
+      case 'sync-from-code':
+        this.emit('sync-from-code-requested');
+        break;
+      case 'export-html':
+        this.emit('export-html-requested');
+        break;
+      case 'export-pdf':
+        this.emit('export-pdf-requested');
+        break;
+      case 'restart-app':
+        this.emit('restart-app-requested');
+        break;
+    }
+  }
+
   onDestroy() {
     // Clean up event handlers
     if (this.taskChangeHandler) {
@@ -913,6 +998,12 @@ class PreviewComponent extends BaseComponent {
     if (this.anchorClickHandler) {
       this.preview.removeEventListener('click', this.anchorClickHandler);
       this.anchorClickHandler = null;
+    }
+    
+    // Clean up context menu
+    if (this.contextMenu) {
+      document.body.removeChild(this.contextMenu);
+      this.contextMenu = null;
     }
     
     // Clear task list states

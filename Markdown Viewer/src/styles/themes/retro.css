@@ -198,21 +198,50 @@ body.retro-theme .monaco-editor .margin {
   background-color: #e0e0e0 !important;
 }
 
+/* Distraction-free Monaco editor styling */
+body.retro-theme.distraction-free .monaco-editor {
+  background: #ffffff !important;
+}
+
+body.retro-theme.distraction-free .monaco-editor .monaco-editor-background {
+  background-color: #ffffff !important;
+}
+
+body.retro-theme.distraction-free .monaco-editor .margin {
+  background-color: #e0e0e0 !important;
+}
+
 body.retro-theme .main-content {
   background: #c0c0c0;
 }
 
 /* Distraction-free mode backgrounds for retro theme */
-body.retro-theme.distraction-free.code-mode .main-content {
+body.retro-theme.distraction-free .main-content {
   background: #c0c0c0 !important;
 }
 
-body.retro-theme.distraction-free.preview-mode .main-content {
+body.retro-theme.distraction-free.code-mode .editor-pane {
   background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.code-mode .monaco-editor-container,
+body.retro-theme.distraction-free.code-mode #editor {
+  background: #ffffff !important;
+  border: 2px inset #c0c0c0 !important;
 }
 
 body.retro-theme.distraction-free.preview-mode .preview-content {
   background: #ffffff !important;
+}
+
+body.retro-theme.distraction-free.split-mode .editor-pane {
+  background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.split-mode .monaco-editor-container,
+body.retro-theme.distraction-free.split-mode #editor {
+  background: #ffffff !important;
+  border: 2px inset #c0c0c0 !important;
 }
 
 body.retro-theme .editor-pane,

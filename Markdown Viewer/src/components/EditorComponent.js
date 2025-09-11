@@ -102,8 +102,18 @@ class EditorComponent extends BaseComponent {
       return;
     }
     
+    // Prevent duplicate loading
+    if (window.MONACO_LOADING) {
+      await window.MONACO_LOADING;
+      if (window.monaco?.editor && !this.monacoEditor) {
+        this.createMonacoInstance();
+      }
+      return;
+    }
+    
     if (!window.MONACO_SINGLETON) {
-      window.MONACO_SINGLETON = this.loadMonacoSingleton();
+      window.MONACO_LOADING = this.loadMonacoSingleton();
+      window.MONACO_SINGLETON = window.MONACO_LOADING;
     }
     
     try {
@@ -113,6 +123,8 @@ class EditorComponent extends BaseComponent {
       console.error('[Editor] Failed to load Monaco:', error);
       this.fallbackToTextarea();
       throw error;
+    } finally {
+      window.MONACO_LOADING = null;
     }
   }
 
@@ -182,10 +194,14 @@ class EditorComponent extends BaseComponent {
     if (this.isMonacoLoaded || !window.monaco) return;
     
     try {
+      // Get current theme from localStorage to ensure it's up to date
+      const currentTheme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+      this.theme = currentTheme;
+      
       const editorOptions = {
         value: this.currentContent,
         language: 'markdown',
-        theme: this.theme === 'dark' ? 'vs-dark' : 'vs',
+        theme: currentTheme === 'dark' ? 'vs-dark' : 'vs',
         automaticLayout: true,
         wordWrap: 'on',
         minimap: { enabled: false },
@@ -208,7 +224,8 @@ class EditorComponent extends BaseComponent {
           addExtraSpaceOnTop: false,
           autoFindInSelection: 'never',
           seedSearchStringFromSelection: 'always'
-        }
+        },
+        dragAndDrop: true
       };
       
       this.monacoEditor = monaco.editor.create(this.monacoContainer, editorOptions);

@@ -53,7 +53,7 @@ class ModeController extends BaseComponent {
         await this.editorComponent.loadMonacoEditor();
       } catch (error) {
         console.error('[ModeController] Failed to load Monaco Editor:', error);
-        mode = 'preview'; // Fall back to preview mode
+        this.editorComponent.fallbackToTextarea();
       }
     }
     
@@ -75,6 +75,8 @@ class ModeController extends BaseComponent {
     const previewPane = document.querySelector('.preview-pane');
     const splitter = document.getElementById('splitter');
     
+
+    
     if (editorPane && previewPane && splitter) {
       // Immediately reset all displays to prevent dual pane issues
       editorPane.style.display = 'none';
@@ -89,16 +91,22 @@ class ModeController extends BaseComponent {
       switch (mode) {
         case 'code':
           editorPane.style.setProperty('display', 'flex', 'important');
+          editorPane.style.setProperty('visibility', 'visible', 'important');
           break;
         case 'preview':
           previewPane.style.setProperty('display', 'block', 'important');
+          previewPane.style.setProperty('visibility', 'visible', 'important');
           break;
         case 'split':
           editorPane.style.setProperty('display', 'flex', 'important');
+          editorPane.style.setProperty('visibility', 'visible', 'important');
           previewPane.style.setProperty('display', 'block', 'important');
+          previewPane.style.setProperty('visibility', 'visible', 'important');
           splitter.style.setProperty('display', 'block', 'important');
           break;
       }
+      
+
       
       // Trigger Monaco layout after display changes
       if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {

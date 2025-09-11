@@ -308,7 +308,22 @@ class MarkdownEditor extends BaseComponent {
       const startTime = performance.now();
       const currentTabCount = this.tabManager.getTabsCount();
       
-      // Open file in new tab or existing tab
+      // Check if file is already open before creating new tab
+      let existingTab = this.tabManager.tabCollection.findTabByPath(data.filePath);
+      if (!existingTab) {
+        // Also check by filename for drag/drop vs dialog compatibility
+        existingTab = this.tabManager.getAllTabs().find(tab => 
+          tab.fileName === data.fileName && 
+          (tab.filePath === null || tab.filePath === data.fileName || tab.filePath.endsWith('\\' + data.fileName) || tab.filePath.endsWith('/' + data.fileName))
+        );
+      }
+      
+      if (existingTab) {
+        this.tabManager.switchToTab(existingTab.id);
+        return;
+      }
+      
+      // Open file in new tab
       this.tabManager.openFileInTab(data.filePath, data.content);
       this.lastFileOpenTime = performance.now();
       this.settingsController.setLastFileOpenTime(this.lastFileOpenTime);
@@ -939,10 +954,17 @@ class MarkdownEditor extends BaseComponent {
 
   // Theme change handler
   handleThemeChange(themeData) {
-    // Notify components
-    this.editorComponent.emit('theme-changed', { theme: themeData.theme });
+    // Directly update editor theme to ensure Monaco gets updated
+    this.editorComponent.updateTheme(themeData.theme);
+    
+    // Notify other components
     this.previewComponent.emit('theme-changed', { theme: themeData.theme });
     this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
+    
+    // CRITICAL: Reapply current mode after theme change to fix display issues
+    setTimeout(() => {
+      this.modeController.setMode(this.modeController.getCurrentMode());
+    }, 100);
     
     // Refresh preview if we have active tab content
     const activeTab = this.tabManager.getActiveTab();
@@ -1456,25 +1478,44 @@ class MarkdownEditor extends BaseComponent {
       
       // console.log('[DEBUG] Processing files:', files.map(f => f.name));
       
-      // Welcome screen: open .md files
+      // Check drop target
+      const isToolbar = e.target.closest('.toolbar');
+      const isPreview = e.target.closest('.preview-pane');
       const welcomePage = document.getElementById('welcome-page');
       const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
       
-      if (isWelcomeVisible || !this.tabManager.hasTabs()) {
+      // Open .md files on toolbar, preview, or welcome screen
+      if (isToolbar || isPreview || isWelcomeVisible || !this.tabManager.hasTabs()) {
         const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f.name));
         if (mdFile) {
+          // Check if file is already open by filename
+          const existingTab = this.tabManager.getAllTabs().find(tab => 
+            tab.fileName === mdFile.name
+          );
+          
+          if (existingTab) {
+            this.tabManager.switchToTab(existingTab.id);
+            return;
+          }
+          
           const content = await mdFile.text();
-          this.tabManager.createNewTab(content);
-          const defaultMode = this.uiController.defaultMode;
+          const tab = this.tabManager.tabCollection.createTab({
+            fileName: mdFile.name,
+            filePath: mdFile.name,
+            content,
+            isDirty: false
+          });
+          const defaultMode = this.settingsController.getDefaultMode();
           this.modeController.setMode(defaultMode);
         }
         return;
       }
       
-      // Code mode: insert file paths
+      // Code mode: insert file paths at mouse position
       if (this.modeController.getCurrentMode() === 'code' && this.editorComponent.isMonacoLoaded) {
         const editor = this.editorComponent.monacoEditor;
-        const position = editor.getPosition();
+        const mousePosition = editor.getTargetAtClientPoint(e.clientX, e.clientY);
+        const position = mousePosition ? mousePosition.position : editor.getPosition();
         const filePaths = files.map(f => f.name);
         const insertText = filePaths.join('\n');
         

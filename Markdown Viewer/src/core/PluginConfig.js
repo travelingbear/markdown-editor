@@ -11,13 +11,13 @@ class PluginConfig {
     try {
       const stored = localStorage.getItem(this.storageKey);
       return stored ? JSON.parse(stored) : {
-        enabledPlugins: ['sample-plugin'], // Sample plugin enabled by default
+        enabledPlugins: [], // Sample plugin enabled by default
         pluginSettings: {}
       };
     } catch (error) {
       console.error('[PluginConfig] Failed to load config:', error);
       return {
-        enabledPlugins: ['sample-plugin'],
+        enabledPlugins: [],
         pluginSettings: {}
       };
     }

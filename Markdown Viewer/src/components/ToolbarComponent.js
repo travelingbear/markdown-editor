@@ -534,7 +534,7 @@ class ToolbarComponent extends BaseComponent {
     // Show font size controls only in code mode
     const fontSizeControls = document.getElementById('font-size-controls');
     if (fontSizeControls) {
-      const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && this.hasDocument;
+      const shouldShow = this.currentMode === 'code' && !this.isDistractionFree;
       fontSizeControls.style.display = shouldShow ? 'flex' : 'none';
     }
   }

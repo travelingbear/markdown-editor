@@ -127,7 +127,22 @@ class TabCollection extends BaseComponent {
 
   // Find tab by file path
   findTabByPath(filePath) {
-    return this.tabs.find(tab => tab.filePath === filePath);
+    if (!filePath) return null;
+    
+    // Normalize path for comparison (handle different path separators and resolve)
+    const normalizedPath = this.normalizePath(filePath);
+    
+    return this.tabs.find(tab => {
+      if (!tab.filePath) return false;
+      const tabPath = this.normalizePath(tab.filePath);
+      return tabPath === normalizedPath;
+    });
+  }
+  
+  // Normalize file path for consistent comparison
+  normalizePath(filePath) {
+    if (!filePath) return null;
+    return filePath.replace(/\\/g, '/').toLowerCase().trim();
   }
 
   // Close all tabs

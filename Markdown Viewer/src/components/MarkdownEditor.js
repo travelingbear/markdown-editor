@@ -100,14 +100,13 @@ class MarkdownEditor extends BaseComponent {
       await new Promise(resolve => setTimeout(resolve, 500));
       this.hideSplash();
       
+      // Mark app as initialized to show hidden elements
+      document.body.classList.add('app-initialized');
+      
       // Check for startup file
       await this.checkStartupFile();
       
-      // Play retro sound if enabled
-      const themeData = this.settingsController.getTheme();
-      if (themeData.isRetroTheme) {
-        this.settingsController.playRetroStartupSound();
-      }
+      // Retro sound is already played by UIController.setTheme() during applyInitialSettings()
       
       console.log(`[MarkdownEditor] Initialized in ${this.startupTime.toFixed(2)}ms`);
       

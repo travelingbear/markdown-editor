@@ -131,6 +131,21 @@ body {
   --preview-width: 50%;
 }
 
+/* Hide editor and markdown toolbar on startup to prevent flash */
+.editor-pane {
+  visibility: hidden;
+}
+
+.markdown-toolbar {
+  visibility: hidden;
+}
+
+/* Show elements when app is initialized */
+body.app-initialized .editor-pane,
+body.app-initialized .markdown-toolbar {
+  visibility: visible;
+}
+
 .editor-pane {
   width: var(--editor-width);
   display: flex;

@@ -1,0 +1,329 @@
+/* Dark Theme Styles */
+
+/* Core Dark Theme Variables */
+[data-theme="dark"] {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --text-primary: #f0f6fc;
+  --text-secondary: #8b949e;
+  --border-primary: #30363d;
+  --border-secondary: #484f58;
+  --accent-primary: #2f81f7;
+  --accent-hover: #1c7ed6;
+}
+
+/* Distraction-free mode variables */
+[data-theme="dark"] {
+  --distraction-bg: #0a0c10;
+}
+
+/* Dark theme adjustments for centered layout */
+[data-theme="dark"] body.centered-layout .preview-content,
+[data-theme="dark"] body.centered-layout .monaco-editor-container,
+[data-theme="dark"] body.centered-layout #editor {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .preview-content code {
+  background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .preview-content pre {
+  background-color: var(--bg-tertiary);
+}
+
+/* Task Lists */
+[data-theme="dark"] .preview-content .task-list-nested .task-list-item {
+  border-left-color: var(--border-secondary);
+}
+
+/* Math and Diagrams */
+[data-theme="dark"] .katex {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .mermaid-diagram {
+  background-color: var(--bg-secondary);
+}
+
+/* Syntax Highlighting */
+[data-theme="dark"] .preview-content pre code.hljs {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .hljs-comment,
+[data-theme="dark"] .hljs-quote {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .hljs-keyword,
+[data-theme="dark"] .hljs-selector-tag,
+[data-theme="dark"] .hljs-type {
+  color: #ff7b72 !important;
+}
+
+[data-theme="dark"] .hljs-string,
+[data-theme="dark"] .hljs-attr {
+  color: #7ee787 !important;
+}
+
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal,
+[data-theme="dark"] .hljs-variable {
+  color: #79c0ff !important;
+}
+
+[data-theme="dark"] .hljs-function,
+[data-theme="dark"] .hljs-title {
+  color: #d2a8ff !important;
+}
+
+/* Code Block Buttons */
+[data-theme="dark"] .code-btn {
+  background: rgba(255, 255, 255, 0.7);
+  color: black;
+}
+
+[data-theme="dark"] .code-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* File History */
+[data-theme="dark"] .file-history-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Welcome Page */
+[data-theme="dark"] .welcome-page {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+[data-theme="dark"] .welcome-btn:hover {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+/* Drag and Drop */
+[data-theme="dark"] body.drag-over::before {
+  background: rgba(47, 129, 247, 0.15);
+  border-color: var(--accent-primary);
+}
+
+[data-theme="dark"] body.drag-over .welcome-page[style*="flex"]::after,
+[data-theme="dark"] body.drag-over .main-content::after {
+  background: rgba(47, 129, 247, 0.95);
+  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+}
+
+/* Dropdown Menus */
+[data-theme="dark"] .dropdown-menu {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] #distraction-btn:hover::after,
+[data-theme="dark"] #theme-btn:hover::after {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Distraction-Free Mode */
+[data-theme="dark"] body.distraction-free .main-content {
+  background: #0a0c10;
+}
+
+[data-theme="dark"] body.distraction-free .preview-content,
+[data-theme="dark"] body.distraction-free .monaco-editor-container,
+[data-theme="dark"] body.distraction-free #editor {
+  background: #161b22;
+  border-color: #30363d;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Links */
+[data-theme="dark"] .preview-content a {
+  color: #58a6ff;
+}
+
+[data-theme="dark"] .preview-content a:hover {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .preview-content a:visited {
+  color: #bc8cff;
+}
+
+/* Scrollbars in Distraction-Free Mode */
+[data-theme="dark"] body.distraction-free .preview-content::-webkit-scrollbar-thumb,
+[data-theme="dark"] body.distraction-free .monaco-editor-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] body.distraction-free .preview-content:hover::-webkit-scrollbar-thumb,
+[data-theme="dark"] body.distraction-free .monaco-editor-container:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] body.distraction-free .preview-content:hover,
+[data-theme="dark"] body.distraction-free .monaco-editor-container:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Distraction-Free Exit Hint */
+[data-theme="dark"] body.distraction-free::before {
+  background: rgba(30, 30, 30, 0.95);
+  color: #f0f6fc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Markdown Toolbar */
+[data-theme="dark"] .md-btn:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .md-btn:active {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Settings Modal */
+[data-theme="dark"] .settings-window {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .settings-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Performance Monitor */
+[data-theme="dark"] .status-good {
+  color: #40d65c;
+}
+
+[data-theme="dark"] .status-warning {
+  color: #ffda6a;
+}
+
+[data-theme="dark"] .status-critical {
+  color: #f85149;
+}
+
+[data-theme="dark"] .perf-value.good {
+  color: #40d65c;
+}
+
+[data-theme="dark"] .perf-value.caution {
+  color: #ffda6a;
+}
+
+[data-theme="dark"] .perf-value.warning {
+  color: #f85149;
+}
+
+[data-theme="dark"] #perf-status.status-good {
+  color: #40d65c;
+}
+
+[data-theme="dark"] #perf-status.status-warning {
+  color: #ffda6a;
+}
+
+[data-theme="dark"] #perf-status.status-critical {
+  color: #f85149;
+}
+
+/* Scrollbars */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1a202c;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #2d3748;
+  border-radius: 6px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #4a5568;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-corner {
+  background: #1a202c;
+}
+
+/* About Modal Links */
+[data-theme="dark"] .link-info a {
+  color: #58a6ff;
+}
+
+[data-theme="dark"] .link-info a:hover {
+  color: #79c0ff;
+}
+
+/* Help and About Modals */
+[data-theme="dark"] .help-window,
+[data-theme="dark"] .about-window {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .help-overlay,
+[data-theme="dark"] .about-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Splash Screen */
+[data-theme="dark"] .splash-screen {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+[data-theme="dark"] .splash-image {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* Task Conflict Modal */
+[data-theme="dark"] .task-conflict-window {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .task-conflict-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Tab Dropdown and Modal */
+[data-theme="dark"] .tab-dropdown-menu {
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .tab-modal-window {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .tab-modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Tab Context Menu */
+[data-theme="dark"] .tab-context-menu {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .tab-modal-item:hover {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+/* Markdown Dropdown and Link/Image Modals */
+[data-theme="dark"] .md-dropdown-menu {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .link-modal-window,
+[data-theme="dark"] .image-modal-window {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .link-modal-overlay,
+[data-theme="dark"] .image-modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}

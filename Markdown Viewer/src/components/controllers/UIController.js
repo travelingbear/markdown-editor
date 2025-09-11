@@ -107,7 +107,7 @@ class UIController extends BaseComponent {
     return { theme: this.theme, isRetroTheme: this.isRetroTheme };
   }
 
-  setTheme(theme, isRetro = false) {
+  async setTheme(theme, isRetro = false) {
     this.executeHook('beforeThemeChange', { oldTheme: this.theme, newTheme: theme, oldRetro: this.isRetroTheme, newRetro: isRetro });
     
     // Update internal state
@@ -118,17 +118,22 @@ class UIController extends BaseComponent {
     localStorage.setItem('markdownViewer_defaultTheme', this.theme);
     localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());
     
-    // Apply theme using SAME method as SettingsController.applyTheme()
+    // Apply theme using StyleManager for dynamic loading
     document.body.classList.remove('light-theme', 'dark-theme', 'contrast-theme', 'retro-theme');
+    
     if (this.isRetroTheme) {
       document.body.classList.add('retro-theme');
       this.playRetroStartupSound();
+      // Load retro theme dynamically when implemented
     } else {
       document.body.classList.add(`${this.theme}-theme`);
+      // Load theme dynamically if not light
+      if (window.styleManager && this.theme !== 'light') {
+        await window.styleManager.loadTheme(this.theme);
+      }
     }
-    document.body.setAttribute('data-theme', this.theme);
     
-    // Also update documentElement for compatibility
+    document.body.setAttribute('data-theme', this.theme);
     document.documentElement.setAttribute('data-theme', this.theme);
     
     this.executeHook('afterThemeChange', { theme: this.theme, isRetroTheme: this.isRetroTheme });

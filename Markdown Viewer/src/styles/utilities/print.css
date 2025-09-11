@@ -232,20 +232,9 @@
   .hljs-attr { color: #e36209 !important; }
   .hljs-built_in { color: #005cc5 !important; }
   
-  /* Monaco editor print styles */
+  /* Monaco editor is hidden during print - we use HTML conversion instead */
   .monaco-editor {
-    height: auto !important;
-    overflow: visible !important;
-  }
-  
-  .monaco-editor .view-lines {
-    color: black !important;
-  }
-  
-  .monaco-editor .mtk1,
-  .monaco-editor .mtk4,
-  .monaco-editor .mtk22 {
-    color: black !important;
+    display: none !important;
   }
   
   /* Math expressions */
@@ -262,12 +251,27 @@
   /* Centered layout print styles */
   body.centered-layout .preview-content,
   body.centered-layout .monaco-editor-container,
-  body.centered-layout #editor {
+  body.centered-layout #editor,
+  body.centered-layout .editor-pane > div {
     max-width: var(--current-page-width) !important;
     margin: 0 auto !important;
-    padding: var(--page-margin-top) var(--page-margin-left) var(--page-margin-bottom) var(--page-margin-right) !important;
+    padding: var(--page-margin-top) 1in var(--page-margin-bottom) 1in !important;
     box-shadow: none !important;
     border: none !important;
+  }
+  
+  /* Style the temporary HTML div created for code mode printing */
+  body.centered-layout .editor-pane > div > pre {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    border: none !important;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    color: black !important;
   }
 
   /* Page setup */
@@ -286,7 +290,25 @@
   .no-print,
   .dropdown-menu,
   .tooltip,
-  .modal {
+  .modal,
+  .settings-modal,
+  .help-modal,
+  .about-modal,
+  .tab-modal,
+  .link-modal,
+  .image-modal,
+  button,
+  .toolbar-btn,
+  .mode-btn,
+  .md-btn,
+  .status-btn,
+  .setting-btn,
+  .welcome-btn,
+  .dropdown-arrow,
+  .dropdown-container,
+  .tab-dropdown,
+  .zoom-controls,
+  .font-size-controls {
     display: none !important;
   }
 }

@@ -33,6 +33,13 @@ class ExportController extends BaseComponent {
 
   async exportToPdf() {
     try {
+      // Load print styles dynamically and wait for them to be applied
+      if (window.styleManager) {
+        await window.styleManager.loadPrintStyles();
+        // Small delay to ensure CSS is fully applied
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+      
       // Hide pinned tabs during print
       const pinnedTabs = document.getElementById('pinned-tabs-bar');
       const originalPinnedDisplay = pinnedTabs?.style.display;

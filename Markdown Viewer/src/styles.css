@@ -1,5 +1,5 @@
 /* Theme Imports */
-@import url('./themes/contrast.css');
+@import url('./styles/themes/contrast.css');
 
 :root {
   --bg-primary: #f5f5f5;

@@ -1,0 +1,440 @@
+/* Settings Modal Feature Styles */
+
+/* Enhanced Settings Modal */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.settings-window {
+  position: relative;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: fadeInContent 0.3s ease-out;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+  color: var(--text-primary);
+}
+
+.settings-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.settings-close-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.settings-content {
+  padding: 24px;
+  max-height: calc(80vh - 80px);
+  overflow-y: auto;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.2em;
+  color: #5e60e7;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 8px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px 0;
+}
+
+.setting-item label {
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.setting-control {
+  display: flex;
+  gap: 8px;
+}
+
+.setting-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  min-width: 70px;
+}
+
+/* Smaller buttons for splash duration */
+#splash-duration-setting .setting-btn {
+  padding: 6px 10px;
+  min-width: 30px;
+  font-size: 12px;
+}
+
+.setting-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: #7e80e3;
+}
+
+.setting-btn.active {
+  background: #5e60e7;
+  color: white;
+  border-color: #7e80e3;
+}
+
+/* Splash duration setting visibility */
+#splash-duration-setting {
+  display: none;
+}
+
+#splash-duration-setting.visible {
+  display: flex;
+}
+
+.system-info {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: var(--text-secondary);
+}
+
+.info-item span:last-child {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Phase 6: Performance Dashboard Styles */
+.performance-section {
+  margin-bottom: 32px;
+}
+
+.performance-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.2em;
+  color: #5e60e7;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 8px;
+}
+
+/* Performance Monitor Styles */
+.performance-info {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.status-good {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status-warning {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.status-critical {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.perf-metric {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--border-primary);
+}
+
+.perf-metric label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.perf-value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text-primary);
+}
+
+.perf-value.good {
+  color: #28a745;
+}
+
+.perf-value.caution {
+  color: #ffc107;
+}
+
+.perf-value.warning {
+  color: #dc3545;
+}
+
+.performance-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.perf-action-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  background: #5e60e7;
+  color: white;
+  border: 1px solid #7e80e3;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.perf-action-btn:hover {
+  background: #4a4cc7;
+  border-color: #6a6cc3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.perf-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Performance Monitor status colors for all themes */
+#perf-status.status-good {
+  color: #28a745;
+}
+
+#perf-status.status-warning {
+  color: #ffc107;
+}
+
+#perf-status.status-critical {
+  color: #dc3545;
+}
+
+/* Test sound button styling */
+.test-sound-btn {
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+  min-width: 60px !important;
+  background: var(--accent-primary) !important;
+  color: white !important;
+  border-color: var(--accent-primary) !important;
+}
+
+.test-sound-btn:hover {
+  background: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
+
+.plugin-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.plugin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.plugin-item:last-child {
+  border-bottom: none;
+}
+
+.plugin-info {
+  flex: 1;
+}
+
+.plugin-name {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.plugin-version {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.plugin-description {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.plugin-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plugin-status {
+  font-size: 0.8em;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.plugin-status.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.plugin-status.inactive {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.no-plugins {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 20px;
+}
+
+.plugin-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .settings-window {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .settings-header {
+    padding: 16px 20px;
+  }
+  
+  .settings-content {
+    padding: 20px;
+  }
+  
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .setting-control {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  /* Responsive performance dashboard */
+  .performance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  
+  .perf-metric {
+    padding: 8px;
+  }
+  
+  .perf-metric label {
+    font-size: 10px;
+  }
+  
+  .perf-value {
+    font-size: 12px;
+  }
+  
+  .performance-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .performance-actions .settings-btn {
+    width: 100%;
+    max-width: 150px;
+  }
+}

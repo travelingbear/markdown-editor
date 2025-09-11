@@ -7,7 +7,7 @@ class PerformanceOptimizer {
       memoryPerTab: 5,          // Max 5MB per tab
       maxTotalMemory: 200,      // Max 200MB total
       previewUpdateTime: 200,   // Reduced update time
-      maxTabs: 100              // Maximum allowed tabs
+      maxTabs: 50               // Maximum allowed tabs
     };
     
     this.memoryMonitor = null;
@@ -699,11 +699,11 @@ class PerformanceOptimizer {
     let status = 'Good';
     let statusClass = 'status-good';
     
-    if (actualTabCount > 50) {
+    if (actualTabCount >= 45) {
       status = 'Warning';
       statusClass = 'status-warning';
     }
-    if (actualTabCount > 100) {
+    if (actualTabCount >= 50) {
       status = 'Critical';
       statusClass = 'status-critical';
     }
@@ -720,7 +720,7 @@ class PerformanceOptimizer {
     this.isLowPowerMode = true;
     
     // Reduce performance targets
-    this.performanceTargets.maxTabs = 20;
+    this.performanceTargets.maxTabs = 25;
     this.performanceTargets.maxTotalMemory = 100;
     this.maxCacheSize = 20;
     this.maxPoolSize = 2;

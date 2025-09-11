@@ -13,7 +13,43 @@ body.retro-theme {
   font-size: 11px;
 }
 
-/* Retro theme toolbar styling */
+/* Retro theme dirty button styling */
+body.retro-theme .toolbar-btn.dirty {
+  background: #800000 !important;
+  color: #ffffff !important;
+  border: 2px outset #800000 !important;
+}
+
+body.retro-theme .toolbar-btn.dirty:hover {
+  background: #a00000 !important;
+  border: 2px outset #a00000 !important;
+}
+
+body.retro-theme .toolbar-btn.dirty:active {
+  border: 2px inset #800000 !important;
+}
+
+/* Retro theme hljs styling */
+body.retro-theme .preview-content pre code.hljs {
+  background-color: #ebebeb !important;
+}
+
+body.retro-theme .code-btn {
+  background: #c0c0c0;
+  color: #000000;
+  border: 1px outset #c0c0c0;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+}
+
+body.retro-theme .code-btn:hover {
+  background: #e0e0e0;
+  border: 1px outset #e0e0e0;
+}
+
+body.retro-theme .code-btn:active {
+  border: 1px inset #c0c0c0;
+}
+
 body.retro-theme .toolbar,
 body.retro-theme .status-bar,
 body.retro-theme .markdown-toolbar {
@@ -26,7 +62,6 @@ body.retro-theme .status-bar {
   border-top: 3px outset #cdcdcd;
 }
 
-/* Retro theme button styling */
 body.retro-theme .toolbar-btn,
 body.retro-theme .mode-btn {
   background: #c0c0c0;
@@ -45,23 +80,15 @@ body.retro-theme .mode-btn {
   justify-content: center;
 }
 
-/* Retro theme dirty button styling */
-body.retro-theme .toolbar-btn.dirty {
-  background: #800000 !important;
-  color: #ffffff !important;
-  border: 2px outset #800000 !important;
-}
-
-body.retro-theme .toolbar-btn.dirty:hover {
-  background: #a00000 !important;
-  border: 2px outset #a00000 !important;
-}
-
-body.retro-theme .toolbar-btn.dirty:active {
-  border: 2px inset #800000 !important;
-}
-
-/* Retro theme general button styling */
+body.retro-theme .md-btn,
+body.retro-theme .status-btn,
+body.retro-theme .welcome-btn,
+body.retro-theme .setting-btn,
+body.retro-theme .dropdown-menu,
+body.retro-theme .dropdown-item,
+body.retro-theme .settings-window,
+body.retro-theme .help-window,
+body.retro-theme .about-window,
 body.retro-theme .md-btn,
 body.retro-theme .status-btn,
 body.retro-theme .welcome-btn,
@@ -93,7 +120,6 @@ body.retro-theme .file-history-item {
   outline: none;
 }
 
-/* Retro theme button hover states */
 body.retro-theme .toolbar-btn:hover,
 body.retro-theme .mode-btn:hover,
 body.retro-theme .md-btn:hover,
@@ -113,7 +139,6 @@ body.retro-theme .setting-btn:active {
   border: 3px inset #c0c0c0;
 }
 
-/* Retro theme active states */
 body.retro-theme .mode-btn.active {
   background: #c0c0c0;
   color: #000000;
@@ -132,7 +157,6 @@ body.retro-theme .setting-btn.active {
   border: 3px inset #c0c0c0;
 }
 
-/* Retro theme editor and preview styling */
 body.retro-theme .preview-content,
 body.retro-theme .monaco-editor-container,
 body.retro-theme #editor {
@@ -174,9 +198,50 @@ body.retro-theme .monaco-editor .margin {
   background-color: #e0e0e0 !important;
 }
 
-/* Retro theme layout styling */
+/* Distraction-free Monaco editor styling */
+body.retro-theme.distraction-free .monaco-editor {
+  background: #ffffff !important;
+}
+
+body.retro-theme.distraction-free .monaco-editor .monaco-editor-background {
+  background-color: #ffffff !important;
+}
+
+body.retro-theme.distraction-free .monaco-editor .margin {
+  background-color: #e0e0e0 !important;
+}
+
 body.retro-theme .main-content {
   background: #c0c0c0;
+}
+
+/* Distraction-free mode backgrounds for retro theme */
+body.retro-theme.distraction-free .main-content {
+  background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.code-mode .editor-pane {
+  background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.code-mode .monaco-editor-container,
+body.retro-theme.distraction-free.code-mode #editor {
+  background: #ffffff !important;
+  border: 2px inset #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.preview-mode .preview-content {
+  background: #ffffff !important;
+}
+
+body.retro-theme.distraction-free.split-mode .editor-pane {
+  background: #c0c0c0 !important;
+}
+
+body.retro-theme.distraction-free.split-mode .monaco-editor-container,
+body.retro-theme.distraction-free.split-mode #editor {
+  background: #ffffff !important;
+  border: 2px inset #c0c0c0 !important;
 }
 
 body.retro-theme .editor-pane,
@@ -191,17 +256,12 @@ body.retro-theme .splitter {
   border: 1px outset #c0c0c0;
 }
 
-/* Retro theme distraction-free mode backgrounds */
-body.retro-theme.distraction-free.code-mode .main-content {
-  background: #c0c0c0 !important;
+body.retro-theme .welcome-page {
+  background: #c0c0c0;
 }
 
-body.retro-theme.distraction-free.preview-mode .main-content {
-  background: #c0c0c0 !important;
-}
-
-body.retro-theme.distraction-free.preview-mode .preview-content {
-  background: #ffffff !important;
+body.retro-theme .splash-screen {
+  background: #c0c0c0;
 }
 
 body.retro-theme.split-mode .preview-content {
@@ -229,15 +289,6 @@ body.retro-theme.preview-mode .preview-content {
   min-height: calc(100vh - 32px); /* Account for any padding */
 }
 
-/* Retro theme welcome page styling */
-body.retro-theme .welcome-page {
-  background: #c0c0c0;
-}
-
-body.retro-theme .splash-screen {
-  background: #c0c0c0;
-}
-
 body.retro-theme .welcome-content h1 {
   color: #000080;
   font-family: 'MS Sans Serif', sans-serif, 'Courier New';
@@ -255,7 +306,6 @@ body.retro-theme .settings-section h3 {
   font-weight: normal;
 }
 
-/* Retro theme modal styling */
 body.retro-theme .settings-window,
 body.retro-theme .help-window,
 body.retro-theme .about-window {
@@ -281,7 +331,6 @@ body.retro-theme .about-header h2 {
   font-family: 'MS Sans Serif', sans-serif, 'Courier New';
 }
 
-/* Retro theme content styling */
 body.retro-theme .help-content,
 body.retro-theme .help-content h3,
 body.retro-theme .help-content .shortcut-item,
@@ -313,7 +362,6 @@ body.retro-theme .link-info {
   border: none;
 }
 
-/* Retro theme dropdown styling */
 body.retro-theme .dropdown-menu {
   background: #c0c0c0;
   border: 2px outset #c0c0c0;
@@ -332,7 +380,6 @@ body.retro-theme .dropdown-item:hover {
   color: #ffffff;
 }
 
-/* Retro theme preview content styling */
 body.retro-theme .preview-content h1,
 body.retro-theme .preview-content h2,
 body.retro-theme .preview-content h3 {
@@ -386,12 +433,6 @@ body.retro-theme .preview-content th {
   font-weight: bold;
 }
 
-/* Retro theme syntax highlighting */
-body.retro-theme .preview-content pre code.hljs {
-  background-color: #ebebeb !important;
-}
-
-/* Retro theme scrollbars */
 body.retro-theme ::-webkit-scrollbar {
   width: 18px;
   height: 18px;
@@ -456,7 +497,7 @@ body.retro-theme ::-webkit-scrollbar-button:active {
   box-shadow: -1px -1px 0 #404040, 1px 1px 0 #ffffff, inset 1px 1px 0 #808080, inset -1px -1px 0 #e0e0e0;
 }
 
-/* Retro theme checkbox styling */
+/* Retro checkbox styling */
 body.retro-theme .retro-checkbox {
   width: 16px;
   height: 16px;
@@ -465,6 +506,22 @@ body.retro-theme .retro-checkbox {
   background: #ffffff;
   border: 2px inset #c0c0c0;
   cursor: pointer;
+}
+
+/* Retro theme test button */
+body.retro-theme .test-sound-btn {
+  background: #000080 !important;
+  color: #ffffff !important;
+  border: 2px outset #000080 !important;
+}
+
+body.retro-theme .test-sound-btn:hover {
+  background: #0000ff !important;
+  border: 2px outset #0000ff !important;
+}
+
+body.retro-theme .test-sound-btn:active {
+  border: 2px inset #000080 !important;
 }
 
 body.retro-theme .retro-checkbox:checked {
@@ -490,7 +547,6 @@ body.retro-theme .retro-sound-setting label {
   cursor: pointer;
 }
 
-/* Retro theme close buttons */
 body.retro-theme .settings-close-btn,
 body.retro-theme .help-close-btn,
 body.retro-theme .about-close-btn {
@@ -521,37 +577,46 @@ body.retro-theme .about-close-btn:active {
   border: 2px inset #c0c0c0;
 }
 
-/* Retro theme code block buttons */
-body.retro-theme .code-btn {
-  background: #c0c0c0;
-  color: #000000;
-  border: 1px outset #c0c0c0;
+/* Retro theme plugin styles */
+body.retro-theme .plugin-list {
+  background: transparent;
+  border: 2px inset #c0c0c0;
+}
+
+body.retro-theme .plugin-item {
+  background: #ffffff;
+  border-bottom: 1px solid #808080;
   font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
 }
 
-body.retro-theme .code-btn:hover {
-  background: #e0e0e0;
-  border: 1px outset #e0e0e0;
+body.retro-theme .plugin-name {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
+  font-weight: normal;
 }
 
-body.retro-theme .code-btn:active {
-  border: 1px inset #c0c0c0;
+body.retro-theme .plugin-version,
+body.retro-theme .plugin-description {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #404040;
 }
 
-/* Retro theme test sound button */
-body.retro-theme .test-sound-btn {
-  background: #000080 !important;
-  color: #ffffff !important;
-  border: 2px outset #000080 !important;
+body.retro-theme .plugin-status.active {
+  background: #008000;
+  color: #ffffff;
+  border: 1px outset #008000;
 }
 
-body.retro-theme .test-sound-btn:hover {
-  background: #0000ff !important;
-  border: 2px outset #0000ff !important;
+body.retro-theme .plugin-status.inactive {
+  background: #808000;
+  color: #ffffff;
+  border: 1px outset #808000;
 }
 
-body.retro-theme .test-sound-btn:active {
-  border: 2px inset #000080 !important;
+body.retro-theme .no-plugins {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
 }
 
 /* Retro theme performance dashboard */
@@ -595,11 +660,51 @@ body.retro-theme #perf-status.status-critical {
   color: #800000 !important;
 }
 
-/* Retro theme system info section */
+/* Retro theme System Info section - remove background and use theme fonts */
 body.retro-theme .system-info {
   background: transparent;
   border: none;
   padding: 0;
+}
+
+body.retro-theme .info-item {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
+}
+
+body.retro-theme .info-label {
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+}
+
+body.retro-theme .info-item span:last-child {
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  font-weight: normal;
+}
+
+/* Retro theme settings modal consistency */
+body.retro-theme .settings-section h3 {
+  color: #000080;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  font-weight: normal;
+}
+
+body.retro-theme .test-sound-btn {
+  background: #c0c0c0 !important;
+  color: #000000 !important;
+  border: 2px outset #c0c0c0 !important;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  border-radius: 0;
+}
+
+body.retro-theme .test-sound-btn:hover {
+  background: #e0e0e0 !important;
+  border: 2px outset #e0e0e0 !important;
+}
+
+body.retro-theme .test-sound-btn:active {
+  border: 2px inset #c0c0c0 !important;
 }
 
 /* Retro theme performance action buttons */
@@ -674,6 +779,65 @@ body.retro-theme .sync-btn:hover {
 
 body.retro-theme .sync-btn:active {
   border: 2px inset #c0c0c0;
+}
+
+/* Retro theme task conflict modal */
+body.retro-theme .task-conflict-window {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  border-radius: 0;
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+body.retro-theme .task-conflict-header {
+  background: #000080;
+  color: #ffffff;
+  border-bottom: 2px inset #c0c0c0;
+  border-radius: 0;
+}
+
+body.retro-theme .task-conflict-header h3 {
+  color: #ffffff;
+  font-weight: normal;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  font-size: 14px;
+}
+
+body.retro-theme .task-conflict-content {
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  color: #000000;
+}
+
+body.retro-theme .task-conflict-btn {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  border-radius: 0;
+}
+
+body.retro-theme .task-conflict-btn.primary {
+  background: #000080;
+  color: #ffffff;
+  border: 2px outset #000080;
+}
+
+body.retro-theme .task-conflict-btn:hover {
+  background: #e0e0e0;
+  border: 2px outset #e0e0e0;
+}
+
+body.retro-theme .task-conflict-btn.primary:hover {
+  background: #0000ff;
+  border: 2px outset #0000ff;
+}
+
+body.retro-theme .task-conflict-btn:active {
+  border: 2px inset #c0c0c0;
+}
+
+body.retro-theme .task-conflict-btn.primary:active {
+  border: 2px inset #000080;
 }
 
 /* Retro theme tab dropdown styling */
@@ -883,6 +1047,7 @@ body.retro-theme .tab-context-separator {
   background: #808080;
 }
 
+/* Retro theme submenu */
 body.retro-theme .tab-modal-number {
   background: #000080;
   color: #ffffff;
@@ -916,7 +1081,7 @@ body.retro-theme .tab-context-submenu .tab-context-item:hover {
   color: #ffffff;
 }
 
-/* Retro theme markdown dropdown styling */
+/* Retro theme adjustments */
 body.retro-theme .md-dropdown-container {
   display: flex;
 }
@@ -964,7 +1129,6 @@ body.retro-theme .md-dropdown-item:hover {
   color: #ffffff;
 }
 
-/* Retro theme modal styling */
 body.retro-theme .link-modal-window,
 body.retro-theme .image-modal-window {
   background: #c0c0c0;
@@ -1038,63 +1202,4 @@ body.retro-theme .file-drop-zone {
   border: 2px dashed #808080;
   background: #ffffff;
   border-radius: 0;
-}
-
-/* Retro theme task conflict modal */
-body.retro-theme .task-conflict-window {
-  background: #c0c0c0;
-  border: 2px outset #c0c0c0;
-  border-radius: 0;
-  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-body.retro-theme .task-conflict-header {
-  background: #000080;
-  color: #ffffff;
-  border-bottom: 2px inset #c0c0c0;
-  border-radius: 0;
-}
-
-body.retro-theme .task-conflict-header h3 {
-  color: #ffffff;
-  font-weight: normal;
-  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  font-size: 14px;
-}
-
-body.retro-theme .task-conflict-content {
-  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  color: #000000;
-}
-
-body.retro-theme .task-conflict-btn {
-  background: #c0c0c0;
-  border: 2px outset #c0c0c0;
-  color: #000000;
-  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  border-radius: 0;
-}
-
-body.retro-theme .task-conflict-btn.primary {
-  background: #000080;
-  color: #ffffff;
-  border: 2px outset #000080;
-}
-
-body.retro-theme .task-conflict-btn:hover {
-  background: #e0e0e0;
-  border: 2px outset #e0e0e0;
-}
-
-body.retro-theme .task-conflict-btn.primary:hover {
-  background: #0000ff;
-  border: 2px outset #0000ff;
-}
-
-body.retro-theme .task-conflict-btn:active {
-  border: 2px inset #c0c0c0;
-}
-
-body.retro-theme .task-conflict-btn.primary:active {
-  border: 2px inset #000080;
 }

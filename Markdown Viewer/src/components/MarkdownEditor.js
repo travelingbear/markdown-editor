@@ -100,14 +100,13 @@ class MarkdownEditor extends BaseComponent {
       await new Promise(resolve => setTimeout(resolve, 500));
       this.hideSplash();
       
+      // Mark app as initialized to show hidden elements
+      document.body.classList.add('app-initialized');
+      
       // Check for startup file
       await this.checkStartupFile();
       
-      // Play retro sound if enabled
-      const themeData = this.settingsController.getTheme();
-      if (themeData.isRetroTheme) {
-        this.settingsController.playRetroStartupSound();
-      }
+      // Retro sound is already played by UIController.setTheme() during applyInitialSettings()
       
       console.log(`[MarkdownEditor] Initialized in ${this.startupTime.toFixed(2)}ms`);
       
@@ -457,7 +456,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Toolbar Component Events
     this.toolbarComponent.on('file-new-requested', () => {
-      this.fileController.newFile(this.tabManager);
+      this.fileController.newFile(this.documentComponent, this.tabManager);
     });
     
     this.toolbarComponent.on('file-open-requested', () => {
@@ -473,7 +472,7 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.toolbarComponent.on('file-close-requested', () => {
-      this.fileController.closeFile(this.tabManager, this.performanceOptimizer);
+      this.fileController.closeFile(this.documentComponent, this.tabManager, this.performanceOptimizer);
     });
     
     this.toolbarComponent.on('mode-change-requested', (data) => {
@@ -710,7 +709,7 @@ class MarkdownEditor extends BaseComponent {
       switch (e.key) {
         case 'n':
           e.preventDefault();
-          this.fileController.newFile(this.tabManager);
+          this.fileController.newFile(this.documentComponent, this.tabManager);
           break;
         case 'o':
           e.preventDefault();
@@ -1116,7 +1115,7 @@ class MarkdownEditor extends BaseComponent {
     const welcomeSettingsBtn = document.getElementById('welcome-settings-btn');
     
     if (welcomeNewBtn) {
-      welcomeNewBtn.addEventListener('click', () => this.fileController.newFile(this.tabManager));
+      welcomeNewBtn.addEventListener('click', () => this.fileController.newFile(this.documentComponent, this.tabManager));
     }
     if (welcomeOpenBtn) {
       welcomeOpenBtn.addEventListener('click', () => this.fileController.openFile(this.documentComponent, this.tabManager));
@@ -1128,7 +1127,13 @@ class MarkdownEditor extends BaseComponent {
       welcomeAboutBtn.addEventListener('click', () => this.uiController.showAbout());
     }
     if (welcomeSettingsBtn) {
-      welcomeSettingsBtn.addEventListener('click', () => this.uiController.showSettings());
+      welcomeSettingsBtn.addEventListener('click', async () => {
+        await this.uiController.showSettings();
+        // Update plugin display when settings modal opens
+        setTimeout(() => {
+          this.updatePluginDisplay();
+        }, 100);
+      });
     }
     
     // Clear history button

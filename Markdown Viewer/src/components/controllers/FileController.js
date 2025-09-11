@@ -91,38 +91,46 @@ class FileController extends BaseComponent {
     return this.unregisterExtension(name);
   }
 
-  async newFile(tabManager) {
+  async newFile(documentComponent, tabManager) {
     const startTime = performance.now();
     
-    await this.executeHook('beforeNewFile', { tabManager });
+    await this.executeHook('beforeNewFile', { documentComponent, tabManager });
     
-    // Check tab limits for performance
+    // Check tab limits for performance - warn at 50, block at 100
     const currentTabCount = tabManager.getTabsCount();
-    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
-      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more tabs may affect performance. Continue?`);
-      if (!shouldContinue) return;
+    if (this.performanceOptimizer && currentTabCount >= 50) {
+      if (currentTabCount >= 100) {
+        const shouldContinue = confirm(`You have ${currentTabCount} tabs open. This may cause performance issues. Continue?`);
+        if (!shouldContinue) return;
+      } else if (currentTabCount >= 50) {
+        console.warn(`[FileController] High tab count: ${currentTabCount} tabs open`);
+      }
     }
     
-    // Always create new tab for new files
-    tabManager.createNewTab();
+    // Create new document through DocumentComponent to trigger proper events
+    documentComponent.newDocument();
     
     // Track tab creation performance
     if (this.performanceOptimizer) {
       this.performanceOptimizer.benchmarkTabOperation('Tab Create', startTime, currentTabCount + 1);
     }
 
-    await this.executeHook('afterNewFile', { tabManager });
+    await this.executeHook('afterNewFile', { documentComponent, tabManager });
     this.emit('file-new-completed');
   }
 
   async openFile(documentComponent, tabManager) {
     await this.executeHook('beforeOpenFile', { documentComponent, tabManager });
     
-    // Check tab limits before opening
+    // Check tab limits before opening - warn at 50, block at 100
     const currentTabCount = tabManager.getTabsCount();
-    if (this.performanceOptimizer && currentTabCount >= this.performanceOptimizer.performanceTargets.maxTabs) {
-      const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more files may affect performance. Continue?`);
-      if (!shouldContinue) return;
+    if (this.performanceOptimizer && currentTabCount >= 50) {
+      if (currentTabCount >= 100) {
+        const shouldContinue = confirm(`You have ${currentTabCount} tabs open. Opening more files may affect performance. Continue?`);
+        if (!shouldContinue) return;
+      } else if (currentTabCount >= 50) {
+        console.warn(`[FileController] High tab count: ${currentTabCount} tabs open`);
+      }
     }
     
     const startTime = performance.now();
@@ -176,7 +184,7 @@ class FileController extends BaseComponent {
     }
   }
 
-  async closeFile(tabManager, performanceOptimizer) {
+  async closeFile(documentComponent, tabManager, performanceOptimizer) {
     const activeTab = tabManager.getActiveTab();
     if (activeTab) {
       // Check for unsaved changes first, before animation

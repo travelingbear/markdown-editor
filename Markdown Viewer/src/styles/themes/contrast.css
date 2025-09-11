@@ -1,4 +1,5 @@
 /* High Contrast Theme */
+body.contrast-theme,
 [data-theme="contrast"] {
   --bg-primary: #000000;
   --bg-secondary: #1a1a1a;
@@ -11,50 +12,67 @@
   --accent-hover: #ffff99;
 }
 
+body.contrast-theme .preview-content code,
 [data-theme="contrast"] .preview-content code {
   background-color: #333333;
   color: #ffff00;
   border: 1px solid #ffffff;
 }
 
+body.contrast-theme .preview-content pre,
 [data-theme="contrast"] .preview-content pre {
   background-color: #1a1a1a;
   border: 2px solid #ffffff;
 }
 
+body.contrast-theme .preview-content a,
 [data-theme="contrast"] .preview-content a {
   color: #ffff00;
 }
 
+body.contrast-theme .preview-content a:hover,
 [data-theme="contrast"] .preview-content a:hover {
   color: #ffff99;
 }
 
 /* High contrast Monaco Editor */
+body.contrast-theme .monaco-editor,
 [data-theme="contrast"] .monaco-editor {
   background-color: #000000 !important;
 }
 
+body.contrast-theme .monaco-editor .monaco-editor-background,
 [data-theme="contrast"] .monaco-editor .monaco-editor-background {
   background-color: #000000 !important;
 }
 
+body.contrast-theme .monaco-editor .view-lines,
 [data-theme="contrast"] .monaco-editor .view-lines {
   color: #ffffff !important;
 }
 
+body.contrast-theme .monaco-editor .view-line,
 [data-theme="contrast"] .monaco-editor .view-line {
   color: #ffffff !important;
 }
 
+body.contrast-theme .monaco-editor .mtk1,
 [data-theme="contrast"] .monaco-editor .mtk1 {
   color: #ffffff !important;
 }
 
+body.contrast-theme .monaco-editor .margin,
 [data-theme="contrast"] .monaco-editor .margin {
   background-color: #1a1a1a !important;
 }
 
+body.contrast-theme .monaco-editor .token.string,
+body.contrast-theme .monaco-editor .token.string.md,
+body.contrast-theme .monaco-editor .token.code,
+body.contrast-theme .monaco-editor .token.code.md,
+body.contrast-theme .monaco-editor .mtk4,
+body.contrast-theme .monaco-editor .mtk22,
+body.contrast-theme .monaco-editor [class*="mtk"],
 [data-theme="contrast"] .monaco-editor .token.string,
 [data-theme="contrast"] .monaco-editor .token.string.md,
 [data-theme="contrast"] .monaco-editor .token.code,
@@ -65,6 +83,8 @@
   color: #ffff00 !important;
 }
 
+body.contrast-theme .monaco-editor .token.code,
+body.contrast-theme .monaco-editor .token.code.md,
 [data-theme="contrast"] .monaco-editor .token.code,
 [data-theme="contrast"] .monaco-editor .token.code.md {
   background-color: #333333 !important;

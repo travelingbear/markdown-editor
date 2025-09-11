@@ -456,7 +456,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Toolbar Component Events
     this.toolbarComponent.on('file-new-requested', () => {
-      this.fileController.newFile(this.tabManager);
+      this.fileController.newFile(this.documentComponent, this.tabManager);
     });
     
     this.toolbarComponent.on('file-open-requested', () => {
@@ -472,7 +472,7 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.toolbarComponent.on('file-close-requested', () => {
-      this.fileController.closeFile(this.tabManager, this.performanceOptimizer);
+      this.fileController.closeFile(this.documentComponent, this.tabManager, this.performanceOptimizer);
     });
     
     this.toolbarComponent.on('mode-change-requested', (data) => {
@@ -709,7 +709,7 @@ class MarkdownEditor extends BaseComponent {
       switch (e.key) {
         case 'n':
           e.preventDefault();
-          this.fileController.newFile(this.tabManager);
+          this.fileController.newFile(this.documentComponent, this.tabManager);
           break;
         case 'o':
           e.preventDefault();
@@ -1115,7 +1115,7 @@ class MarkdownEditor extends BaseComponent {
     const welcomeSettingsBtn = document.getElementById('welcome-settings-btn');
     
     if (welcomeNewBtn) {
-      welcomeNewBtn.addEventListener('click', () => this.fileController.newFile(this.tabManager));
+      welcomeNewBtn.addEventListener('click', () => this.fileController.newFile(this.documentComponent, this.tabManager));
     }
     if (welcomeOpenBtn) {
       welcomeOpenBtn.addEventListener('click', () => this.fileController.openFile(this.documentComponent, this.tabManager));

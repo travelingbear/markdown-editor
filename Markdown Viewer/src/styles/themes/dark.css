@@ -1,6 +1,7 @@
 /* Dark Theme Styles */
 
 /* Core Dark Theme Variables */
+body.dark-theme,
 [data-theme="dark"] {
   --bg-primary: #0d1117;
   --bg-secondary: #161b22;
@@ -14,78 +15,102 @@
 }
 
 /* Distraction-free mode variables */
+body.dark-theme,
 [data-theme="dark"] {
   --distraction-bg: #0a0c10;
 }
 
 /* Dark theme adjustments for centered layout */
+body.dark-theme.centered-layout .preview-content,
+body.dark-theme.centered-layout .monaco-editor-container,
+body.dark-theme.centered-layout #editor,
 [data-theme="dark"] body.centered-layout .preview-content,
 [data-theme="dark"] body.centered-layout .monaco-editor-container,
 [data-theme="dark"] body.centered-layout #editor {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
+body.dark-theme .preview-content code,
 [data-theme="dark"] .preview-content code {
   background-color: var(--bg-tertiary);
 }
 
+body.dark-theme .preview-content pre,
 [data-theme="dark"] .preview-content pre {
   background-color: var(--bg-tertiary);
 }
 
 /* Task Lists */
+body.dark-theme .preview-content .task-list-nested .task-list-item,
 [data-theme="dark"] .preview-content .task-list-nested .task-list-item {
   border-left-color: var(--border-secondary);
 }
 
 /* Math and Diagrams */
+body.dark-theme .katex,
 [data-theme="dark"] .katex {
   color: var(--text-primary);
 }
 
+body.dark-theme .mermaid-diagram,
 [data-theme="dark"] .mermaid-diagram {
   background-color: var(--bg-secondary);
 }
 
 /* Syntax Highlighting */
+body.dark-theme .preview-content pre code.hljs,
 [data-theme="dark"] .preview-content pre code.hljs {
   background-color: var(--bg-tertiary) !important;
   color: var(--text-primary) !important;
 }
 
+body.dark-theme .hljs-comment,
+body.dark-theme .hljs-quote,
 [data-theme="dark"] .hljs-comment,
 [data-theme="dark"] .hljs-quote {
   color: var(--text-secondary) !important;
 }
 
+body.dark-theme .hljs-keyword,
+body.dark-theme .hljs-selector-tag,
+body.dark-theme .hljs-type,
 [data-theme="dark"] .hljs-keyword,
 [data-theme="dark"] .hljs-selector-tag,
 [data-theme="dark"] .hljs-type {
   color: #ff7b72 !important;
 }
 
+body.dark-theme .hljs-string,
+body.dark-theme .hljs-attr,
 [data-theme="dark"] .hljs-string,
 [data-theme="dark"] .hljs-attr {
   color: #7ee787 !important;
 }
 
+body.dark-theme .hljs-number,
+body.dark-theme .hljs-literal,
+body.dark-theme .hljs-variable,
 [data-theme="dark"] .hljs-number,
 [data-theme="dark"] .hljs-literal,
 [data-theme="dark"] .hljs-variable {
   color: #79c0ff !important;
 }
 
+body.dark-theme .hljs-function,
+body.dark-theme .hljs-title,
 [data-theme="dark"] .hljs-function,
 [data-theme="dark"] .hljs-title {
   color: #d2a8ff !important;
 }
 
 /* Code Block Buttons */
+body.dark-theme .code-btn,
 [data-theme="dark"] .code-btn {
   background: rgba(255, 255, 255, 0.7);
   color: black;
 }
 
+body.dark-theme .code-btn:hover,
 [data-theme="dark"] .code-btn:hover {
   background: rgba(255, 255, 255, 0.9);
 }
@@ -127,10 +152,14 @@
 }
 
 /* Distraction-Free Mode */
+body.dark-theme.distraction-free .main-content,
 [data-theme="dark"] body.distraction-free .main-content {
   background: #0a0c10;
 }
 
+body.dark-theme.distraction-free .preview-content,
+body.dark-theme.distraction-free .monaco-editor-container,
+body.dark-theme.distraction-free #editor,
 [data-theme="dark"] body.distraction-free .preview-content,
 [data-theme="dark"] body.distraction-free .monaco-editor-container,
 [data-theme="dark"] body.distraction-free #editor {

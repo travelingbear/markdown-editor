@@ -7,13 +7,40 @@ class StyleManager {
     this.loadedThemes = new Set();
     this.loadedFeatures = new Set();
     this.currentTheme = 'light';
+    this.preloadedThemes = new Set();
+    this.isTransitioning = false;
+    
+    // Preload popular dark theme for faster switching
+    this.preloadTheme('dark');
   }
 
   /**
-   * Load a theme dynamically
+   * Preload a theme for faster switching
+   * @param {string} themeName - Theme name to preload
+   */
+  async preloadTheme(themeName) {
+    if (themeName !== 'light' && !this.preloadedThemes.has(themeName)) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'style';
+      link.href = `./styles/themes/${themeName}.css`;
+      link.setAttribute('data-preload-theme', themeName);
+      document.head.appendChild(link);
+      this.preloadedThemes.add(themeName);
+    }
+  }
+
+  /**
+   * Load a theme dynamically with smooth transitions
    * @param {string} themeName - Theme name (dark, retro, contrast)
    */
   async loadTheme(themeName) {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    
+    // Add transition class for smooth switching
+    document.body.classList.add('theme-transitioning');
+    
     // Remove previous theme
     document.querySelectorAll('link[data-theme]').forEach(link => link.remove());
     
@@ -22,11 +49,23 @@ class StyleManager {
       link.rel = 'stylesheet';
       link.href = `./styles/themes/${themeName}.css`;
       link.setAttribute('data-theme', themeName);
-      document.head.appendChild(link);
+      
+      // Wait for CSS to load before applying theme class
+      await new Promise((resolve) => {
+        link.onload = resolve;
+        link.onerror = resolve; // Continue even if load fails
+        document.head.appendChild(link);
+      });
     }
     
     this.currentTheme = themeName;
     document.body.className = `${themeName}-theme`;
+    
+    // Remove transition class after a brief delay
+    setTimeout(() => {
+      document.body.classList.remove('theme-transitioning');
+      this.isTransitioning = false;
+    }, 200);
   }
 
   /**
@@ -100,6 +139,20 @@ class StyleManager {
    */
   isFeatureLoaded(featureName) {
     return this.loadedFeatures.has(featureName);
+  }
+
+  /**
+   * Get performance metrics
+   * @returns {object} Performance data
+   */
+  getPerformanceMetrics() {
+    return {
+      loadedThemes: Array.from(this.loadedThemes),
+      preloadedThemes: Array.from(this.preloadedThemes),
+      loadedFeatures: Array.from(this.loadedFeatures),
+      currentTheme: this.currentTheme,
+      totalStylesheets: document.querySelectorAll('link[rel="stylesheet"], link[data-theme], link[data-feature]').length
+    };
   }
 }
 

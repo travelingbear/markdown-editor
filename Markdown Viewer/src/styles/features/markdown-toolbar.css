@@ -138,6 +138,12 @@ body:has(.markdown-toolbar.pinned) .main-content {
   display: block;
 }
 
+/* Ensure toolbar is visible when app is initialized */
+body.app-initialized .main-content.code-mode .markdown-toolbar,
+body.app-initialized .main-content.split-mode .markdown-toolbar {
+  visibility: visible;
+}
+
 /* Hide toolbar in distraction-free mode */
 body.distraction-free .markdown-toolbar {
   display: none !important;

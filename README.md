@@ -77,10 +77,11 @@
 ### Architecture
 - **Frontend**: Component-based architecture with Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js
 - **Backend**: Rust/Tauri for native file operations and system integration
+- **Plugin System**: Extensible architecture with 8 specialized controllers and comprehensive plugin API
 - **Tab System**: Smart tab management with virtualization and performance optimization
 - **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, 50 tab limit with warnings
 - **Bundle Size**: < 50MB across all platforms
-- **Security**: Sandboxed file access with CSP protection
+- **Security**: Sandboxed file access with CSP protection and plugin validation
 
 ## 📄 License
 

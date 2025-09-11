@@ -5,7 +5,7 @@
 ### Major Features
 - **Dynamic CSS Loading Architecture**: Complete CSS refactoring with on-demand theme and feature loading
 - **Modular CSS System**: Themes and features now load dynamically, reducing initial bundle size by 50%
-- **Enhanced Performance**: Faster startup with lean core CSS (~500 lines) and dynamic loading
+- **Enhanced Performance**: Faster startup with lean core CSS and dynamic loading
 - **Tab Limit Enforcement**: Proper 50 tab limit with warnings at 45 tabs and blocking at 50 tabs
 - **Comprehensive Documentation**: Added detailed CSS architecture and development guides
 
@@ -31,6 +31,24 @@
 - **CSS Architecture Guide**: Complete guide to dynamic CSS system and development
 - **Examples & Tutorials**: Practical examples for theme and feature development
 - **Extension Guidelines**: Comprehensive plugin and extension development guide
+- **Technical Architecture Documentation**: Complete refactoring documentation with plugin development guide
+- **REFACTORING_PLAN.md**: Detailed 5-phase refactoring plan with validation checkpoints
+
+### Architecture Refactoring
+- **Plugin System Implementation**: Complete plugin architecture with PluginManager, PluginLoader, PluginValidator, and PluginConfig
+- **Controller Extraction**: Refactored monolithic MarkdownEditor into 8 specialized controllers:
+  - FileController (187 lines) - File operations and drag & drop
+  - UIController - Theme management and modal dialogs
+  - KeyboardController - All keyboard shortcuts and navigation
+  - SettingsController - Settings persistence and performance monitoring
+  - TabUIController - Tab UI management and context menus
+  - ModeController (198 lines) - View mode switching and layout
+  - MarkdownActionController (495 lines) - Markdown formatting actions
+  - ExportController (154 lines) - HTML/PDF export functionality
+- **Hook System**: Event-driven architecture with 20+ extension points across controllers
+- **Extension API**: Comprehensive plugin API with controller access and lifecycle management
+- **Dependency Injection**: Controller registry with runtime registration and replacement
+- **Component Architecture**: BaseComponent class with standardized lifecycle and performance monitoring
 
 ### Technical Changes
 - Extracted 1000+ lines of CSS to modular files
@@ -38,6 +56,9 @@
 - Added performance optimization with dark theme preloading
 - Updated PerformanceOptimizer with proper 50 tab limit enforcement
 - Enhanced FileController with proper tab limit warnings and blocking
+- Reduced MarkdownEditor.js from ~3000 to ~1000 lines through controller extraction
+- Added comprehensive plugin validation with security pattern detection
+- Implemented plugin configuration system with localStorage persistence
 
 ## Version 3.1.3 (2025-01-07)
 

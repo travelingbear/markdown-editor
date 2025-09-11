@@ -1,0 +1,367 @@
+/* Welcome Page Styles */
+.welcome-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+.welcome-content {
+  max-width: 600px;
+  text-align: center;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-content h1 {
+  font-size: 3em;
+  margin-bottom: 12px;
+  color: #5e60e7;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.favicon-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.welcome-subtitle {
+  font-size: 1.2em;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  line-height: 1.4;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 35px;
+  flex-wrap: wrap;
+}
+
+.welcome-btn {
+  padding: 12px 24px;
+  border: 2px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.welcome-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: #7e80e3;
+}
+
+.welcome-btn.primary {
+  background-color: #5e60e7;
+  color: white;
+  border-color: #7e80e3;
+}
+
+.welcome-btn.primary:hover {
+  background-color: #4a4cc7;
+  border-color: #6a6cc3;
+}
+
+.welcome-features {
+  text-align: left;
+  margin-bottom: 40px;
+}
+
+.welcome-features h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 1.4em;
+}
+
+.welcome-features ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.welcome-features li {
+  padding: 8px 0;
+  font-size: 1.1em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.welcome-shortcuts {
+  text-align: left;
+}
+
+.welcome-shortcuts h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-size: 1.3em;
+}
+
+/* File History Styles */
+.file-history {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.file-history h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-size: 1.3em;
+}
+
+.file-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.file-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.file-history-item:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #7e80e3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+.file-path {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-date {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+.welcome-btn.clear-btn {
+  font-size: 12px;
+  padding: 8px 16px;
+  opacity: 0.8;
+}
+
+.welcome-btn.clear-btn:hover {
+  opacity: 1;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  font-size: 13px;
+}
+
+.shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background-color: var(--bg-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border-primary);
+}
+
+/* Responsive shortcuts based on file history */
+#file-history-section:not([style*="none"]) ~ .welcome-shortcuts .shortcut-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+  font-size: 12px;
+}
+
+#file-history-section:not([style*="none"]) ~ .welcome-shortcuts .shortcut {
+  padding: 5px 8px;
+}
+
+/* Window size responsive adjustments */
+@media (max-width: 900px) {
+  .shortcut-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 6px;
+    font-size: 12px;
+  }
+  
+  .shortcut {
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .shortcut-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    font-size: 11px;
+  }
+  
+  .shortcut {
+    padding: 4px 6px;
+  }
+}
+
+kbd {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Smaller kbd when file history is present */
+#file-history-section:not([style*="none"]) ~ .welcome-shortcuts kbd {
+  font-size: 10px;
+  padding: 1px 3px;
+}
+
+@media (max-width: 600px) {
+  kbd {
+    font-size: 10px;
+    padding: 1px 3px;
+  }
+}
+
+/* Welcome Action Buttons */
+.welcome-actions-grid {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.welcome-actions-grid h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-size: 1.3em;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.welcome-btn.action-btn {
+  font-size: 13px;
+  padding: 8px 16px;
+  min-width: 120px;
+  text-align: center;
+  justify-content: center;
+}
+
+/* Dark theme adjustments for welcome page */
+[data-theme="dark"] .welcome-page {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+[data-theme="dark"] .welcome-btn:hover {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .file-history-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive design for welcome page */
+@media (max-width: 768px) {
+  .welcome-content {
+    padding: 20px;
+  }
+  
+  .welcome-content h1 {
+    font-size: 2.2em;
+  }
+  
+  .welcome-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .welcome-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .welcome-btn.action-btn {
+    width: 100%;
+    max-width: 200px;
+  }
+}

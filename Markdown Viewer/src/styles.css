@@ -1348,6 +1348,36 @@ kbd {
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
 }
 
+/* Welcome Action Buttons */
+.welcome-actions-grid {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.welcome-actions-grid h3 {
+  text-align: center;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-size: 1.3em;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.welcome-btn.action-btn {
+  font-size: 13px;
+  padding: 8px 16px;
+  min-width: 120px;
+  text-align: center;
+  justify-content: center;
+}
+
+
+
 
 
 
@@ -2036,6 +2066,16 @@ body.retro-theme .no-plugins {
   .welcome-btn {
     width: 100%;
     max-width: 300px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .welcome-btn.action-btn {
+    width: 100%;
+    max-width: 200px;
   }
   
   .shortcut-grid {
@@ -3816,33 +3856,7 @@ body.retro-theme .sync-btn:active {
   border: 2px inset #c0c0c0;
 }
 
-/* Welcome Action Buttons */
-.welcome-actions-grid {
-  text-align: center;
-  margin-bottom: 30px;
-}
 
-.welcome-actions-grid h3 {
-  text-align: center;
-  margin-bottom: 16px;
-  color: var(--text-primary);
-  font-size: 1.3em;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.welcome-btn.action-btn {
-  font-size: 13px;
-  padding: 8px 16px;
-  min-width: 120px;
-  text-align: center;
-  justify-content: center;
-}
 
 /* Help Modal */
 .help-modal {

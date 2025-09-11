@@ -60,7 +60,7 @@ class MarkdownActionController extends BaseComponent {
     }
     
     // Handle multi-line selections
-    if (isMultiLine && ['bold', 'italic', 'strikethrough', 'underline', 'h1', 'h2', 'h3', 'ul', 'ol', 'task', 'quote', 'code'].includes(action)) {
+    if (isMultiLine && ['bold', 'italic', 'strikethrough', 'underline', 'paragraph', 'h1', 'h2', 'h3', 'ul', 'ol', 'task', 'quote', 'code'].includes(action)) {
       this.handleMultiLineFormatting(editor, selection, action);
       return;
     }
@@ -86,6 +86,26 @@ class MarkdownActionController extends BaseComponent {
       case 'underline':
         replacement = selectedText ? `<u>${selectedText}</u>` : '<u>text</u>';
         cursorOffset = selectedText ? 0 : -7;
+        break;
+        
+      // Paragraph - removes any heading
+      case 'paragraph':
+        if (isMultiLine) {
+          this.handleMultiLineFormatting(editor, selection, action);
+          return;
+        }
+        
+        if (selectedText) {
+          // Check if selected text has heading and remove it
+          const headingMatch = selectedText.match(/^(#{1,6})\s*(.*)$/);
+          if (headingMatch) {
+            replacement = headingMatch[2]; // Just the content without heading
+          } else {
+            replacement = selectedText; // Already a paragraph
+          }
+        } else {
+          return; // No action needed for empty selection
+        }
         break;
         
       // Headings - with cycling support
@@ -267,6 +287,16 @@ class MarkdownActionController extends BaseComponent {
           break;
         case 'underline':
           newContent = `<u>${lineContent}</u>`;
+          break;
+        case 'paragraph':
+          const paragraphMatch = lineContent.match(/^(#{1,6})\s*(.*)$/);
+          if (paragraphMatch) {
+            // Remove heading
+            newContent = paragraphMatch[2];
+          } else {
+            // Already a paragraph
+            newContent = lineContent;
+          }
           break;
         case 'h1':
         case 'h2':
@@ -562,7 +592,7 @@ class MarkdownActionController extends BaseComponent {
   getAvailableActions() {
     return [
       'bold', 'italic', 'strikethrough', 'underline',
-      'h1', 'h2', 'h3', 'link', 'image', 'ul', 'ol', 'task',
+      'paragraph', 'h1', 'h2', 'h3', 'link', 'image', 'ul', 'ol', 'task',
       'table', 'code', 'codeblock', 'quote',
       'align-left', 'align-center', 'align-right', 'align-justify'
     ];

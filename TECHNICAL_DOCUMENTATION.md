@@ -595,11 +595,23 @@ markdown-editor/
 
 ### Development Workflow
 
-**No Build System Required**
-- All files loaded directly via script tags in index.html
-- Plugin loading is manual (known plugins list in PluginLoader.js)
+**Dynamic Plugin Loading System**
+- Plugins load automatically via `knownPlugins` array
+- No HTML script tags required
 - No compilation or bundling needed
 - Development changes visible on browser refresh
+
+**SIMPLIFIED Plugin Development Steps:**
+1. Create plugin file in `src/plugins/`
+2. Add plugin filename to `knownPlugins` array in `PluginLoader.js`
+3. Add class name mapping in `getPluginClassFromGlobal` method
+4. Extensions MUST have `metadata` property with `name` field
+
+**Dynamic Loading Architecture:**
+- PluginLoader scans `knownPlugins` array
+- Scripts loaded dynamically via `document.createElement('script')`
+- Plugin classes discovered from global scope
+- Automatic validation and registration
 
 ---
 
@@ -663,16 +675,20 @@ class MyAwesomePlugin {
   }
 
   registerExtensions() {
-    // Add custom markdown action
-    this.pluginAPI.registerExtension('markdownAction', {
-      name: 'myCustomAction',
+    // CORRECT: Extension must have metadata property
+    const extension = {
       activate: () => {
         console.log('[MyAwesomePlugin] Extension activated');
       },
       customFormat: (text) => {
         return `**${text}**`; // Bold formatting
+      },
+      metadata: {
+        name: 'myCustomAction',
+        description: 'Custom formatting action'
       }
-    });
+    };
+    this.pluginAPI.registerExtension('markdownAction', extension);
   }
 
   handleButtonClick() {
@@ -704,6 +720,9 @@ class MyAwesomePlugin {
       this.toolbarButton = null;
     }
     
+    // IMPORTANT: Unregister extensions
+    this.pluginAPI.unregisterExtension('markdownAction', 'myCustomAction');
+    
     this.isActive = false;
     console.log('[MyAwesomePlugin] Destroyed successfully');
   }
@@ -721,6 +740,28 @@ MyAwesomePlugin.metadata = {
 window.MyAwesomePlugin = MyAwesomePlugin;
 ```
 
+**Step 2: Register Plugin in System**
+
+1. **Add to PluginLoader**: Edit `src/core/PluginLoader.js`
+```javascript
+// Add to knownPlugins array
+const knownPlugins = [
+  'SamplePlugin.js',
+  'MyAwesomePlugin.js'  // Add your plugin here
+];
+```
+
+2. **Add Class Name Mapping**: Edit `src/core/PluginLoader.js`
+```javascript
+// Add to classNameMap in getPluginClassFromGlobal method
+const classNameMap = {
+  'sample-plugin': 'SamplePlugin',
+  'my-awesome-plugin': 'MyAwesomePlugin'  // Add your mapping
+};
+```
+
+**NO HTML CHANGES REQUIRED** - Plugins load dynamically!
+
 ### Plugin Security Guidelines
 
 **Allowed Patterns**
@@ -737,6 +778,14 @@ window.MyAwesomePlugin = MyAwesomePlugin;
 - Dynamic `innerHTML` with variables
 - `localStorage.clear()` or `sessionStorage.clear()`
 - Script tag injection
+
+**COMMON PLUGIN DEVELOPMENT ERRORS TO AVOID:**
+- ❌ Extension without `metadata.name` property
+- ❌ Not adding plugin to `knownPlugins` array
+- ❌ Missing class name mapping in `getPluginClassFromGlobal`
+- ❌ Forgetting `unregisterExtension` in `destroy()`
+- ❌ Wrong extension object structure
+- ❌ Plugin class not available in global scope (`window.PluginName`)
 
 ---
 

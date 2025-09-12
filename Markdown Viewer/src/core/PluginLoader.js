@@ -5,8 +5,7 @@ class PluginLoader {
   constructor(pluginManager) {
     this.pluginManager = pluginManager;
     this.pluginDirectories = [
-      './src/plugins',
-      './plugins'
+      '/plugins'
     ];
     this.loadedPlugins = new Set();
     this.validator = new PluginValidator();
@@ -67,7 +66,17 @@ class PluginLoader {
         return null; // Silently skip already loaded plugins
       }
       
-      // Validate plugin before loading
+      // Dynamically load the script
+      await this.loadScript(pluginPath);
+      
+      // Get plugin class from global scope
+      const pluginClass = this.getPluginClassFromGlobal(pluginId);
+      if (!pluginClass) {
+        console.error(`[PluginLoader] Plugin class not found for ${pluginId}`);
+        return null;
+      }
+      
+      // Validate plugin after loading
       const validationResult = await this.validatePlugin(pluginPath);
 
       if (!validationResult.isValid) {
@@ -78,45 +87,48 @@ class PluginLoader {
         return null;
       }
       
-      // For now, we'll handle known plugins directly
-      // In a real implementation, this would dynamically import the plugin
-      if (pluginId === 'sample-plugin' && window.SamplePlugin) {
-        const pluginClass = window.SamplePlugin;
-        const metadata = pluginClass.metadata || {};
-        
-        this.loadedPlugins.add(pluginId);
-        
-        return {
-          id: pluginId,
-          path: pluginPath,
-          class: pluginClass,
-          metadata: metadata,
-          isLoaded: true,
-          validationResult: validationResult
-        };
-      }
+      const metadata = pluginClass.metadata || {};
+      this.loadedPlugins.add(pluginId);
       
-      if (pluginId === 'horizontal-split-plugin' && window.HorizontalSplitPlugin) {
-        const pluginClass = window.HorizontalSplitPlugin;
-        const metadata = pluginClass.metadata || {};
-        
-        this.loadedPlugins.add(pluginId);
-        
-        return {
-          id: pluginId,
-          path: pluginPath,
-          class: pluginClass,
-          metadata: metadata,
-          isLoaded: true,
-          validationResult: validationResult
-        };
-      }
-      
-      return null;
+      return {
+        id: pluginId,
+        path: pluginPath,
+        class: pluginClass,
+        metadata: metadata,
+        isLoaded: true,
+        validationResult: validationResult
+      };
     } catch (error) {
       console.error(`[PluginLoader] Failed to load plugin from ${pluginPath}:`, error);
       return null;
     }
+  }
+
+  async loadScript(scriptPath) {
+    // Check if script already loaded
+    const existingScript = document.querySelector(`script[src="${scriptPath}"]`);
+    if (existingScript) {
+      return Promise.resolve();
+    }
+    
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = scriptPath;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load script: ${scriptPath}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  getPluginClassFromGlobal(pluginId) {
+    // Map known plugin IDs to their actual class names
+    const classNameMap = {
+      'sample-plugin': 'SamplePlugin',
+      'horizontal-split-plugin': 'HorizontalSplitPlugin'
+    };
+    
+    const className = classNameMap[pluginId];
+    return className ? window[className] : null;
   }
 
   extractPluginId(pluginPath) {
@@ -133,25 +145,16 @@ class PluginLoader {
   async validatePlugin(pluginPath) {
     try {
       const pluginId = this.extractPluginId(pluginPath);
+      const pluginClass = this.getPluginClassFromGlobal(pluginId);
       
-      // For known plugins, validate using enhanced validator
-      if (pluginId === 'sample-plugin' && window.SamplePlugin) {
-        const pluginClass = window.SamplePlugin;
+      if (pluginClass) {
         const metadata = pluginClass.metadata || {};
-        
-        return await this.validator.validatePlugin(pluginClass, metadata, pluginId);
-      }
-      
-      if (pluginId === 'horizontal-split-plugin' && window.HorizontalSplitPlugin) {
-        const pluginClass = window.HorizontalSplitPlugin;
-        const metadata = pluginClass.metadata || {};
-        
         return await this.validator.validatePlugin(pluginClass, metadata, pluginId);
       }
       
       return {
         isValid: false,
-        errors: ['Unknown plugin or plugin not loaded'],
+        errors: ['Plugin class not found in global scope'],
         warnings: []
       };
     } catch (error) {

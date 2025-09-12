@@ -19,11 +19,15 @@ class HorizontalSplitPlugin {
 
   addSettingsIntegration() {
     // Register settings extension
-    this.pluginAPI.registerExtension('settings', {
-      name: 'defaultSplitOrientation',
+    const extension = {
       get: () => localStorage.getItem('markdownViewer_defaultSplitOrientation') || 'vertical',
-      set: (value) => localStorage.setItem('markdownViewer_defaultSplitOrientation', value)
-    });
+      set: (value) => localStorage.setItem('markdownViewer_defaultSplitOrientation', value),
+      metadata: {
+        name: 'defaultSplitOrientation',
+        description: 'Default split orientation setting'
+      }
+    };
+    this.pluginAPI.registerExtension('settings', extension);
   }
 
   async destroy() {

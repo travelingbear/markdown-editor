@@ -32,7 +32,8 @@ class PluginManager {
       registerExtension: (controller, extension) => {
         const controllerInstance = this.getControllerByName(controller);
         if (controllerInstance && controllerInstance.registerExtension) {
-          return controllerInstance.registerExtension(extension);
+          const extensionName = extension.metadata?.name || 'unnamed-extension';
+          return controllerInstance.registerExtension(extensionName, extension);
         }
         return false;
       },
@@ -43,6 +44,15 @@ class PluginManager {
         if (controllerInstance && controllerInstance.addHook) {
           controllerInstance.addHook(hookName, callback, priority);
           return true;
+        }
+        return false;
+      },
+      
+      // Extension unregistration
+      unregisterExtension: (controller, extensionName) => {
+        const controllerInstance = this.getControllerByName(controller);
+        if (controllerInstance && controllerInstance.unregisterExtension) {
+          return controllerInstance.unregisterExtension(extensionName);
         }
         return false;
       }

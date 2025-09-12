@@ -850,6 +850,32 @@ class MarkdownEditor extends BaseComponent {
             this.toggleMarkdownToolbar();
           }
           break;
+        case '=':
+        case '+':
+          e.preventDefault();
+          if (this.modeController.getCurrentMode() === 'code') {
+            this.toolbarComponent.changeFontSize(2);
+          } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
+            this.toolbarComponent.changeZoom(0.1);
+          }
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          if (this.modeController.getCurrentMode() === 'code') {
+            this.toolbarComponent.changeFontSize(-2);
+          } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
+            this.toolbarComponent.changeZoom(-0.1);
+          }
+          break;
+        case '0':
+          e.preventDefault();
+          if (this.modeController.getCurrentMode() === 'code') {
+            this.toolbarComponent.resetFontSize();
+          } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
+            this.toolbarComponent.resetZoom();
+          }
+          break;
 
 
       }

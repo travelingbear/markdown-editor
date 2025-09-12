@@ -36,7 +36,8 @@ class PluginLoader {
       
       // Check for known plugins in the plugins directory
       const knownPlugins = [
-        'SamplePlugin.js'
+        'SamplePlugin.js',
+        'HorizontalSplitPlugin.js'
       ];
       
       for (const pluginFile of knownPlugins) {
@@ -95,6 +96,22 @@ class PluginLoader {
         };
       }
       
+      if (pluginId === 'horizontal-split-plugin' && window.HorizontalSplitPlugin) {
+        const pluginClass = window.HorizontalSplitPlugin;
+        const metadata = pluginClass.metadata || {};
+        
+        this.loadedPlugins.add(pluginId);
+        
+        return {
+          id: pluginId,
+          path: pluginPath,
+          class: pluginClass,
+          metadata: metadata,
+          isLoaded: true,
+          validationResult: validationResult
+        };
+      }
+      
       return null;
     } catch (error) {
       console.error(`[PluginLoader] Failed to load plugin from ${pluginPath}:`, error);
@@ -120,6 +137,13 @@ class PluginLoader {
       // For known plugins, validate using enhanced validator
       if (pluginId === 'sample-plugin' && window.SamplePlugin) {
         const pluginClass = window.SamplePlugin;
+        const metadata = pluginClass.metadata || {};
+        
+        return await this.validator.validatePlugin(pluginClass, metadata, pluginId);
+      }
+      
+      if (pluginId === 'horizontal-split-plugin' && window.HorizontalSplitPlugin) {
+        const pluginClass = window.HorizontalSplitPlugin;
         const metadata = pluginClass.metadata || {};
         
         return await this.validator.validatePlugin(pluginClass, metadata, pluginId);

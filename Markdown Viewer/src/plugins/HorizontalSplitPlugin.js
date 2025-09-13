@@ -153,12 +153,12 @@ class HorizontalSplitPlugin {
     document.getElementById('hsplit-toolbar-show-btn')?.addEventListener('click', () => {
       localStorage.setItem('markdownViewer_horizontalSplitToolbar', 'show');
       this.updateSettingsUI();
-      this.applyToolbarVisibility();
+      setTimeout(() => this.applyToolbarVisibility(), 50);
     });
     document.getElementById('hsplit-toolbar-hide-btn')?.addEventListener('click', () => {
       localStorage.setItem('markdownViewer_horizontalSplitToolbar', 'hide');
       this.updateSettingsUI();
-      this.applyToolbarVisibility();
+      setTimeout(() => this.applyToolbarVisibility(), 50);
     });
 
     // Pane order buttons
@@ -349,6 +349,23 @@ class HorizontalSplitPlugin {
       }
     });
     
+    // Also listen for direct settings button clicks
+    setTimeout(() => {
+      const toolbarShowBtn = document.getElementById('hsplit-toolbar-show-btn');
+      const toolbarHideBtn = document.getElementById('hsplit-toolbar-hide-btn');
+      
+      if (toolbarShowBtn) {
+        toolbarShowBtn.addEventListener('click', () => {
+          setTimeout(() => this.applyToolbarVisibility(), 100);
+        });
+      }
+      if (toolbarHideBtn) {
+        toolbarHideBtn.addEventListener('click', () => {
+          setTimeout(() => this.applyToolbarVisibility(), 100);
+        });
+      }
+    }, 200);
+    
     // Also listen for non-split mode button clicks directly
     const codeBtn = document.getElementById('code-btn');
     const previewBtn = document.getElementById('preview-btn');
@@ -529,18 +546,51 @@ class HorizontalSplitPlugin {
   applyToolbarVisibility() {
     const toolbarSetting = localStorage.getItem('markdownViewer_horizontalSplitToolbar') || 'show';
     const mainContent = document.querySelector('.main-content');
+    const toolbar = document.querySelector('.markdown-toolbar');
+    const editorPane = document.querySelector('.editor-pane');
     
     if (mainContent && mainContent.classList.contains('split-mode') && mainContent.classList.contains('split-horizontal')) {
-      if (toolbarSetting === 'hide') {
-        document.body.classList.add('horizontal-split-hide-toolbar');
-      } else {
-        document.body.classList.remove('horizontal-split-hide-toolbar');
+      // Move toolbar inside editor pane if not already there
+      if (toolbar && editorPane && !editorPane.contains(toolbar)) {
+        // Store original parent for restoration later
+        this.originalToolbarParent = toolbar.parentNode;
+        this.originalToolbarNextSibling = toolbar.nextSibling;
+        
+        // Move toolbar to be the first child of editor pane
+        editorPane.insertBefore(toolbar, editorPane.firstChild);
+      }
+      
+      if (toolbar) {
+        if (toolbarSetting === 'hide') {
+          toolbar.style.setProperty('display', 'none', 'important');
+          toolbar.classList.remove('visible');
+        } else {
+          toolbar.classList.add('visible');
+          toolbar.style.setProperty('height', 'auto', 'important');
+          toolbar.style.setProperty('opacity', '1', 'important');
+          toolbar.style.setProperty('display', 'block', 'important');
+          toolbar.style.setProperty('visibility', 'visible', 'important');
+        }
       }
     }
   }
   
   clearToolbarVisibility() {
     document.body.classList.remove('horizontal-split-hide-toolbar');
+    
+    // Restore toolbar to original position
+    const toolbar = document.querySelector('.markdown-toolbar');
+    if (toolbar && this.originalToolbarParent) {
+      if (this.originalToolbarNextSibling) {
+        this.originalToolbarParent.insertBefore(toolbar, this.originalToolbarNextSibling);
+      } else {
+        this.originalToolbarParent.appendChild(toolbar);
+      }
+      
+      // Clear stored references
+      this.originalToolbarParent = null;
+      this.originalToolbarNextSibling = null;
+    }
   }
   
   applyPaneOrder() {
@@ -690,19 +740,33 @@ class HorizontalSplitPlugin {
       /* Code Top Variant */
       .main-content.split-mode.split-horizontal.code-top .preview-pane {
         order: 3;
+        height: 50%;
       }
       .main-content.split-mode.split-horizontal.code-top .editor-pane {
         order: 1;
+        height: 50%;
       }
       
-      /* Toolbar Visibility Control */
-      body.horizontal-split-hide-toolbar .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar {
-        display: none !important;
-      }
-      
-      /* Show markdown toolbar in editor pane when setting is 'show' (default behavior) */
+      /* Toolbar positioning inside editor pane */
       .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar {
-        display: flex !important;
+        position: relative !important;
+        z-index: 999 !important;
+      }
+      
+      /* Force markdown toolbar visibility in horizontal split mode with maximum specificity */
+      body.app-initialized .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar,
+      .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar,
+      .split-horizontal .editor-pane .markdown-toolbar {
+        display: block !important;
+        visibility: visible !important;
+        height: auto !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+        position: relative !important;
+        z-index: 999 !important;
+        background: var(--bg-tertiary) !important;
+        border-bottom: 1px solid var(--border-primary) !important;
+        padding: 0 !important;
       }
       
       /* Distraction-free mode horizontal split support */
@@ -803,6 +867,11 @@ class HorizontalSplitPlugin {
     this.pluginAPI.unregisterExtension('settings', 'defaultSplitOrientation');
     this.pluginAPI.unregisterExtension('settings', 'horizontalSplitToolbar');
     this.pluginAPI.unregisterExtension('settings', 'horizontalSplitPaneOrder');
+    
+    // Clear plugin settings from localStorage
+    localStorage.removeItem('markdownViewer_defaultSplitOrientation');
+    localStorage.removeItem('markdownViewer_horizontalSplitToolbar');
+    localStorage.removeItem('markdownViewer_horizontalSplitPaneOrder');
     
     this.isActive = false;
     console.log('[HorizontalSplitPlugin] Destroyed successfully');

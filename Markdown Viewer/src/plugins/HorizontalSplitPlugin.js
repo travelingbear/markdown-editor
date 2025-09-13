@@ -8,6 +8,7 @@ class HorizontalSplitPlugin {
     this.originalSplitButton = null;
     this.dropdownContainer = null;
     this.styleElement = null;
+    this.savedPaneSizes = null;
   }
 
   async init() {
@@ -15,6 +16,9 @@ class HorizontalSplitPlugin {
     
     // Add settings integration
     this.addSettingsIntegration();
+    
+    // Inject settings UI
+    this.injectSettingsUI();
     
     // Hook into Split button behavior
     this.hookSplitButton();
@@ -28,13 +32,34 @@ class HorizontalSplitPlugin {
     // Listen for mode changes
     this.addModeListener();
     
+    // Apply initial settings if in split mode
+    setTimeout(() => {
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent && mainContent.classList.contains('split-mode')) {
+        this.applySplitOrientation();
+        this.applyToolbarVisibility();
+        this.applyPaneOrder();
+      }
+    }, 100);
+    
     this.isActive = true;
     console.log('[HorizontalSplitPlugin] Initialized successfully');
   }
 
   addSettingsIntegration() {
-    // Register settings extension
-    const extension = {
+    // Initialize default values if not set
+    if (!localStorage.getItem('markdownViewer_defaultSplitOrientation')) {
+      localStorage.setItem('markdownViewer_defaultSplitOrientation', 'vertical');
+    }
+    if (!localStorage.getItem('markdownViewer_horizontalSplitToolbar')) {
+      localStorage.setItem('markdownViewer_horizontalSplitToolbar', 'show');
+    }
+    if (!localStorage.getItem('markdownViewer_horizontalSplitPaneOrder')) {
+      localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', 'preview-top');
+    }
+    
+    // Register split orientation setting
+    const orientationExtension = {
       get: () => localStorage.getItem('markdownViewer_defaultSplitOrientation') || 'vertical',
       set: (value) => localStorage.setItem('markdownViewer_defaultSplitOrientation', value),
       metadata: {
@@ -42,7 +67,128 @@ class HorizontalSplitPlugin {
         description: 'Default split orientation setting'
       }
     };
-    this.pluginAPI.registerExtension('settings', extension);
+    this.pluginAPI.registerExtension('settings', orientationExtension);
+
+    // Register toolbar visibility setting
+    const toolbarExtension = {
+      get: () => localStorage.getItem('markdownViewer_horizontalSplitToolbar') || 'show',
+      set: (value) => localStorage.setItem('markdownViewer_horizontalSplitToolbar', value),
+      metadata: {
+        name: 'horizontalSplitToolbar',
+        description: 'Markdown toolbar visibility in horizontal split'
+      }
+    };
+    this.pluginAPI.registerExtension('settings', toolbarExtension);
+
+    // Register pane order setting
+    const paneOrderExtension = {
+      get: () => localStorage.getItem('markdownViewer_horizontalSplitPaneOrder') || 'preview-top',
+      set: (value) => localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', value),
+      metadata: {
+        name: 'horizontalSplitPaneOrder',
+        description: 'Pane order in horizontal split mode'
+      }
+    };
+    this.pluginAPI.registerExtension('settings', paneOrderExtension);
+  }
+
+  injectSettingsUI() {
+    const settingsContent = document.querySelector('.settings-content');
+    if (!settingsContent) {
+      console.warn('[HorizontalSplitPlugin] Settings content not found');
+      return;
+    }
+
+    // Create horizontal split settings section
+    this.settingsSection = document.createElement('div');
+    this.settingsSection.className = 'settings-section';
+    this.settingsSection.innerHTML = `
+      <h3>Horizontal Split</h3>
+      <div class="setting-item">
+        <label>Default Split Orientation</label>
+        <div class="setting-control">
+          <button id="hsplit-vertical-btn" class="setting-btn">Vertical</button>
+          <button id="hsplit-horizontal-btn" class="setting-btn">Horizontal</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Markdown Toolbar</label>
+        <div class="setting-control">
+          <button id="hsplit-toolbar-show-btn" class="setting-btn">Show</button>
+          <button id="hsplit-toolbar-hide-btn" class="setting-btn">Hide</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Pane Order</label>
+        <div class="setting-control">
+          <button id="hsplit-preview-top-btn" class="setting-btn">Preview Top</button>
+          <button id="hsplit-code-top-btn" class="setting-btn">Code Top</button>
+        </div>
+      </div>
+    `;
+
+    // Insert before plugins section
+    const pluginsSection = settingsContent.querySelector('.settings-section:last-child');
+    settingsContent.insertBefore(this.settingsSection, pluginsSection);
+
+    // Add event listeners and update UI
+    this.addSettingsListeners();
+    this.updateSettingsUI();
+  }
+
+  addSettingsListeners() {
+    // Orientation buttons
+    document.getElementById('hsplit-vertical-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_defaultSplitOrientation', 'vertical');
+      this.updateSettingsUI();
+      this.updateDropdownOptions();
+    });
+    document.getElementById('hsplit-horizontal-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_defaultSplitOrientation', 'horizontal');
+      this.updateSettingsUI();
+      this.updateDropdownOptions();
+    });
+
+    // Toolbar buttons
+    document.getElementById('hsplit-toolbar-show-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_horizontalSplitToolbar', 'show');
+      this.updateSettingsUI();
+      this.applyToolbarVisibility();
+    });
+    document.getElementById('hsplit-toolbar-hide-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_horizontalSplitToolbar', 'hide');
+      this.updateSettingsUI();
+      this.applyToolbarVisibility();
+    });
+
+    // Pane order buttons
+    document.getElementById('hsplit-preview-top-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', 'preview-top');
+      this.updateSettingsUI();
+      this.applyPaneOrder();
+    });
+    document.getElementById('hsplit-code-top-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', 'code-top');
+      this.updateSettingsUI();
+      this.applyPaneOrder();
+    });
+  }
+
+  updateSettingsUI() {
+    // Update orientation buttons
+    const orientation = localStorage.getItem('markdownViewer_defaultSplitOrientation') || 'vertical';
+    document.getElementById('hsplit-vertical-btn')?.classList.toggle('active', orientation === 'vertical');
+    document.getElementById('hsplit-horizontal-btn')?.classList.toggle('active', orientation === 'horizontal');
+
+    // Update toolbar buttons
+    const toolbar = localStorage.getItem('markdownViewer_horizontalSplitToolbar') || 'show';
+    document.getElementById('hsplit-toolbar-show-btn')?.classList.toggle('active', toolbar === 'show');
+    document.getElementById('hsplit-toolbar-hide-btn')?.classList.toggle('active', toolbar === 'hide');
+
+    // Update pane order buttons
+    const paneOrder = localStorage.getItem('markdownViewer_horizontalSplitPaneOrder') || 'preview-top';
+    document.getElementById('hsplit-preview-top-btn')?.classList.toggle('active', paneOrder === 'preview-top');
+    document.getElementById('hsplit-code-top-btn')?.classList.toggle('active', paneOrder === 'code-top');
   }
 
   hookSplitButton() {
@@ -63,9 +209,14 @@ class HorizontalSplitPlugin {
   }
 
   handleSplitClick() {
-    // Split button click is handled by original handler
-    // We just need to apply orientation after split mode is active
-    setTimeout(() => this.applySplitOrientation(), 100);
+    // Call original handler first, then apply all settings
+    if (this.originalSplitHandler) {
+      this.originalSplitHandler();
+    }
+    setTimeout(() => {
+      this.applySplitOrientation();
+      this.applyToolbarVisibility();
+    }, 100);
   }
 
   createDropdownUI() {
@@ -93,6 +244,9 @@ class HorizontalSplitPlugin {
     
     // Add event listeners
     this.addDropdownListeners();
+    
+    // Update dropdown to show only alternative option
+    this.updateDropdownOptions();
   }
 
   addDropdownListeners() {
@@ -135,7 +289,32 @@ class HorizontalSplitPlugin {
     const splitButton = document.getElementById('split-btn');
     if (splitButton) {
       splitButton.click();
-      setTimeout(() => this.applySplitOrientation(), 100);
+      setTimeout(() => {
+        this.applySplitOrientation();
+        this.applyToolbarVisibility();
+        this.updateDropdownOptions();
+      }, 100);
+    }
+  }
+  
+  updateDropdownOptions() {
+    const dropdownMenu = document.getElementById('split-orientation-menu');
+    if (!dropdownMenu) return;
+    
+    const currentOrientation = localStorage.getItem('markdownViewer_defaultSplitOrientation') || 'vertical';
+    const verticalItem = dropdownMenu.querySelector('[data-orientation="vertical"]');
+    const horizontalItem = dropdownMenu.querySelector('[data-orientation="horizontal"]');
+    
+    if (verticalItem && horizontalItem) {
+      if (currentOrientation === 'vertical') {
+        // Show only horizontal option
+        verticalItem.style.display = 'none';
+        horizontalItem.style.display = 'block';
+      } else {
+        // Show only vertical option
+        verticalItem.style.display = 'block';
+        horizontalItem.style.display = 'none';
+      }
     }
   }
 
@@ -144,8 +323,173 @@ class HorizontalSplitPlugin {
     this.pluginAPI.addHook('mode', 'mode-changed', (data) => {
       if (data && data.mode === 'split') {
         this.applySplitOrientation();
+        this.applyToolbarVisibility();
+        this.applyPaneOrder();
+        this.updateDropdownOptions();
+      } else {
+        // Save horizontal state before clearing
+        const mainContent = document.querySelector('.main-content');
+        this.wasHorizontal = mainContent?.classList.contains('split-horizontal');
+        this.clearSplitStyles();
+        this.clearToolbarVisibility();
+        this.updateDropdownOptions();
       }
     });
+    
+    // Listen for settings changes
+    this.pluginAPI.addHook('settings', 'settings-changed', (data) => {
+      if (data && data.setting) {
+        if (data.setting === 'horizontalSplitToolbar') {
+          this.applyToolbarVisibility();
+        } else if (data.setting === 'horizontalSplitPaneOrder') {
+          this.applyPaneOrder();
+        } else if (data.setting === 'defaultSplitOrientation') {
+          this.updateDropdownOptions();
+        }
+      }
+    });
+    
+    // Also listen for non-split mode button clicks directly
+    const codeBtn = document.getElementById('code-btn');
+    const previewBtn = document.getElementById('preview-btn');
+    const distractionBtn = document.getElementById('distraction-btn');
+    
+    if (codeBtn) {
+      codeBtn.addEventListener('click', () => {
+        setTimeout(() => {
+          if (!document.body.classList.contains('distraction-free')) {
+            this.clearSplitStyles();
+          }
+        }, 100);
+      });
+    }
+    if (previewBtn) {
+      previewBtn.addEventListener('click', () => {
+        setTimeout(() => {
+          if (!document.body.classList.contains('distraction-free')) {
+            this.clearSplitStyles();
+          }
+        }, 100);
+      });
+    }
+    if (distractionBtn) {
+      distractionBtn.addEventListener('click', () => {
+        setTimeout(() => this.clearSplitStyles(), 100);
+      });
+    }
+    
+    // Listen for centered layout toggle
+    const centeredBtn = document.querySelector('[data-setting="centered-layout"]');
+    if (centeredBtn) {
+      centeredBtn.addEventListener('click', () => {
+        setTimeout(() => {
+          const mainContent = document.querySelector('.main-content');
+          if (mainContent && mainContent.classList.contains('split-mode') && mainContent.classList.contains('split-horizontal')) {
+            // Reapply horizontal split settings for centered layout
+            this.applySplitOrientation();
+            this.applyToolbarVisibility();
+            this.applyPaneOrder();
+          } else {
+            this.clearSplitStyles();
+          }
+        }, 100);
+      });
+    }
+    
+    // Monitor for distraction-free mode changes (including keyboard shortcuts)
+    const observer = new MutationObserver(() => {
+      if (document.body.classList.contains('distraction-free')) {
+        // Only clear inline styles, preserve split orientation
+        this.clearInlineStyles();
+      } else {
+        // Exiting distraction-free mode - restore split orientation if in split mode
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent && mainContent.classList.contains('split-mode')) {
+          setTimeout(() => this.applySplitOrientation(), 100);
+        }
+      }
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    this.distractionObserver = observer;
+    
+    // Intercept keyboard shortcuts
+    this.keydownHandler = (e) => {
+      if (e.ctrlKey) {
+        if (e.key === '1' || e.key === '2') {
+          // Code/Preview mode - only clear styles if NOT in distraction-free mode
+          setTimeout(() => {
+            if (!document.body.classList.contains('distraction-free')) {
+              this.clearSplitStyles();
+            }
+          }, 100);
+        } else if (e.key === '3') {
+          // Split mode - apply all settings after mode change
+          setTimeout(() => {
+            this.applySplitOrientation();
+            this.applyToolbarVisibility();
+            this.applyPaneOrder();
+          }, 100);
+        }
+      }
+    };
+    document.addEventListener('keydown', this.keydownHandler);
+  }
+  
+  clearSplitStyles() {
+    // Only clear styles if NOT in split mode
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent && !mainContent.classList.contains('split-mode')) {
+      // Save current pane sizes if in horizontal mode
+      if (mainContent.classList.contains('split-horizontal')) {
+        this.savePaneSizes();
+      }
+      
+      mainContent.classList.remove('split-horizontal');
+      this.clearInlineStyles();
+      
+
+    }
+  }
+  
+  clearInlineStyles() {
+    // CRITICAL: Clear ALL inline styles that could affect sizing
+    const previewPane = document.querySelector('.preview-pane');
+    const editorPane = document.querySelector('.editor-pane');
+    
+    if (previewPane) {
+      previewPane.style.cssText = '';
+    }
+    if (editorPane) {
+      editorPane.style.cssText = '';
+    }
+    
+
+  }
+  
+  savePaneSizes() {
+    const previewPane = document.querySelector('.preview-pane');
+    const editorPane = document.querySelector('.editor-pane');
+    
+    if (previewPane && editorPane) {
+      this.savedPaneSizes = {
+        previewHeight: previewPane.style.height || '50%',
+        editorHeight: editorPane.style.height || '50%'
+      };
+
+    }
+  }
+  
+  restorePaneSizes() {
+    if (this.savedPaneSizes) {
+      const previewPane = document.querySelector('.preview-pane');
+      const editorPane = document.querySelector('.editor-pane');
+      
+      if (previewPane && editorPane) {
+        previewPane.style.height = this.savedPaneSizes.previewHeight;
+        editorPane.style.height = this.savedPaneSizes.editorHeight;
+
+      }
+    }
   }
 
   applySplitOrientation() {
@@ -153,12 +497,61 @@ class HorizontalSplitPlugin {
     const mainContent = document.querySelector('.main-content');
     
     if (mainContent) {
-      if (orientation === 'horizontal') {
+      // If we were previously in horizontal mode, restore that regardless of default setting
+      const shouldBeHorizontal = this.wasHorizontal || orientation === 'horizontal';
+      
+      if (shouldBeHorizontal) {
         mainContent.classList.add('split-horizontal');
+        // Apply pane order immediately after adding horizontal class
+        this.applyPaneOrder();
         // Enable horizontal splitter resizing
         this.enableHorizontalResize();
+        // Restore saved pane sizes
+        setTimeout(() => this.restorePaneSizes(), 100);
       } else {
-        mainContent.classList.remove('split-horizontal');
+        mainContent.classList.remove('split-horizontal', 'code-top');
+        // Clear height styles when switching to vertical
+        const previewPane = document.querySelector('.preview-pane');
+        const editorPane = document.querySelector('.editor-pane');
+        if (previewPane) {
+          previewPane.style.removeProperty('height');
+        }
+        if (editorPane) {
+          editorPane.style.removeProperty('height');
+        }
+      }
+      
+      // Reset the flag after use
+      this.wasHorizontal = false;
+    }
+  }
+  
+  applyToolbarVisibility() {
+    const toolbarSetting = localStorage.getItem('markdownViewer_horizontalSplitToolbar') || 'show';
+    const mainContent = document.querySelector('.main-content');
+    
+    if (mainContent && mainContent.classList.contains('split-mode') && mainContent.classList.contains('split-horizontal')) {
+      if (toolbarSetting === 'hide') {
+        document.body.classList.add('horizontal-split-hide-toolbar');
+      } else {
+        document.body.classList.remove('horizontal-split-hide-toolbar');
+      }
+    }
+  }
+  
+  clearToolbarVisibility() {
+    document.body.classList.remove('horizontal-split-hide-toolbar');
+  }
+  
+  applyPaneOrder() {
+    const paneOrder = localStorage.getItem('markdownViewer_horizontalSplitPaneOrder') || 'preview-top';
+    const mainContent = document.querySelector('.main-content');
+    
+    if (mainContent && mainContent.classList.contains('split-mode') && mainContent.classList.contains('split-horizontal')) {
+      if (paneOrder === 'code-top') {
+        mainContent.classList.add('code-top');
+      } else {
+        mainContent.classList.remove('code-top');
       }
     }
   }
@@ -185,10 +578,18 @@ class HorizontalSplitPlugin {
       if (percentage > 10 && percentage < 90) {
         const previewPane = document.querySelector('.preview-pane');
         const editorPane = document.querySelector('.editor-pane');
+        const isCodeTop = mainContent.classList.contains('code-top');
         
         if (previewPane && editorPane) {
-          previewPane.style.height = percentage + '%';
-          editorPane.style.height = (100 - percentage) + '%';
+          if (isCodeTop) {
+            // Code pane is on top (order: 1), preview pane is on bottom (order: 3)
+            editorPane.style.height = percentage + '%';
+            previewPane.style.height = (100 - percentage) + '%';
+          } else {
+            // Preview pane is on top (order: 1), code pane is on bottom (order: 3)
+            previewPane.style.height = percentage + '%';
+            editorPane.style.height = (100 - percentage) + '%';
+          }
         }
       }
     });
@@ -257,11 +658,12 @@ class HorizontalSplitPlugin {
         color: #ffffff !important;
       }
       
-      .split-horizontal {
+      /* ONLY apply horizontal split when in split mode */
+      .main-content.split-mode.split-horizontal {
         flex-direction: column;
       }
       
-      .split-horizontal .preview-pane {
+      .main-content.split-mode.split-horizontal .preview-pane {
         width: 100%;
         height: 50%;
         order: 1;
@@ -269,7 +671,7 @@ class HorizontalSplitPlugin {
         border-right: none;
       }
       
-      .split-horizontal .editor-pane {
+      .main-content.split-mode.split-horizontal .editor-pane {
         width: 100%;
         height: 50%;
         order: 3;
@@ -277,12 +679,77 @@ class HorizontalSplitPlugin {
         border-top: none;
       }
       
-      .split-horizontal .splitter {
+      .main-content.split-mode.split-horizontal .splitter {
         width: 100%;
         height: 6px;
         cursor: row-resize;
         order: 2;
         border-bottom: 1px solid var(--border-primary);
+      }
+      
+      /* Code Top Variant */
+      .main-content.split-mode.split-horizontal.code-top .preview-pane {
+        order: 3;
+      }
+      .main-content.split-mode.split-horizontal.code-top .editor-pane {
+        order: 1;
+      }
+      
+      /* Toolbar Visibility Control */
+      body.horizontal-split-hide-toolbar .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar {
+        display: none !important;
+      }
+      
+      /* Show markdown toolbar in editor pane when setting is 'show' (default behavior) */
+      .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar {
+        display: flex !important;
+      }
+      
+      /* Distraction-free mode horizontal split support */
+      body.distraction-free .main-content.split-mode.split-horizontal {
+        flex-direction: column !important;
+        height: 100vh !important;
+        padding: 0 !important;
+      }
+      
+      body.distraction-free .main-content.split-mode.split-horizontal .preview-pane,
+      body.distraction-free .main-content.split-mode.split-horizontal .editor-pane {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      
+      body.distraction-free .main-content.split-mode.split-horizontal .splitter {
+        display: block !important;
+        width: 100% !important;
+        height: 6px !important;
+        cursor: row-resize !important;
+      }
+      
+      /* Code top in distraction-free mode */
+      body.distraction-free .main-content.split-mode.split-horizontal.code-top .preview-pane {
+        order: 3 !important;
+      }
+      body.distraction-free .main-content.split-mode.split-horizontal.code-top .editor-pane {
+        order: 1 !important;
+      }
+      
+      /* Centered layout compatibility */
+      body.centered-layout .main-content.split-mode.split-horizontal {
+        max-width: var(--content-max-width, 1200px) !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+      }
+      
+      body.centered-layout .main-content.split-mode.split-horizontal .preview-pane,
+      body.centered-layout .main-content.split-mode.split-horizontal .editor-pane {
+        width: 100% !important;
+        max-width: none !important;
+      }
+      
+      body.centered-layout .main-content.split-mode.split-horizontal .splitter {
+        width: 100% !important;
+        max-width: none !important;
       }
     `;
     document.head.appendChild(this.styleElement);
@@ -302,19 +769,40 @@ class HorizontalSplitPlugin {
       this.dropdownContainer.remove();
     }
     
-    // Remove horizontal split class
-    const container = document.querySelector('.split-container, .content-container');
-    if (container) {
-      container.classList.remove('split-horizontal');
+    // Remove settings UI
+    if (this.settingsSection) {
+      this.settingsSection.remove();
+      this.settingsSection = null;
     }
+
+    // Remove horizontal split classes
+    const container = document.querySelector('.main-content');
+    if (container) {
+      container.classList.remove('split-horizontal', 'code-top');
+    }
+    
+    // Clear toolbar visibility
+    this.clearToolbarVisibility();
     
     // Remove injected CSS
     if (this.styleElement) {
       this.styleElement.remove();
     }
     
+    // Disconnect distraction-free observer
+    if (this.distractionObserver) {
+      this.distractionObserver.disconnect();
+    }
+    
+    // Remove keyboard event listener
+    if (this.keydownHandler) {
+      document.removeEventListener('keydown', this.keydownHandler);
+    }
+    
     // Remove settings integration
     this.pluginAPI.unregisterExtension('settings', 'defaultSplitOrientation');
+    this.pluginAPI.unregisterExtension('settings', 'horizontalSplitToolbar');
+    this.pluginAPI.unregisterExtension('settings', 'horizontalSplitPaneOrder');
     
     this.isActive = false;
     console.log('[HorizontalSplitPlugin] Destroyed successfully');

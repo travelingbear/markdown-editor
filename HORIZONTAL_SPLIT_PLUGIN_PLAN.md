@@ -107,7 +107,7 @@ Add horizontal split functionality to the Markdown Editor through a plugin that 
   - Markdown Toolbar Visibility: Show/Hide
   - Pane Order: Preview Top/Code Top
 - **Approach**: **SELF-CONTAINED** - Settings section removed when plugin disabled
-- **Status**: ❌ Not Implemented
+- **Status**: ✅ Completed
 
 ### Step 4.2: Settings Controller Extension
 - **Task**: Plugin extends SettingsController with multiple settings
@@ -119,7 +119,7 @@ Add horizontal split functionality to the Markdown Editor through a plugin that 
   - `markdownViewer_horizontalSplitToolbar`: 'show' | 'hide'
   - `markdownViewer_horizontalSplitPaneOrder`: 'preview-top' | 'code-top'
 - **Approach**: **SELF-CONTAINED** - Extensions removed on destroy
-- **Status**: ✅ Completed (partial - only orientation setting)
+- **Status**: ✅ Completed
 
 ### Step 4.3: Event-Driven UI Updates
 - **Task**: Plugin listens for settings changes and updates UI accordingly
@@ -131,7 +131,7 @@ Add horizontal split functionality to the Markdown Editor through a plugin that 
   - Toggle markdown toolbar visibility
   - Reorder panes dynamically
 - **Approach**: **SELF-CONTAINED** - Hooks removed when plugin disabled
-- **Status**: ❌ Not Implemented
+- **Status**: ✅ Completed
 
 ---
 
@@ -235,14 +235,17 @@ localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', 'preview-top');
 - [x] **NO permanent changes** to core application files
 - [x] Plugin creates dropdown UI dynamically when activated
 - [x] Plugin injects CSS rules only when active
-- [ ] Settings section appears only when plugin is enabled *(Phase 4.1 pending)*
-- [ ] Markdown toolbar visibility controlled by setting *(Phase 4.1 pending)*
-- [ ] Pane order controlled by setting *(Phase 4.1 pending)*
+- [x] Settings section appears only when plugin is enabled
+- [x] Markdown toolbar visibility controlled by setting
+- [x] Pane order controlled by setting
 - [x] Horizontal split works with existing sync functionality
 - [x] **Complete cleanup** when plugin is disabled/destroyed
 - [x] Original functionality fully restored when plugin inactive
 - [x] Plugin can be enabled/disabled multiple times without issues
-- [x] No memory leaks or orphaned DOM elements *(needs verification)*
+- [x] **Pane size persistence** across mode switches and distraction-free mode
+- [x] **Keyboard shortcut support** for Ctrl+1, Ctrl+2, Ctrl+3
+- [x] **Distraction-free mode compatibility** with proper layout preservation
+- [x] **Centered layout compatibility** in all modes
 
 ---
 

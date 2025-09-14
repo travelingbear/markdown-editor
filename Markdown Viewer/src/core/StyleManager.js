@@ -9,22 +9,19 @@ class StyleManager {
     this.currentTheme = 'light';
     this.preloadedThemes = new Set();
     this.isTransitioning = false;
-    
-    // Preload popular dark theme for faster switching
-    this.preloadTheme('dark');
   }
 
   /**
-   * Preload a theme for faster switching
+   * Preload a theme for faster switching (only when needed)
    * @param {string} themeName - Theme name to preload
    */
   async preloadTheme(themeName) {
     if (themeName !== 'light' && !this.preloadedThemes.has(themeName)) {
+      // Only preload when user is about to switch themes
       const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'style';
+      link.rel = 'prefetch'; // Use prefetch instead of preload
       link.href = `./styles/themes/${themeName}.css`;
-      link.setAttribute('data-preload-theme', themeName);
+      link.setAttribute('data-prefetch-theme', themeName);
       document.head.appendChild(link);
       this.preloadedThemes.add(themeName);
     }
@@ -59,7 +56,11 @@ class StyleManager {
     }
     
     this.currentTheme = themeName;
-    document.body.className = `${themeName}-theme`;
+    
+    // Preserve existing classes while updating theme
+    const existingClasses = Array.from(document.body.classList)
+      .filter(cls => !cls.endsWith('-theme'));
+    document.body.className = [...existingClasses, `${themeName}-theme`].join(' ');
     
     // Remove transition class after a brief delay
     setTimeout(() => {

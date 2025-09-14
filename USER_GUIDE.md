@@ -109,7 +109,7 @@
 - **Ctrl+I** - Italic text
 
 ### Application
-- **Ctrl+T** or **Ctrl+/** - Toggle theme
+- **Ctrl+T** - Toggle theme
 - **Ctrl+Shift+/** - Toggle markdown toolbar
 - **Ctrl+F** - Toggle Find & Replace
 - **Ctrl+,** - Open settings

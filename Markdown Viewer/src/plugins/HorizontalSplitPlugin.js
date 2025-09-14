@@ -9,9 +9,6 @@ class HorizontalSplitPlugin {
     this.dropdownContainer = null;
     this.styleElement = null;
     this.savedPaneSizes = null;
-    
-    // Typewriter components
-    this.typewriterAudio = null;
   }
 
   async init() {
@@ -43,19 +40,7 @@ class HorizontalSplitPlugin {
         this.applyToolbarVisibility();
         this.applyPaneOrder();
       }
-      
-      // Initialize typewriter mode if enabled
-      const typewriterMode = localStorage.getItem('markdownViewer_typewriterMode');
-      if (typewriterMode === 'enabled') {
-        this.initTypewriterMode();
-      }
     }, 100);
-    
-    // Listen for file operations to re-apply typewriter mode
-    this.addFileOperationListeners();
-    
-    // Add document close listener for typewriter mode
-    this.addDocumentCloseListener();
     
     this.isActive = true;
     console.log('[HorizontalSplitPlugin] Initialized successfully');
@@ -71,17 +56,6 @@ class HorizontalSplitPlugin {
     }
     if (!localStorage.getItem('markdownViewer_horizontalSplitPaneOrder')) {
       localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', 'preview-top');
-    }
-    
-    // Initialize typewriter settings
-    if (!localStorage.getItem('markdownViewer_typewriterMode')) {
-      localStorage.setItem('markdownViewer_typewriterMode', 'disabled');
-    }
-    if (!localStorage.getItem('markdownViewer_typewriterSounds')) {
-      localStorage.setItem('markdownViewer_typewriterSounds', 'enabled');
-    }
-    if (!localStorage.getItem('markdownViewer_typewriterVolume')) {
-      localStorage.setItem('markdownViewer_typewriterVolume', '0.7');
     }
     
     // Register split orientation setting
@@ -116,37 +90,6 @@ class HorizontalSplitPlugin {
       }
     };
     this.pluginAPI.registerExtension('settings', paneOrderExtension);
-    
-    // Register typewriter settings
-    const typewriterModeExtension = {
-      get: () => localStorage.getItem('markdownViewer_typewriterMode') || 'disabled',
-      set: (value) => localStorage.setItem('markdownViewer_typewriterMode', value),
-      metadata: {
-        name: 'typewriterMode',
-        description: 'Typewriter mode setting'
-      }
-    };
-    this.pluginAPI.registerExtension('settings', typewriterModeExtension);
-    
-    const typewriterSoundsExtension = {
-      get: () => localStorage.getItem('markdownViewer_typewriterSounds') || 'enabled',
-      set: (value) => localStorage.setItem('markdownViewer_typewriterSounds', value),
-      metadata: {
-        name: 'typewriterSounds',
-        description: 'Typewriter sounds setting'
-      }
-    };
-    this.pluginAPI.registerExtension('settings', typewriterSoundsExtension);
-    
-    const typewriterVolumeExtension = {
-      get: () => localStorage.getItem('markdownViewer_typewriterVolume') || '0.7',
-      set: (value) => localStorage.setItem('markdownViewer_typewriterVolume', value),
-      metadata: {
-        name: 'typewriterVolume',
-        description: 'Typewriter volume setting'
-      }
-    };
-    this.pluginAPI.registerExtension('settings', typewriterVolumeExtension);
   }
 
   injectSettingsUI() {
@@ -180,27 +123,6 @@ class HorizontalSplitPlugin {
         <div class="setting-control">
           <button id="hsplit-preview-top-btn" class="setting-btn">Preview Top</button>
           <button id="hsplit-code-top-btn" class="setting-btn">Code Top</button>
-        </div>
-      </div>
-      <div class="setting-item">
-        <label>Typewriter Mode</label>
-        <div class="setting-control">
-          <button id="typewriter-mode-enabled-btn" class="setting-btn">Enabled</button>
-          <button id="typewriter-mode-disabled-btn" class="setting-btn">Disabled</button>
-        </div>
-      </div>
-      <div class="setting-item">
-        <label>Typewriter Sounds</label>
-        <div class="setting-control">
-          <button id="typewriter-sounds-enabled-btn" class="setting-btn">Enabled</button>
-          <button id="typewriter-sounds-disabled-btn" class="setting-btn">Disabled</button>
-        </div>
-      </div>
-      <div class="setting-item">
-        <label>Typewriter Volume</label>
-        <div class="setting-control">
-          <input type="range" id="typewriter-volume-slider" min="0" max="1" step="0.1" value="0.7" style="width: 100px;">
-          <span id="typewriter-volume-display">70%</span>
         </div>
       </div>
     `;
@@ -250,42 +172,6 @@ class HorizontalSplitPlugin {
       this.updateSettingsUI();
       this.applyPaneOrder();
     });
-    
-    // Typewriter mode buttons
-    document.getElementById('typewriter-mode-enabled-btn')?.addEventListener('click', () => {
-      localStorage.setItem('markdownViewer_typewriterMode', 'enabled');
-      this.updateSettingsUI();
-      this.initTypewriterMode();
-    });
-    document.getElementById('typewriter-mode-disabled-btn')?.addEventListener('click', () => {
-      localStorage.setItem('markdownViewer_typewriterMode', 'disabled');
-      this.updateSettingsUI();
-      this.disableTypewriterMode();
-    });
-    
-    // Typewriter sounds buttons
-    document.getElementById('typewriter-sounds-enabled-btn')?.addEventListener('click', () => {
-      localStorage.setItem('markdownViewer_typewriterSounds', 'enabled');
-      this.updateSettingsUI();
-      if (this.typewriterAudio) this.typewriterAudio.enabled = true;
-    });
-    document.getElementById('typewriter-sounds-disabled-btn')?.addEventListener('click', () => {
-      localStorage.setItem('markdownViewer_typewriterSounds', 'disabled');
-      this.updateSettingsUI();
-      if (this.typewriterAudio) this.typewriterAudio.enabled = false;
-    });
-    
-    // Volume slider
-    const volumeSlider = document.getElementById('typewriter-volume-slider');
-    const volumeDisplay = document.getElementById('typewriter-volume-display');
-    if (volumeSlider && volumeDisplay) {
-      volumeSlider.addEventListener('input', (e) => {
-        const volume = parseFloat(e.target.value);
-        localStorage.setItem('markdownViewer_typewriterVolume', volume.toString());
-        volumeDisplay.textContent = Math.round(volume * 100) + '%';
-        if (this.typewriterAudio) this.typewriterAudio.setVolume(volume);
-      });
-    }
   }
 
   updateSettingsUI() {
@@ -303,22 +189,6 @@ class HorizontalSplitPlugin {
     const paneOrder = localStorage.getItem('markdownViewer_horizontalSplitPaneOrder') || 'preview-top';
     document.getElementById('hsplit-preview-top-btn')?.classList.toggle('active', paneOrder === 'preview-top');
     document.getElementById('hsplit-code-top-btn')?.classList.toggle('active', paneOrder === 'code-top');
-    
-    // Update typewriter buttons
-    const typewriterMode = localStorage.getItem('markdownViewer_typewriterMode') || 'disabled';
-    document.getElementById('typewriter-mode-enabled-btn')?.classList.toggle('active', typewriterMode === 'enabled');
-    document.getElementById('typewriter-mode-disabled-btn')?.classList.toggle('active', typewriterMode === 'disabled');
-    
-    const typewriterSounds = localStorage.getItem('markdownViewer_typewriterSounds') || 'enabled';
-    document.getElementById('typewriter-sounds-enabled-btn')?.classList.toggle('active', typewriterSounds === 'enabled');
-    document.getElementById('typewriter-sounds-disabled-btn')?.classList.toggle('active', typewriterSounds === 'disabled');
-    
-    // Update volume slider
-    const volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
-    const volumeSlider = document.getElementById('typewriter-volume-slider');
-    const volumeDisplay = document.getElementById('typewriter-volume-display');
-    if (volumeSlider) volumeSlider.value = volume;
-    if (volumeDisplay) volumeDisplay.textContent = Math.round(volume * 100) + '%';
   }
 
   hookSplitButton() {
@@ -525,6 +395,11 @@ class HorizontalSplitPlugin {
       });
     }
     
+    // Listen for welcome screen display (when all tabs are closed)
+    this.pluginAPI.addHook('tab', 'all-tabs-closed', () => {
+      this.refreshForWelcomeScreen();
+    });
+    
     // Listen for centered layout toggle
     const centeredBtn = document.querySelector('[data-setting="centered-layout"]');
     if (centeredBtn) {
@@ -593,9 +468,21 @@ class HorizontalSplitPlugin {
       
       mainContent.classList.remove('split-horizontal');
       this.clearInlineStyles();
-      
-
     }
+  }
+  
+  refreshForWelcomeScreen() {
+    // Force clear all horizontal split styles when returning to welcome screen
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.remove('split-horizontal', 'code-top');
+    }
+    
+    // Clear all inline styles completely
+    this.clearInlineStyles();
+    
+    // Clear toolbar visibility
+    this.clearToolbarVisibility();
   }
   
   clearInlineStyles() {
@@ -609,8 +496,6 @@ class HorizontalSplitPlugin {
     if (editorPane) {
       editorPane.style.cssText = '';
     }
-    
-
   }
   
   savePaneSizes() {
@@ -899,6 +784,38 @@ class HorizontalSplitPlugin {
         padding: 0 !important;
       }
       
+      /* Fix Monaco editor container height in horizontal split to account for status bar */
+      .main-content.split-mode.split-horizontal .editor-pane .monaco-editor-container {
+        height: calc(100% - 24px) !important;
+      }
+      
+      /* Adjust for different status bar sizes */
+      [data-status-bar-size="small"] .main-content.split-mode.split-horizontal .editor-pane .monaco-editor-container {
+        height: calc(100% - 18px) !important;
+      }
+      
+      [data-status-bar-size="large"] .main-content.split-mode.split-horizontal .editor-pane .monaco-editor-container {
+        height: calc(100% - 32px) !important;
+      }
+      
+      /* Account for markdown toolbar when visible */
+      .main-content.split-mode.split-horizontal .editor-pane:has(.markdown-toolbar.visible) .monaco-editor-container {
+        height: calc(100% - 24px - 40px) !important;
+      }
+      
+      [data-status-bar-size="small"] .main-content.split-mode.split-horizontal .editor-pane:has(.markdown-toolbar.visible) .monaco-editor-container {
+        height: calc(100% - 18px - 30px) !important;
+      }
+      
+      [data-status-bar-size="large"] .main-content.split-mode.split-horizontal .editor-pane:has(.markdown-toolbar.visible) .monaco-editor-container {
+        height: calc(100% - 32px - 48px) !important;
+      }
+      
+      /* Fallback for browsers without :has() support */
+      .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar.visible ~ .monaco-editor-container {
+        height: calc(100% - 24px - 40px) !important;
+      }
+      
       /* Distraction-free mode horizontal split support */
       body.distraction-free .main-content.split-mode.split-horizontal {
         flex-direction: column !important;
@@ -945,47 +862,6 @@ class HorizontalSplitPlugin {
         width: 100% !important;
         max-width: none !important;
       }
-      
-      /* Typewriter Mode Styles */
-      .main-content.typewriter-mode {
-        flex-direction: column !important;
-      }
-      
-      .main-content.typewriter-mode .preview-pane {
-        height: 70% !important;
-        order: 1 !important;
-        background: #f8f8f8;
-        border-bottom: 2px solid #ddd;
-      }
-      
-      .main-content.typewriter-mode .editor-pane {
-        height: 30% !important;
-        order: 3 !important;
-        border-top: none;
-      }
-      
-      .main-content.typewriter-mode .splitter {
-        order: 2 !important;
-        height: 4px !important;
-        cursor: row-resize !important;
-      }
-      
-      /* Hide mode buttons in typewriter mode - more specific selector */
-      .main-content.typewriter-mode ~ * .mode-buttons,
-      body .mode-buttons:has(~ .main-content.typewriter-mode),
-      .typewriter-mode .mode-buttons {
-        display: none !important;
-      }
-      
-      /* Ensure typewriter styles only apply when class is present */
-      .main-content:not(.typewriter-mode) .preview-pane,
-      .main-content:not(.typewriter-mode) .editor-pane {
-        height: auto !important;
-        order: initial !important;
-      }
-      
-      /* Remove problematic welcome screen CSS that breaks layout */
-      /* Welcome screen should use default styles */
     `;
     document.head.appendChild(this.styleElement);
   }
@@ -1034,444 +910,27 @@ class HorizontalSplitPlugin {
       document.removeEventListener('keydown', this.keydownHandler);
     }
     
-    // Disconnect file operation observer
-    if (this.fileOperationObserver) {
-      this.fileOperationObserver.disconnect();
-    }
-    
-    // Disconnect document close observer
-    if (this.documentCloseObserver) {
-      this.documentCloseObserver.disconnect();
-    }
-    
     // Remove settings integration
     this.pluginAPI.unregisterExtension('settings', 'defaultSplitOrientation');
     this.pluginAPI.unregisterExtension('settings', 'horizontalSplitToolbar');
     this.pluginAPI.unregisterExtension('settings', 'horizontalSplitPaneOrder');
-    this.pluginAPI.unregisterExtension('settings', 'typewriterMode');
-    this.pluginAPI.unregisterExtension('settings', 'typewriterSounds');
-    this.pluginAPI.unregisterExtension('settings', 'typewriterVolume');
     
     // Clear plugin settings from localStorage
     localStorage.removeItem('markdownViewer_defaultSplitOrientation');
     localStorage.removeItem('markdownViewer_horizontalSplitToolbar');
     localStorage.removeItem('markdownViewer_horizontalSplitPaneOrder');
-    localStorage.removeItem('markdownViewer_typewriterMode');
-    localStorage.removeItem('markdownViewer_typewriterSounds');
-    localStorage.removeItem('markdownViewer_typewriterVolume');
     
     this.isActive = false;
     console.log('[HorizontalSplitPlugin] Destroyed successfully');
-  }
-  
-  // Typewriter mode methods
-  initTypewriterMode() {
-    // Initialize audio system
-    if (!this.typewriterAudio) {
-      this.typewriterAudio = new TypewriterAudio();
-    }
-    
-    // Reset layout application flag
-    this.isApplyingLayout = false;
-    
-    // Apply typewriter layout (only if not on welcome screen)
-    this.applyTypewriterLayout();
-    
-    // Add keystroke listener for typing sounds
-    this.addKeystrokeListener();
-    
-    // Test audio playback with delay for file loading
-    setTimeout(() => {
-      this.typewriterAudio.playKeystroke();
-    }, 2000);
-  }
-  
-  disableTypewriterMode() {
-    // Reset layout application flag
-    this.isApplyingLayout = false;
-    
-    // Remove typewriter layout
-    this.removeTypewriterLayout();
-    
-    // Cleanup audio
-    if (this.typewriterAudio) {
-      this.typewriterAudio = null;
-    }
-  }
-  
-  applyTypewriterLayout() {
-    console.log('[HorizontalSplitPlugin] Applying typewriter layout...');
-    
-    const mainContent = document.querySelector('.main-content');
-    if (!mainContent) return;
-    
-    // Check if we're on welcome screen - don't apply typewriter layout
-    const welcomePage = document.querySelector('.welcome-page');
-    if (welcomePage && welcomePage.style.display !== 'none') {
-      console.log('[HorizontalSplitPlugin] Welcome screen active - skipping typewriter layout');
-      return;
-    }
-    
-    // Force split mode if not already active (but avoid infinite loop)
-    if (!mainContent.classList.contains('split-mode')) {
-      const splitButton = document.getElementById('split-btn');
-      if (splitButton && !this.isApplyingLayout) {
-        this.isApplyingLayout = true;
-        splitButton.click();
-        // Wait for split mode to activate
-        setTimeout(() => {
-          this.isApplyingLayout = false;
-          this.applyTypewriterLayout();
-        }, 100);
-        return;
-      }
-    }
-    
-    // Add typewriter mode class
-    mainContent.classList.add('typewriter-mode');
-    
-    // Force horizontal layout
-    mainContent.classList.add('split-horizontal');
-    
-    // Set fixed proportions (30% editor, 70% preview)
-    const previewPane = document.querySelector('.preview-pane');
-    const editorPane = document.querySelector('.editor-pane');
-    
-    if (previewPane && editorPane) {
-      previewPane.style.height = '70%';
-      previewPane.style.order = '1'; // Top
-      editorPane.style.height = '30%';
-      editorPane.style.order = '3'; // Bottom
-    }
-    
-    // Hide mode buttons
-    const modeButtons = document.querySelector('.mode-buttons');
-    if (modeButtons) {
-      modeButtons.style.setProperty('display', 'none', 'important');
-    }
-    
-    console.log('[HorizontalSplitPlugin] Typewriter layout applied');
-  }
-  
-  addKeystrokeListener() {
-    // Remove existing listener if any
-    if (this.keystrokeListener) {
-      document.removeEventListener('keydown', this.keystrokeListener);
-    }
-    
-    this.keystrokeListener = (e) => {
-      // Check if we're in Monaco editor (more permissive check)
-      const activeElement = document.activeElement;
-      const isInMonaco = activeElement && (
-        activeElement.classList.contains('monaco-editor') ||
-        activeElement.closest('.monaco-editor') ||
-        activeElement.classList.contains('inputarea') ||
-        activeElement.tagName === 'TEXTAREA' ||
-        (activeElement.contentEditable === 'true')
-      );
-      
-      if (!isInMonaco || !this.typewriterAudio) {
-        return;
-      }
-      
-      // Filter keys - letters, numbers, space, and typing characters
-      const key = e.key;
-      const isLetter = /^[a-zA-ZÀ-ÿ]$/.test(key); // Include accented characters
-      const isNumber = /^[0-9]$/.test(key);
-      const isSpace = key === ' ';
-      const isSpecialKey = ['Backspace', 'Enter', 'Shift', 'CapsLock'].includes(key);
-      const isTypingChar = /^[~\\|\[\]{};:'",./<>?!@#$%^&*()\-=_+`]$/.test(key);
-      
-      if (!isLetter && !isNumber && !isSpace && !isSpecialKey && !isTypingChar) {
-        return; // Ignore function keys, arrows, etc.
-      }
-      
-      // Determine key type
-      let keyType = 'normal';
-      if (key === 'Backspace') {
-        keyType = 'backspace';
-      } else if (key === 'Enter') {
-        keyType = 'enter';
-      } else if (key === 'Shift' || key === 'CapsLock') {
-        keyType = 'shift';
-      }
-      
-      // Play sound
-      this.typewriterAudio.playKeystroke(keyType);
-    };
-    
-    document.addEventListener('keydown', this.keystrokeListener, true); // Use capture phase
-    console.log('[HorizontalSplitPlugin] Keystroke listener added');
-  }
-  
-  addFileOperationListeners() {
-    // Listen for new file or file open events
-    const observer = new MutationObserver(() => {
-      const typewriterMode = localStorage.getItem('markdownViewer_typewriterMode');
-      if (typewriterMode === 'enabled') {
-        // Check if we have content but no typewriter layout
-        const mainContent = document.querySelector('.main-content');
-        const welcomePage = document.querySelector('.welcome-page');
-        
-        if (mainContent && (!welcomePage || welcomePage.style.display === 'none')) {
-          if (!mainContent.classList.contains('typewriter-mode')) {
-            console.log('[HorizontalSplitPlugin] File opened - reapplying typewriter mode');
-            setTimeout(() => this.applyTypewriterLayout(), 200);
-          }
-        }
-      }
-    });
-    
-    // Observe changes to main content and welcome page
-    const mainContent = document.querySelector('.main-content');
-    const welcomePage = document.querySelector('.welcome-page');
-    
-    if (mainContent) {
-      observer.observe(mainContent, { attributes: true, childList: true, subtree: true });
-    }
-    if (welcomePage) {
-      observer.observe(welcomePage, { attributes: true });
-    }
-    
-    this.fileOperationObserver = observer;
-  }
-  
-  addDocumentCloseListener() {
-    // Flag to prevent infinite loop
-    this.isRefreshingScreen = false;
-    
-    // Listen for when all documents are closed and we return to welcome screen
-    const observer = new MutationObserver(() => {
-      const welcomePage = document.querySelector('.welcome-page');
-      const typewriterMode = localStorage.getItem('markdownViewer_typewriterMode');
-      
-      // If welcome screen becomes visible and typewriter mode is enabled and not already refreshing
-      if (welcomePage && welcomePage.style.display !== 'none' && typewriterMode === 'enabled' && !this.isRefreshingScreen) {
-        console.log('[HorizontalSplitPlugin] Documents closed in typewriter mode - refreshing screen');
-        
-        // Set flag to prevent infinite loop
-        this.isRefreshingScreen = true;
-        
-        // Force complete layout refresh
-        setTimeout(() => {
-          // Remove any lingering typewriter styles
-          const mainContent = document.querySelector('.main-content');
-          if (mainContent) {
-            mainContent.classList.remove('typewriter-mode', 'split-mode', 'split-horizontal');
-            mainContent.style.cssText = '';
-          }
-          
-          // Clear all pane styles
-          const previewPane = document.querySelector('.preview-pane');
-          const editorPane = document.querySelector('.editor-pane');
-          const splitter = document.querySelector('.splitter');
-          
-          if (previewPane) previewPane.style.cssText = '';
-          if (editorPane) editorPane.style.cssText = '';
-          if (splitter) splitter.style.cssText = '';
-          
-          // Force welcome screen to full size (without triggering observer)
-          if (welcomePage) {
-            welcomePage.style.height = '100%';
-            welcomePage.style.width = '100%';
-          }
-          
-          console.log('[HorizontalSplitPlugin] Screen refresh completed');
-          
-          // Reset flag after refresh is complete
-          setTimeout(() => {
-            this.isRefreshingScreen = false;
-          }, 500);
-        }, 100);
-      }
-    });
-    
-    // Observe welcome page visibility changes
-    const welcomePage = document.querySelector('.welcome-page');
-    if (welcomePage) {
-      observer.observe(welcomePage, { attributes: true, attributeFilter: ['style'] });
-    }
-    
-    this.documentCloseObserver = observer;
-  }
-  
-  removeTypewriterLayout() {
-    console.log('[HorizontalSplitPlugin] Removing typewriter layout...');
-    
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('typewriter-mode');
-      // Also remove horizontal split class to restore vertical
-      mainContent.classList.remove('split-horizontal');
-    }
-    
-    // Restore mode buttons
-    const modeButtons = document.querySelector('.mode-buttons');
-    if (modeButtons) {
-      modeButtons.style.removeProperty('display');
-    }
-    
-    // Clear ALL inline styles to fully restore
-    const previewPane = document.querySelector('.preview-pane');
-    const editorPane = document.querySelector('.editor-pane');
-    const splitter = document.querySelector('.splitter');
-    const welcomePage = document.querySelector('.welcome-page');
-    
-    if (previewPane) {
-      previewPane.style.cssText = '';
-    }
-    if (editorPane) {
-      editorPane.style.cssText = '';
-    }
-    if (splitter) {
-      splitter.style.cssText = '';
-    }
-    
-    // Ensure welcome page is fully restored
-    if (welcomePage) {
-      welcomePage.style.cssText = '';
-    }
-    
-    // Remove keystroke listener
-    if (this.keystrokeListener) {
-      document.removeEventListener('keydown', this.keystrokeListener);
-      this.keystrokeListener = null;
-    }
-    
-    console.log('[HorizontalSplitPlugin] Typewriter layout removed and styles cleared');
-  }
-}
-
-// TypewriterAudio class - HTML5 Audio with correct Tauri paths
-class TypewriterAudio {
-  constructor() {
-    this.keystrokeSounds = [];
-    this.specialSounds = {};
-    this.volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
-    this.enabled = localStorage.getItem('markdownViewer_typewriterSounds') === 'enabled';
-    this.loadSounds();
-  }
-  
-  loadSounds() {
-    // Loading FLAC sounds
-    
-    // Load keystroke sounds (14 variations) - try different path formats
-    const keystrokeFiles = [
-      'key-01.flac', 'key-02.flac', 'key-03.flac', 'key-04.flac',
-      'key-05.flac', 'key-06.flac', 'key-07.flac', 'key-08.flac',
-      'key-09.flac', 'key-10.flac', 'key-11.flac', 'key-12.flac',
-      'key-13.flac', 'key-14.flac'
-    ];
-    
-    // Use the working path directly (no more trial and error)
-    const basePath = '../assets/typewriter_sounds/';
-    
-    keystrokeFiles.forEach((file, index) => {
-      const audio = new Audio(basePath + file);
-      audio.preload = 'metadata';
-      audio.volume = this.volume;
-      
-      audio.addEventListener('canplaythrough', () => {
-        console.log(`[TypewriterAudio] Loaded: ${file}`);
-      });
-      
-      audio.addEventListener('error', (e) => {
-        console.error(`[TypewriterAudio] Failed to load: ${file}`);
-      });
-      
-      this.keystrokeSounds[index] = audio;
-    });
-    
-    // Load special sounds with error handling
-    const specialSounds = {
-      backspace: 'backspace.flac',
-      enter: 'return.flac', 
-      shift: 'shift-caps.flac'
-    };
-    
-    Object.entries(specialSounds).forEach(([key, file]) => {
-      const audio = new Audio(basePath + file);
-      audio.preload = 'metadata';
-      audio.volume = this.volume;
-      
-      audio.addEventListener('canplaythrough', () => {
-        console.log(`[TypewriterAudio] Loaded special: ${key}`);
-      });
-      
-      audio.addEventListener('error', (e) => {
-        console.error(`[TypewriterAudio] Failed to load special: ${key}`, e);
-      });
-      
-      this.specialSounds[key] = audio;
-    });
-    
-    Object.values(this.specialSounds).forEach(audio => {
-      audio.preload = 'metadata';
-      audio.volume = this.volume;
-      
-      audio.addEventListener('canplaythrough', () => {
-        console.log(`[TypewriterAudio] Loaded special sound`);
-      });
-      
-      audio.addEventListener('error', (e) => {
-        console.error(`[TypewriterAudio] Failed to load special sound`);
-      });
-    });
-    
-    console.log(`[TypewriterAudio] Loading ${keystrokeFiles.length} keystroke sounds and 3 special sounds from ${basePath}`);
-  }
-  
-  playKeystroke(keyType = 'normal') {
-    if (!this.enabled) return;
-    
-    let audio;
-    if (keyType === 'normal') {
-      // Random keystroke sound
-      const randomIndex = Math.floor(Math.random() * this.keystrokeSounds.length);
-      audio = this.keystrokeSounds[randomIndex];
-    } else {
-      audio = this.specialSounds[keyType];
-      console.log(`[TypewriterAudio] Attempting to play special sound: ${keyType}`, audio);
-    }
-    
-    if (audio) {
-      // Force load if not ready
-      if (audio.readyState < 2) {
-        audio.load();
-      }
-      
-      audio.currentTime = 0;
-      audio.play().then(() => {
-        console.log(`[TypewriterAudio] Successfully played ${keyType} sound`);
-      }).catch(e => {
-        console.warn(`[TypewriterAudio] Failed to play ${keyType}:`, e);
-        console.log(`[TypewriterAudio] Audio src: ${audio.src}`);
-      });
-    } else {
-      console.warn(`[TypewriterAudio] No audio found for keyType: ${keyType}`);
-    }
-  }
-  
-  setVolume(volume) {
-    this.volume = volume;
-    
-    this.keystrokeSounds.forEach(audio => {
-      if (audio) audio.volume = volume;
-    });
-    
-    Object.values(this.specialSounds).forEach(audio => {
-      if (audio) audio.volume = volume;
-    });
   }
 }
 
 // Plugin metadata
 HorizontalSplitPlugin.metadata = {
   name: 'Horizontal Split Plugin',
-  version: '2.0.0',
-  description: 'Adds horizontal split functionality and typewriter mode to the split mode',
+  version: '1.0.0',
+  description: 'Adds horizontal split functionality to the split mode',
   author: 'Markdown Editor'
 };
 
 window.HorizontalSplitPlugin = HorizontalSplitPlugin;
-window.TypewriterAudio = TypewriterAudio;

@@ -72,7 +72,7 @@
 3. **Navigate tabs** - Click filename for recent tabs, Ctrl+Shift+Tab for all tabs
 4. **Choose your mode** - Code for editing, Preview for reading, Split for both
 5. **Customize settings** - Press Ctrl+, to configure theme, toolbar sizes, and preferences
-6. **Use shortcuts** - Alt+1-9 for tab switching, Ctrl+=/-/0 for zoom, right-click for context menus
+6. **Use shortcuts** - Alt+1-9 for tab switching, Ctrl+T for theme toggle, Ctrl+=/-/0 for zoom, right-click for context menus
 
 ### Architecture
 - **Frontend**: Component-based architecture with Monaco Editor + Marked.js + KaTeX + Mermaid + Highlight.js

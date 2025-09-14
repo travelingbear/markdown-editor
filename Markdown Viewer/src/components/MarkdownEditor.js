@@ -805,7 +805,6 @@ class MarkdownEditor extends BaseComponent {
     if (useCtrlForOther) {
       switch (e.key) {
         case 't':
-        case '/':
           e.preventDefault();
           const themeData = this.uiController.toggleTheme();
           this.handleThemeChange(themeData);

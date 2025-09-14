@@ -76,7 +76,6 @@
 | Shortcut | Action | Description |
 |----------|--------|-------------|
 | `Ctrl+T` | Toggle Theme | Cycle Light → Dark → Retro |
-| `Ctrl+/` | Toggle Theme | Alternative theme toggle |
 | `Ctrl+Shift+/` | Toggle Markdown Toolbar | Show/hide formatting toolbar |
 | `Ctrl+,` | Settings | Open settings modal |
 | `F1` | Help | Show help modal |

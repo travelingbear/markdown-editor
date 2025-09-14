@@ -1016,11 +1016,11 @@ class HorizontalSplitPlugin {
       this.typewriterAudio = new TypewriterAudio();
     }
     
-    // Test audio playback immediately (no loading needed for generated sounds)
+    // Test audio playback with delay for file loading
     setTimeout(() => {
       console.log('[HorizontalSplitPlugin] Testing typewriter audio...');
       this.typewriterAudio.playKeystroke();
-    }, 500);
+    }, 2000);
   }
   
   disableTypewriterMode() {
@@ -1033,110 +1033,115 @@ class HorizontalSplitPlugin {
   }
 }
 
-// TypewriterAudio class - Fallback Web Audio API implementation
+// TypewriterAudio class - HTML5 Audio with correct Tauri paths
 class TypewriterAudio {
   constructor() {
+    this.keystrokeSounds = [];
+    this.specialSounds = {};
     this.volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
     this.enabled = localStorage.getItem('markdownViewer_typewriterSounds') === 'enabled';
-    this.audioContext = null;
-    this.initAudioContext();
+    this.loadSounds();
   }
   
-  initAudioContext() {
-    try {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      console.log('[TypewriterAudio] Web Audio API initialized successfully');
-    } catch (e) {
-      console.error('[TypewriterAudio] Web Audio API not supported:', e);
-    }
-  }
-  
-  // Generate typewriter-like sound using Web Audio API
-  generateKeystrokeSound(frequency = 800, duration = 0.1) {
-    if (!this.audioContext || !this.enabled) return;
+  loadSounds() {
+    console.log('[TypewriterAudio] Loading FLAC sounds...');
     
-    const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
-    const noiseBuffer = this.createNoiseBuffer();
-    const noiseSource = this.audioContext.createBufferSource();
+    // Load keystroke sounds (14 variations) - try different path formats
+    const keystrokeFiles = [
+      'key-01.flac', 'key-02.flac', 'key-03.flac', 'key-04.flac',
+      'key-05.flac', 'key-06.flac', 'key-07.flac', 'key-08.flac',
+      'key-09.flac', 'key-10.flac', 'key-11.flac', 'key-12.flac',
+      'key-13.flac', 'key-14.flac'
+    ];
     
-    // Create a brief click sound
-    oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.5, this.audioContext.currentTime + duration);
+    // Use assets directory path (where FLAC files work)
+    const pathFormats = [
+      './src/assets/typewriter_sounds/',
+      'src/assets/typewriter_sounds/',
+      '../assets/typewriter_sounds/',
+      './assets/typewriter_sounds/'
+    ];
     
-    // Add some noise for realism
-    noiseSource.buffer = noiseBuffer;
-    const noiseGain = this.audioContext.createGain();
-    noiseGain.gain.setValueAtTime(0.1 * this.volume, this.audioContext.currentTime);
-    noiseGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    let pathIndex = 0;
     
-    // Main sound envelope
-    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(this.volume * 0.3, this.audioContext.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    const tryLoadWithPath = (pathFormat) => {
+      console.log(`[TypewriterAudio] Trying assets path format: ${pathFormat}`);
+      
+      keystrokeFiles.forEach((file, index) => {
+        const audio = new Audio(pathFormat + file);
+        audio.preload = 'metadata';
+        audio.volume = this.volume;
+        
+        audio.addEventListener('canplaythrough', () => {
+          console.log(`[TypewriterAudio] Successfully loaded: ${file}`);
+        });
+        
+        audio.addEventListener('error', (e) => {
+          console.warn(`[TypewriterAudio] Failed to load ${file} with path ${pathFormat}`);
+          
+          // If this is the first file and we have more path formats to try
+          if (index === 0 && pathIndex < pathFormats.length - 1) {
+            pathIndex++;
+            console.log(`[TypewriterAudio] Trying next path format...`);
+            tryLoadWithPath(pathFormats[pathIndex]);
+            return;
+          }
+        });
+        
+        this.keystrokeSounds[index] = audio;
+      });
+      
+      // Load special sounds
+      this.specialSounds.backspace = new Audio(pathFormat + 'backspace.flac');
+      this.specialSounds.enter = new Audio(pathFormat + 'return.flac');
+      this.specialSounds.shift = new Audio(pathFormat + 'shift-caps.flac');
+      
+      Object.values(this.specialSounds).forEach(audio => {
+        audio.preload = 'metadata';
+        audio.volume = this.volume;
+      });
+    };
     
-    // Connect nodes
-    oscillator.connect(gainNode);
-    noiseSource.connect(noiseGain);
-    gainNode.connect(this.audioContext.destination);
-    noiseGain.connect(this.audioContext.destination);
+    // Start with the first path format
+    tryLoadWithPath(pathFormats[pathIndex]);
     
-    // Start and stop
-    oscillator.start(this.audioContext.currentTime);
-    noiseSource.start(this.audioContext.currentTime);
-    oscillator.stop(this.audioContext.currentTime + duration);
-    noiseSource.stop(this.audioContext.currentTime + duration);
-  }
-  
-  createNoiseBuffer() {
-    const bufferSize = this.audioContext.sampleRate * 0.1; // 0.1 seconds of noise
-    const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
-    const output = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
-    
-    return buffer;
+    console.log(`[TypewriterAudio] Initiated loading of ${keystrokeFiles.length} keystroke sounds and 3 special sounds`);
   }
   
   playKeystroke(keyType = 'normal') {
-    if (!this.enabled || !this.audioContext) return;
+    if (!this.enabled) return;
     
-    // Resume audio context if suspended (required by some browsers)
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+    let audio;
+    if (keyType === 'normal') {
+      // Random keystroke sound
+      const randomIndex = Math.floor(Math.random() * this.keystrokeSounds.length);
+      audio = this.keystrokeSounds[randomIndex];
+    } else {
+      audio = this.specialSounds[keyType];
     }
     
-    let frequency, duration;
-    
-    switch (keyType) {
-      case 'backspace':
-        frequency = 600;
-        duration = 0.15;
-        break;
-      case 'enter':
-        frequency = 400;
-        duration = 0.2;
-        break;
-      case 'shift':
-        frequency = 1000;
-        duration = 0.08;
-        break;
-      default:
-        // Random variation for normal keys
-        frequency = 700 + Math.random() * 400; // 700-1100 Hz
-        duration = 0.08 + Math.random() * 0.04; // 80-120ms
+    if (audio && audio.readyState >= 2) {
+      audio.currentTime = 0;
+      audio.play().then(() => {
+        console.log(`[TypewriterAudio] Successfully played ${keyType} sound`);
+      }).catch(e => {
+        console.warn('[TypewriterAudio] Audio play failed:', e);
+      });
+    } else {
+      console.warn(`[TypewriterAudio] Audio not ready for ${keyType}, readyState:`, audio?.readyState);
     }
-    
-    this.generateKeystrokeSound(frequency, duration);
-    console.log(`[TypewriterAudio] Generated ${keyType} sound: ${frequency.toFixed(0)}Hz, ${(duration*1000).toFixed(0)}ms`);
   }
   
   setVolume(volume) {
     this.volume = volume;
-    console.log(`[TypewriterAudio] Volume set to: ${(volume * 100).toFixed(0)}%`);
+    
+    this.keystrokeSounds.forEach(audio => {
+      if (audio) audio.volume = volume;
+    });
+    
+    Object.values(this.specialSounds).forEach(audio => {
+      if (audio) audio.volume = volume;
+    });
   }
 }
 

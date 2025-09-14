@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 3.2.1 (2025-09-14)
+
+### Bug Fixes
+- **KaTeX rendering issues**: Fixed minor rendering issues with Math expressions
+
+### New plugins!
+- **Typewriter sounds**: Plugin that enables typewriter sounds
+- **Horizontal Split mode**: Allows split mode in horizontal orientation (that helps giving a typewriter feeling to the application)
+
 ## Version 3.2.0 (2025-01-07)
 
 ### Major Features

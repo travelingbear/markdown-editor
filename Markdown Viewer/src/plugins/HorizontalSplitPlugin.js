@@ -478,6 +478,12 @@ class HorizontalSplitPlugin {
       mainContent.classList.remove('split-horizontal', 'code-top');
     }
     
+    // Force clear preview-content styles for welcome screen
+    const previewContent = document.querySelector('.preview-content');
+    if (previewContent) {
+      previewContent.style.cssText = '';
+    }
+    
     // Clear all inline styles completely
     this.clearInlineStyles();
     
@@ -489,6 +495,7 @@ class HorizontalSplitPlugin {
     // CRITICAL: Clear ALL inline styles that could affect sizing
     const previewPane = document.querySelector('.preview-pane');
     const editorPane = document.querySelector('.editor-pane');
+    const previewContent = document.querySelector('.preview-content');
     
     if (previewPane) {
       previewPane.style.cssText = '';
@@ -496,6 +503,8 @@ class HorizontalSplitPlugin {
     if (editorPane) {
       editorPane.style.cssText = '';
     }
+    // Don't clear preview-content styles in normal clearInlineStyles
+    // Only clear them in refreshForWelcomeScreen
   }
   
   savePaneSizes() {
@@ -861,6 +870,18 @@ class HorizontalSplitPlugin {
       body.centered-layout .main-content.split-mode.split-horizontal .splitter {
         width: 100% !important;
         max-width: none !important;
+      }
+      
+      body.centered-layout .main-content.split-mode.split-horizontal .preview-content {
+        display: table !important;
+        min-height: 100% !important;
+        width: 100% !important;
+      }
+      
+      /* Distraction-free mode with centered layout */
+      body.distraction-free.centered-layout .main-content.split-mode.split-horizontal .preview-content {
+        display: table !important;
+        min-height: 100% !important;
       }
     `;
     document.head.appendChild(this.styleElement);

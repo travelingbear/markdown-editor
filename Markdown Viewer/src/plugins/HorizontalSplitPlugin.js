@@ -907,6 +907,12 @@ class HorizontalSplitPlugin {
         order: 1 !important;
       }
       
+      /* Show status bar in distraction-free mode when using horizontal split */
+      body.distraction-free .main-content.split-mode.split-horizontal ~ .status-bar {
+        display: flex !important;
+        visibility: visible !important;
+      }
+      
       /* Centered layout compatibility */
       body.centered-layout .main-content.split-mode.split-horizontal {
         max-width: var(--content-max-width, 1200px) !important;

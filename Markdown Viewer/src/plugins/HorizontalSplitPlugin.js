@@ -1006,8 +1006,7 @@ class HorizontalSplitPlugin {
     this.isActive = false;
     console.log('[HorizontalSplitPlugin] Destroyed successfully');
   }
-}
-
+  
   // Typewriter mode methods
   initTypewriterMode() {
     console.log('[HorizontalSplitPlugin] Initializing typewriter mode...');

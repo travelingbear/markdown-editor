@@ -19,8 +19,6 @@ class HorizontalSplitPlugin {
   }
 
   async init() {
-    console.log('[HorizontalSplitPlugin] Initializing...');
-    
     // Add settings integration
     this.addSettingsIntegration();
     
@@ -50,7 +48,6 @@ class HorizontalSplitPlugin {
     }, 100);
     
     this.isActive = true;
-    console.log('[HorizontalSplitPlugin] Initialized successfully');
   }
 
   addSettingsIntegration() {
@@ -102,7 +99,6 @@ class HorizontalSplitPlugin {
   injectSettingsUI() {
     const settingsContent = document.querySelector('.settings-content');
     if (!settingsContent) {
-      console.warn('[HorizontalSplitPlugin] Settings content not found');
       return;
     }
 
@@ -201,7 +197,6 @@ class HorizontalSplitPlugin {
   hookSplitButton() {
     const splitButton = document.getElementById('split-btn');
     if (!splitButton) {
-      console.warn('[HorizontalSplitPlugin] Split button not found');
       return;
     }
 
@@ -229,7 +224,6 @@ class HorizontalSplitPlugin {
   createDropdownUI() {
     const splitButton = document.getElementById('split-btn');
     if (!splitButton) {
-      console.warn('[HorizontalSplitPlugin] Split button not found');
       return;
     }
 
@@ -417,7 +411,6 @@ class HorizontalSplitPlugin {
     
     // Listen for welcome screen display (when all tabs are closed)
     this.pluginAPI.addHook('tab', 'all-tabs-closed', () => {
-      console.log('[HorizontalSplitPlugin] All tabs closed, restarting application...');
       this.restartApplication();
     });
     
@@ -426,7 +419,6 @@ class HorizontalSplitPlugin {
     if (welcomePage) {
       const observer = new MutationObserver(() => {
         if (welcomePage.style.display === 'flex') {
-          console.log('[HorizontalSplitPlugin] Welcome page shown, restarting...');
           this.restartApplication();
         }
       });
@@ -579,8 +571,6 @@ class HorizontalSplitPlugin {
         previewHeight: previewPane.style.height || '50%',
         editorHeight: editorPane.style.height || '50%'
       };
-
-    }
   }
   
   restorePaneSizes() {
@@ -591,7 +581,6 @@ class HorizontalSplitPlugin {
       if (previewPane && editorPane) {
         previewPane.style.height = this.savedPaneSizes.previewHeight;
         editorPane.style.height = this.savedPaneSizes.editorHeight;
-
       }
     }
   }
@@ -995,8 +984,6 @@ class HorizontalSplitPlugin {
   }
 
   async destroy() {
-    console.log('[HorizontalSplitPlugin] Destroying...');
-    
     // Restore original Split button behavior
     const splitButton = document.getElementById('split-btn');
     if (splitButton && this.originalSplitHandler) {
@@ -1049,14 +1036,13 @@ class HorizontalSplitPlugin {
     localStorage.removeItem('markdownViewer_horizontalSplitPaneOrder');
     
     this.isActive = false;
-    console.log('[HorizontalSplitPlugin] Destroyed successfully');
   }
 }
 
 // Plugin metadata
 HorizontalSplitPlugin.metadata = {
   name: 'Horizontal Split Plugin',
-  version: '1.0.0',
+  version: '1.1.0',
   description: 'Adds horizontal split functionality to the split mode',
   author: 'Markdown Editor'
 };

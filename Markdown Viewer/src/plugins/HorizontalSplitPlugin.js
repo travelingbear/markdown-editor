@@ -939,6 +939,36 @@ class HorizontalSplitPlugin {
         width: 100% !important;
         max-width: none !important;
       }
+      
+      /* Typewriter Mode Styles */
+      .main-content.typewriter-mode {
+        flex-direction: column !important;
+      }
+      
+      .main-content.typewriter-mode .preview-pane {
+        height: 70% !important;
+        order: 1 !important;
+        background: #f8f8f8;
+        border-bottom: 2px solid #ddd;
+      }
+      
+      .main-content.typewriter-mode .editor-pane {
+        height: 30% !important;
+        order: 3 !important;
+        border-top: none;
+      }
+      
+      .main-content.typewriter-mode .splitter {
+        order: 2 !important;
+        height: 4px !important;
+        cursor: row-resize !important;
+      }
+      
+      /* Hide mode buttons in typewriter mode */
+      .typewriter-mode ~ .mode-buttons,
+      body:has(.typewriter-mode) .mode-buttons {
+        display: none !important;
+      }
     `;
     document.head.appendChild(this.styleElement);
   }
@@ -1016,6 +1046,9 @@ class HorizontalSplitPlugin {
       this.typewriterAudio = new TypewriterAudio();
     }
     
+    // Apply typewriter layout
+    this.applyTypewriterLayout();
+    
     // Test audio playback with delay for file loading
     setTimeout(() => {
       console.log('[HorizontalSplitPlugin] Testing typewriter audio...');
@@ -1026,10 +1059,86 @@ class HorizontalSplitPlugin {
   disableTypewriterMode() {
     console.log('[HorizontalSplitPlugin] Disabling typewriter mode...');
     
+    // Remove typewriter layout
+    this.removeTypewriterLayout();
+    
     // Cleanup audio
     if (this.typewriterAudio) {
       this.typewriterAudio = null;
     }
+  }
+  
+  applyTypewriterLayout() {
+    console.log('[HorizontalSplitPlugin] Applying typewriter layout...');
+    
+    const mainContent = document.querySelector('.main-content');
+    if (!mainContent) return;
+    
+    // Force split mode if not already active
+    if (!mainContent.classList.contains('split-mode')) {
+      const splitButton = document.getElementById('split-btn');
+      if (splitButton) {
+        splitButton.click();
+        // Wait for split mode to activate
+        setTimeout(() => this.applyTypewriterLayout(), 100);
+        return;
+      }
+    }
+    
+    // Add typewriter mode class
+    mainContent.classList.add('typewriter-mode');
+    
+    // Force horizontal layout
+    mainContent.classList.add('split-horizontal');
+    
+    // Set fixed proportions (30% editor, 70% preview)
+    const previewPane = document.querySelector('.preview-pane');
+    const editorPane = document.querySelector('.editor-pane');
+    
+    if (previewPane && editorPane) {
+      previewPane.style.height = '70%';
+      previewPane.style.order = '1'; // Top
+      editorPane.style.height = '30%';
+      editorPane.style.order = '3'; // Bottom
+    }
+    
+    // Hide mode buttons
+    const modeButtons = document.querySelector('.mode-buttons');
+    if (modeButtons) {
+      modeButtons.style.setProperty('display', 'none', 'important');
+    }
+    
+    console.log('[HorizontalSplitPlugin] Typewriter layout applied');
+  }
+  
+  removeTypewriterLayout() {
+    console.log('[HorizontalSplitPlugin] Removing typewriter layout...');
+    
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.remove('typewriter-mode');
+    }
+    
+    // Restore mode buttons
+    const modeButtons = document.querySelector('.mode-buttons');
+    if (modeButtons) {
+      modeButtons.style.removeProperty('display');
+    }
+    
+    // Clear fixed heights
+    const previewPane = document.querySelector('.preview-pane');
+    const editorPane = document.querySelector('.editor-pane');
+    
+    if (previewPane) {
+      previewPane.style.removeProperty('height');
+      previewPane.style.removeProperty('order');
+    }
+    if (editorPane) {
+      editorPane.style.removeProperty('height');
+      editorPane.style.removeProperty('order');
+    }
+    
+    console.log('[HorizontalSplitPlugin] Typewriter layout removed');
   }
 }
 
@@ -1054,58 +1163,44 @@ class TypewriterAudio {
       'key-13.flac', 'key-14.flac'
     ];
     
-    // Use assets directory path (where FLAC files work)
-    const pathFormats = [
-      './src/assets/typewriter_sounds/',
-      'src/assets/typewriter_sounds/',
-      '../assets/typewriter_sounds/',
-      './assets/typewriter_sounds/'
-    ];
+    // Use the working path directly (no more trial and error)
+    const basePath = '../assets/typewriter_sounds/';
     
-    let pathIndex = 0;
-    
-    const tryLoadWithPath = (pathFormat) => {
-      console.log(`[TypewriterAudio] Trying assets path format: ${pathFormat}`);
+    keystrokeFiles.forEach((file, index) => {
+      const audio = new Audio(basePath + file);
+      audio.preload = 'metadata';
+      audio.volume = this.volume;
       
-      keystrokeFiles.forEach((file, index) => {
-        const audio = new Audio(pathFormat + file);
-        audio.preload = 'metadata';
-        audio.volume = this.volume;
-        
-        audio.addEventListener('canplaythrough', () => {
-          console.log(`[TypewriterAudio] Successfully loaded: ${file}`);
-        });
-        
-        audio.addEventListener('error', (e) => {
-          console.warn(`[TypewriterAudio] Failed to load ${file} with path ${pathFormat}`);
-          
-          // If this is the first file and we have more path formats to try
-          if (index === 0 && pathIndex < pathFormats.length - 1) {
-            pathIndex++;
-            console.log(`[TypewriterAudio] Trying next path format...`);
-            tryLoadWithPath(pathFormats[pathIndex]);
-            return;
-          }
-        });
-        
-        this.keystrokeSounds[index] = audio;
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`[TypewriterAudio] Loaded: ${file}`);
       });
       
-      // Load special sounds
-      this.specialSounds.backspace = new Audio(pathFormat + 'backspace.flac');
-      this.specialSounds.enter = new Audio(pathFormat + 'return.flac');
-      this.specialSounds.shift = new Audio(pathFormat + 'shift-caps.flac');
-      
-      Object.values(this.specialSounds).forEach(audio => {
-        audio.preload = 'metadata';
-        audio.volume = this.volume;
+      audio.addEventListener('error', (e) => {
+        console.error(`[TypewriterAudio] Failed to load: ${file}`);
       });
-    };
+      
+      this.keystrokeSounds[index] = audio;
+    });
     
-    // Start with the first path format
-    tryLoadWithPath(pathFormats[pathIndex]);
+    // Load special sounds
+    this.specialSounds.backspace = new Audio(basePath + 'backspace.flac');
+    this.specialSounds.enter = new Audio(basePath + 'return.flac');
+    this.specialSounds.shift = new Audio(basePath + 'shift-caps.flac');
     
-    console.log(`[TypewriterAudio] Initiated loading of ${keystrokeFiles.length} keystroke sounds and 3 special sounds`);
+    Object.values(this.specialSounds).forEach(audio => {
+      audio.preload = 'metadata';
+      audio.volume = this.volume;
+      
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`[TypewriterAudio] Loaded special sound`);
+      });
+      
+      audio.addEventListener('error', (e) => {
+        console.error(`[TypewriterAudio] Failed to load special sound`);
+      });
+    });
+    
+    console.log(`[TypewriterAudio] Loading ${keystrokeFiles.length} keystroke sounds and 3 special sounds from ${basePath}`);
   }
   
   playKeystroke(keyType = 'normal') {

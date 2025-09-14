@@ -9,6 +9,13 @@ class HorizontalSplitPlugin {
     this.dropdownContainer = null;
     this.styleElement = null;
     this.savedPaneSizes = null;
+    
+    // State management for different modes
+    this.modeStates = {
+      code: { previewPaneStyles: '', editorPaneStyles: '' },
+      preview: { previewPaneStyles: '', editorPaneStyles: '' },
+      split: { previewPaneStyles: '', editorPaneStyles: '' }
+    };
   }
 
   async init() {
@@ -321,18 +328,31 @@ class HorizontalSplitPlugin {
   addModeListener() {
     // Listen for mode changes to apply orientation
     this.pluginAPI.addHook('mode', 'mode-changed', (data) => {
+      // Save current mode state before switching
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent.classList.contains('code-mode')) {
+        this.saveCurrentModeState('code');
+      } else if (mainContent.classList.contains('preview-mode')) {
+        this.saveCurrentModeState('preview');
+      } else if (mainContent.classList.contains('split-mode')) {
+        this.saveCurrentModeState('split');
+      }
+      
       if (data && data.mode === 'split') {
         this.applySplitOrientation();
         this.applyToolbarVisibility();
         this.applyPaneOrder();
         this.updateDropdownOptions();
+        // Restore split mode state
+        setTimeout(() => this.restoreModeState('split'), 50);
       } else {
         // Save horizontal state before clearing
-        const mainContent = document.querySelector('.main-content');
         this.wasHorizontal = mainContent?.classList.contains('split-horizontal');
         this.clearSplitStyles();
         this.clearToolbarVisibility();
         this.updateDropdownOptions();
+        // Restore the appropriate mode state
+        setTimeout(() => this.restoreModeState(data.mode), 50);
       }
     });
     
@@ -397,8 +417,21 @@ class HorizontalSplitPlugin {
     
     // Listen for welcome screen display (when all tabs are closed)
     this.pluginAPI.addHook('tab', 'all-tabs-closed', () => {
-      this.refreshForWelcomeScreen();
+      console.log('[HorizontalSplitPlugin] All tabs closed, restarting application...');
+      this.restartApplication();
     });
+    
+    // Also monitor welcome page visibility as backup
+    const welcomePage = document.getElementById('welcome-page');
+    if (welcomePage) {
+      const observer = new MutationObserver(() => {
+        if (welcomePage.style.display === 'flex') {
+          console.log('[HorizontalSplitPlugin] Welcome page shown, restarting...');
+          this.restartApplication();
+        }
+      });
+      observer.observe(welcomePage, { attributes: true, attributeFilter: ['style'] });
+    }
     
     // Listen for centered layout toggle
     const centeredBtn = document.querySelector('[data-setting="centered-layout"]');
@@ -491,20 +524,50 @@ class HorizontalSplitPlugin {
     this.clearToolbarVisibility();
   }
   
-  clearInlineStyles() {
-    // CRITICAL: Clear ALL inline styles that could affect sizing
+  saveCurrentModeState(mode) {
     const previewPane = document.querySelector('.preview-pane');
     const editorPane = document.querySelector('.editor-pane');
-    const previewContent = document.querySelector('.preview-content');
+    
+    if (previewPane && editorPane && this.modeStates[mode]) {
+      this.modeStates[mode].previewPaneStyles = previewPane.style.cssText;
+      this.modeStates[mode].editorPaneStyles = editorPane.style.cssText;
+    }
+  }
+  
+  restoreModeState(mode) {
+    const previewPane = document.querySelector('.preview-pane');
+    const editorPane = document.querySelector('.editor-pane');
+    
+    if (previewPane && editorPane && this.modeStates[mode]) {
+      previewPane.style.cssText = this.modeStates[mode].previewPaneStyles;
+      editorPane.style.cssText = this.modeStates[mode].editorPaneStyles;
+    }
+  }
+  
+  clearInlineStyles() {
+    // Only clear horizontal split specific styles, preserve others
+    const previewPane = document.querySelector('.preview-pane');
+    const editorPane = document.querySelector('.editor-pane');
     
     if (previewPane) {
-      previewPane.style.cssText = '';
+      previewPane.style.removeProperty('height');
     }
     if (editorPane) {
-      editorPane.style.cssText = '';
+      editorPane.style.removeProperty('height');
     }
-    // Don't clear preview-content styles in normal clearInlineStyles
-    // Only clear them in refreshForWelcomeScreen
+  }
+  
+  async restartApplication() {
+    try {
+      if (window.__TAURI__?.process) {
+        await window.__TAURI__.process.relaunch();
+      } else {
+        location.reload();
+      }
+    } catch (error) {
+      console.error('Failed to restart application:', error);
+      location.reload();
+    }
   }
   
   savePaneSizes() {
@@ -882,6 +945,50 @@ class HorizontalSplitPlugin {
       body.distraction-free.centered-layout .main-content.split-mode.split-horizontal .preview-content {
         display: table !important;
         min-height: 100% !important;
+      }
+      
+      /* Container-based responsive toolbar for narrow editor panes */
+      .main-content.split-mode.split-horizontal .editor-pane {
+        container-type: inline-size;
+      }
+      
+      @container (max-width: 600px) {
+        .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar .toolbar-btn {
+          padding: 3px 4px !important;
+          font-size: 10px !important;
+          min-width: 24px !important;
+        }
+        
+        .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar .toolbar-btn .btn-text {
+          display: none !important;
+        }
+        
+        .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar {
+          gap: 1px !important;
+          padding: 2px !important;
+        }
+      }
+      
+      /* Force preview display in both normal and distraction-free mode */
+      #preview {
+        display: block !important;
+      }
+      
+      /* Responsive markdown toolbar for horizontal split mode */
+      @media (max-width: 1200px) {
+        .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar .toolbar-btn {
+          padding: 4px 6px !important;
+          font-size: 11px !important;
+          min-width: auto !important;
+        }
+        
+        .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar .toolbar-btn .btn-text {
+          display: none !important;
+        }
+        
+        .main-content.split-mode.split-horizontal .editor-pane .markdown-toolbar {
+          gap: 2px !important;
+        }
       }
     `;
     document.head.appendChild(this.styleElement);

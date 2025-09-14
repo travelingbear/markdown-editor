@@ -9,6 +9,9 @@ class HorizontalSplitPlugin {
     this.dropdownContainer = null;
     this.styleElement = null;
     this.savedPaneSizes = null;
+    
+    // Typewriter components
+    this.typewriterAudio = null;
   }
 
   async init() {
@@ -40,6 +43,12 @@ class HorizontalSplitPlugin {
         this.applyToolbarVisibility();
         this.applyPaneOrder();
       }
+      
+      // Initialize typewriter mode if enabled
+      const typewriterMode = localStorage.getItem('markdownViewer_typewriterMode');
+      if (typewriterMode === 'enabled') {
+        this.initTypewriterMode();
+      }
     }, 100);
     
     this.isActive = true;
@@ -56,6 +65,17 @@ class HorizontalSplitPlugin {
     }
     if (!localStorage.getItem('markdownViewer_horizontalSplitPaneOrder')) {
       localStorage.setItem('markdownViewer_horizontalSplitPaneOrder', 'preview-top');
+    }
+    
+    // Initialize typewriter settings
+    if (!localStorage.getItem('markdownViewer_typewriterMode')) {
+      localStorage.setItem('markdownViewer_typewriterMode', 'disabled');
+    }
+    if (!localStorage.getItem('markdownViewer_typewriterSounds')) {
+      localStorage.setItem('markdownViewer_typewriterSounds', 'enabled');
+    }
+    if (!localStorage.getItem('markdownViewer_typewriterVolume')) {
+      localStorage.setItem('markdownViewer_typewriterVolume', '0.7');
     }
     
     // Register split orientation setting
@@ -90,6 +110,37 @@ class HorizontalSplitPlugin {
       }
     };
     this.pluginAPI.registerExtension('settings', paneOrderExtension);
+    
+    // Register typewriter settings
+    const typewriterModeExtension = {
+      get: () => localStorage.getItem('markdownViewer_typewriterMode') || 'disabled',
+      set: (value) => localStorage.setItem('markdownViewer_typewriterMode', value),
+      metadata: {
+        name: 'typewriterMode',
+        description: 'Typewriter mode setting'
+      }
+    };
+    this.pluginAPI.registerExtension('settings', typewriterModeExtension);
+    
+    const typewriterSoundsExtension = {
+      get: () => localStorage.getItem('markdownViewer_typewriterSounds') || 'enabled',
+      set: (value) => localStorage.setItem('markdownViewer_typewriterSounds', value),
+      metadata: {
+        name: 'typewriterSounds',
+        description: 'Typewriter sounds setting'
+      }
+    };
+    this.pluginAPI.registerExtension('settings', typewriterSoundsExtension);
+    
+    const typewriterVolumeExtension = {
+      get: () => localStorage.getItem('markdownViewer_typewriterVolume') || '0.7',
+      set: (value) => localStorage.setItem('markdownViewer_typewriterVolume', value),
+      metadata: {
+        name: 'typewriterVolume',
+        description: 'Typewriter volume setting'
+      }
+    };
+    this.pluginAPI.registerExtension('settings', typewriterVolumeExtension);
   }
 
   injectSettingsUI() {
@@ -123,6 +174,27 @@ class HorizontalSplitPlugin {
         <div class="setting-control">
           <button id="hsplit-preview-top-btn" class="setting-btn">Preview Top</button>
           <button id="hsplit-code-top-btn" class="setting-btn">Code Top</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Typewriter Mode</label>
+        <div class="setting-control">
+          <button id="typewriter-mode-enabled-btn" class="setting-btn">Enabled</button>
+          <button id="typewriter-mode-disabled-btn" class="setting-btn">Disabled</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Typewriter Sounds</label>
+        <div class="setting-control">
+          <button id="typewriter-sounds-enabled-btn" class="setting-btn">Enabled</button>
+          <button id="typewriter-sounds-disabled-btn" class="setting-btn">Disabled</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Typewriter Volume</label>
+        <div class="setting-control">
+          <input type="range" id="typewriter-volume-slider" min="0" max="1" step="0.1" value="0.7" style="width: 100px;">
+          <span id="typewriter-volume-display">70%</span>
         </div>
       </div>
     `;
@@ -172,6 +244,42 @@ class HorizontalSplitPlugin {
       this.updateSettingsUI();
       this.applyPaneOrder();
     });
+    
+    // Typewriter mode buttons
+    document.getElementById('typewriter-mode-enabled-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_typewriterMode', 'enabled');
+      this.updateSettingsUI();
+      this.initTypewriterMode();
+    });
+    document.getElementById('typewriter-mode-disabled-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_typewriterMode', 'disabled');
+      this.updateSettingsUI();
+      this.disableTypewriterMode();
+    });
+    
+    // Typewriter sounds buttons
+    document.getElementById('typewriter-sounds-enabled-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_typewriterSounds', 'enabled');
+      this.updateSettingsUI();
+      if (this.typewriterAudio) this.typewriterAudio.enabled = true;
+    });
+    document.getElementById('typewriter-sounds-disabled-btn')?.addEventListener('click', () => {
+      localStorage.setItem('markdownViewer_typewriterSounds', 'disabled');
+      this.updateSettingsUI();
+      if (this.typewriterAudio) this.typewriterAudio.enabled = false;
+    });
+    
+    // Volume slider
+    const volumeSlider = document.getElementById('typewriter-volume-slider');
+    const volumeDisplay = document.getElementById('typewriter-volume-display');
+    if (volumeSlider && volumeDisplay) {
+      volumeSlider.addEventListener('input', (e) => {
+        const volume = parseFloat(e.target.value);
+        localStorage.setItem('markdownViewer_typewriterVolume', volume.toString());
+        volumeDisplay.textContent = Math.round(volume * 100) + '%';
+        if (this.typewriterAudio) this.typewriterAudio.setVolume(volume);
+      });
+    }
   }
 
   updateSettingsUI() {
@@ -189,6 +297,22 @@ class HorizontalSplitPlugin {
     const paneOrder = localStorage.getItem('markdownViewer_horizontalSplitPaneOrder') || 'preview-top';
     document.getElementById('hsplit-preview-top-btn')?.classList.toggle('active', paneOrder === 'preview-top');
     document.getElementById('hsplit-code-top-btn')?.classList.toggle('active', paneOrder === 'code-top');
+    
+    // Update typewriter buttons
+    const typewriterMode = localStorage.getItem('markdownViewer_typewriterMode') || 'disabled';
+    document.getElementById('typewriter-mode-enabled-btn')?.classList.toggle('active', typewriterMode === 'enabled');
+    document.getElementById('typewriter-mode-disabled-btn')?.classList.toggle('active', typewriterMode === 'disabled');
+    
+    const typewriterSounds = localStorage.getItem('markdownViewer_typewriterSounds') || 'enabled';
+    document.getElementById('typewriter-sounds-enabled-btn')?.classList.toggle('active', typewriterSounds === 'enabled');
+    document.getElementById('typewriter-sounds-disabled-btn')?.classList.toggle('active', typewriterSounds === 'disabled');
+    
+    // Update volume slider
+    const volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
+    const volumeSlider = document.getElementById('typewriter-volume-slider');
+    const volumeDisplay = document.getElementById('typewriter-volume-display');
+    if (volumeSlider) volumeSlider.value = volume;
+    if (volumeDisplay) volumeDisplay.textContent = Math.round(volume * 100) + '%';
   }
 
   hookSplitButton() {
@@ -867,23 +991,133 @@ class HorizontalSplitPlugin {
     this.pluginAPI.unregisterExtension('settings', 'defaultSplitOrientation');
     this.pluginAPI.unregisterExtension('settings', 'horizontalSplitToolbar');
     this.pluginAPI.unregisterExtension('settings', 'horizontalSplitPaneOrder');
+    this.pluginAPI.unregisterExtension('settings', 'typewriterMode');
+    this.pluginAPI.unregisterExtension('settings', 'typewriterSounds');
+    this.pluginAPI.unregisterExtension('settings', 'typewriterVolume');
     
     // Clear plugin settings from localStorage
     localStorage.removeItem('markdownViewer_defaultSplitOrientation');
     localStorage.removeItem('markdownViewer_horizontalSplitToolbar');
     localStorage.removeItem('markdownViewer_horizontalSplitPaneOrder');
+    localStorage.removeItem('markdownViewer_typewriterMode');
+    localStorage.removeItem('markdownViewer_typewriterSounds');
+    localStorage.removeItem('markdownViewer_typewriterVolume');
     
     this.isActive = false;
     console.log('[HorizontalSplitPlugin] Destroyed successfully');
   }
 }
 
+  // Typewriter mode methods
+  initTypewriterMode() {
+    console.log('[HorizontalSplitPlugin] Initializing typewriter mode...');
+    
+    // Initialize audio system
+    if (!this.typewriterAudio) {
+      this.typewriterAudio = new TypewriterAudio();
+    }
+    
+    // Test audio playback
+    setTimeout(() => {
+      console.log('[HorizontalSplitPlugin] Testing typewriter audio...');
+      this.typewriterAudio.playKeystroke();
+    }, 1000);
+  }
+  
+  disableTypewriterMode() {
+    console.log('[HorizontalSplitPlugin] Disabling typewriter mode...');
+    
+    // Cleanup audio
+    if (this.typewriterAudio) {
+      this.typewriterAudio = null;
+    }
+  }
+}
+
+// TypewriterAudio class - HTML5 Audio implementation
+class TypewriterAudio {
+  constructor() {
+    this.keystrokeSounds = [];
+    this.specialSounds = {};
+    this.volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
+    this.enabled = localStorage.getItem('markdownViewer_typewriterSounds') === 'enabled';
+    this.loadSounds();
+  }
+  
+  loadSounds() {
+    console.log('[TypewriterAudio] Loading sounds...');
+    
+    // Load keystroke sounds (14 variations)
+    const keystrokeFiles = [
+      'key-01.flac', 'key-02.flac', 'key-03.flac', 'key-04.flac',
+      'key-05.flac', 'key-06.flac', 'key-07.flac', 'key-08.flac',
+      'key-09.flac', 'key-10.flac', 'key-11.flac', 'key-12.flac',
+      'key-13.flac', 'key-14.flac'
+    ];
+    
+    keystrokeFiles.forEach(file => {
+      const audio = new Audio(`./typewriter_sounds/${file}`);
+      audio.preload = 'auto';
+      audio.volume = this.volume;
+      this.keystrokeSounds.push(audio);
+    });
+    
+    // Load special sounds
+    this.specialSounds.backspace = new Audio('./typewriter_sounds/backspace.flac');
+    this.specialSounds.enter = new Audio('./typewriter_sounds/return.flac');
+    this.specialSounds.shift = new Audio('./typewriter_sounds/shift-caps.flac');
+    
+    // Set volume for special sounds
+    Object.values(this.specialSounds).forEach(audio => {
+      audio.preload = 'auto';
+      audio.volume = this.volume;
+    });
+    
+    console.log(`[TypewriterAudio] Loaded ${this.keystrokeSounds.length} keystroke sounds and ${Object.keys(this.specialSounds).length} special sounds`);
+  }
+  
+  playKeystroke(keyType = 'normal') {
+    if (!this.enabled) return;
+    
+    let audio;
+    if (keyType === 'normal') {
+      // Random keystroke sound
+      const randomIndex = Math.floor(Math.random() * this.keystrokeSounds.length);
+      audio = this.keystrokeSounds[randomIndex];
+    } else {
+      audio = this.specialSounds[keyType];
+    }
+    
+    if (audio) {
+      audio.currentTime = 0; // Reset to start
+      audio.play().catch(e => {
+        console.warn('[TypewriterAudio] Audio play failed:', e);
+        console.log('[TypewriterAudio] Audio src:', audio.src);
+      });
+    }
+  }
+  
+  setVolume(volume) {
+    this.volume = volume;
+    
+    // Update all audio elements
+    this.keystrokeSounds.forEach(audio => {
+      audio.volume = volume;
+    });
+    
+    Object.values(this.specialSounds).forEach(audio => {
+      audio.volume = volume;
+    });
+  }
+}
+
 // Plugin metadata
 HorizontalSplitPlugin.metadata = {
   name: 'Horizontal Split Plugin',
-  version: '1.0.0',
-  description: 'Adds horizontal split functionality to the split mode',
+  version: '2.0.0',
+  description: 'Adds horizontal split functionality and typewriter mode to the split mode',
   author: 'Markdown Editor'
 };
 
 window.HorizontalSplitPlugin = HorizontalSplitPlugin;
+window.TypewriterAudio = TypewriterAudio;

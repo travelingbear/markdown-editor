@@ -1016,11 +1016,11 @@ class HorizontalSplitPlugin {
       this.typewriterAudio = new TypewriterAudio();
     }
     
-    // Test audio playback
+    // Test audio playback immediately (no loading needed for generated sounds)
     setTimeout(() => {
       console.log('[HorizontalSplitPlugin] Testing typewriter audio...');
       this.typewriterAudio.playKeystroke();
-    }, 1000);
+    }, 500);
   }
   
   disableTypewriterMode() {
@@ -1033,80 +1033,110 @@ class HorizontalSplitPlugin {
   }
 }
 
-// TypewriterAudio class - HTML5 Audio implementation
+// TypewriterAudio class - Fallback Web Audio API implementation
 class TypewriterAudio {
   constructor() {
-    this.keystrokeSounds = [];
-    this.specialSounds = {};
     this.volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
     this.enabled = localStorage.getItem('markdownViewer_typewriterSounds') === 'enabled';
-    this.loadSounds();
+    this.audioContext = null;
+    this.initAudioContext();
   }
   
-  loadSounds() {
-    console.log('[TypewriterAudio] Loading sounds...');
+  initAudioContext() {
+    try {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      console.log('[TypewriterAudio] Web Audio API initialized successfully');
+    } catch (e) {
+      console.error('[TypewriterAudio] Web Audio API not supported:', e);
+    }
+  }
+  
+  // Generate typewriter-like sound using Web Audio API
+  generateKeystrokeSound(frequency = 800, duration = 0.1) {
+    if (!this.audioContext || !this.enabled) return;
     
-    // Load keystroke sounds (14 variations)
-    const keystrokeFiles = [
-      'key-01.flac', 'key-02.flac', 'key-03.flac', 'key-04.flac',
-      'key-05.flac', 'key-06.flac', 'key-07.flac', 'key-08.flac',
-      'key-09.flac', 'key-10.flac', 'key-11.flac', 'key-12.flac',
-      'key-13.flac', 'key-14.flac'
-    ];
+    const oscillator = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    const noiseBuffer = this.createNoiseBuffer();
+    const noiseSource = this.audioContext.createBufferSource();
     
-    keystrokeFiles.forEach(file => {
-      const audio = new Audio(`./typewriter_sounds/${file}`);
-      audio.preload = 'auto';
-      audio.volume = this.volume;
-      this.keystrokeSounds.push(audio);
-    });
+    // Create a brief click sound
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.5, this.audioContext.currentTime + duration);
     
-    // Load special sounds
-    this.specialSounds.backspace = new Audio('./typewriter_sounds/backspace.flac');
-    this.specialSounds.enter = new Audio('./typewriter_sounds/return.flac');
-    this.specialSounds.shift = new Audio('./typewriter_sounds/shift-caps.flac');
+    // Add some noise for realism
+    noiseSource.buffer = noiseBuffer;
+    const noiseGain = this.audioContext.createGain();
+    noiseGain.gain.setValueAtTime(0.1 * this.volume, this.audioContext.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
     
-    // Set volume for special sounds
-    Object.values(this.specialSounds).forEach(audio => {
-      audio.preload = 'auto';
-      audio.volume = this.volume;
-    });
+    // Main sound envelope
+    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(this.volume * 0.3, this.audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
     
-    console.log(`[TypewriterAudio] Loaded ${this.keystrokeSounds.length} keystroke sounds and ${Object.keys(this.specialSounds).length} special sounds`);
+    // Connect nodes
+    oscillator.connect(gainNode);
+    noiseSource.connect(noiseGain);
+    gainNode.connect(this.audioContext.destination);
+    noiseGain.connect(this.audioContext.destination);
+    
+    // Start and stop
+    oscillator.start(this.audioContext.currentTime);
+    noiseSource.start(this.audioContext.currentTime);
+    oscillator.stop(this.audioContext.currentTime + duration);
+    noiseSource.stop(this.audioContext.currentTime + duration);
+  }
+  
+  createNoiseBuffer() {
+    const bufferSize = this.audioContext.sampleRate * 0.1; // 0.1 seconds of noise
+    const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    
+    return buffer;
   }
   
   playKeystroke(keyType = 'normal') {
-    if (!this.enabled) return;
+    if (!this.enabled || !this.audioContext) return;
     
-    let audio;
-    if (keyType === 'normal') {
-      // Random keystroke sound
-      const randomIndex = Math.floor(Math.random() * this.keystrokeSounds.length);
-      audio = this.keystrokeSounds[randomIndex];
-    } else {
-      audio = this.specialSounds[keyType];
+    // Resume audio context if suspended (required by some browsers)
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
     }
     
-    if (audio) {
-      audio.currentTime = 0; // Reset to start
-      audio.play().catch(e => {
-        console.warn('[TypewriterAudio] Audio play failed:', e);
-        console.log('[TypewriterAudio] Audio src:', audio.src);
-      });
+    let frequency, duration;
+    
+    switch (keyType) {
+      case 'backspace':
+        frequency = 600;
+        duration = 0.15;
+        break;
+      case 'enter':
+        frequency = 400;
+        duration = 0.2;
+        break;
+      case 'shift':
+        frequency = 1000;
+        duration = 0.08;
+        break;
+      default:
+        // Random variation for normal keys
+        frequency = 700 + Math.random() * 400; // 700-1100 Hz
+        duration = 0.08 + Math.random() * 0.04; // 80-120ms
     }
+    
+    this.generateKeystrokeSound(frequency, duration);
+    console.log(`[TypewriterAudio] Generated ${keyType} sound: ${frequency.toFixed(0)}Hz, ${(duration*1000).toFixed(0)}ms`);
   }
   
   setVolume(volume) {
     this.volume = volume;
-    
-    // Update all audio elements
-    this.keystrokeSounds.forEach(audio => {
-      audio.volume = volume;
-    });
-    
-    Object.values(this.specialSounds).forEach(audio => {
-      audio.volume = volume;
-    });
+    console.log(`[TypewriterAudio] Volume set to: ${(volume * 100).toFixed(0)}%`);
   }
 }
 

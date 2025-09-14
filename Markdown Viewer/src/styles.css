@@ -8,8 +8,8 @@
   --text-secondary: #656d76;
   --border-primary: #d0d7de;
   --border-secondary: #8c959f;
-  --accent-primary: #0969da;
-  --accent-hover: #0550ae;
+  --accent-primary: #5e60e7;
+  --accent-hover: #7e80e3;
   
   /* Centered Layout Variables */
   --page-width-a4: 210mm;
@@ -426,7 +426,7 @@ body.centered-layout .preview-pane {
 
 /* Status Bar */
 .status-bar {
-  display: flex;
+  display: flex !important;
   justify-content: space-between;
   align-items: center;
   padding: 4px 12px;

@@ -35,7 +35,7 @@ class PluginLoader {
       
       // Check for known plugins in the plugins directory
       const knownPlugins = [
-        'SamplePlugin.js',
+        //'SamplePlugin.js',
         'HorizontalSplitPlugin.js',
         'TypewriterSoundsPlugin.js'
       ];
@@ -124,7 +124,7 @@ class PluginLoader {
   getPluginClassFromGlobal(pluginId) {
     // Map known plugin IDs to their actual class names
     const classNameMap = {
-      'sample-plugin': 'SamplePlugin',
+      //'sample-plugin': 'SamplePlugin',
       'horizontal-split-plugin': 'HorizontalSplitPlugin',
       'typewriter-sounds-plugin': 'TypewriterSoundsPlugin'
     };

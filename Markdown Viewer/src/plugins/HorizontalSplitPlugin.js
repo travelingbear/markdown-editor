@@ -571,6 +571,7 @@ class HorizontalSplitPlugin {
         previewHeight: previewPane.style.height || '50%',
         editorHeight: editorPane.style.height || '50%'
       };
+    }
   }
   
   restorePaneSizes() {
@@ -961,6 +962,7 @@ class HorizontalSplitPlugin {
       /* Force preview display in both normal and distraction-free mode */
       #preview {
         display: block !important;
+        min-height: 100%
       }
       
       /* Responsive markdown toolbar for horizontal split mode */

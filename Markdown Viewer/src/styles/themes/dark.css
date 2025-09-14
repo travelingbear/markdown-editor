@@ -4,14 +4,14 @@
 body.dark-theme,
 [data-theme="dark"] {
   --bg-primary: #161b22;
-  --bg-secondary: #161b22;
+  --bg-secondary: #22272d;
   --bg-tertiary: #21262d;
   --text-primary: #f0f6fc;
   --text-secondary: #8b949e;
   --border-primary: #30363d;
   --border-secondary: #484f58;
-  --accent-primary: #2f81f7;
-  --accent-hover: #1c7ed6;
+  --accent-primary: #5e60e7;
+  --accent-hover: #7e80e3;
 }
 
 /* Distraction-free mode variables */

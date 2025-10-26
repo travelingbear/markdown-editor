@@ -3662,3 +3662,73 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
 .setting-info-icon:hover {
   opacity: 1;
 }
+
+/* Markdown Toolbar Collapsible Groups */
+.md-collapsible-group {
+  position: relative;
+  display: inline-block;
+}
+
+.md-collapsible-btn {
+  padding: 6px 8px;
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.md-collapsible-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #7e80e3;
+}
+
+.md-collapsible-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 25000;
+  display: none;
+  flex-direction: row;
+  gap: 4px;
+  padding: 8px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.md-collapsible-menu.show {
+  display: flex;
+}
+
+.md-collapsible-menu .md-btn {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* Width-based responsive design for markdown toolbar */
+@media (max-width: 1090px) {
+  .toolbar-group.headings,
+  .toolbar-group.text-alignment,
+  .toolbar-group.code-quotes {
+    display: none;
+  }
+  
+  .md-collapsible-group {
+    display: inline-block;
+  }
+}
+
+@media (min-width: 1091px) {
+  .md-collapsible-group {
+    display: none;
+  }
+}

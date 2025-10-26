@@ -319,6 +319,23 @@ body.distraction-free .markdown-toolbar {
   margin: 0 6px;
 }
 
+/* Collapsible Menu Styles */
+.md-collapse-menu {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100000;
+  display: none;
+  flex-direction: column;
+  min-width: 120px;
+}
+
+.md-collapse-menu.show {
+  display: flex;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .md-dropdown-menu {

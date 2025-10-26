@@ -280,6 +280,9 @@ class ToolbarComponent extends BaseComponent {
     
     // Setup modal functionality
     this.setupMarkdownModals();
+    
+    // Setup collapsible groups
+    this.setupCollapsibleGroups();
   }
   
   setupMarkdownDropdowns() {
@@ -871,6 +874,93 @@ class ToolbarComponent extends BaseComponent {
     }
   }
   
+  setupCollapsibleGroups() {
+    // Headings collapsible group
+    const headingsBtn = document.getElementById('headings-collapse-btn');
+    const headingsMenu = document.getElementById('headings-collapse-menu');
+    
+    if (headingsBtn && headingsMenu) {
+      headingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleCollapsibleMenu('headings');
+      });
+    }
+    
+    // Alignment collapsible group
+    const alignmentBtn = document.getElementById('alignment-collapse-btn');
+    const alignmentMenu = document.getElementById('alignment-collapse-menu');
+    
+    if (alignmentBtn && alignmentMenu) {
+      alignmentBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleCollapsibleMenu('alignment');
+      });
+    }
+    
+    // Code collapsible group
+    const codeBtn = document.getElementById('code-collapse-btn');
+    const codeMenu = document.getElementById('code-collapse-menu');
+    
+    if (codeBtn && codeMenu) {
+      codeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleCollapsibleMenu('code');
+      });
+    }
+    
+    // Close collapsible menus when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.md-collapsible-group')) {
+        this.hideAllCollapsibleMenus();
+      }
+    });
+  }
+  
+  toggleCollapsibleMenu(type) {
+    const menu = document.getElementById(`${type}-collapse-menu`);
+    if (menu) {
+      if (menu.classList.contains('show')) {
+        this.hideCollapsibleMenu(type);
+      } else {
+        this.hideAllCollapsibleMenus();
+        this.showCollapsibleMenu(type);
+      }
+    }
+  }
+  
+  showCollapsibleMenu(type) {
+    const menu = document.getElementById(`${type}-collapse-menu`);
+    const button = document.getElementById(`${type}-collapse-btn`);
+    if (menu && button) {
+      // Move to body to escape stacking context
+      document.body.appendChild(menu);
+      
+      const rect = button.getBoundingClientRect();
+      menu.style.left = rect.left + 'px';
+      menu.style.top = (rect.bottom + 2) + 'px';
+      menu.style.zIndex = '100000';
+      menu.classList.add('show');
+    }
+  }
+  
+  hideCollapsibleMenu(type) {
+    const menu = document.getElementById(`${type}-collapse-menu`);
+    if (menu) {
+      menu.classList.remove('show');
+      // Move back to original container
+      const container = document.getElementById(`${type}-collapse-container`);
+      if (container && menu.parentNode !== container) {
+        container.appendChild(menu);
+      }
+    }
+  }
+  
+  hideAllCollapsibleMenus() {
+    this.hideCollapsibleMenu('headings');
+    this.hideCollapsibleMenu('alignment');
+    this.hideCollapsibleMenu('code');
+  }
+
   onDestroy() {
     // Clean up any resources
     this.currentMode = 'preview';

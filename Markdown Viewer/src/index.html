@@ -86,11 +86,25 @@
           </div>
           <div class="toolbar-separator"></div>
           <!-- Headings -->
-          <div class="toolbar-group">
+          <div class="toolbar-group headings">
             <button class="md-btn" data-action="paragraph" title="Paragraph (Remove Heading)">P</button>
             <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+Shift+1)">H1</button>
             <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+Shift+2)">H2</button>
             <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+Shift+3)">H3</button>
+          </div>
+          
+          <!-- Collapsible Headings Group -->
+          <div class="md-collapsible-group">
+            <button class="md-collapsible-btn" id="headings-collapse-btn">
+              <span>H</span>
+              <span>▼</span>
+            </button>
+            <div class="md-collapsible-menu" id="headings-collapse-menu">
+              <button class="md-btn" data-action="paragraph" title="Paragraph (Remove Heading)">P</button>
+              <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+Shift+1)">H1</button>
+              <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+Shift+2)">H2</button>
+              <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+Shift+3)">H3</button>
+            </div>
           </div>
           <div class="toolbar-separator"></div>
           
@@ -179,7 +193,7 @@
           <div class="toolbar-separator"></div>
           
           <!-- Code & Quotes -->
-          <div class="toolbar-group">
+          <div class="toolbar-group code-quotes">
             <button class="md-btn" data-action="code" title="Inline Code">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="16,18 22,12 16,6"></polyline>
@@ -200,10 +214,42 @@
               </svg>
             </button>
           </div>
+          
+          <!-- Collapsible Code & Quotes Group -->
+          <div class="md-collapsible-group">
+            <button class="md-collapsible-btn" id="code-collapse-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16,18 22,12 16,6"></polyline>
+                <polyline points="8,6 2,12 8,18"></polyline>
+              </svg>
+              <span>▼</span>
+            </button>
+            <div class="md-collapsible-menu" id="code-collapse-menu">
+              <button class="md-btn" data-action="code" title="Inline Code">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16,18 22,12 16,6"></polyline>
+                  <polyline points="8,6 2,12 8,18"></polyline>
+                </svg>
+              </button>
+              <button class="md-btn" data-action="codeblock" title="Code Block">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+              </button>
+              <button class="md-btn" data-action="quote" title="Blockquote">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path>
+                  <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
           <div class="toolbar-separator"></div>
           
           <!-- Text Alignment -->
-          <div class="toolbar-group">
+          <div class="toolbar-group text-alignment">
             <button class="md-btn" data-action="align-left" title="Align Left">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -232,6 +278,48 @@
                 <line x1="3" y1="18" x2="21" y2="18"></line>
               </svg>
             </button>
+          </div>
+          
+          <!-- Collapsible Text Alignment Group -->
+          <div class="md-collapsible-group">
+            <button class="md-collapsible-btn" id="alignment-collapse-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="15" y2="12"></line>
+                <line x1="3" y1="18" x2="18" y2="18"></line>
+              </svg>
+              <span>▼</span>
+            </button>
+            <div class="md-collapsible-menu" id="alignment-collapse-menu">
+              <button class="md-btn" data-action="align-left" title="Align Left">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="12" x2="15" y2="12"></line>
+                  <line x1="3" y1="18" x2="18" y2="18"></line>
+                </svg>
+              </button>
+              <button class="md-btn" data-action="align-center" title="Align Center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="6" y1="12" x2="18" y2="12"></line>
+                  <line x1="4" y1="18" x2="20" y2="18"></line>
+                </svg>
+              </button>
+              <button class="md-btn" data-action="align-right" title="Align Right">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="7" y1="12" x2="21" y2="12"></line>
+                  <line x1="5" y1="18" x2="21" y2="18"></line>
+                </svg>
+              </button>
+              <button class="md-btn" data-action="align-justify" title="Justify">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+              </button>
+            </div>
           </div>
           
           <div style="flex: 1;"></div>

@@ -23,13 +23,13 @@ The Markdown Editor has been refactored from a monolithic structure into a modul
 
 ```mermaid
 graph TB
-    subgraph "Application Layer"
+    subgraph Application Layer
         ME[MarkdownEditor]
         CR[ControllerRegistry]
         PM[PluginManager]
     end
     
-    subgraph "Controller Layer"
+    subgraph Controller Layer
         FC[FileController]
         UC[UIController]
         KC[KeyboardController]
@@ -40,7 +40,7 @@ graph TB
         EC[ExportController]
     end
     
-    subgraph "Core Systems"
+    subgraph Core Systems
         BC[BaseComponent]
         EA[ExtensionAPI]
         HS[Hook System]
@@ -50,7 +50,7 @@ graph TB
         SM[StyleManager]
     end
     
-    subgraph "Plugin Layer"
+    subgraph Plugin Layer
         SP[SamplePlugin]
         CP[Custom Plugins]
     end
@@ -264,20 +264,20 @@ The plugin system enables third-party extensions without modifying core code:
 
 ```mermaid
 graph TB
-    subgraph "Plugin Infrastructure"
+    subgraph Plugin Infrastructure
         PM[PluginManager]
         PL[PluginLoader]
         PV[PluginValidator]
         PC[PluginConfig]
     end
     
-    subgraph "Plugin API"
+    subgraph Plugin API
         PA[Plugin API]
         EA[ExtensionAPI]
         HS[Hook System]
     end
     
-    subgraph "Plugin Instance"
+    subgraph Plugin Instance
         PI[Plugin Class]
         PM1[Plugin Methods]
         PH[Plugin Hooks]

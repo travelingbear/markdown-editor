@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 3.2.2 (2025-10-26)
+
+### Bug Fixes
+- **Default Mode**: Fixed file association not respecting user's default mode setting
+- **UI Improvements**: Changed "Markdown" button text back to "Code" in main toolbar
+- **Centered Layout**: Added tooltip info icon next to Centered Layout setting explaining Preview mode behavior
+
+### Technical Changes
+- Removed condition preventing default mode application when opening files via file association
+- Enhanced settings UI with informative tooltips for better user experience
+
 ## Version 3.2.1 (2025-09-14)
 
 ### Bug Fixes

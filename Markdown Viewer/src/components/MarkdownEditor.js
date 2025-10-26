@@ -234,7 +234,7 @@ class MarkdownEditor extends BaseComponent {
       this.switchToTab(data.tab.id);
       
       // Switch to default mode when first document is opened
-      if (this.modeController.getCurrentMode() === 'preview' && this.tabManager.getTabsCount() === 1) {
+      if (this.tabManager.getTabsCount() === 1) {
         const defaultMode = this.settingsController.getDefaultMode();
         this.modeController.setMode(defaultMode);
       }
@@ -329,7 +329,7 @@ class MarkdownEditor extends BaseComponent {
       this.settingsController.setLastFileOpenTime(this.lastFileOpenTime);
       
       // Switch to default mode when first document is opened
-      if (this.modeController.getCurrentMode() === 'preview' && currentTabCount === 0) {
+      if (this.tabManager.getTabsCount() === 1) {
         const defaultMode = this.settingsController.getDefaultMode();
         this.modeController.setMode(defaultMode);
       }
@@ -666,7 +666,7 @@ class MarkdownEditor extends BaseComponent {
     // Show welcome page initially - always show in preview pane regardless of default mode
     this.previewComponent.showWelcome();
     
-    // Set initial mode to preview for welcome screen manually (avoid ModeController during init)
+    // Always start in preview mode for welcome screen
     this.modeController.currentMode = 'preview';
     const editorPane = document.querySelector('.editor-pane');
     const previewPane = document.querySelector('.preview-pane');
@@ -1541,8 +1541,11 @@ class MarkdownEditor extends BaseComponent {
             content,
             isDirty: false
           });
-          const defaultMode = this.settingsController.getDefaultMode();
-          this.modeController.setMode(defaultMode);
+          // Only switch to default mode if we're currently showing welcome page (first tab)
+          if (this.modeController.getCurrentMode() === 'preview' && this.tabManager.getTabsCount() === 1) {
+            const defaultMode = this.settingsController.getDefaultMode();
+            this.modeController.setMode(defaultMode);
+          }
         }
         return;
       }

@@ -200,6 +200,12 @@ class SettingsController extends BaseComponent {
       }
     }
     
+    // Show/hide centered layout info icon
+    const centeredLayoutInfo = document.getElementById('centered-layout-info');
+    if (centeredLayoutInfo) {
+      centeredLayoutInfo.style.display = this.centeredLayoutEnabled ? 'inline' : 'none';
+    }
+    
     // Update toolbar size buttons
     const toolbarSizeButtons = {
       'main-toolbar-small': this.mainToolbarSize === 'small',

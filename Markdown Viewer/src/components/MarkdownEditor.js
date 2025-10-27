@@ -342,7 +342,11 @@ class MarkdownEditor extends BaseComponent {
     
     this.documentComponent.on('document-new', (data) => {
       // Create new tab
-      this.tabManager.createNewTab(data.content);
+      const newTab = this.tabManager.createNewTab(data.content);
+      if (newTab) {
+        // Ensure we switch to the new tab
+        this.switchToTab(newTab.id);
+      }
       this.modeController.setMode('code'); // New files always start in code mode
     });
     
@@ -1446,6 +1450,12 @@ class MarkdownEditor extends BaseComponent {
         // Focus the window
         this.focusWindow();
       });
+      
+      // Listen for new file requests
+      await listen('new-file-requested', () => {
+        this.fileController.newFile(this.documentComponent, this.tabManager);
+        this.focusWindow();
+      });
 
       
 
@@ -1584,6 +1594,20 @@ class MarkdownEditor extends BaseComponent {
   async checkStartupFile() {
     try {
       if (window.__TAURI__?.core?.invoke) {
+        // Check for new file request first
+        const newFileRequested = await window.__TAURI__.core.invoke('is_new_file_requested');
+        
+        if (newFileRequested) {
+          this.fileController.newFile(this.documentComponent, this.tabManager);
+          
+          try {
+            await window.__TAURI__.core.invoke('clear_new_file_request');
+          } catch (clearError) {
+            console.warn('[MarkdownEditor] Failed to clear new file request:', clearError);
+          }
+          return true;
+        }
+        
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
         
         if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {

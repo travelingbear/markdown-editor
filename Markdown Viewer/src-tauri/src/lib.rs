@@ -6,6 +6,7 @@ use std::sync::Mutex;
 #[derive(Default)]
 struct AppState {
     startup_file: Mutex<Option<String>>,
+    new_file_requested: Mutex<bool>,
 }
 
 #[tauri::command]
@@ -23,6 +24,18 @@ fn get_startup_file(state: State<AppState>) -> Option<String> {
 fn clear_startup_file(state: State<AppState>) {
     let mut startup_file = state.startup_file.lock().unwrap();
     *startup_file = None;
+}
+
+#[tauri::command]
+fn is_new_file_requested(state: State<AppState>) -> bool {
+    let new_file_requested = state.new_file_requested.lock().unwrap();
+    *new_file_requested
+}
+
+#[tauri::command]
+fn clear_new_file_request(state: State<AppState>) {
+    let mut new_file_requested = state.new_file_requested.lock().unwrap();
+    *new_file_requested = false;
 }
 
 #[tauri::command]
@@ -297,8 +310,15 @@ pub fn run() {
         arg == "-n"
     );
     
+    // Check for new file flag
+    let new_file_requested = args.iter().any(|arg| arg == "--new-file");
+    
     if force_new_instance {
         println!("[Rust] Multi-instance flag detected, bypassing single instance");
+    }
+    
+    if new_file_requested {
+        println!("[Rust] New file requested via command line");
     }
     
     // Log each argument for debugging
@@ -338,6 +358,7 @@ pub fn run() {
 
     let app_state = AppState {
         startup_file: Mutex::new(startup_file),
+        new_file_requested: Mutex::new(new_file_requested),
     };
 
     let mut builder = tauri::Builder::default()
@@ -349,6 +370,9 @@ pub fn run() {
     if !force_new_instance {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             println!("[Rust] Single instance callback triggered with args: {:?}", args);
+            
+            // Check for new file request
+            let new_file_requested = args.iter().any(|arg| arg == "--new-file");
             
             // Find markdown files in the arguments
             let mut markdown_files = Vec::new();
@@ -374,13 +398,21 @@ pub fn run() {
                 println!("[Rust] Window focused");
             }
             
+            // Handle new file request
+            if new_file_requested {
+                println!("[Rust] New file requested from existing instance");
+                if let Err(e) = app.emit("new-file-requested", ()) {
+                    println!("[Rust] Failed to emit new-file-requested: {}", e);
+                }
+            }
+            
             // Emit event to frontend with the files to open
             if !markdown_files.is_empty() {
                 println!("[Rust] Forwarding markdown files to existing instance: {:?}", markdown_files);
                 if let Err(e) = app.emit("single-instance-args", &markdown_files) {
                     println!("[Rust] Failed to emit single-instance-args: {}", e);
                 }
-            } else {
+            } else if !new_file_requested {
                 println!("[Rust] No markdown files found in args");
             }
         }));
@@ -394,6 +426,8 @@ pub fn run() {
             get_app_info,
             get_startup_file,
             clear_startup_file,
+            is_new_file_requested,
+            clear_new_file_request,
             open_file_direct,
             debug_command_line,
             test_file_association,
@@ -403,13 +437,21 @@ pub fn run() {
             get_dropped_file_absolute_path,
             show_in_folder
         ])
-        .setup(|app| {
+        .setup(move |app| {
             println!("[Rust] App setup started");
             
             // Focus the main window on startup
             if let Some(window) = app.get_webview_window("main") {
                 if let Err(e) = window.set_focus() {
                     println!("[Rust] Failed to focus main window on startup: {}", e);
+                }
+            }
+            
+            // Emit new file event if requested
+            if new_file_requested {
+                println!("[Rust] Emitting new file request on startup");
+                if let Err(e) = app.emit("new-file-requested", ()) {
+                    println!("[Rust] Failed to emit new-file-requested on startup: {}", e);
                 }
             }
             

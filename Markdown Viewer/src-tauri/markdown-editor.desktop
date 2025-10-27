@@ -11,3 +11,9 @@ MimeType=text/markdown;text/x-markdown;
 StartupNotify=true
 StartupWMClass=markdown-editor
 Keywords=markdown;editor;viewer;text;
+Actions=NewFile;
+
+[Desktop Action NewFile]
+Name=New File
+Exec=markdown-editor --new-file
+Icon=markdown-editor

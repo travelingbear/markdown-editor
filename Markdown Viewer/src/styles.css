@@ -2187,6 +2187,42 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
   color: #dc3545;
 }
 
+/* Animations Disabled - Override all animations and transitions */
+body.animations-disabled,
+body.animations-disabled *,
+body.animations-disabled *::before,
+body.animations-disabled *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  transform: none !important;
+}
+
+/* Specific animation overrides for disabled state */
+body.animations-disabled .welcome-content {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.animations-disabled .splash-content {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+body.animations-disabled .progress-bar {
+  animation: none !important;
+  width: 100% !important;
+}
+
+body.animations-disabled .preview-content {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: scale(var(--zoom-scale)) !important;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .settings-window {

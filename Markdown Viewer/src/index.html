@@ -341,7 +341,7 @@
         <!-- Editor Pane -->
         <div class="editor-pane">
           <div id="monaco-editor" class="monaco-editor-container"></div>
-          <textarea id="editor" style="display: none;" placeholder="# Welcome to Markdown Viewer\n\nStart typing your markdown here..."></textarea>
+          <textarea id="editor" style="display: none;" placeholder=""></textarea>
         </div>
         
         <!-- Splitter -->
@@ -376,8 +376,6 @@
             </div>
           </div>
           <div id="preview" class="preview-content" style="display: none;">
-            <h1>Welcome to Markdown Viewer</h1>
-            <p>Start typing your markdown here...</p>
           </div>
         </div>
       </div>
@@ -503,23 +501,7 @@
                 </div>
               </div>
 
-              <div class="setting-item">
-                <label>Splash Screen</label>
-                <div class="setting-control">
-                  <button id="splash-on-btn" class="setting-btn">Enabled</button>
-                  <button id="splash-off-btn" class="setting-btn">Disabled</button>
-                </div>
-              </div>
-              <div class="setting-item" id="splash-duration-setting">
-                <label>Splash Duration (seconds)</label>
-                <div class="setting-control">
-                  <button id="splash-1s-btn" class="setting-btn">1</button>
-                  <button id="splash-2s-btn" class="setting-btn">2</button>
-                  <button id="splash-3s-btn" class="setting-btn">3</button>
-                  <button id="splash-4s-btn" class="setting-btn">4</button>
-                  <button id="splash-5s-btn" class="setting-btn">5</button>
-                </div>
-              </div>
+
             </div>
             
             <div class="settings-section">
@@ -546,6 +528,30 @@
                   <button id="status-bar-small" class="setting-btn">Small</button>
                   <button id="status-bar-medium" class="setting-btn">Medium</button>
                   <button id="status-bar-large" class="setting-btn">Large</button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <label>Animations</label>
+                <div class="setting-control">
+                  <button id="animations-on-btn" class="setting-btn">Enabled</button>
+                  <button id="animations-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <label>Splash Screen</label>
+                <div class="setting-control">
+                  <button id="splash-on-btn" class="setting-btn">Enabled</button>
+                  <button id="splash-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
+              <div class="setting-item" id="splash-duration-setting">
+                <label>Splash Duration (seconds)</label>
+                <div class="setting-control">
+                  <button id="splash-1s-btn" class="setting-btn">1</button>
+                  <button id="splash-2s-btn" class="setting-btn">2</button>
+                  <button id="splash-3s-btn" class="setting-btn">3</button>
+                  <button id="splash-4s-btn" class="setting-btn">4</button>
+                  <button id="splash-5s-btn" class="setting-btn">5</button>
                 </div>
               </div>
             </div>
@@ -601,6 +607,13 @@
             
             <div class="settings-section">
               <h3>Plugins</h3>
+              <div class="setting-item">
+                <label>Plugin System</label>
+                <div class="setting-control">
+                  <button id="plugins-on-btn" class="setting-btn">Enabled</button>
+                  <button id="plugins-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
               <div id="plugin-list" class="plugin-list">
                 <!-- Plugin controls will be populated here -->
               </div>

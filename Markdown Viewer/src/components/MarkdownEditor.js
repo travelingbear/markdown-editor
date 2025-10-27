@@ -36,6 +36,9 @@ class MarkdownEditor extends BaseComponent {
     this.lastModeSwitchTime = 0;
     this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
     
+    // Smart loading flags
+    this.isNewFileRequested = false;
+    
     // Status bar elements
     this.cursorPos = null;
     this.filename = null;
@@ -79,18 +82,11 @@ class MarkdownEditor extends BaseComponent {
       
       this.updateSplashProgress(95, 'Finalizing...');
       
-      // Initialize plugin manager
-      this.updateSplashProgress(90, 'Initializing plugins...');
-      this.pluginManager = new PluginManager(this);
-      
-      // Initialize plugin loader
-      this.pluginLoader = new PluginLoader(this.pluginManager);
-      
-      // Discover and register plugins
-      await this.pluginLoader.loadAndRegisterPlugins();
-      
-      // Auto-activate enabled plugins
-      await this.pluginManager.autoActivatePlugins();
+      // Defer plugin loading if enabled
+      if (this.settingsController.getPluginsEnabled()) {
+        // Initialize plugins after UI is ready (non-blocking)
+        setTimeout(() => this.initializePlugins(), 100);
+      }
       
       // Complete initialization
       this.startupTime = performance.now() - startupStartTime;
@@ -103,7 +99,7 @@ class MarkdownEditor extends BaseComponent {
       // Mark app as initialized to show hidden elements
       document.body.classList.add('app-initialized');
       
-      // Check for startup file
+      // Check for startup file and new file requests
       await this.checkStartupFile();
       
       // Retro sound is already played by UIController.setTheme() during applyInitialSettings()
@@ -136,84 +132,131 @@ class MarkdownEditor extends BaseComponent {
     this.registry.register('markdownAction', MarkdownActionController);
     this.registry.register('export', ExportController);
     
-    // Create settings controller first (or use injected one)
+    // Phase 1: Create critical controllers first (settings needed by others)
     if (!this.settingsController) {
       this.settingsController = this.registry.createInstance('settings');
     }
     this.addChild(this.settingsController);
     await this.settingsController.init();
     
-    // Create UI controller (or use injected one)
-    if (!this.uiController) {
-      this.uiController = this.registry.createInstance('ui');
-    }
-    this.addChild(this.uiController);
-    await this.uiController.init();
+    // Phase 2: Create independent components in parallel
+    const independentComponents = await Promise.all([
+      // UI Controller
+      (async () => {
+        if (!this.uiController) {
+          this.uiController = this.registry.createInstance('ui');
+        }
+        this.addChild(this.uiController);
+        await this.uiController.init();
+        return this.uiController;
+      })(),
+      
+      // File Controller
+      (async () => {
+        if (!this.fileController) {
+          this.fileController = this.registry.createInstance('file');
+        }
+        this.addChild(this.fileController);
+        await this.fileController.init();
+        this.fileController.setPerformanceOptimizer(this.performanceOptimizer);
+        return this.fileController;
+      })(),
+      
+      // Tab Manager
+      (async () => {
+        this.tabManager = new TabManager();
+        this.addChild(this.tabManager);
+        await this.tabManager.init();
+        return this.tabManager;
+      })(),
+      
+      // Document Component
+      (async () => {
+        this.documentComponent = new DocumentComponent();
+        this.addChild(this.documentComponent);
+        await this.documentComponent.init();
+        return this.documentComponent;
+      })(),
+      
+      // Toolbar Component
+      (async () => {
+        this.toolbarComponent = new ToolbarComponent();
+        this.addChild(this.toolbarComponent);
+        await this.toolbarComponent.init();
+        return this.toolbarComponent;
+      })()
+    ]);
     
-    // Create file controller (or use injected one)
-    if (!this.fileController) {
-      this.fileController = this.registry.createInstance('file');
-    }
-    this.addChild(this.fileController);
-    await this.fileController.init();
-    this.fileController.setPerformanceOptimizer(this.performanceOptimizer);
+    // Phase 3: Create view components in parallel (only if needed)
+    const viewComponents = await Promise.all([
+      // Editor Component (always needed for new files)
+      (async () => {
+        this.editorComponent = new EditorComponent();
+        this.addChild(this.editorComponent);
+        await this.editorComponent.init();
+        return this.editorComponent;
+      })(),
+      
+      // Preview Component (defer if new file requested)
+      (async () => {
+        if (!this.isNewFileRequested) {
+          this.previewComponent = new PreviewComponent();
+          this.addChild(this.previewComponent);
+          await this.previewComponent.init();
+        } else {
+          // Create placeholder for preview component to avoid null references
+          this.previewComponent = null;
+        }
+        return this.previewComponent;
+      })()
+    ]);
     
-    // Create tab manager
-    this.tabManager = new TabManager();
-    this.addChild(this.tabManager);
-    await this.tabManager.init();
-    
-    // Create document component
-    this.documentComponent = new DocumentComponent();
-    this.addChild(this.documentComponent);
-    await this.documentComponent.init();
-    
-    // Create editor component
-    this.editorComponent = new EditorComponent();
-    this.addChild(this.editorComponent);
-    await this.editorComponent.init();
-    
-    // Create preview component
-    this.previewComponent = new PreviewComponent();
-    this.addChild(this.previewComponent);
-    await this.previewComponent.init();
-    
-    // Create toolbar component
-    this.toolbarComponent = new ToolbarComponent();
-    this.addChild(this.toolbarComponent);
-    await this.toolbarComponent.init();
-    
-    // Create mode controller (or use injected one)
-    if (!this.modeController) {
-      this.modeController = this.registry.createInstance('mode');
-    }
-    this.addChild(this.modeController);
-    await this.modeController.init();
-    this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
-    
-    // Create tab UI controller (or use injected one)
-    if (!this.tabUIController) {
-      this.tabUIController = this.registry.createInstance('tabUI');
-    }
-    this.addChild(this.tabUIController);
-    await this.tabUIController.init();
-    this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
-    
-    // Create markdown action controller (or use injected one)
-    if (!this.markdownActionController) {
-      this.markdownActionController = this.registry.createInstance('markdownAction');
-    }
-    this.addChild(this.markdownActionController);
-    await this.markdownActionController.init();
-    this.markdownActionController.setDependencies(this.editorComponent, this.documentComponent);
-    
-    // Create export controller (or use injected one)
-    if (!this.exportController) {
-      this.exportController = this.registry.createInstance('export');
-    }
-    this.addChild(this.exportController);
-    await this.exportController.init();
-    this.exportController.setDependencies(this.editorComponent);
+    // Phase 4: Create dependent controllers
+    const dependentControllers = await Promise.all([
+      // Mode Controller
+      (async () => {
+        if (!this.modeController) {
+          this.modeController = this.registry.createInstance('mode');
+        }
+        this.addChild(this.modeController);
+        await this.modeController.init();
+        this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
+        return this.modeController;
+      })(),
+      
+      // Tab UI Controller
+      (async () => {
+        if (!this.tabUIController) {
+          this.tabUIController = this.registry.createInstance('tabUI');
+        }
+        this.addChild(this.tabUIController);
+        await this.tabUIController.init();
+        this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
+        return this.tabUIController;
+      })(),
+      
+      // Markdown Action Controller
+      (async () => {
+        if (!this.markdownActionController) {
+          this.markdownActionController = this.registry.createInstance('markdownAction');
+        }
+        this.addChild(this.markdownActionController);
+        await this.markdownActionController.init();
+        this.markdownActionController.setDependencies(this.editorComponent, this.documentComponent);
+        return this.markdownActionController;
+      })(),
+      
+      // Export Controller
+      (async () => {
+        if (!this.exportController) {
+          this.exportController = this.registry.createInstance('export');
+        }
+        this.addChild(this.exportController);
+        await this.exportController.init();
+        this.exportController.setDependencies(this.editorComponent);
+        return this.exportController;
+      })()
+    ]);
   }
 
   setupComponentCommunication() {
@@ -667,44 +710,72 @@ class MarkdownEditor extends BaseComponent {
       this.tabUIController.updatePinnedTabs();
     }
     
-    // Show welcome page initially - always show in preview pane regardless of default mode
-    this.previewComponent.showWelcome();
-    
-    // Always start in preview mode for welcome screen
-    this.modeController.currentMode = 'preview';
-    const editorPane = document.querySelector('.editor-pane');
-    const previewPane = document.querySelector('.preview-pane');
-    const splitter = document.getElementById('splitter');
-    
-    if (editorPane && previewPane && splitter) {
-      editorPane.style.display = 'none';
-      previewPane.style.display = 'block';
-      splitter.style.display = 'none';
+    // Smart mode detection - skip preview setup if new file requested
+    if (this.isNewFileRequested) {
+      // Initialize for code mode directly
+      this.modeController.currentMode = 'code';
+      const editorPane = document.querySelector('.editor-pane');
+      const previewPane = document.querySelector('.preview-pane');
+      const splitter = document.getElementById('splitter');
+      
+      if (editorPane && previewPane && splitter) {
+        editorPane.style.display = 'block';
+        previewPane.style.display = 'none';
+        splitter.style.display = 'none';
+      }
+      
+      // Update main content and body classes for code mode
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+        mainContent.classList.add('code-mode');
+      }
+      document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      document.body.classList.add('code-mode');
+      
+      // Skip welcome screen setup
+    } else {
+      // Normal startup - show welcome page in preview mode
+      if (this.previewComponent) {
+        this.previewComponent.showWelcome();
+      }
+      
+      // Always start in preview mode for welcome screen
+      this.modeController.currentMode = 'preview';
+      const editorPane = document.querySelector('.editor-pane');
+      const previewPane = document.querySelector('.preview-pane');
+      const splitter = document.getElementById('splitter');
+      
+      if (editorPane && previewPane && splitter) {
+        editorPane.style.display = 'none';
+        previewPane.style.display = 'block';
+        splitter.style.display = 'none';
+      }
+      
+      // Update main content and body classes for welcome screen
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent) {
+        mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+        mainContent.classList.add('preview-mode');
+      }
+      document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      document.body.classList.add('preview-mode');
+      
+      // Update filename
+      this.updateFilename('Welcome', false);
     }
-    
-    // Update main content and body classes for welcome screen
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      mainContent.classList.add('preview-mode');
-    }
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-    document.body.classList.add('preview-mode');
-    
-    // Update filename
-    this.updateFilename('Welcome', false);
     
     // Update cursor position
     this.updateCursorPosition(1, 1);
     
-    // Update toolbar state for no document
+    // Update toolbar state
     this.toolbarComponent.emit('document-state-changed', { 
-      hasDocument: false, 
+      hasDocument: this.isNewFileRequested, 
       isDirty: false 
     });
     
-    // Notify toolbar of current mode (preview for welcome screen)
-    this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
+    // Notify toolbar of current mode
+    this.toolbarComponent.emit('mode-changed', { mode: this.modeController.currentMode });
     
     // Update theme button
     const themeData = this.settingsController.getTheme();
@@ -992,13 +1063,77 @@ class MarkdownEditor extends BaseComponent {
 
 
 
+  // Lazy load preview component if not already loaded
+  async ensurePreviewComponent() {
+    if (!this.previewComponent) {
+      console.log('[MarkdownEditor] Lazy loading preview component...');
+      this.previewComponent = new PreviewComponent();
+      this.addChild(this.previewComponent);
+      await this.previewComponent.init();
+      
+      // Set up preview component events
+      this.setupPreviewComponentEvents();
+    }
+    return this.previewComponent;
+  }
+  
+  setupPreviewComponentEvents() {
+    if (!this.previewComponent) return;
+    
+    // Preview Component Events
+    this.previewComponent.on('task-toggled', (data) => {
+      setTimeout(() => {
+        this.markdownActionController.updateTaskInMarkdown(data.taskText, data.checked);
+      }, 10);
+    });
+    
+    this.previewComponent.on('external-link-clicked', (data) => {
+      this.openExternalLink(data.href);
+    });
+    
+    this.previewComponent.on('preview-error', (data) => {
+      this.handleError(new Error(data.error), 'Preview');
+    });
+    
+    this.previewComponent.on('mermaid-loaded', () => {
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    });
+    
+    this.previewComponent.on('katex-loaded', () => {
+      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    });
+    
+    // Preview Context Menu Events
+    this.previewComponent.on('reload-file-requested', () => {
+      this.reloadCurrentFile();
+    });
+    
+    this.previewComponent.on('sync-from-code-requested', () => {
+      this.syncFromCode();
+    });
+    
+    this.previewComponent.on('restart-app-requested', () => {
+      this.restartApplication();
+    });
+    
+    this.previewComponent.on('export-html-requested', () => {
+      this.exportController.exportToHtml();
+    });
+    
+    this.previewComponent.on('export-pdf-requested', () => {
+      this.exportController.exportToPdf();
+    });
+  }
+
   // Theme change handler
-  handleThemeChange(themeData) {
+  async handleThemeChange(themeData) {
     // Directly update editor theme to ensure Monaco gets updated
     this.editorComponent.updateTheme(themeData.theme);
     
-    // Notify other components
-    this.previewComponent.emit('theme-changed', { theme: themeData.theme });
+    // Notify preview component if it exists
+    if (this.previewComponent) {
+      this.previewComponent.emit('theme-changed', { theme: themeData.theme });
+    }
     this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
     
     // CRITICAL: Reapply current mode after theme change to fix display issues
@@ -1008,7 +1143,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Refresh preview if we have active tab content
     const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
+    if (activeTab && this.previewComponent) {
       this.previewComponent.emit('update-preview', { 
         content: activeTab.content,
         filePath: activeTab.filePath 
@@ -1289,7 +1424,13 @@ class MarkdownEditor extends BaseComponent {
   }
   
   updatePluginDisplay() {
-    if (!this.pluginManager) return;
+    if (!this.settingsController.getPluginsEnabled() || !this.pluginManager) {
+      const pluginList = document.getElementById('plugin-list');
+      if (pluginList) {
+        pluginList.innerHTML = '<div class="no-plugins">Plugins are disabled</div>';
+      }
+      return;
+    }
     
     const pluginList = document.getElementById('plugin-list');
     if (!pluginList) return;
@@ -1591,6 +1732,28 @@ class MarkdownEditor extends BaseComponent {
 
   }
 
+  async initializePlugins() {
+    try {
+      console.log('[MarkdownEditor] Initializing plugins...');
+      
+      // Initialize plugin manager
+      this.pluginManager = new PluginManager(this);
+      
+      // Initialize plugin loader
+      this.pluginLoader = new PluginLoader(this.pluginManager);
+      
+      // Discover and register plugins
+      await this.pluginLoader.loadAndRegisterPlugins();
+      
+      // Auto-activate enabled plugins
+      await this.pluginManager.autoActivatePlugins();
+      
+      console.log('[MarkdownEditor] Plugins initialized successfully');
+    } catch (error) {
+      console.warn('[MarkdownEditor] Plugin initialization failed:', error);
+    }
+  }
+
   async checkStartupFile() {
     try {
       if (window.__TAURI__?.core?.invoke) {
@@ -1598,6 +1761,7 @@ class MarkdownEditor extends BaseComponent {
         const newFileRequested = await window.__TAURI__.core.invoke('is_new_file_requested');
         
         if (newFileRequested) {
+          this.isNewFileRequested = true;
           this.fileController.newFile(this.documentComponent, this.tabManager);
           
           try {

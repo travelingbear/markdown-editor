@@ -3,6 +3,7 @@ class SplashScreenComponent {
   constructor() {
     this.splashElement = null;
     this.isEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
+    this.animationsEnabled = localStorage.getItem('markdownViewer_animationsEnabled') !== 'false';
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
     this.minDisplayTime = this.splashDuration * 1000; // Convert to milliseconds
     this.startTime = performance.now();
@@ -50,7 +51,7 @@ class SplashScreenComponent {
         justify-content: center;
         z-index: 10000;
         opacity: 0;
-        transition: opacity 0.5s ease;
+        transition: ${this.animationsEnabled ? 'opacity 0.5s ease' : 'none'};
       }
       
       .splash-screen.active {
@@ -61,7 +62,7 @@ class SplashScreenComponent {
       
       .splash-screen.fade-out {
         opacity: 0;
-        transition: opacity 0.5s ease;
+        transition: ${this.animationsEnabled ? 'opacity 0.5s ease' : 'none'};
       }
       
       .splash-content {
@@ -93,8 +94,8 @@ class SplashScreenComponent {
         height: 100%;
         background: #007acc;
         border-radius: 2px;
-        width: 0%;
-        animation: progressAnimation 1.3s ease-out forwards;
+        width: ${this.animationsEnabled ? '0%' : '100%'};
+        animation: ${this.animationsEnabled ? 'progressAnimation 1.3s ease-out forwards' : 'none'};
       }
       
       @keyframes progressAnimation {
@@ -130,11 +131,12 @@ class SplashScreenComponent {
     setTimeout(() => {
       this.splashElement.classList.add('fade-out');
       
+      const fadeDelay = this.animationsEnabled ? 500 : 0;
       setTimeout(() => {
         if (this.splashElement && this.splashElement.parentNode) {
           this.splashElement.parentNode.removeChild(this.splashElement);
         }
-      }, 500);
+      }, fadeDelay);
     }, remainingTime);
   }
 

@@ -19,6 +19,8 @@ class SettingsController extends BaseComponent {
     this.mainToolbarSize = 'medium';
     this.mdToolbarSize = 'medium';
     this.statusBarSize = 'medium';
+    this.pluginsEnabled = true;
+    this.animationsEnabled = true;
     
     // Performance tracking
     this.startupTime = 0;
@@ -29,6 +31,8 @@ class SettingsController extends BaseComponent {
   async onInit() {
     this.loadSettings();
     this.setupSettingsControls();
+    // Ensure settings display is updated after initialization
+    setTimeout(() => this.updateSettingsDisplay(), 100);
   }
 
   loadSettings() {
@@ -48,6 +52,8 @@ class SettingsController extends BaseComponent {
     this.mainToolbarSize = localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium';
     this.mdToolbarSize = localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium';
     this.statusBarSize = localStorage.getItem('markdownViewer_statusBarSize') || 'medium';
+    this.pluginsEnabled = localStorage.getItem('markdownViewer_pluginsEnabled') !== 'false';
+    this.animationsEnabled = localStorage.getItem('markdownViewer_animationsEnabled') !== 'false';
   }
 
   applySettings() {
@@ -57,6 +63,7 @@ class SettingsController extends BaseComponent {
     this.applyPinnedTabsVisibility();
     this.applyPageSize();
     this.applyToolbarSizes();
+    this.applyAnimationsEnabled();
   }
 
   applyTheme() {
@@ -97,6 +104,14 @@ class SettingsController extends BaseComponent {
     document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
     document.body.setAttribute('data-status-bar-size', this.statusBarSize);
+  }
+
+  applyAnimationsEnabled() {
+    if (this.animationsEnabled) {
+      document.body.classList.remove('animations-disabled');
+    } else {
+      document.body.classList.add('animations-disabled');
+    }
   }
 
   updateSettingsDisplay() {
@@ -153,7 +168,11 @@ class SettingsController extends BaseComponent {
       'pinned-tabs-on-btn': this.pinnedTabsEnabled,
       'pinned-tabs-off-btn': !this.pinnedTabsEnabled,
       'splash-on-btn': this.isSplashEnabled,
-      'splash-off-btn': !this.isSplashEnabled
+      'splash-off-btn': !this.isSplashEnabled,
+      'plugins-on-btn': this.pluginsEnabled,
+      'plugins-off-btn': !this.pluginsEnabled,
+      'animations-on-btn': this.animationsEnabled,
+      'animations-off-btn': !this.animationsEnabled
     };
     
     Object.entries(allSettings).forEach(([id, active]) => {
@@ -516,6 +535,36 @@ class SettingsController extends BaseComponent {
         });
       }
     });
+    
+    // Plugin controls
+    ['plugins-on-btn', 'plugins-off-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          this.pluginsEnabled = id === 'plugins-on-btn';
+          localStorage.setItem('markdownViewer_pluginsEnabled', this.pluginsEnabled.toString());
+          this.emit('plugins-enabled-changed', { enabled: this.pluginsEnabled });
+          this.updateSettingsDisplay();
+          
+          // Show restart warning
+          alert('Plugin system changes require a manual restart to take effect. Please restart the application.')
+        });
+      }
+    });
+    
+    // Animation controls
+    ['animations-on-btn', 'animations-off-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          this.animationsEnabled = id === 'animations-on-btn';
+          localStorage.setItem('markdownViewer_animationsEnabled', this.animationsEnabled.toString());
+          this.applyAnimationsEnabled();
+          this.emit('animations-enabled-changed', { enabled: this.animationsEnabled });
+          this.updateSettingsDisplay();
+        });
+      }
+    });
   }
 
   // Getters for other components to access settings
@@ -537,6 +586,14 @@ class SettingsController extends BaseComponent {
 
   getPinnedTabsEnabled() {
     return this.pinnedTabsEnabled;
+  }
+  
+  getPluginsEnabled() {
+    return this.pluginsEnabled;
+  }
+  
+  getAnimationsEnabled() {
+    return this.animationsEnabled;
   }
 
   // Performance tracking methods

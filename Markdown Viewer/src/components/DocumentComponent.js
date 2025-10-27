@@ -228,7 +228,7 @@ class DocumentComponent extends BaseComponent {
   newDocument() {
     try {
       this.currentFile = null;
-      this.content = '# New Document\n\nStart typing your markdown here...';
+      this.content = '';
       this.markClean();
       
       this.emit('document-new', { 

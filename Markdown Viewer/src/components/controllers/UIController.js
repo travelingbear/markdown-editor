@@ -29,6 +29,9 @@ class UIController extends BaseComponent {
     // Other settings
     this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') === 'true';
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
+    
+    // Track if this is initial startup
+    this.isInitialStartup = true;
   }
 
   async onInit() {
@@ -123,7 +126,10 @@ class UIController extends BaseComponent {
     
     if (this.isRetroTheme) {
       document.body.classList.add('retro-theme');
-      this.playRetroStartupSound();
+      // Only play sound during initial startup
+      if (this.isInitialStartup) {
+        this.playRetroStartupSound();
+      }
       // Load retro theme dynamically
       if (window.styleManager) {
         await window.styleManager.loadTheme('retro');
@@ -361,6 +367,9 @@ class UIController extends BaseComponent {
     
     // Apply pinned tabs visibility
     this.applyPinnedTabsVisibility();
+    
+    // Mark startup as complete
+    this.isInitialStartup = false;
   }
 
   setupModalEventHandlers() {

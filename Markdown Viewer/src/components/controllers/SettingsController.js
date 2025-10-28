@@ -26,6 +26,9 @@ class SettingsController extends BaseComponent {
     this.startupTime = 0;
     this.lastFileOpenTime = 0;
     this.lastModeSwitchTime = 0;
+    
+    // Track if this is initial startup
+    this.isInitialStartup = true;
   }
 
   async onInit() {
@@ -64,6 +67,14 @@ class SettingsController extends BaseComponent {
     this.applyPageSize();
     this.applyToolbarSizes();
     this.applyAnimationsEnabled();
+    
+    // Play retro sound only once during initial startup if retro theme is enabled
+    if (this.isInitialStartup && this.isRetroTheme) {
+      this.playRetroStartupSound();
+    }
+    
+    // Mark startup as complete
+    this.isInitialStartup = false;
   }
 
   applyTheme() {
@@ -366,7 +377,6 @@ class SettingsController extends BaseComponent {
             this.theme = 'light';
             this.isRetroTheme = true;
             document.body.classList.add('retro-theme');
-            this.playRetroStartupSound();
           }
           localStorage.setItem('markdownViewer_defaultTheme', this.theme);
           localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());

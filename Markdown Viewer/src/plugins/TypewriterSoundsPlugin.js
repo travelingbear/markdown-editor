@@ -311,100 +311,58 @@ class TypewriterSoundsPlugin {
   }
 }
 
-// TypewriterSoundsAudio class
+// Fast TypewriterSoundsAudio class
 class TypewriterSoundsAudio {
   constructor() {
-    this.keystrokeSounds = [];
-    this.specialSounds = {};
     this.volume = parseFloat(localStorage.getItem('markdownViewer_typewriterVolume') || '0.7');
     this.enabled = localStorage.getItem('markdownViewer_typewriterSounds') === 'enabled';
+    this.pools = {};
+    this.indices = {};
     this.loadSounds();
   }
   
   loadSounds() {
-    const keystrokeFiles = [
-      'key-01', 'key-02', 'key-03', 'key-04',
-      'key-05', 'key-06', 'key-07', 'key-08',
-      'key-09', 'key-10', 'key-11', 'key-12',
-      'key-13', 'key-14'
-    ];
-    
-    const basePath = '../assets/typewriter_sounds/';
-    
-    keystrokeFiles.forEach((file, index) => {
-      const audio = this.createAudioWithFallback(basePath + file);
-      if (audio) {
-        audio.volume = this.volume;
-        this.keystrokeSounds[index] = audio;
-      }
-    });
-    
-    const specialSounds = {
-      backspace: 'backspace',
-      enter: 'return', 
-      shift: 'shift-caps'
+    const basePath = './assets/typewriter_sounds/';
+    const sounds = {
+      normal: 'key-01.ogg',
+      backspace: 'backspace.ogg', 
+      enter: 'return.ogg',
+      shift: 'shift-caps.ogg'
     };
     
-    Object.entries(specialSounds).forEach(([key, file]) => {
-      const audio = this.createAudioWithFallback(basePath + file);
-      if (audio) {
+    // Create 3 instances per sound for overlapping
+    Object.entries(sounds).forEach(([type, file]) => {
+      this.pools[type] = [];
+      this.indices[type] = 0;
+      
+      for (let i = 0; i < 3; i++) {
+        const audio = new Audio(basePath + file);
         audio.volume = this.volume;
-        this.specialSounds[key] = audio;
+        audio.preload = 'auto';
+        this.pools[type].push(audio);
       }
     });
-  }
-  
-  createAudioWithFallback(basePath) {
-    const formats = ['.flac', '.ogg', '.mp3', '.wav'];
-    
-    for (const format of formats) {
-      try {
-        const audio = new Audio(basePath + format);
-        audio.preload = 'metadata';
-        
-        // Test if format is supported
-        const canPlay = audio.canPlayType('audio/' + format.slice(1));
-        if (canPlay === 'probably' || canPlay === 'maybe') {
-          return audio;
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-    
-    console.warn('No supported audio format found for:', basePath);
-    return null;
   }
   
   playKeystroke(keyType = 'normal') {
     if (!this.enabled) return;
     
-    let audio;
-    if (keyType === 'normal') {
-      const randomIndex = Math.floor(Math.random() * this.keystrokeSounds.length);
-      audio = this.keystrokeSounds[randomIndex];
-    } else {
-      audio = this.specialSounds[keyType];
-    }
+    const pool = this.pools[keyType];
+    if (!pool) return;
     
-    if (audio) {
-      if (audio.readyState < 2) {
-        audio.load();
-      }
-      audio.currentTime = 0;
-      audio.play().catch(e => {
-        console.warn('Audio playback failed:', e.message);
-      });
-    }
+    // Get next audio in round-robin
+    const audio = pool[this.indices[keyType]];
+    this.indices[keyType] = (this.indices[keyType] + 1) % pool.length;
+    
+    // Reset and play immediately
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
   }
   
   setVolume(volume) {
     this.volume = volume;
-    this.keystrokeSounds.forEach(audio => {
-      if (audio) audio.volume = volume;
-    });
-    Object.values(this.specialSounds).forEach(audio => {
-      if (audio) audio.volume = volume;
+    Object.values(this.pools).forEach(pool => {
+      pool.forEach(audio => audio.volume = volume);
     });
   }
 }

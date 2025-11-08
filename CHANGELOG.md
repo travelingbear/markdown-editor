@@ -1,5 +1,16 @@
 # Changelog
 
+## Version 3.2.3 (2025-10-29)
+
+### Bug Fixes
+- **Markdown Toolbar**: Fixed collapsible menus appearing behind Monaco editor by implementing proper z-index and positioning
+- **Retro Theme**: Added missing retro theme styling for collapsible markdown toolbar buttons at screen widths below 1090px
+
+### Technical Changes
+- Enhanced collapsible menu positioning using document.body append and fixed z-index (100000)
+- Added retro theme styles for `.md-collapsible-btn` and `.md-collapsible-menu` elements
+- Improved responsive markdown toolbar behavior consistency across all themes
+
 ## Version 3.2.2 (2025-10-26)
 
 ### Bug Fixes

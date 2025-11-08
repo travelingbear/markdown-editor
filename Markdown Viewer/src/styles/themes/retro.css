@@ -1247,3 +1247,33 @@ body.retro-theme .context-submenu .context-menu-item:hover {
   background: #1111b3;
   color: #ffffff;
 }
+
+/* Retro theme collapsible markdown toolbar buttons */
+body.retro-theme .md-collapsible-btn {
+  background: #c0c0c0;
+  border: 3px outset #c0c0c0;
+  outline: 1px solid #808080;
+  color: #000000;
+  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
+  font-size: 11px;
+  font-weight: normal;
+  border-radius: 0;
+  padding: 4px 8px;
+  box-shadow: none;
+}
+
+body.retro-theme .md-collapsible-btn:hover {
+  background: #e0e0e0;
+  border: 3px outset #e0e0e0;
+}
+
+body.retro-theme .md-collapsible-btn:active {
+  border: 3px inset #c0c0c0;
+}
+
+body.retro-theme .md-collapsible-menu {
+  background: #c0c0c0;
+  border: 2px outset #c0c0c0;
+  border-radius: 0;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}

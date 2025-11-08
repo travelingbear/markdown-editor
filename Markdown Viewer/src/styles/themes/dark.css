@@ -358,3 +358,16 @@ body.dark-theme.distraction-free #editor,
 [data-theme="dark"] .image-modal-overlay {
   background: rgba(0, 0, 0, 0.7);
 }
+
+/* Dark theme collapsible button size variations */
+[data-theme="dark"][data-md-toolbar-size="small"] .md-collapsible-btn {
+  padding: 3px 6px;
+  font-size: 9px;
+  height: 22px;
+}
+
+[data-theme="dark"][data-md-toolbar-size="large"] .md-collapsible-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  height: 36px;
+}

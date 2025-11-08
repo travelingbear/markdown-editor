@@ -319,6 +319,33 @@ body.distraction-free .markdown-toolbar {
   margin: 0 6px;
 }
 
+/* Collapsible button size variations */
+[data-md-toolbar-size="small"] .md-collapsible-btn {
+  padding: 3px 6px;
+  font-size: 9px;
+  height: 22px;
+}
+
+[data-md-toolbar-size="small"] .md-collapsible-menu .md-btn {
+  padding: 3px 6px;
+  font-size: 9px;
+  min-width: 24px;
+  height: 22px;
+}
+
+[data-md-toolbar-size="large"] .md-collapsible-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  height: 36px;
+}
+
+[data-md-toolbar-size="large"] .md-collapsible-menu .md-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  min-width: 40px;
+  height: 36px;
+}
+
 /* Collapsible Menu Styles */
 .md-collapse-menu {
   position: fixed;

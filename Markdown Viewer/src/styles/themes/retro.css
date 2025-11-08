@@ -1277,3 +1277,16 @@ body.retro-theme .md-collapsible-menu {
   border-radius: 0;
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
+
+/* Retro theme collapsible button size variations */
+body.retro-theme[data-md-toolbar-size="small"] .md-collapsible-btn {
+  padding: 3px 6px;
+  font-size: 9px;
+  height: 22px;
+}
+
+body.retro-theme[data-md-toolbar-size="large"] .md-collapsible-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  height: 36px;
+}

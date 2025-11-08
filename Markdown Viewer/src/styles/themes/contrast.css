@@ -89,3 +89,16 @@ body.contrast-theme .monaco-editor .token.code.md,
 [data-theme="contrast"] .monaco-editor .token.code.md {
   background-color: #333333 !important;
 }
+
+/* Contrast theme collapsible button size variations */
+[data-theme="contrast"][data-md-toolbar-size="small"] .md-collapsible-btn {
+  padding: 3px 6px;
+  font-size: 9px;
+  height: 22px;
+}
+
+[data-theme="contrast"][data-md-toolbar-size="large"] .md-collapsible-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  height: 36px;
+}

@@ -13,7 +13,7 @@ class DocumentComponent extends BaseComponent {
     this.isLoading = false;
     
     // File history
-    this.fileHistory = JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]');
+    this.fileHistory = null; // Lazy load when needed
   }
 
   async onInit() {
@@ -281,10 +281,21 @@ class DocumentComponent extends BaseComponent {
   }
 
   /**
+   * Lazy load file history
+   */
+  ensureFileHistoryLoaded() {
+    if (this.fileHistory === null) {
+      this.fileHistory = JSON.parse(localStorage.getItem('markdownViewer_fileHistory') || '[]');
+    }
+  }
+
+  /**
    * Add file to history
    */
   addToFileHistory(filePath) {
     if (!filePath) return;
+    
+    this.ensureFileHistoryLoaded();
     
     // Remove if already exists
     this.fileHistory = this.fileHistory.filter(item => item.path !== filePath);
@@ -373,6 +384,8 @@ class DocumentComponent extends BaseComponent {
     const fileHistoryList = document.getElementById('file-history-list');
     
     if (!fileHistorySection || !fileHistoryList) return;
+    
+    this.ensureFileHistoryLoaded();
     
     if (this.fileHistory.length === 0) {
       fileHistorySection.style.display = 'none';

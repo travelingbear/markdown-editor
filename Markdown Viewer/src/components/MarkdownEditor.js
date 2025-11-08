@@ -45,7 +45,7 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async onInit() {
-    const startupStartTime = performance.now();
+    const startupStartTime = window.DEBUG_MODE ? performance.now() : 0;
     
     try {
       // Initialize performance optimizer early
@@ -54,43 +54,44 @@ class MarkdownEditor extends BaseComponent {
         this.performanceOptimizer.optimizeForMultiTabs();
       }
       
-      // Update splash screen progress
-      this.updateSplashProgress(10, 'Initializing components...');
+      // Minimal splash updates for faster startup
+      this.updateSplashProgress(10, 'Loading...');
       
       // Initialize DOM elements
       this.initializeElements();
       
-      this.updateSplashProgress(25, 'Creating components...');
-      
       // Create and initialize components
       await this.createComponents();
       
-      this.updateSplashProgress(50, 'Setting up communication...');
+      this.updateSplashProgress(50, 'Loading...');
       
       // Set up inter-component communication
       this.setupComponentCommunication();
       
-      this.updateSplashProgress(70, 'Applying settings...');
-      
       // Apply initial settings
       this.applyInitialSettings();
-      
-      this.updateSplashProgress(85, 'Setting up event handlers...');
       
       // Set up global event handlers
       this.setupGlobalEventHandlers();
       
-      this.updateSplashProgress(95, 'Finalizing...');
+      this.updateSplashProgress(95, 'Ready...');
       
       // Defer plugin loading if enabled
       if (this.settingsController.getPluginsEnabled()) {
         // Initialize plugins after UI is ready (non-blocking)
-        setTimeout(() => this.initializePlugins(), 100);
+        // Defer plugin loading until browser is idle for faster startup
+        if (window.requestIdleCallback) {
+          requestIdleCallback(() => this.initializePlugins(), { timeout: 2000 });
+        } else {
+          setTimeout(() => this.initializePlugins(), 1000);
+        }
       }
       
       // Complete initialization
-      this.startupTime = performance.now() - startupStartTime;
-      this.settingsController.setStartupTime(this.startupTime);
+      if (window.DEBUG_MODE) {
+        this.startupTime = performance.now() - startupStartTime;
+        this.settingsController.setStartupTime(this.startupTime);
+      }
       
       this.updateSplashProgress(100, 'Ready!');
       // Remove artificial delay for faster startup

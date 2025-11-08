@@ -93,7 +93,7 @@ class MarkdownEditor extends BaseComponent {
       this.settingsController.setStartupTime(this.startupTime);
       
       this.updateSplashProgress(100, 'Ready!');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Remove artificial delay for faster startup
       this.hideSplash();
       
       // Mark app as initialized to show hidden elements
@@ -187,29 +187,34 @@ class MarkdownEditor extends BaseComponent {
       })()
     ]);
     
-    // Phase 3: Create view components in parallel (only if needed)
-    const viewComponents = await Promise.all([
-      // Editor Component (always needed for new files)
-      (async () => {
-        this.editorComponent = new EditorComponent();
-        this.addChild(this.editorComponent);
-        await this.editorComponent.init();
-        return this.editorComponent;
-      })(),
-      
-      // Preview Component (defer if new file requested)
-      (async () => {
-        if (!this.isNewFileRequested) {
+    // Phase 3: Defer heavy view components until needed (lazy loading)
+    // Only initialize if we have tabs or a startup file
+    const hasTabs = this.tabManager.getAllTabs().length > 0;
+    const hasStartupFile = this.startupFilePath || this.isNewFileRequested;
+    
+    if (hasTabs || hasStartupFile) {
+      const viewComponents = await Promise.all([
+        // Editor Component
+        (async () => {
+          this.editorComponent = new EditorComponent();
+          this.addChild(this.editorComponent);
+          await this.editorComponent.init();
+          return this.editorComponent;
+        })(),
+        
+        // Preview Component
+        (async () => {
           this.previewComponent = new PreviewComponent();
           this.addChild(this.previewComponent);
           await this.previewComponent.init();
-        } else {
-          // Create placeholder for preview component to avoid null references
-          this.previewComponent = null;
-        }
-        return this.previewComponent;
-      })()
-    ]);
+          return this.previewComponent;
+        })()
+      ]);
+    } else {
+      // Create placeholders for lazy initialization
+      this.editorComponent = null;
+      this.previewComponent = null;
+    }
     
     // Phase 4: Create dependent controllers
     const dependentControllers = await Promise.all([
@@ -259,6 +264,26 @@ class MarkdownEditor extends BaseComponent {
     ]);
   }
 
+  async ensureViewComponentsInitialized() {
+    // Lazy initialize editor and preview components if not already done
+    if (!this.editorComponent) {
+      this.editorComponent = new EditorComponent();
+      this.addChild(this.editorComponent);
+      await this.editorComponent.init();
+    }
+    
+    if (!this.previewComponent) {
+      this.previewComponent = new PreviewComponent();
+      this.addChild(this.previewComponent);
+      await this.previewComponent.init();
+    }
+    
+    // Update mode controller dependencies if needed
+    if (this.modeController) {
+      this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
+    }
+  }
+
   setupComponentCommunication() {
     // Tab Manager Events
     this.tabManager.on('tab-created', (data) => {
@@ -278,8 +303,10 @@ class MarkdownEditor extends BaseComponent {
       
       // Switch to default mode when first document is opened
       if (this.tabManager.getTabsCount() === 1) {
-        const defaultMode = this.settingsController.getDefaultMode();
-        this.modeController.setMode(defaultMode);
+        this.ensureViewComponentsInitialized().then(() => {
+          const defaultMode = this.settingsController.getDefaultMode();
+          this.modeController.setMode(defaultMode);
+        });
       }
     });
     
@@ -373,8 +400,10 @@ class MarkdownEditor extends BaseComponent {
       
       // Switch to default mode when first document is opened
       if (this.tabManager.getTabsCount() === 1) {
-        const defaultMode = this.settingsController.getDefaultMode();
-        this.modeController.setMode(defaultMode);
+        this.ensureViewComponentsInitialized().then(() => {
+          const defaultMode = this.settingsController.getDefaultMode();
+          this.modeController.setMode(defaultMode);
+        });
       }
       
       // Phase 6: Track file open performance for all file opens (including from Explorer)
@@ -383,7 +412,9 @@ class MarkdownEditor extends BaseComponent {
       }
     });
     
-    this.documentComponent.on('document-new', (data) => {
+    this.documentComponent.on('document-new', async (data) => {
+      await this.ensureViewComponentsInitialized();
+      
       // Create new tab
       const newTab = this.tabManager.createNewTab(data.content);
       if (newTab) {
@@ -540,7 +571,8 @@ class MarkdownEditor extends BaseComponent {
     });
     
     // File Controller Events
-    this.fileController.on('file-new-completed', () => {
+    this.fileController.on('file-new-completed', async () => {
+      await this.ensureViewComponentsInitialized();
       this.modeController.setMode('code');
     });
     
@@ -549,7 +581,8 @@ class MarkdownEditor extends BaseComponent {
     });
     
     // Toolbar Component Events
-    this.toolbarComponent.on('file-new-requested', () => {
+    this.toolbarComponent.on('file-new-requested', async () => {
+      await this.ensureViewComponentsInitialized();
       this.fileController.newFile(this.documentComponent, this.tabManager);
     });
     
@@ -2184,18 +2217,23 @@ class MarkdownEditor extends BaseComponent {
   }
   
   showWelcomePage() {
-    this.editorComponent.emit('set-content', { content: '' });
-    this.previewComponent.emit('update-preview', { 
-      content: '',
-      filePath: null 
-    });
-    this.previewComponent.showWelcome();
+    // Only interact with components if they exist
+    if (this.editorComponent) {
+      this.editorComponent.emit('set-content', { content: '' });
+    }
+    if (this.previewComponent) {
+      this.previewComponent.emit('update-preview', { 
+        content: '',
+        filePath: null 
+      });
+      this.previewComponent.showWelcome();
+    }
     this.updateFilename('Welcome', false);
     this.toolbarComponent.emit('document-state-changed', { 
       hasDocument: false, 
       isDirty: false 
     });
-    this.modeController.setMode('preview');
+    // Don't set mode when showing welcome page - let it initialize only when opening a file
     
     // Force update tab UI to show Welcome instead of tabs
     this.tabUIController.updateTabUIForWelcome();

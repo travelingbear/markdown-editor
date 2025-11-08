@@ -5,7 +5,7 @@ class ModeController extends BaseComponent {
   constructor() {
     super('ModeController');
     
-    this.currentMode = 'preview';
+    this.currentMode = null;
     this.lastModeSwitchTime = 0;
     
     // Dependencies (injected)

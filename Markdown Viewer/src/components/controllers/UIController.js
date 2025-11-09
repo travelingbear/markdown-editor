@@ -27,7 +27,6 @@ class UIController extends BaseComponent {
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
     
     // Other settings
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') === 'true';
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
     
     // Track if this is initial startup
@@ -319,11 +318,6 @@ class UIController extends BaseComponent {
         this.defaultMode = value;
         localStorage.setItem('markdownViewer_defaultMode', value);
         break;
-      case 'suggestionsEnabled':
-        this.suggestionsEnabled = value;
-        localStorage.setItem('markdownViewer_suggestionsEnabled', value.toString());
-        this.emit('suggestions-changed', { enabled: value });
-        break;
       case 'centeredLayout':
         this.setCenteredLayout(value);
         break;
@@ -455,7 +449,6 @@ class UIController extends BaseComponent {
     
     // Other setting controls
     const settingControls = [
-      { ids: ['suggestions-on-btn', 'suggestions-off-btn'], key: 'suggestionsEnabled' },
       { ids: ['layout-on-btn', 'layout-off-btn'], key: 'centeredLayout' },
       { ids: ['toolbar-on-btn', 'toolbar-off-btn'], key: 'toolbarEnabled' },
       { ids: ['pinned-tabs-on-btn', 'pinned-tabs-off-btn'], key: 'pinnedTabs' },
@@ -565,8 +558,6 @@ class UIController extends BaseComponent {
     
     // All other settings
     const allSettings = {
-      'suggestions-on-btn': this.suggestionsEnabled,
-      'suggestions-off-btn': !this.suggestionsEnabled,
       'layout-on-btn': this.centeredLayoutEnabled,
       'layout-off-btn': !this.centeredLayoutEnabled,
       'toolbar-on-btn': this.isToolbarEnabled,
@@ -689,7 +680,6 @@ class UIController extends BaseComponent {
       theme: this.theme,
       isRetroTheme: this.isRetroTheme,
       defaultMode: this.defaultMode,
-      suggestionsEnabled: this.suggestionsEnabled,
       centeredLayoutEnabled: this.centeredLayoutEnabled,
       isToolbarEnabled: this.isToolbarEnabled,
       pinnedTabsEnabled: this.pinnedTabsEnabled,

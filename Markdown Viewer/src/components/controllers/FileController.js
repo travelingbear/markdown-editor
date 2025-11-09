@@ -120,7 +120,7 @@ class FileController extends BaseComponent {
     this.emit('file-new-completed');
   }
 
-  async openFile(documentComponent, tabManager) {
+  async openFile(documentComponent, tabManager, filePath = null) {
     await this.executeHook('beforeOpenFile', { documentComponent, tabManager });
     
     // Check tab limits before opening - warn at 45, block at 50
@@ -136,7 +136,7 @@ class FileController extends BaseComponent {
     }
     
     const startTime = performance.now();
-    await documentComponent.openFile();
+    await documentComponent.openFile(filePath);
     
     // Track file open performance only if file was actually opened
     if (this.performanceOptimizer && tabManager.getTabsCount() > currentTabCount) {

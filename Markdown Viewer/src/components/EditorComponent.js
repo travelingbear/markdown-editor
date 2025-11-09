@@ -14,7 +14,6 @@ class EditorComponent extends BaseComponent {
     
     // Settings
     this.fontSize = parseInt(localStorage.getItem('markdownViewer_fontSize') || '14');
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') === 'true';
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
   }
 
@@ -54,10 +53,6 @@ class EditorComponent extends BaseComponent {
     
     this.on('font-size-changed', (data) => {
       this.updateFontSize(data.fontSize);
-    });
-    
-    this.on('suggestions-changed', (data) => {
-      this.updateSuggestions(data.enabled);
     });
   }
 
@@ -134,15 +129,15 @@ class EditorComponent extends BaseComponent {
     }
     
     return new Promise((resolve, reject) => {
-      if (!window.require) {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js';
-        script.onload = () => this.loadMonacoModule(resolve, reject);
-        script.onerror = reject;
-        document.head.appendChild(script);
-      } else {
-        this.loadMonacoModule(resolve, reject);
-      }
+      // Wait for loader from HTML to be ready
+      const checkLoader = () => {
+        if (window.require) {
+          this.loadMonacoModule(resolve, reject);
+        } else {
+          setTimeout(checkLoader, 50);
+        }
+      };
+      checkLoader();
     });
   }
 
@@ -151,10 +146,14 @@ class EditorComponent extends BaseComponent {
       try {
         require.config({ 
           paths: { 
-            'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' 
+            'vs': 'vendor/vs' 
           },
           waitSeconds: 30,
-          onError: (err) => reject(new Error('Monaco RequireJS error: ' + err.message))
+          ignoreDuplicateModules: ['vs/editor/editor.main'],
+          onError: (err) => {
+            console.error('Monaco RequireJS error:', err);
+            reject(new Error('Monaco RequireJS error: ' + err.message));
+          }
         });
         window.MONACO_CONFIGURED = true;
       } catch (error) {
@@ -215,11 +214,11 @@ class EditorComponent extends BaseComponent {
         glyphMargin: false,
         scrollbar: { vertical: 'auto', horizontal: 'auto' },
         suggest: {
-          showKeywords: this.suggestionsEnabled,
-          showSnippets: this.suggestionsEnabled,
-          showWords: this.suggestionsEnabled
+          showKeywords: false,
+          showSnippets: false,
+          showWords: false
         },
-        quickSuggestions: this.suggestionsEnabled,
+        quickSuggestions: false,
         find: {
           addExtraSpaceOnTop: false,
           autoFindInSelection: 'never',
@@ -443,21 +442,6 @@ class EditorComponent extends BaseComponent {
   /**
    * Update suggestions
    */
-  updateSuggestions(enabled) {
-    this.suggestionsEnabled = enabled;
-    
-    if (this.isMonacoLoaded && this.monacoEditor) {
-      this.monacoEditor.updateOptions({
-        suggest: {
-          showKeywords: enabled,
-          showSnippets: enabled,
-          showWords: enabled
-        },
-        quickSuggestions: enabled
-      });
-    }
-  }
-
   /**
    * Apply current settings
    */

@@ -9,7 +9,6 @@ class SettingsController extends BaseComponent {
     this.theme = 'light';
     this.isRetroTheme = false;
     this.defaultMode = 'preview';
-    this.suggestionsEnabled = true;
     this.centeredLayoutEnabled = false;
     this.isToolbarEnabled = true;
     this.pinnedTabsEnabled = false;
@@ -45,7 +44,6 @@ class SettingsController extends BaseComponent {
     
     // Load UI settings
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false';
     this.centeredLayoutEnabled = localStorage.getItem('markdownViewer_centeredLayout') === 'true';
     this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
     this.pinnedTabsEnabled = localStorage.getItem('markdownViewer_pinnedTabs') === 'true';
@@ -170,8 +168,6 @@ class SettingsController extends BaseComponent {
     
     // Update all other settings buttons
     const allSettings = {
-      'suggestions-on-btn': this.suggestionsEnabled,
-      'suggestions-off-btn': !this.suggestionsEnabled,
       'layout-on-btn': this.centeredLayoutEnabled,
       'layout-off-btn': !this.centeredLayoutEnabled,
       'toolbar-on-btn': this.isToolbarEnabled,
@@ -418,19 +414,6 @@ class SettingsController extends BaseComponent {
       });
     }
     
-    // Suggestions controls
-    ['suggestions-on-btn', 'suggestions-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.suggestionsEnabled = id === 'suggestions-on-btn';
-          localStorage.setItem('markdownViewer_suggestionsEnabled', this.suggestionsEnabled.toString());
-          this.emit('suggestions-changed', { enabled: this.suggestionsEnabled });
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
     // Layout controls
     ['layout-on-btn', 'layout-off-btn'].forEach(id => {
       const btn = document.getElementById(id);
@@ -584,10 +567,6 @@ class SettingsController extends BaseComponent {
 
   getDefaultMode() {
     return this.defaultMode;
-  }
-
-  getSuggestionsEnabled() {
-    return this.suggestionsEnabled;
   }
 
   getToolbarEnabled() {

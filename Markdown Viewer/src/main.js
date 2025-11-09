@@ -1,17 +1,7 @@
 // Component-based Markdown Editor - Main Entry Point
 // This replaces the monolithic MarkdownViewer class with a component-based architecture
 
-// Debug mode - set to false for production builds
 window.DEBUG_MODE = false;
-
-// Override console methods in production
-if (!window.DEBUG_MODE) {
-  const noop = () => {};
-  console.log = noop;
-  console.debug = noop;
-  console.info = noop;
-  // Keep console.warn and console.error for critical issues
-}
 
 let markdownEditor = null;
 

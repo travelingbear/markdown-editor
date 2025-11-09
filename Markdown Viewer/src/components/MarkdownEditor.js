@@ -188,34 +188,24 @@ class MarkdownEditor extends BaseComponent {
       })()
     ]);
     
-    // Phase 3: Defer heavy view components until needed (lazy loading)
-    // Only initialize if we have tabs or a startup file
-    const hasTabs = this.tabManager.getAllTabs().length > 0;
-    const hasStartupFile = this.startupFilePath || this.isNewFileRequested;
-    
-    if (hasTabs || hasStartupFile) {
-      const viewComponents = await Promise.all([
-        // Editor Component
-        (async () => {
-          this.editorComponent = new EditorComponent();
-          this.addChild(this.editorComponent);
-          await this.editorComponent.init();
-          return this.editorComponent;
-        })(),
-        
-        // Preview Component
-        (async () => {
-          this.previewComponent = new PreviewComponent();
-          this.addChild(this.previewComponent);
-          await this.previewComponent.init();
-          return this.previewComponent;
-        })()
-      ]);
-    } else {
-      // Create placeholders for lazy initialization
-      this.editorComponent = null;
-      this.previewComponent = null;
-    }
+    // Phase 3: Create view components
+    const viewComponents = await Promise.all([
+      // Editor Component
+      (async () => {
+        this.editorComponent = new EditorComponent();
+        this.addChild(this.editorComponent);
+        await this.editorComponent.init();
+        return this.editorComponent;
+      })(),
+      
+      // Preview Component
+      (async () => {
+        this.previewComponent = new PreviewComponent();
+        this.addChild(this.previewComponent);
+        await this.previewComponent.init();
+        return this.previewComponent;
+      })()
+    ]);
     
     // Phase 4: Create dependent controllers
     const dependentControllers = await Promise.all([
@@ -266,26 +256,16 @@ class MarkdownEditor extends BaseComponent {
   }
 
   async ensureViewComponentsInitialized() {
-    // Lazy initialize editor and preview components if not already done
-    if (!this.editorComponent) {
-      this.editorComponent = new EditorComponent();
-      this.addChild(this.editorComponent);
-      await this.editorComponent.init();
-    }
-    
-    if (!this.previewComponent) {
-      this.previewComponent = new PreviewComponent();
-      this.addChild(this.previewComponent);
-      await this.previewComponent.init();
-    }
-    
-    // Update mode controller dependencies if needed
-    if (this.modeController) {
-      this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
-    }
+    // Components are always initialized at startup now
+    return;
   }
 
   setupComponentCommunication() {
+    // Only set up component communication if components exist
+    if (!this.editorComponent || !this.previewComponent) {
+      return;
+    }
+    
     // Tab Manager Events
     this.tabManager.on('tab-created', (data) => {
       // Phase 6: Track tab creation performance for all new tabs
@@ -677,17 +657,9 @@ class MarkdownEditor extends BaseComponent {
       this.toolbarComponent.emit('distraction-free-changed', data);
     });
     
-    this.uiController.on('suggestions-changed', (data) => {
-      this.editorComponent.emit('suggestions-changed', data);
-    });
-    
     // Settings Controller Events
     this.settingsController.on('theme-changed', (data) => {
       this.handleThemeChange(data);
-    });
-    
-    this.settingsController.on('suggestions-changed', (data) => {
-      this.editorComponent.emit('suggestions-changed', data);
     });
     
     this.settingsController.on('toolbar-enabled-changed', (data) => {
@@ -744,60 +716,27 @@ class MarkdownEditor extends BaseComponent {
       this.tabUIController.updatePinnedTabs();
     }
     
-    // Smart mode detection - skip preview setup if new file requested
-    if (this.isNewFileRequested) {
-      // Initialize for code mode directly
-      this.modeController.currentMode = 'code';
-      const editorPane = document.querySelector('.editor-pane');
-      const previewPane = document.querySelector('.preview-pane');
-      const splitter = document.getElementById('splitter');
-      
-      if (editorPane && previewPane && splitter) {
-        editorPane.style.display = 'block';
-        previewPane.style.display = 'none';
-        splitter.style.display = 'none';
-      }
-      
-      // Update main content and body classes for code mode
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent) {
-        mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-        mainContent.classList.add('code-mode');
-      }
-      document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      document.body.classList.add('code-mode');
-      
-      // Skip welcome screen setup
-    } else {
-      // Normal startup - show welcome page in preview mode
-      if (this.previewComponent) {
-        this.previewComponent.showWelcome();
-      }
-      
-      // Always start in preview mode for welcome screen
-      this.modeController.currentMode = 'preview';
-      const editorPane = document.querySelector('.editor-pane');
-      const previewPane = document.querySelector('.preview-pane');
-      const splitter = document.getElementById('splitter');
-      
-      if (editorPane && previewPane && splitter) {
-        editorPane.style.display = 'none';
-        previewPane.style.display = 'block';
-        splitter.style.display = 'none';
-      }
-      
-      // Update main content and body classes for welcome screen
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent) {
-        mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-        mainContent.classList.add('preview-mode');
-      }
-      document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      document.body.classList.add('preview-mode');
-      
-      // Update filename
-      this.updateFilename('Welcome', false);
+    // Show welcome page
+    this.previewComponent.showWelcome();
+    this.modeController.currentMode = 'preview';
+    
+    const editorPane = document.querySelector('.editor-pane');
+    const previewPane = document.querySelector('.preview-pane');
+    const splitter = document.getElementById('splitter');
+    
+    if (editorPane) editorPane.style.display = 'none';
+    if (previewPane) previewPane.style.display = 'block';
+    if (splitter) splitter.style.display = 'none';
+    
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      mainContent.classList.add('preview-mode');
     }
+    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+    document.body.classList.add('preview-mode');
+    
+    this.updateFilename('Welcome', false);
     
     // Update cursor position
     this.updateCursorPosition(1, 1);
@@ -1944,14 +1883,16 @@ class MarkdownEditor extends BaseComponent {
       setTimeout(() => { isScrolling = false; }, 50);
     };
     
-    this.editorComponent.on('monaco-loaded', () => {
-      if (this.editorComponent.monacoEditor) {
+    if (this.editorComponent) {
+      this.editorComponent.on('monaco-loaded', () => {
+        if (this.editorComponent.monacoEditor) {
+          this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
+        }
+      });
+      
+      if (this.editorComponent.isMonacoLoaded) {
         this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
       }
-    });
-    
-    if (this.editorComponent.isMonacoLoaded) {
-      this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
     }
     
     const previewPane = document.querySelector('.preview-pane');
@@ -2218,29 +2159,46 @@ class MarkdownEditor extends BaseComponent {
   }
   
   showWelcomePage() {
-    // Only interact with components if they exist
-    if (this.editorComponent) {
-      this.editorComponent.emit('set-content', { content: '' });
+    // Show welcome page
+    const welcomePage = document.getElementById('welcome-page');
+    const previewContent = document.getElementById('preview');
+    const editorPane = document.querySelector('.editor-pane');
+    const previewPane = document.querySelector('.preview-pane');
+    const splitter = document.getElementById('splitter');
+    const markdownToolbar = document.getElementById('markdown-toolbar');
+    
+    if (welcomePage) welcomePage.style.display = 'flex';
+    if (previewContent) previewContent.style.display = 'none';
+    if (editorPane) editorPane.style.display = 'none';
+    if (previewPane) previewPane.style.display = 'block';
+    if (splitter) splitter.style.display = 'none';
+    
+    // Set preview mode
+    this.modeController.currentMode = 'preview';
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      mainContent.classList.add('preview-mode');
     }
-    if (this.previewComponent) {
-      this.previewComponent.emit('update-preview', { 
-        content: '',
-        filePath: null 
-      });
-      this.previewComponent.showWelcome();
+    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+    document.body.classList.add('preview-mode');
+    
+    // Hide markdown toolbar
+    if (markdownToolbar && !this.settingsController.getToolbarEnabled()) {
+      markdownToolbar.style.display = 'none';
     }
+    
+    this.editorComponent.emit('set-content', { content: '' });
+    this.previewComponent.emit('update-preview', { content: '', filePath: null });
     this.updateFilename('Welcome', false);
-    this.toolbarComponent.emit('document-state-changed', { 
-      hasDocument: false, 
-      isDirty: false 
-    });
-    // Don't set mode when showing welcome page - let it initialize only when opening a file
-    
-    // Force update tab UI to show Welcome instead of tabs
+    this.toolbarComponent.emit('document-state-changed', { hasDocument: false, isDirty: false });
     this.tabUIController.updateTabUIForWelcome();
-    
-    // Update scroll sync button
     this.updateScrollSyncButton();
+    
+    // Force repaint
+    setTimeout(() => {
+      if (welcomePage) welcomePage.offsetHeight;
+    }, 0);
   }
   
 

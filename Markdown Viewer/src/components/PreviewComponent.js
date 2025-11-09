@@ -189,7 +189,7 @@ class PreviewComponent extends BaseComponent {
     if (this.mermaidInitialized) return;
     
     try {
-      const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs');
+      const mermaidModule = await import('/vendor/mermaid.esm.min.mjs');
       this.mermaid = mermaidModule.default;
       this.mermaid.initialize({
         startOnLoad: false,
@@ -209,7 +209,7 @@ class PreviewComponent extends BaseComponent {
     if (this.katexInitialized) return;
     
     try {
-      const katexModule = await import('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.mjs');
+      const katexModule = await import('/vendor/katex.mjs');
       this.katex = katexModule.default;
       this.katexInitialized = true;
     } catch (error) {

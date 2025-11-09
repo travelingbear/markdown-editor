@@ -1,0 +1,27 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: |
+          cd "Markdown Viewer"
+          npm install
+          npm run tauri build
+      - name: Upload Installers
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-installers
+          path: |
+            Markdown Viewer/src-tauri/target/release/bundle/nsis/*.exe
+            Markdown Viewer/src-tauri/target/release/bundle/msi/*.msi

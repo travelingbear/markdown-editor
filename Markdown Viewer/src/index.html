@@ -537,6 +537,13 @@
                   <button id="splash-5s-btn" class="setting-btn">5</button>
                 </div>
               </div>
+              <div class="setting-item">
+                <label>Reopen Last Tabs</label>
+                <div class="setting-control">
+                  <button id="reopen-tabs-on-btn" class="setting-btn">Enabled</button>
+                  <button id="reopen-tabs-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
             </div>
             
             <div class="settings-section">
@@ -645,7 +652,12 @@
             <h2>Help & Shortcuts</h2>
             <button id="help-close-btn" class="help-close-btn">×</button>
           </div>
+          <div class="help-tabs">
+            <button class="help-tab active" data-tab="shortcuts">Shortcuts</button>
+            <button class="help-tab" data-tab="markdown">Markdown Syntax</button>
+          </div>
           <div class="help-content">
+            <div id="shortcuts-tab" class="help-tab-content active">
             <div class="help-section">
               <h3>File Operations</h3>
               <div class="shortcut-list">
@@ -722,6 +734,55 @@
                 <div class="shortcut-item"><kbd>F1</kbd><span>This help</span></div>
                 <div class="shortcut-item"><kbd>F5</kbd><span>Reload file</span></div>
                 <div class="shortcut-item"><kbd>Sync Btn</kbd><span>Manual scroll sync</span></div>
+              </div>
+            </div>
+            </div>
+            <div id="markdown-tab" class="help-tab-content">
+              <div class="help-section">
+                <h3>Headers</h3>
+                <div class="syntax-list">
+                  <div class="syntax-item"><code># H1</code><span>Heading 1</span></div>
+                  <div class="syntax-item"><code>## H2</code><span>Heading 2</span></div>
+                  <div class="syntax-item"><code>### H3</code><span>Heading 3</span></div>
+                </div>
+              </div>
+              <div class="help-section">
+                <h3>Text Formatting</h3>
+                <div class="syntax-list">
+                  <div class="syntax-item"><code>**bold**</code><span>Bold text</span></div>
+                  <div class="syntax-item"><code>*italic*</code><span>Italic text</span></div>
+                  <div class="syntax-item"><code>~~strike~~</code><span>Strikethrough</span></div>
+                  <div class="syntax-item"><code>`code`</code><span>Inline code</span></div>
+                </div>
+              </div>
+              <div class="help-section">
+                <h3>Lists</h3>
+                <div class="syntax-list">
+                  <div class="syntax-item"><code>- item</code><span>Unordered list</span></div>
+                  <div class="syntax-item"><code>1. item</code><span>Ordered list</span></div>
+                  <div class="syntax-item"><code>- [ ] task</code><span>Task list</span></div>
+                </div>
+              </div>
+              <div class="help-section">
+                <h3>Links & Images</h3>
+                <div class="syntax-list">
+                  <div class="syntax-item"><code>[text](url)</code><span>Link</span></div>
+                  <div class="syntax-item"><code>![alt](url)</code><span>Image</span></div>
+                </div>
+              </div>
+              <div class="help-section">
+                <h3>Code Blocks</h3>
+                <div class="syntax-list">
+                  <div class="syntax-item"><code>```lang</code><span>Code block</span></div>
+                  <div class="syntax-item"><code>&gt; quote</code><span>Blockquote</span></div>
+                </div>
+              </div>
+              <div class="help-section">
+                <h3>Tables</h3>
+                <div class="syntax-list">
+                  <div class="syntax-item"><code>| A | B |</code><span>Table row</span></div>
+                  <div class="syntax-item"><code>|---|---|</code><span>Table separator</span></div>
+                </div>
               </div>
             </div>
           </div>

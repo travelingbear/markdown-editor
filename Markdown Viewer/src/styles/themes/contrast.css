@@ -102,3 +102,16 @@ body.contrast-theme .monaco-editor .token.code.md,
   font-size: 13px;
   height: 36px;
 }
+
+
+/* Pinned tabs scrollbar - high contrast */
+[data-theme="contrast"] .pinned-tabs-list::-webkit-scrollbar-thumb,
+body.contrast-theme .pinned-tabs-list::-webkit-scrollbar-thumb {
+  background: #ffff00;
+  border: 2px solid #ffffff;
+}
+
+[data-theme="contrast"] .pinned-tabs-list::-webkit-scrollbar-thumb:hover,
+body.contrast-theme .pinned-tabs-list::-webkit-scrollbar-thumb:hover {
+  background: #ffff66;
+}

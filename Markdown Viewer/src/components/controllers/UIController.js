@@ -25,6 +25,7 @@ class UIController extends BaseComponent {
     // Splash settings
     this.isSplashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
+    this.reopenLastTabs = localStorage.getItem('markdownViewer_reopenLastTabs') === 'true';
     
     // Other settings
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
@@ -281,6 +282,10 @@ class UIController extends BaseComponent {
     const helpModal = document.getElementById('help-modal');
     if (helpModal) {
       helpModal.style.display = 'flex';
+      document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.help-tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector('.help-tab[data-tab="shortcuts"]').classList.add('active');
+      document.getElementById('shortcuts-tab').classList.add('active');
     }
   }
   
@@ -335,6 +340,10 @@ class UIController extends BaseComponent {
         this.splashDuration = value;
         localStorage.setItem('markdownViewer_splashDuration', value.toString());
         break;
+      case 'reopenLastTabs':
+        this.reopenLastTabs = value;
+        localStorage.setItem('markdownViewer_reopenLastTabs', value.toString());
+        break;
       case 'pageSize':
         this.setPageSize(value);
         break;
@@ -386,6 +395,17 @@ class UIController extends BaseComponent {
     if (helpOverlay) {
       helpOverlay.addEventListener('click', () => this.hideHelp());
     }
+    
+    // Help modal tabs
+    document.querySelectorAll('.help-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const targetTab = e.target.dataset.tab;
+        document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.help-tab-content').forEach(c => c.classList.remove('active'));
+        e.target.classList.add('active');
+        document.getElementById(`${targetTab}-tab`).classList.add('active');
+      });
+    });
     
     // About modal
     const aboutCloseBtn = document.getElementById('about-close-btn');
@@ -452,7 +472,8 @@ class UIController extends BaseComponent {
       { ids: ['layout-on-btn', 'layout-off-btn'], key: 'centeredLayout' },
       { ids: ['toolbar-on-btn', 'toolbar-off-btn'], key: 'toolbarEnabled' },
       { ids: ['pinned-tabs-on-btn', 'pinned-tabs-off-btn'], key: 'pinnedTabs' },
-      { ids: ['splash-on-btn', 'splash-off-btn'], key: 'splashEnabled' }
+      { ids: ['splash-on-btn', 'splash-off-btn'], key: 'splashEnabled' },
+      { ids: ['reopen-tabs-on-btn', 'reopen-tabs-off-btn'], key: 'reopenLastTabs' }
     ];
     
     settingControls.forEach(({ ids, key }) => {
@@ -565,7 +586,9 @@ class UIController extends BaseComponent {
       'pinned-tabs-on-btn': this.pinnedTabsEnabled,
       'pinned-tabs-off-btn': !this.pinnedTabsEnabled,
       'splash-on-btn': this.isSplashEnabled,
-      'splash-off-btn': !this.isSplashEnabled
+      'splash-off-btn': !this.isSplashEnabled,
+      'reopen-tabs-on-btn': this.reopenLastTabs,
+      'reopen-tabs-off-btn': !this.reopenLastTabs
     };
     
     Object.entries(allSettings).forEach(([id, active]) => {

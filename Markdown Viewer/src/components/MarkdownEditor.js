@@ -299,6 +299,11 @@ class MarkdownEditor extends BaseComponent {
         this.tabUIController.updatePinnedTabs();
       }
       
+      // Reset to preview mode when no tabs remain
+      if (this.tabManager.getTabsCount() === 0) {
+        this.modeController.setMode('preview');
+      }
+      
       // Update tab modal if it's open
       const tabModal = document.getElementById('tab-modal');
       if (tabModal && tabModal.style.display === 'flex') {
@@ -1759,6 +1764,31 @@ class MarkdownEditor extends BaseComponent {
         }
       }
       
+      // Reopen last tabs if enabled
+      if (this.uiController.reopenLastTabs) {
+        const persistedTabs = localStorage.getItem('markdownViewer_tabs');
+        if (persistedTabs) {
+          try {
+            const tabsData = JSON.parse(persistedTabs);
+            if (tabsData.tabs && tabsData.tabs.length > 0) {
+              for (const tabData of tabsData.tabs) {
+                if (tabData.filePath) {
+                  await this.documentComponent.openFile(tabData.filePath);
+                }
+              }
+              if (tabsData.activeTabId) {
+                const activeTab = this.tabManager.getAllTabs().find(t => t.filePath === tabsData.tabs.find(td => td.id === tabsData.activeTabId)?.filePath);
+                if (activeTab) {
+                  this.tabManager.switchToTab(activeTab.id);
+                }
+              }
+              return true;
+            }
+          } catch (error) {
+            console.warn('[MarkdownEditor] Failed to restore tabs:', error);
+          }
+        }
+      }
 
     } catch (error) {
       console.error('[MarkdownEditor] Error checking startup file:', error);

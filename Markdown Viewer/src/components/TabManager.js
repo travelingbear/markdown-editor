@@ -203,6 +203,7 @@ class TabManager extends BaseComponent {
     }
 
     this.tabCollection.closeAllTabs();
+    localStorage.removeItem(this.persistenceKey);
     return true;
   }
 

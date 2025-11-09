@@ -29,7 +29,11 @@ class ModeController extends BaseComponent {
   }
 
   async setMode(mode) {
-    if (this.currentMode === mode) return;
+    const modeChanged = this.currentMode !== mode;
+    if (!modeChanged && this.toolbarComponent) {
+      this.toolbarComponent.emit('mode-changed', { mode });
+      return;
+    }
     
     const startTime = performance.now();
     

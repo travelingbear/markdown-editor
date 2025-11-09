@@ -2213,8 +2213,8 @@ class MarkdownEditor extends BaseComponent {
     document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
     document.body.classList.add('preview-mode');
     
-    // Hide markdown toolbar
-    if (markdownToolbar && !this.settingsController.getToolbarEnabled()) {
+    // Hide markdown toolbar on welcome screen
+    if (markdownToolbar) {
       markdownToolbar.style.display = 'none';
     }
     

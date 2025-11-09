@@ -189,8 +189,11 @@ class PreviewComponent extends BaseComponent {
     if (this.mermaidInitialized) return;
     
     try {
-      const mermaidModule = await import('/vendor/mermaid.esm.min.mjs');
-      this.mermaid = mermaidModule.default;
+      if (typeof mermaid === 'undefined') {
+        throw new Error('Mermaid not loaded');
+      }
+      
+      this.mermaid = mermaid;
       this.mermaid.initialize({
         startOnLoad: false,
         theme: this.theme === 'dark' ? 'dark' : 'default',
@@ -199,8 +202,9 @@ class PreviewComponent extends BaseComponent {
         pie: { useMaxWidth: true }
       });
       this.mermaidInitialized = true;
+      this.emit('mermaid-loaded');
     } catch (error) {
-      console.warn('[Preview] Failed to load Mermaid:', error);
+      console.warn('[Preview] Mermaid not available:', error);
       this.mermaidInitialized = false;
     }
   }

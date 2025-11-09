@@ -1,6 +1,6 @@
 [package]
 name = "markdown-editor"
-version = "3.2.3"
+version = "3.3.0"
 description = "A powerful native desktop markdown viewer and editor with real-time preview"
 authors = ["Markdown Viewer Team"]
 edition = "2021"

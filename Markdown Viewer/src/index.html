@@ -10,12 +10,12 @@
     <link rel="icon" type="image/png" sizes="96x96" href="favicons/favicon-96x96.png">
     <link rel="apple-touch-icon" href="favicons/apple-touch-icon.png">
     <link rel="manifest" href="favicons/site.webmanifest">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" media="print" onload="this.media='all'">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="vendor/marked.min.js" defer></script>
+    <script src="vendor/monaco-loader.js" defer></script>
+    <link rel="stylesheet" href="assets/katex.min.css">
+    <link rel="stylesheet" href="vendor/github.min.css">
+    <script src="vendor/highlight.min.js" defer></script>
+    <script src="vendor/html2canvas.min.js" defer></script>
     <!-- Load jsPDF with AMD conflict prevention -->
     <script>
       // Temporarily disable AMD to prevent conflicts with jsPDF
@@ -24,7 +24,7 @@
         delete window.define;
       }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="vendor/jspdf.umd.min.js" defer></script>
     <script>
       // Restore AMD after jsPDF loads
       if (window.__amdBackup) {
@@ -765,7 +765,7 @@
                 <source srcset="assets/MarkdownEditorAboutImage.webp" type="image/webp">
                 <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
               </picture>
-              <p class="version">Version 3.2.3</p>
+              <p class="version">Version 3.3.0</p>
             </div>
             
             <div class="about-description">

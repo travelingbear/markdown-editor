@@ -1,5 +1,40 @@
 # Changelog
 
+## Version 3.3.0 (2025-11-09)
+
+### Major Performance Improvements
+- **Startup Optimization**: Reduced startup time by 50-70% through lazy loading and deferred initialization
+- **Welcome Page Loading**: Optimized images (97.8% reduction: 1.19MB → 26KB) using WebP format
+- **Offline Support**: Bundled all external libraries locally (no CDN dependencies)
+- **Lazy Component Loading**: Monaco Editor and Preview components only load when opening files
+- **Plugin System**: Deferred plugin initialization to idle time for faster startup
+- **File History**: Lazy loaded only when needed instead of at startup
+
+### Performance Enhancements
+- **Debug Mode**: Added DEBUG_MODE flag to disable 274 console.log statements in production
+- **Reduced Tracking**: Minimized performance tracking overhead during initialization
+- **Optimized Splash Screen**: Reduced progress updates from 7 to 3 for faster perceived startup
+- **Image Optimization**: Converted icon.svg (1.1MB) to WebP (3KB) and MarkdownEditorAboutImage.png (90KB) to WebP (23KB)
+- **Local Libraries**: All external dependencies now bundled locally in vendor/ directory
+
+### Bug Fixes
+- **Welcome Page Mode**: Fixed welcome page being tied to preview mode, causing unnecessary editor initialization
+- **Component Initialization**: Fixed editor and preview panes showing during startup
+- **Mode Controller**: Set default mode to null to prevent premature initialization
+- **Collapsible Menu Sizing**: Fixed markdown toolbar collapsible buttons not respecting size settings across all themes
+
+### Technical Changes
+- Created vendor/ directory with local copies of: marked.js, monaco-loader.js, highlight.js, html2canvas, jsPDF
+- Moved KaTeX and Mermaid references to local assets
+- Added lazy initialization helper methods for view components
+- Optimized CSS with display:none defaults for editor/preview panes
+- Added size variations for collapsible buttons in Dark, Retro, and High Contrast themes
+
+### Developer Experience
+- Set DEBUG_MODE = false by default for production performance
+- Maintained all console.warn and console.error for critical issues
+- Added requestIdleCallback for plugin loading with 2-second timeout fallback
+
 ## Version 3.2.3 (2025-10-29)
 
 ### Bug Fixes

@@ -93,15 +93,19 @@ class MarkdownEditor extends BaseComponent {
         this.settingsController.setStartupTime(this.startupTime);
       }
       
+      // Don't hide splash yet - wait for document to be ready in correct mode
       this.updateSplashProgress(100, 'Ready!');
-      // Remove artificial delay for faster startup
-      this.hideSplash();
       
       // Mark app as initialized to show hidden elements
       document.body.classList.add('app-initialized');
       
       // Check for startup file and new file requests
-      await this.checkStartupFile();
+      const hasDocument = await this.checkStartupFile();
+      
+      // Hide splash after document is ready (or immediately if no document)
+      if (!hasDocument) {
+        this.hideSplash();
+      }
       
       // Retro sound is already played by UIController.setTheme() during applyInitialSettings()
       
@@ -1753,7 +1757,16 @@ class MarkdownEditor extends BaseComponent {
         const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
         
         if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
+          this.updateSplashProgress(100, 'Loading document...');
+          
           await this.documentComponent.openFile(startupFile);
+          
+          // Set default mode after opening file
+          const defaultMode = this.settingsController.getDefaultMode();
+          await this.modeController.setMode(defaultMode);
+          
+          // Hide splash after document is ready in correct mode
+          this.hideSplash();
           
           try {
             await window.__TAURI__.core.invoke('clear_startup_file');
@@ -1771,6 +1784,8 @@ class MarkdownEditor extends BaseComponent {
           try {
             const tabsData = JSON.parse(persistedTabs);
             if (tabsData.tabs && tabsData.tabs.length > 0) {
+              this.updateSplashProgress(100, 'Loading document...');
+              
               for (const tabData of tabsData.tabs) {
                 if (tabData.filePath) {
                   await this.documentComponent.openFile(tabData.filePath);
@@ -1782,9 +1797,14 @@ class MarkdownEditor extends BaseComponent {
                   this.tabManager.switchToTab(activeTab.id);
                 }
               }
+              
               // Set default mode after reopening tabs
               const defaultMode = this.settingsController.getDefaultMode();
-              this.modeController.setMode(defaultMode);
+              await this.modeController.setMode(defaultMode);
+              
+              // Hide splash after document is ready in correct mode
+              this.hideSplash();
+              
               return true;
             }
           } catch (error) {

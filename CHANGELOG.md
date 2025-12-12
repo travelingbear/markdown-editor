@@ -1,5 +1,20 @@
 # Changelog
 
+## Version 3.3.2 (2024-12-12)
+
+### Improvements
+- **Smooth Startup**: Eliminated visible mode switching on startup - splash screen now stays visible until document is ready in correct mode
+- **Loading Overlay**: Added loading overlay when splash screen is disabled to prevent mode switching flash
+- **Better UX**: Documents now open directly in configured default mode without visual transitions
+
+### Bug Fixes
+- **File History**: Fixed error when clicking deleted files in history - files are now silently removed from history
+
+### Technical Changes
+- Splash screen lifecycle updated to hide after mode is set
+- Added loading overlay for splash-disabled scenario
+- Enhanced document loading flow
+
 ## Version 3.3.1 (2024-12-12)
 
 ### Bug Fixes

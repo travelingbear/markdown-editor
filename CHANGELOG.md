@@ -1,5 +1,13 @@
 # Changelog
 
+## Version 3.3.1 (2024-12-12)
+
+### Bug Fixes
+- **Reopened Tabs Mode**: Fixed reopened tabs not respecting default mode setting - tabs now open in the configured default mode instead of always opening in Preview mode
+
+### Technical Changes
+- Enhanced checkStartupFile method to apply default mode after restoring tabs from persistence
+
 ## Version 3.3.0 (2025-11-09)
 
 ### Major Performance Improvements

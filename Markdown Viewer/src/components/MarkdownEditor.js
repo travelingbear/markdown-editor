@@ -1782,6 +1782,9 @@ class MarkdownEditor extends BaseComponent {
                   this.tabManager.switchToTab(activeTab.id);
                 }
               }
+              // Set default mode after reopening tabs
+              const defaultMode = this.settingsController.getDefaultMode();
+              this.modeController.setMode(defaultMode);
               return true;
             }
           } catch (error) {

@@ -406,8 +406,15 @@ class DocumentComponent extends BaseComponent {
         <div class="file-date">${this.formatDate(file.date)}</div>
       `;
       
-      item.addEventListener('click', () => {
-        this.openFile(file.path);
+      item.addEventListener('click', async () => {
+        try {
+          await this.openFile(file.path);
+        } catch (error) {
+          // Remove from history if file doesn't exist
+          this.fileHistory = this.fileHistory.filter(f => f.path !== file.path);
+          localStorage.setItem('markdownViewer_fileHistory', JSON.stringify(this.fileHistory));
+          this.updateFileHistoryDisplay();
+        }
       });
       
       fileHistoryList.appendChild(item);

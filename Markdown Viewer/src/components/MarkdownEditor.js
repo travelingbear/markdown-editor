@@ -1758,6 +1758,7 @@ class MarkdownEditor extends BaseComponent {
         
         if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
           this.updateSplashProgress(100, 'Loading document...');
+          this.showLoadingOverlay('Loading your document...');
           
           await this.documentComponent.openFile(startupFile);
           
@@ -1785,6 +1786,7 @@ class MarkdownEditor extends BaseComponent {
             const tabsData = JSON.parse(persistedTabs);
             if (tabsData.tabs && tabsData.tabs.length > 0) {
               this.updateSplashProgress(100, 'Loading document...');
+              this.showLoadingOverlay('Loading your document...');
               
               for (const tabData of tabsData.tabs) {
                 if (tabData.filePath) {
@@ -1829,6 +1831,80 @@ class MarkdownEditor extends BaseComponent {
   hideSplash() {
     if (window.splashScreen) {
       window.splashScreen.hideSplash();
+    }
+    this.hideLoadingOverlay();
+  }
+  
+  showLoadingOverlay(message = 'Loading...') {
+    const splashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
+    if (splashEnabled) return;
+    
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'loading-overlay';
+      overlay.innerHTML = `
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <div class="loading-message">${message}</div>
+        </div>
+      `;
+      
+      const style = document.createElement('style');
+      style.textContent = `
+        #loading-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(255, 255, 255, 0.95);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        }
+        [data-theme="dark"] #loading-overlay {
+          background: rgba(30, 30, 30, 0.95);
+        }
+        .loading-content {
+          text-align: center;
+        }
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #e0e0e0;
+          border-top-color: #007acc;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 1rem;
+        }
+        [data-theme="dark"] .loading-spinner {
+          border-color: #333;
+          border-top-color: #007acc;
+        }
+        .loading-message {
+          font-size: 14px;
+          color: #666;
+        }
+        [data-theme="dark"] .loading-message {
+          color: #aaa;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+      document.body.appendChild(overlay);
+    } else {
+      overlay.querySelector('.loading-message').textContent = message;
+    }
+  }
+  
+  hideLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.remove();
     }
   }
 

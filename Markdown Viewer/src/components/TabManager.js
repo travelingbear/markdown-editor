@@ -98,6 +98,19 @@ class TabManager extends BaseComponent {
     return this.tabCollection.setActiveTab(tabId);
   }
 
+  // Switch to tab with content loading
+  async switchToTabWithLoading(tabId, documentComponent) {
+    const tab = this.tabCollection.getTab(tabId);
+    if (!tab) return false;
+
+    // Load content if needed
+    if (!tab.isContentLoaded && tab.filePath) {
+      await this.loadTabContent(tabId, documentComponent);
+    }
+
+    return this.tabCollection.setActiveTab(tabId);
+  }
+
   // Update tab content
   updateTabContent(tabId, content) {
     const tab = this.tabCollection.getTab(tabId);
@@ -224,18 +237,80 @@ class TabManager extends BaseComponent {
       if (!data) return;
 
       const parsedData = JSON.parse(data);
-      this.tabCollection.fromJSON(parsedData);
+      
+      // Restore tabs but mark non-active ones as not loaded
+      const restoredTabs = parsedData.tabs.map(tabData => {
+        const tab = TabState.fromJSON(tabData);
+        if (tab.id !== parsedData.activeTabId) {
+          tab.isContentLoaded = false;
+          tab.content = ''; // Clear content for non-active tabs
+          tab.isDirty = false; // Clear dirty state for non-active tabs
+        } else {
+          tab.isContentLoaded = true; // Active tab keeps its content
+          // Active tab should not be dirty when restored from persistence
+          // unless it has actual unsaved changes
+          tab.isDirty = false;
+        }
+        return tab;
+      });
+      
+      this.tabCollection.tabs = restoredTabs;
+      this.tabCollection.activeTabId = parsedData.activeTabId;
+      this.tabCollection.nextTabId = parsedData.nextTabId || restoredTabs.length + 1;
 
-      // Clear active tab to prevent auto-loading
-      this.tabCollection.activeTabId = null;
+      // Set active tab properly
+      if (parsedData.activeTabId) {
+        const activeTab = this.tabCollection.getTab(parsedData.activeTabId);
+        if (activeTab) {
+          activeTab.setActive(true);
+        }
+      }
 
       // Emit event for each restored tab
-      this.tabCollection.getAllTabs().forEach(tab => {
+      restoredTabs.forEach(tab => {
         this.emit('tab-restored', { tab });
       });
+      
+      // Trigger activation for the active tab to load its content
+      if (parsedData.activeTabId) {
+        const activeTab = this.tabCollection.getTab(parsedData.activeTabId);
+        if (activeTab) {
+          this.emit('tab-activated', { tab: activeTab });
+        }
+      }
     } catch (error) {
       console.warn('[TabManager] Failed to load persisted tabs:', error);
       localStorage.removeItem(this.persistenceKey);
+    }
+  }
+
+  // Load content for a specific tab
+  async loadTabContent(tabId, documentComponent) {
+    const tab = this.tabCollection.getTab(tabId);
+    if (!tab) {
+      return tab;
+    }
+
+    // If tab already has content loaded, just return it
+    if (tab.isContentLoaded) {
+      return tab;
+    }
+
+    // If no file path, can't load from file
+    if (!tab.filePath) {
+      tab.isContentLoaded = true;
+      return tab;
+    }
+
+    try {
+      const content = await documentComponent.readFile(tab.filePath);
+      tab.setContentClean(content); // Use setContentClean to avoid marking as dirty
+      tab.isContentLoaded = true;
+      this.persistTabs();
+      return tab;
+    } catch (error) {
+      console.warn(`[TabManager] Failed to load content for tab ${tabId}:`, error);
+      throw error;
     }
   }
 

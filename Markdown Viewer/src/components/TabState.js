@@ -9,6 +9,7 @@ class TabState {
     this.content = options.content || '';
     this.isDirty = options.isDirty || false;
     this.isActive = options.isActive || false;
+    this.isContentLoaded = options.isContentLoaded !== undefined ? options.isContentLoaded : true;
     this.cursorPosition = options.cursorPosition || { line: 1, col: 1 };
     this.scrollPosition = options.scrollPosition || { editor: 0, preview: 0 };
     this.editorViewState = options.editorViewState || null;
@@ -23,6 +24,15 @@ class TabState {
       this.content = content;
       this.isDirty = true;
       this.lastModified = Date.now();
+    }
+  }
+
+  // Set content without marking as dirty (for restoration)
+  setContentClean(content) {
+    if (this.content !== content) {
+      this.content = content;
+      this.lastModified = Date.now();
+      // Don't mark as dirty - this is for restoration/loading
     }
   }
 
@@ -97,6 +107,7 @@ class TabState {
       filePath: this.filePath,
       content: this.content,
       isDirty: this.isDirty,
+      isContentLoaded: this.isContentLoaded,
       cursorPosition: this.cursorPosition,
       scrollPosition: this.scrollPosition,
       editorViewState: this.editorViewState,
@@ -112,6 +123,7 @@ class TabState {
       filePath: data.filePath,
       content: data.content,
       isDirty: data.isDirty,
+      isContentLoaded: data.isContentLoaded,
       cursorPosition: data.cursorPosition,
       scrollPosition: data.scrollPosition,
       editorViewState: data.editorViewState,

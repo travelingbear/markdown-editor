@@ -1,7 +1,7 @@
 {
   "name": "markdown-editor",
   "private": true,
-  "version": "3.3.2",
+  "version": "3.3.3",
   "type": "module",
   "license": "MIT",
   "description": "A powerful native desktop markdown viewer and editor with real-time preview",
@@ -29,7 +29,8 @@
     "build:all": "npm run build:windows && npm run build:macos && npm run build:linux",
     "clean": "npm run tauri build -- --clean",
     "version": "npm run tauri -- --version",
-    "info": "npm run tauri info"
+    "info": "npm run tauri info",
+    "optimize:monaco": "node scripts/build-monaco.cjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.8.3"

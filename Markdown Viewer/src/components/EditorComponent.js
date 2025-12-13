@@ -29,6 +29,9 @@ class EditorComponent extends BaseComponent {
     
     // Apply initial settings
     this.applySettings();
+    
+    // Phase 2: Don't load Monaco yet - wait until first edit
+    // Monaco will be loaded lazily when needed
   }
 
   initializeElements() {

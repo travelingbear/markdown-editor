@@ -324,7 +324,15 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.tabManager.on('tab-activated', (data) => {
-      this.loadTabContent(data.tab);
+      // Store if we need to switch mode after loading
+      const welcomePage = document.getElementById('welcome-page');
+      const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
+      data.tab._shouldSwitchMode = isWelcomeVisible && this.tabManager.hasTabs();
+      
+      // Only load content if this is a user-initiated tab switch, not restoration
+      if (data.tab.isContentLoaded) {
+        this.loadTabContent(data.tab);
+      }
       this.tabUIController.updateTabUI();
     });
     
@@ -725,27 +733,8 @@ class MarkdownEditor extends BaseComponent {
       this.tabUIController.updatePinnedTabs();
     }
     
-    // Show welcome page
-    this.previewComponent.showWelcome();
-    this.modeController.currentMode = 'preview';
-    
-    const editorPane = document.querySelector('.editor-pane');
-    const previewPane = document.querySelector('.preview-pane');
-    const splitter = document.getElementById('splitter');
-    
-    if (editorPane) editorPane.style.display = 'none';
-    if (previewPane) previewPane.style.display = 'block';
-    if (splitter) splitter.style.display = 'none';
-    
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      mainContent.classList.add('preview-mode');
-    }
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-    document.body.classList.add('preview-mode');
-    
-    this.updateFilename('Welcome', false);
+    // Show welcome page directly (no mode controller needed)
+    this.showWelcomePageDirect();
     
     // Update cursor position
     this.updateCursorPosition(1, 1);
@@ -756,8 +745,8 @@ class MarkdownEditor extends BaseComponent {
       isDirty: false 
     });
     
-    // Notify toolbar of current mode
-    this.toolbarComponent.emit('mode-changed', { mode: this.modeController.currentMode });
+    // Notify toolbar of preview mode
+    this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
     // Update theme button
     const themeData = this.settingsController.getTheme();
@@ -2134,70 +2123,45 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  // Tab Management Methods - Phase 6 Enhanced
-  switchToTab(tabId) {
-    const startTime = performance.now();
+  // Tab Management Methods - With content loading
+  async switchToTab(tabId) {
     const currentTab = this.tabManager.getActiveTab();
-    const currentTabId = currentTab?.id;
-    
-    // Check if tab exists
     const targetTab = this.tabManager.getTab(tabId);
     if (!targetTab) return;
     
-    // Phase 6: Handle virtualized tabs FIRST
-    if (this.performanceOptimizer && this.performanceOptimizer.virtualizedTabs.has(tabId)) {
-      this.performanceOptimizer.restoreTab(tabId);
-    }
-    
-    // Save current tab's cursor position and editor state before switching
+    // Save current tab state
     if (currentTab && this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-      // Save Monaco Editor view state to preserve undo/redo history and scroll position
       const viewState = this.editorComponent.monacoEditor.saveViewState();
       this.tabManager.saveTabEditorState(currentTab.id, viewState);
     }
     
-    // Save preview pane scroll position
-    if (currentTab) {
-      const previewPane = document.querySelector('.preview-pane');
-      if (previewPane && previewPane.style.display !== 'none') {
-        this.tabManager.updateTabScroll(currentTab.id, null, previewPane.scrollTop);
-      }
-    }
-    
-    // Phase 6: Track tab access and performance
-    if (this.performanceOptimizer) {
-      this.performanceOptimizer.trackTabAccess(tabId);
-    }
-    
-    const success = this.tabManager.switchToTab(tabId);
+    // Use the new loading method
+    const success = await this.tabManager.switchToTabWithLoading(tabId, this.documentComponent);
     if (!success) return;
-    
-    // Phase 6: Track tab switch performance
-    const duration = performance.now() - startTime;
-    if (this.performanceOptimizer) {
-      const allTabs = this.tabManager.getAllTabs();
-      this.performanceOptimizer.trackTabSwitch(duration, currentTabId, tabId);
-      this.performanceOptimizer.benchmarkTabOperation('Tab Switch', startTime, allTabs.length);
-    }
   }
   
   loadTabContent(tab) {
     const startTime = performance.now();
     
-    // Phase 6: Check if content should be lazy loaded
-    const allTabs = this.tabManager.getAllTabs();
-    const tabIndex = allTabs.findIndex(t => t.id === tab.id);
-    
-    if (this.performanceOptimizer && this.performanceOptimizer.shouldLazyLoadTab(tabIndex, allTabs.length)) {
-      // Lazy load: only load essential content
-      this.loadTabContentLazy(tab);
-    } else {
-      // Full load: load all content immediately
-      this.loadTabContentFull(tab);
+    // If tab doesn't have content loaded, load it from file first
+    if (!tab.isContentLoaded && tab.filePath) {
+      this.tabManager.loadTabContent(tab.id, this.documentComponent).then(() => {
+        // After loading from file, load into UI
+        this.loadTabContentFull(tab);
+      }).catch(error => {
+        console.warn('[MarkdownEditor] Failed to load tab content:', error);
+        // Still try to load what we have
+        this.loadTabContentFull(tab);
+      });
+      return;
     }
+    
+    // Tab already has content, load it into UI
+    this.loadTabContentFull(tab);
     
     // Phase 6: Track tab load performance
     if (this.performanceOptimizer) {
+      const allTabs = this.tabManager.getAllTabs();
       this.performanceOptimizer.benchmarkTabOperation('Tab Load', startTime, allTabs.length);
     }
   }
@@ -2228,9 +2192,15 @@ class MarkdownEditor extends BaseComponent {
       isDirty: tab.isDirty 
     });
     
-    // Ensure current mode is maintained after tab switch
+    // Switch to default mode if coming from welcome page, otherwise maintain current mode
     setTimeout(() => {
-      this.modeController.setMode(this.modeController.getCurrentMode());
+      if (tab._shouldSwitchMode) {
+        const defaultMode = this.settingsController.getDefaultMode();
+        this.modeController.setMode(defaultMode);
+        delete tab._shouldSwitchMode;
+      } else {
+        this.modeController.setMode(this.modeController.getCurrentMode());
+      }
     }, 10);
     
     // Restore preview scroll position
@@ -2287,8 +2257,8 @@ class MarkdownEditor extends BaseComponent {
     }, { timeout: 1000 });
   }
   
-  showWelcomePage() {
-    // Show welcome page
+  showWelcomePageDirect() {
+    // Show welcome page without mode controller
     const welcomePage = document.getElementById('welcome-page');
     const previewContent = document.getElementById('preview');
     const editorPane = document.querySelector('.editor-pane');
@@ -2302,7 +2272,7 @@ class MarkdownEditor extends BaseComponent {
     if (previewPane) previewPane.style.display = 'block';
     if (splitter) splitter.style.display = 'none';
     
-    // Set preview mode
+    // Set preview mode manually
     this.modeController.currentMode = 'preview';
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
@@ -2317,14 +2287,21 @@ class MarkdownEditor extends BaseComponent {
       markdownToolbar.style.display = 'none';
     }
     
+    this.updateFilename('Welcome', false);
+  }
+  
+  showWelcomePage() {
+    // Show welcome page (called when closing all tabs)
+    this.showWelcomePageDirect();
+    
     this.editorComponent.emit('set-content', { content: '' });
     this.previewComponent.emit('update-preview', { content: '', filePath: null });
-    this.updateFilename('Welcome', false);
     this.toolbarComponent.emit('document-state-changed', { hasDocument: false, isDirty: false });
     this.tabUIController.updateTabUIForWelcome();
     this.updateScrollSyncButton();
     
     // Force repaint
+    const welcomePage = document.getElementById('welcome-page');
     setTimeout(() => {
       if (welcomePage) welcomePage.offsetHeight;
     }, 0);

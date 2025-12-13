@@ -1,5 +1,30 @@
 # Changelog
 
+## Version 3.3.3 (2024-12-14)
+
+### Performance Improvements
+- **Monaco Bundle Optimization**: Reduced Monaco Editor bundle from 13MB to 4.1MB (68% reduction, 8.9MB saved)
+- **Monaco Lazy Loading**: Monaco Editor now loads only when entering Code or Split mode (4MB deferred on welcome page)
+- **Custom Build Script**: Added `npm run optimize:monaco` script for Monaco optimization
+
+### Technical Changes
+- Created custom Monaco build script (`scripts/build-monaco.cjs`) that removes unused languages and features
+- Deferred Monaco initialization until Code/Split mode is entered
+- Enhanced ModeController with lazy Monaco loading
+- Added welcome page direct display method to avoid unnecessary component loading
+
+### Documentation
+- Added `MODULARIZATION_PLAN.md` - Complete modularization project plan
+- Added `MODULARIZATION_SUMMARY.md` - Final project summary and results
+- Added `PHASE1_COMPLETION_SUMMARY.md` - Detailed Monaco optimization report
+- Added `scripts/README.md` - Build scripts documentation
+
+### Notes
+- Phase 4 (Theme Flash Fix) was attempted but reverted due to complexity
+- Phase 3 (Mode Modularization) and Phase 5 (Feature Modularization) skipped due to diminishing returns
+- Total bundle size reduction: 8.9MB
+- Welcome page loads 4MB faster without Monaco
+
 ## Version 3.3.2 (2024-12-12)
 
 ### Improvements

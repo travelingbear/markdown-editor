@@ -733,27 +733,8 @@ class MarkdownEditor extends BaseComponent {
       this.tabUIController.updatePinnedTabs();
     }
     
-    // Show welcome page
-    this.previewComponent.showWelcome();
-    this.modeController.currentMode = 'preview';
-    
-    const editorPane = document.querySelector('.editor-pane');
-    const previewPane = document.querySelector('.preview-pane');
-    const splitter = document.getElementById('splitter');
-    
-    if (editorPane) editorPane.style.display = 'none';
-    if (previewPane) previewPane.style.display = 'block';
-    if (splitter) splitter.style.display = 'none';
-    
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      mainContent.classList.add('preview-mode');
-    }
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-    document.body.classList.add('preview-mode');
-    
-    this.updateFilename('Welcome', false);
+    // Show welcome page directly (no mode controller needed)
+    this.showWelcomePageDirect();
     
     // Update cursor position
     this.updateCursorPosition(1, 1);
@@ -764,8 +745,8 @@ class MarkdownEditor extends BaseComponent {
       isDirty: false 
     });
     
-    // Notify toolbar of current mode
-    this.toolbarComponent.emit('mode-changed', { mode: this.modeController.currentMode });
+    // Notify toolbar of preview mode
+    this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
     // Update theme button
     const themeData = this.settingsController.getTheme();
@@ -2276,8 +2257,8 @@ class MarkdownEditor extends BaseComponent {
     }, { timeout: 1000 });
   }
   
-  showWelcomePage() {
-    // Show welcome page
+  showWelcomePageDirect() {
+    // Show welcome page without mode controller
     const welcomePage = document.getElementById('welcome-page');
     const previewContent = document.getElementById('preview');
     const editorPane = document.querySelector('.editor-pane');
@@ -2291,7 +2272,7 @@ class MarkdownEditor extends BaseComponent {
     if (previewPane) previewPane.style.display = 'block';
     if (splitter) splitter.style.display = 'none';
     
-    // Set preview mode
+    // Set preview mode manually
     this.modeController.currentMode = 'preview';
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
@@ -2306,14 +2287,21 @@ class MarkdownEditor extends BaseComponent {
       markdownToolbar.style.display = 'none';
     }
     
+    this.updateFilename('Welcome', false);
+  }
+  
+  showWelcomePage() {
+    // Show welcome page (called when closing all tabs)
+    this.showWelcomePageDirect();
+    
     this.editorComponent.emit('set-content', { content: '' });
     this.previewComponent.emit('update-preview', { content: '', filePath: null });
-    this.updateFilename('Welcome', false);
     this.toolbarComponent.emit('document-state-changed', { hasDocument: false, isDirty: false });
     this.tabUIController.updateTabUIForWelcome();
     this.updateScrollSyncButton();
     
     // Force repaint
+    const welcomePage = document.getElementById('welcome-page');
     setTimeout(() => {
       if (welcomePage) welcomePage.offsetHeight;
     }, 0);

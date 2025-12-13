@@ -35,34 +35,28 @@ class StyleManager {
     if (this.isTransitioning) return;
     this.isTransitioning = true;
     
-    // Add transition class for smooth switching
     document.body.classList.add('theme-transitioning');
     
-    // Remove previous theme
-    document.querySelectorAll('link[data-theme]').forEach(link => link.remove());
+    // Find and replace existing theme CSS
+    const existingThemeLink = document.querySelector('link[href*="/themes/"]');
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `./styles/themes/${themeName}.css`;
     
-    if (themeName !== 'light') { // Light is default in main CSS
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = `./styles/themes/${themeName}.css`;
-      link.setAttribute('data-theme', themeName);
-      
-      // Wait for CSS to load before applying theme class
-      await new Promise((resolve) => {
-        link.onload = resolve;
-        link.onerror = resolve; // Continue even if load fails
-        document.head.appendChild(link);
-      });
-    }
+    await new Promise((resolve) => {
+      link.onload = () => {
+        if (existingThemeLink) existingThemeLink.remove();
+        resolve();
+      };
+      link.onerror = resolve;
+      document.head.appendChild(link);
+    });
     
     this.currentTheme = themeName;
-    
-    // Preserve existing classes while updating theme
-    const existingClasses = Array.from(document.body.classList)
-      .filter(cls => !cls.endsWith('-theme'));
+    const existingClasses = Array.from(document.body.classList).filter(cls => !cls.endsWith('-theme'));
     document.body.className = [...existingClasses, `${themeName}-theme`].join(' ');
+    document.documentElement.setAttribute('data-theme', themeName);
     
-    // Remove transition class after a brief delay
     setTimeout(() => {
       document.body.classList.remove('theme-transitioning');
       this.isTransitioning = false;

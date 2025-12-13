@@ -113,31 +113,25 @@ class UIController extends BaseComponent {
   async setTheme(theme, isRetro = false) {
     this.executeHook('beforeThemeChange', { oldTheme: this.theme, newTheme: theme, oldRetro: this.isRetroTheme, newRetro: isRetro });
     
-    // Update internal state
     this.theme = theme;
     this.isRetroTheme = isRetro;
     
-    // Update localStorage
     localStorage.setItem('markdownViewer_defaultTheme', this.theme);
     localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());
     
-    // Apply theme using StyleManager for dynamic loading
     document.body.classList.remove('light-theme', 'dark-theme', 'contrast-theme', 'retro-theme');
     
     if (this.isRetroTheme) {
-      document.body.classList.add('retro-theme');
-      // Only play sound during initial startup
       if (this.isInitialStartup) {
         this.playRetroStartupSound();
       }
-      // Load retro theme dynamically
+      document.body.classList.add('retro-theme');
       if (window.styleManager) {
         await window.styleManager.loadTheme('retro');
       }
     } else {
       document.body.classList.add(`${this.theme}-theme`);
-      // Load theme dynamically if not light
-      if (window.styleManager && this.theme !== 'light') {
+      if (window.styleManager) {
         await window.styleManager.loadTheme(this.theme);
       }
     }

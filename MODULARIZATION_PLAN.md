@@ -325,59 +325,33 @@ Add to `<head>` before any CSS:
 
 ---
 
-### Phase 2: Welcome Page Independence (High Priority)
-**Estimated Time:** 2-3 hours  
-**Complexity:** Medium  
-**Risk:** Medium  
-**Impact:** 50% faster startup for welcome page
+### Phase 2: Monaco Lazy Loading ✅ COMPLETE
+**Estimated Time:** 1 hour  
+**Complexity:** Low  
+**Risk:** Low  
+**Impact:** 4MB deferred on welcome page
+**Completion Date:** December 14, 2024
 
-#### Implementation Steps:
-1. Create new HTML structure
-2. Update CSS for new containers
-3. Add welcome mode state
-4. Update mode controller logic
-5. Defer Phase 3 & 4 component loading
-6. Test all welcome page interactions
-7. Test mode switching with/without documents
-
-#### Testing Requirements:
-- [ ] Welcome page shows without mode system
-- [ ] New file button works
-- [ ] Open file button works
-- [ ] Recent files work
-- [ ] Settings button works
-- [ ] Help button works
-- [ ] About button works
-- [ ] First document triggers component loading
-- [ ] Mode switches correctly after loading
-- [ ] All tabs close returns to welcome
-- [ ] Measure startup time improvement
-
-#### Documentation Updates:
-- [ ] Update TECHNICAL_DOCUMENTATION.md with new architecture
-- [ ] Document welcome mode state
-- [ ] Update COMPONENT_LOADING_ORDER.md
-- [ ] Add architecture diagram
-
-#### User Validation:
-- [ ] User confirms welcome page loads faster
-- [ ] User confirms all welcome interactions work
-- [ ] User confirms smooth transition to document
+#### Implementation:
+- Monaco Editor deferred until Code/Split mode entered
+- Welcome page loads without Monaco (~4MB saved)
+- All components still initialize at startup
+- ModeController triggers Monaco load when needed
 
 **Success Criteria:**
-- Welcome page shows without initializing mode system
-- First document open triggers mode initialization
-- All mode switches work correctly
-- No visual regressions
-- 30ms faster startup (50% improvement)
+- ✅ Monaco doesn't load on welcome page
+- ✅ Monaco loads when entering Code/Split mode
+- ✅ All editor functionality works
+- ✅ No regressions
 
 ---
 
-### Phase 3: Mode Modularization (Medium Priority)
+### Phase 3: Mode Modularization - SKIPPED
 **Estimated Time:** 3-4 hours  
 **Complexity:** Medium  
 **Risk:** Medium  
-**Impact:** Better code organization, lazy loading
+**Impact:** Better code organization only
+**Status:** Skipped - no performance benefit, just code refactoring
 
 #### Implementation Steps:
 1. Create BaseModeHandler class
@@ -420,11 +394,12 @@ Add to `<head>` before any CSS:
 
 ---
 
-### Phase 4: Theme Flash Fix (Medium Priority)
+### Phase 4: Theme Flash Fix (Medium Priority) - REVERTED
 **Estimated Time:** 1-2 hours  
 **Complexity:** Low  
 **Risk:** Low  
 **Impact:** Eliminates theme flash on startup
+**Status:** Attempted but caused issues - reverted
 
 #### Implementation Steps:
 1. Extract light theme CSS
@@ -432,6 +407,8 @@ Add to `<head>` before any CSS:
 3. Update StyleManager
 4. Test all theme combinations
 5. Verify no flash on startup
+
+**Note:** Phase 4 was attempted but caused theme switching issues and slower loading. Reverted to original implementation.
 
 #### Testing Requirements:
 - [ ] Light theme loads without flash
@@ -462,11 +439,12 @@ Add to `<head>` before any CSS:
 
 ---
 
-### Phase 5: Feature Modularization (Low Priority)
+### Phase 5: Feature Modularization - SKIPPED
 **Estimated Time:** 2-3 hours  
 **Complexity:** Low  
 **Risk:** Low  
-**Impact:** Minor performance improvement
+**Impact:** ~40KB CSS savings
+**Status:** Skipped - diminishing returns
 
 #### Implementation Steps:
 1. Extract pinned tabs CSS

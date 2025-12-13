@@ -42,6 +42,7 @@ sudo apt-get install -y \
 ```bash
 cd "Markdown Viewer"
 npm install
+npm run optimize:monaco  # Optimize Monaco Editor (first time only)
 npm run dev
 ```
 
@@ -49,6 +50,7 @@ npm run dev
 ```bash
 cd "Markdown Viewer"
 npm install
+npm run optimize:monaco  # Optimize Monaco Editor (first time only)
 npm run tauri build
 ```
 
@@ -88,6 +90,31 @@ npm run tauri build
 ### Linux
 - **AppImage**: `src-tauri/target/release/bundle/appimage/markdown-viewer_1.0.0_amd64.AppImage`
 - **DEB Package**: `src-tauri/target/release/bundle/deb/markdown-viewer_1.0.0_amd64.deb`
+
+## ⚡ Monaco Editor Optimization
+
+### Overview
+The Monaco Editor is optimized to include only markdown language support, reducing bundle size by 68% (13MB → 4.1MB).
+
+### Optimization Script
+```bash
+npm run optimize:monaco
+```
+
+This script:
+- Copies only essential Monaco files from `node_modules`
+- Keeps only markdown language support
+- Removes 80+ unused language files
+- Removes unused workers and features
+- Creates backup of existing Monaco build
+
+### When to Run
+- After `npm install` (first time)
+- After updating `monaco-editor` package
+- If Monaco files are corrupted or missing
+
+### Manual Optimization
+The script is located at `scripts/build-monaco.cjs` and can be customized if needed.
 
 ## 🔧 Build Configuration
 

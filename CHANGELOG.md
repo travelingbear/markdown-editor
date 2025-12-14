@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 3.3.4 (2024-12-14)
+## Version 3.3.4 (2025-12-14)
 
 ### Bug Fixes
 - **Split Mode Loading**: Fixed splash screen disappearing prematurely in split mode by increasing z-index to stay above Monaco Editor
@@ -12,7 +12,7 @@
 - Removed duplicate retro startup sound call from UIController, keeping only SettingsController implementation
 - Enhanced loading screen layering for better visual consistency during startup
 
-## Version 3.3.3 (2024-12-14)
+## Version 3.3.3 (2025-12-14)
 
 ### Performance Improvements
 - **Monaco Bundle Optimization**: Reduced Monaco Editor bundle from 13MB to 4.1MB (68% reduction, 8.9MB saved)
@@ -37,7 +37,7 @@
 - Total bundle size reduction: 8.9MB
 - Welcome page loads 4MB faster without Monaco
 
-## Version 3.3.2 (2024-12-12)
+## Version 3.3.2 (2025-12-14)
 
 ### Improvements
 - **Smooth Startup**: Eliminated visible mode switching on startup - splash screen now stays visible until document is ready in correct mode
@@ -52,7 +52,7 @@
 - Added loading overlay for splash-disabled scenario
 - Enhanced document loading flow
 
-## Version 3.3.1 (2024-12-12)
+## Version 3.3.1 (2025-12-14)
 
 ### Bug Fixes
 - **Reopened Tabs Mode**: Fixed reopened tabs not respecting default mode setting - tabs now open in the configured default mode instead of always opening in Preview mode

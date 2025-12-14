@@ -23,9 +23,6 @@ class SplashScreenComponent {
     this.splashElement.innerHTML = `
       <div class="splash-content">
         <img src="assets/SplashScreen.gif" alt="Markdown Editor" class="splash-image">
-        <div class="splash-progress">
-          <div class="progress-bar"></div>
-        </div>
       </div>
     `;
 
@@ -49,7 +46,7 @@ class SplashScreenComponent {
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 10000;
+        z-index: 10001;
         opacity: 0;
         transition: ${this.animationsEnabled ? 'opacity 0.5s ease' : 'none'};
       }
@@ -82,34 +79,9 @@ class SplashScreenComponent {
         animation: none;
       }
       
-      .splash-progress {
-        width: 200px;
-        height: 4px;
-        background: #e0e0e0;
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      
-      .progress-bar {
-        height: 100%;
-        background: #007acc;
-        border-radius: 2px;
-        width: ${this.animationsEnabled ? '0%' : '100%'};
-        animation: ${this.animationsEnabled ? 'progressAnimation 1.3s ease-out forwards' : 'none'};
-      }
-      
-      @keyframes progressAnimation {
-        0% { width: 0%; }
-        100% { width: 100%; }
-      }
-      
       /* Dark theme support */
       [data-theme="dark"] .splash-screen {
         background: #1e1e1e;
-      }
-      
-      [data-theme="dark"] .splash-progress {
-        background: #333;
       }
     `;
     

@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 3.3.4 (2024-12-14)
+
+### Bug Fixes
+- **Split Mode Loading**: Fixed splash screen disappearing prematurely in split mode by increasing z-index to stay above Monaco Editor
+- **Retro Startup Sound**: Fixed echo effect caused by duplicate startup sound playback from multiple controllers
+- **Loading Screen Z-Index**: Improved loading overlay z-index to prevent Monaco Editor from appearing on top
+
+### Technical Changes
+- Increased splash screen z-index from 10000 to 10001 to stay above Monaco Editor (z-index: 10000)
+- Removed duplicate retro startup sound call from UIController, keeping only SettingsController implementation
+- Enhanced loading screen layering for better visual consistency during startup
+
 ## Version 3.3.3 (2024-12-14)
 
 ### Performance Improvements

@@ -1,7 +1,7 @@
 {
   "name": "markdown-editor",
   "private": true,
-  "version": "3.3.3",
+  "version": "3.3.4",
   "type": "module",
   "license": "MIT",
   "description": "A powerful native desktop markdown viewer and editor with real-time preview",
@@ -36,7 +36,7 @@
     "@tauri-apps/cli": "^2.8.3"
   },
   "dependencies": {
-    "@tauri-apps/plugin-opener": "^2.2.3",
+    "@tauri-apps/plugin-opener": "^2.5.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "katex": "^0.16.9",

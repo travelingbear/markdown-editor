@@ -122,9 +122,6 @@ class UIController extends BaseComponent {
     document.body.classList.remove('light-theme', 'dark-theme', 'contrast-theme', 'retro-theme');
     
     if (this.isRetroTheme) {
-      if (this.isInitialStartup) {
-        this.playRetroStartupSound();
-      }
       document.body.classList.add('retro-theme');
       if (window.styleManager) {
         await window.styleManager.loadTheme('retro');

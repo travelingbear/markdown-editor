@@ -2,6 +2,7 @@
 /Markdown Viewer/src-tauri/target/
 /Markdown Viewer/node_modules/
 /Markdown Viewer/dist/
+node_modules/
 /MULTI_TAB_PERFORMANCE_PLAN.md
 /MULTI_TAB_PROJECT_PLAN.md
 # OS generated files

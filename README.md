@@ -6,7 +6,7 @@
 
 <p align="center">A powerful markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.</p>
 
-## ✨ Features
+## Features
 
 ### Multi-Tab Interface
 - **Smart Tab Management**: Open multiple files with intelligent tab organization
@@ -42,7 +42,7 @@
 
 (Works better with Windows. Some functionalities, such as file association, might not work well on MacOS. I have been testing on Windows, and Ubuntu Linux. Sometimes I test in a MacOS and most of the functionalities are there)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Download & Install
 
@@ -83,7 +83,7 @@
 - **Bundle Size**: < 50MB across all platforms
 - **Security**: Sandboxed file access with CSP protection and plugin validation
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details
 
@@ -96,10 +96,6 @@ Built with:
 - [KaTeX](https://katex.org/) - Math rendering
 - [Mermaid](https://mermaid.js.org/) - Diagram rendering
 - [Highlight.js](https://highlightjs.org/) - Syntax highlighting
-
-## 🙏 Buy me a coffee?
-
-[buymeacoffee.com/travelingbear](https://buymeacoffee.com/travelingbear)
 
 ---
 

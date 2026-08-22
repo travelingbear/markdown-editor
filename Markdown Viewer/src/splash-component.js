@@ -6,8 +6,16 @@ class SplashScreenComponent {
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
     this.minDisplayTime = this.splashDuration * 1000; // Convert to milliseconds
     this.startTime = performance.now();
+
+    // Apply the saved theme before the application markup is painted. The full
+    // theme stylesheet is loaded later by StyleManager, but this prevents a
+    // bright startup cover from flashing for users who selected dark mode.
+    const savedTheme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.body.setAttribute('data-theme', savedTheme);
     
     if (this.isEnabled) {
+      document.body.classList.add('splash-visible');
       this.createSplashScreen();
       this.showSplash();
     }
@@ -28,91 +36,8 @@ class SplashScreenComponent {
       </div>
     `;
 
-    // Add styles
-    this.addSplashStyles();
-    
     // Insert at beginning of body
     document.body.insertBefore(this.splashElement, document.body.firstChild);
-  }
-
-  addSplashStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-      .splash-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-      }
-      
-      .splash-screen.active {
-        opacity: 1;
-      }
-      
-
-      
-      .splash-screen.fade-out {
-        opacity: 0;
-        transition: opacity 0.5s ease;
-      }
-      
-      .splash-content {
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2rem;
-        transform: none;
-        animation: none;
-      }
-      
-      .splash-image {
-        max-width: 90vw;
-        max-height: 70vh;
-        transform: none;
-        animation: none;
-      }
-      
-      .splash-progress {
-        width: 200px;
-        height: 4px;
-        background: #e0e0e0;
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      
-      .progress-bar {
-        height: 100%;
-        background: #007acc;
-        border-radius: 2px;
-        width: 0%;
-        animation: progressAnimation 1.3s ease-out forwards;
-      }
-      
-      @keyframes progressAnimation {
-        0% { width: 0%; }
-        100% { width: 100%; }
-      }
-      
-      /* Dark theme support */
-      [data-theme="dark"] .splash-screen {
-        background: #1e1e1e;
-      }
-      
-      [data-theme="dark"] .splash-progress {
-        background: #333;
-      }
-    `;
-    
-    document.head.appendChild(style);
   }
 
   showSplash() {
@@ -122,7 +47,10 @@ class SplashScreenComponent {
   }
 
   hideSplash() {
-    if (!this.splashElement) return;
+    if (!this.splashElement) {
+      document.body.classList.remove('splash-visible');
+      return;
+    }
     
     const elapsedTime = performance.now() - this.startTime;
     const remainingTime = Math.max(0, this.minDisplayTime - elapsedTime);
@@ -134,6 +62,7 @@ class SplashScreenComponent {
         if (this.splashElement && this.splashElement.parentNode) {
           this.splashElement.parentNode.removeChild(this.splashElement);
         }
+        document.body.classList.remove('splash-visible');
       }, 500);
     }, remainingTime);
   }

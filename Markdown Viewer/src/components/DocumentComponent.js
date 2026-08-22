@@ -1,3 +1,7 @@
+import { open, save } from '@tauri-apps/plugin-dialog';
+import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { showUnsavedChangesDialog } from './unsavedChangesDialog.js';
+
 /**
  * Document Component
  * Manages single document state and operations
@@ -96,8 +100,8 @@ class DocumentComponent extends BaseComponent {
 
       let selectedFile = filePath;
       
-      if (!selectedFile && window.__TAURI__) {
-        selectedFile = await window.__TAURI__.dialog.open({
+      if (!selectedFile && window.__TAURI__?.core?.invoke) {
+        selectedFile = await open({
           multiple: true,
           filters: [{
             name: 'Markdown',
@@ -108,17 +112,30 @@ class DocumentComponent extends BaseComponent {
 
       if (selectedFile) {
         const files = Array.isArray(selectedFile) ? selectedFile : [selectedFile];
-        
-        for (const file of files) {
-          const content = await this.readFile(file);
-          
-          this.addToFileHistory(file);
-          
-          this.emit('document-opened', {
-            filePath: file,
-            content: content,
-            fileName: this.getFilenameFromPath(file)
-          });
+        const isBatch = files.length > 1;
+
+        if (isBatch) this.emit('document-open-batch-started', { fileCount: files.length });
+        try {
+          for (const [batchIndex, file] of files.entries()) {
+            // Start after the native picker closes. This excludes the time the
+            // user spends choosing files from performance measurements.
+            const openStartedAt = performance.now();
+            const content = await this.readFile(file);
+
+            this.addToFileHistory(file);
+
+            this.emit('document-opened', {
+              filePath: file,
+              content: content,
+              fileName: this.getFilenameFromPath(file),
+              openStartedAt,
+              batchIndex,
+              batchSize: files.length,
+              isLastInBatch: batchIndex === files.length - 1
+            });
+          }
+        } finally {
+          if (isBatch) this.emit('document-open-batch-completed', { fileCount: files.length });
         }
       }
     } catch (error) {
@@ -161,14 +178,14 @@ class DocumentComponent extends BaseComponent {
    */
   async saveAsFile() {
     try {
-      if (!window.__TAURI__) {
+      if (!window.__TAURI__?.core?.invoke) {
         throw new Error('Save functionality requires Tauri');
       }
 
       // Extract first title from content as suggested filename
       const suggestedName = this.extractFirstTitle(this.content);
       
-      const filePath = await window.__TAURI__.dialog.save({
+      const filePath = await save({
         defaultPath: suggestedName ? `${suggestedName}.md` : undefined,
         filters: [{
           name: 'Markdown',
@@ -248,13 +265,9 @@ class DocumentComponent extends BaseComponent {
    */
   async handleUnsavedChanges() {
     try {
-      if (window.__TAURI__) {
-        return await window.__TAURI__.dialog.confirm(
-          'Close without saving changes?',
-          { title: 'Unsaved Changes' }
-        );
-      }
-      return confirm('Close without saving changes?');
+      return await showUnsavedChangesDialog([
+        this.currentFile ? this.getFilenameFromPath(this.currentFile) : 'untitled.md'
+      ]);
     } catch (error) {
       return false;
     }
@@ -264,8 +277,8 @@ class DocumentComponent extends BaseComponent {
    * Read file content
    */
   async readFile(filePath) {
-    if (window.__TAURI__) {
-      return await window.__TAURI__.fs.readTextFile(filePath);
+    if (window.__TAURI__?.core?.invoke) {
+      return await readTextFile(filePath);
     }
     throw new Error('File reading requires Tauri');
   }
@@ -274,8 +287,8 @@ class DocumentComponent extends BaseComponent {
    * Write file content
    */
   async writeFile(filePath, content) {
-    if (window.__TAURI__) {
-      return await window.__TAURI__.fs.writeTextFile(filePath, content);
+    if (window.__TAURI__?.core?.invoke) {
+      return await writeTextFile(filePath, content);
     }
     throw new Error('File writing requires Tauri');
   }

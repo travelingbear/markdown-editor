@@ -1,12 +1,97 @@
 # Changelog
 
+## Unreleased (2026-08-22)
+
+### Architecture and Performance
+- Replaced Monaco with a lighter CodeMirror editor adapter and removed obsolete Monaco-only settings.
+- Introduced staged component startup, controller separation, renderer registration, and failure-isolated plugin lifecycle cleanup.
+- Removed the unreachable legacy monolith, duplicate component entry point, console-only extension experiment, and unregistered Sample Plugin; the maintained bootstrap and plugin registry are now the only runtime paths.
+- Consolidated overlapping and obsolete guides into one user manual, a rewritten current technical overview, and an updated Tauri 2/Vite 8 build guide; also removed duplicate root runtime files and the empty root lockfile.
+- Removed approximately 4.7 MB of unreferenced source artwork, template logos, duplicate native icons, PWA-only files, and unused Retro audio formats; the welcome screen now reuses the compact branded favicon instead of shipping a 1.05 MB traced SVG.
+- Removed broken favicon, Apple touch icon, and web-manifest references from the native application shell and added automated static-reference validation.
+- Added Pure Markdown and Extended rendering modes; optional renderers do not run in Pure mode.
+- Split KaTeX and Mermaid into lazy renderer chunks. Neither runtime is part of the core Preview component, and HTML export only receives plugin styles when the rendered feature is present.
+- Removed obsolete duplicate KaTeX and Mermaid distribution assets; the application now has one locally bundled source for each renderer.
+- Improved multi-file opening, virtual-tab cleanup, memory cleanup, and large-session handling.
+- Extracted native window close, focus, and single-instance integration from `MarkdownEditor` into a lifecycle-managed controller; forwarded files now use the existing batch-open path, native listeners are removed during teardown, and duplicate startup-file handling was eliminated.
+- Extracted browser and Tauri file-drop behavior into `FileDropController`, removed redundant unmanaged DOM listeners, added complete listener teardown, retained full-path duplicate detection where the platform supplies a path, and fixed the native hover overlay remaining visible after a completed drop.
+- Removed the unreachable duplicate shortcut implementation from `MarkdownEditor` and replaced `KeyboardController`'s composition-root dependency with explicit services and actions.
+- Extracted vertical pane resizing into `SplitPaneController`, added complete mouse-listener and animation-frame cleanup, and coalesced repeated editor relayout work during rapid dragging.
+- Moved next/previous navigation into `TabSessionController` and context-menu commands into `TabUIController`, removing the remaining tab-command pass-through methods from `MarkdownEditor`.
+- Extracted welcome-screen commands into `WelcomeController`, routed recent-history clearing through `FileController`, and made welcome and UI modal listeners disposable.
+- Extracted file-open batches, full-path duplicate handling, document dirty/save transitions, and document-to-tab updates into a lifecycle-managed controller with complete listener teardown.
+- Extracted editor content, cursor, lazy-load status, and markdown-command routing into a lifecycle-managed controller so tab/document/preview state follows one synchronization path; fallback-textarea DOM listeners are now also removed during teardown.
+- Fixed repeated Italic commands accumulating asterisks on combined bold-and-italic selections; single-line and multi-line toggles now remove only the italic layer and preserve bold.
+
+### Plugin System
+- Added a dedicated Plugin Manager modal with a General tab and one settings tab per plugin.
+- Fixed repeated Enable/Disable actions becoming stuck in transitional states.
+- Added persistent, scoped plugin settings and reliable reset, reload, pause, activation, deactivation, and cleanup behavior.
+- Migrated Horizontal Split settings into plugin-owned configuration while preserving existing user choices.
+- Removed the Typewriter Sounds plugin and its audio assets because crackling playback could not be made consistently reliable across systems.
+- Added an ordered renderer registry so future math, diagram, spreadsheet, and presentation renderers can remain modular.
+
+### KaTeX Math Renderer
+- Converted KaTeX into a separately configurable renderer plugin that is enabled once by default for compatibility and remembers later user choices.
+- Added strict math detection that ignores prices, escaped dollars, shell variables, ordinary prose, inline code, and fenced code blocks.
+- Added Permissive detection for documents that depend on legacy dollar-delimiter behavior.
+- Added independent Inline `$…$` and Display `$$…$$` controls.
+- Added Keep Source and Show Warning behavior for invalid formulas.
+- Added lazy runtime/version reporting and accurate Disabled, Not Loaded, and Loaded System Info states.
+- Added one-second explanatory hover popups for every KaTeX configuration.
+
+### Mermaid Diagram Renderer
+- Converted Mermaid into a separately configurable renderer plugin that is enabled once by default for compatibility and remembers later user choices.
+- Removed Mermaid-specific runtime state, HTML transformation, SVG rendering, error handling, theming, and CSS from the Preview core.
+- Added Application, Default, Dark, Neutral, and Forest diagram themes plus a maximum-width control.
+- Added Keep Source and Show Warning behavior for invalid diagrams, preserving readable source when the renderer is disabled or fails.
+- Kept Mermaid at strict security, disabled embedded HTML labels, and retained a second SVG sanitization pass while preserving visible native SVG text labels.
+- Uses parsed DOM nodes rather than direct HTML assignment, allowing the renderer to pass the same security validation applied to every plugin at activation.
+- Pinned the bundled Mermaid runtime version and removed a development-time `package.json` dynamic import that Tauri's local server could not serve.
+- Renamed the read-only KaTeX and Mermaid runtime rows to Bundled Runtime so they are not mistaken for version selectors.
+- Added lazy local runtime/version reporting and accurate Disabled, Not Loaded, and Loaded System Info states.
+- Added one-second explanatory hover popups for every Mermaid configuration.
+
+### Editing and Rendering Fixes
+- Fixed Markdown rendering stopping when switching between Pure and Extended modes.
+- Fixed Mermaid text labels disappearing after SVG sanitization.
+- Restored readable 14px fenced-code typography in the Retro preview instead of inheriting the theme's approximately 10px scaled size.
+- Fixed Code mode search on Linux and made Ctrl+F/Ctrl+H and the toolbar search button toggle their widgets closed when invoked again.
+- Fixed undo/redo skipping multiple edits.
+- Fixed dark-theme editor token contrast and theme synchronization.
+- Added responsive Markdown toolbar overflow behavior and corrected toolbar visibility when changing split orientation.
+- Prevented the core vertical splitter from changing pane widths while the Horizontal Split plugin is resizing pane heights.
+- Restored mode shortcuts on Ctrl+Shift+1/2/3 and heading shortcuts on Ctrl+1/2/3 in Code mode.
+- Fixed Ctrl+P PDF/print export, Ctrl+Shift+E HTML export, and Ctrl+Shift+M tab-manager shortcuts calling nonexistent orchestrator methods; corrected the in-app help and manual to distinguish the tab manager from Ctrl+Shift+Tab previous-tab navigation.
+
+### Tabs, Files, and Session Safety
+- Added unsaved-change highlighting and confirmation when closing individual documents.
+- Restored silent application close: the complete tab session, including modified content and dirty markers, is preserved for the next launch without showing a save prompt.
+- Fixed file loading and duplicate detection so identity uses the normalized full path rather than filename alone.
+- Added drag reordering with clearer drop positions to Pinned Tabs and the status-bar tab manager.
+- Fixed dormant pinned tabs failing to activate after temporary documents were closed.
+- Fixed tab order, virtual-tab clearing, and memory-cleanup controls.
+- Added per-document scroll state and synchronized Code, Preview, and Split positions without leaking one tab's position into another.
+- Removed the duplicate Alt+1–9 global listener, added deterministic next/previous wraparound even when restored active state is missing, and retained move, close, duplicate, pin, and reveal context actions under their tab UI owner.
+
+### Interface
+- Fixed splash/welcome-screen flashes, alignment, and mode switching when no document is loaded.
+- Prevented the Retro startup sound from pausing during cold starts by fully loading and decoding the local clip before playback.
+- Added optional persistent toolbar pins for Markdown rendering and Pinned Tabs.
+- Added compact wide-window controls and a separated, state-labelled Quick menu on narrower windows.
+- Replaced toolbar pin buttons in Settings with simple Pinned checkboxes.
+- Unified Settings opening from the welcome screen, toolbar, keyboard, and Plugin Manager return flow so performance, system, and plugin data refresh through one immediate event instead of delayed per-button timers.
+- Improved responsive toolbar breakpoints, dropdown appearance, active states, and dark-theme visibility.
+
+### Quality
+- Added automated coverage for plugin lifecycle, renderer isolation, KaTeX false positives, sanitized math rendering, lazy and sanitized Mermaid rendering, readable diagram fallback, path identity, tab ordering, session state, scroll coordination, shortcuts, and responsive toolbar settings.
+
 ## Version 3.2.1 (2025-09-14)
 
 ### Bug Fixes
 - **KaTeX rendering issues**: Fixed minor rendering issues with Math expressions
 
 ### New plugins!
-- **Typewriter sounds**: Plugin that enables typewriter sounds
 - **Horizontal Split mode**: Allows split mode in horizontal orientation (that helps giving a typewriter feeling to the application)
 
 ## Version 3.2.0 (2025-01-07)

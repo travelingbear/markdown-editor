@@ -1,3 +1,6 @@
+import { save } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
+
 /**
  * ExportController - Handles document export functionality
  * Manages HTML/PDF export and provides foundation for future format extensions
@@ -22,8 +25,9 @@ class ExportController extends BaseComponent {
     try {
       const preview = document.getElementById('preview');
       const cleanHtml = this.cleanPreviewHtml(preview.cloneNode(true));
-      
-      const htmlDocument = this.createExportHtmlDocument(cleanHtml.innerHTML);
+
+      const extensionStyles = await this.collectExportStyles(cleanHtml.innerHTML);
+      const htmlDocument = this.createExportHtmlDocument(cleanHtml.innerHTML, extensionStyles);
       await this.saveHtmlFile(htmlDocument);
       
     } catch (error) {
@@ -53,9 +57,9 @@ class ExportController extends BaseComponent {
       if (currentMode) {
         const content = this.editorComponent.getContent();
         tempDiv = document.createElement('div');
-        tempDiv.innerHTML = `<pre style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; color: black; background: white; padding: 20px; margin: 0;">${this.escapeHtml(content)}</pre>`;
+        tempDiv.innerHTML = `<pre style="font-family: 'Consolas', 'Liberation Mono', 'Courier New', monospace; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; color: black; background: white; padding: 20px; margin: 0;">${this.escapeHtml(content)}</pre>`;
         
-        originalEditor = document.querySelector('.monaco-editor-container');
+        originalEditor = document.querySelector('.editor-container');
         if (originalEditor) {
           originalEditor.style.display = 'none';
           originalEditor.parentNode.appendChild(tempDiv);
@@ -85,7 +89,21 @@ class ExportController extends BaseComponent {
     return div.innerHTML;
   }
 
-  createExportHtmlDocument(previewHtml) {
+  async collectExportStyles(previewHtml) {
+    const styles = [];
+    for (const extension of this.getExtensions()) {
+      if (typeof extension.instance?.getStyles !== 'function') continue;
+      try {
+        const css = await extension.instance.getStyles({ previewHtml });
+        if (typeof css === 'string' && css.trim()) styles.push(css);
+      } catch (error) {
+        console.warn(`[Export] Extension '${extension.name}' styles failed:`, error);
+      }
+    }
+    return styles.join('\n');
+  }
+
+  createExportHtmlDocument(previewHtml, extensionStyles = '') {
     const styles = `body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
       line-height: 1.6;
@@ -102,7 +120,6 @@ class ExportController extends BaseComponent {
     th, td { border: 1px solid #d0d7de; padding: 6px 13px; text-align: left; }
     th { background-color: #f6f8fa; }
     .task-list-item { list-style: none; }
-    .mermaid-diagram { text-align: center; margin: 20px 0; }
     .hljs{display:block;overflow-x:auto;padding:0.5em;color:#333;background:#f8f8f8}
     .hljs-comment,.hljs-quote{color:#998;font-style:italic}
     .hljs-keyword,.hljs-selector-tag,.hljs-subst{color:#333;font-weight:bold}
@@ -127,8 +144,7 @@ class ExportController extends BaseComponent {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exported Markdown</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <style>${styles}</style>
+    <style>${extensionStyles}\n${styles}</style>
 </head>
 <body>
     ${previewHtml}
@@ -145,14 +161,14 @@ class ExportController extends BaseComponent {
   }
 
   async saveHtmlFile(htmlDocument) {
-    if (!window.__TAURI__) return;
+    if (!window.__TAURI__?.core?.invoke) return;
     
-    const filePath = await window.__TAURI__.dialog.save({
+    const filePath = await save({
       filters: [{ name: 'HTML', extensions: ['html'] }]
     });
     
     if (filePath) {
-      await window.__TAURI__.fs.writeTextFile(filePath, htmlDocument);
+      await writeTextFile(filePath, htmlDocument);
     }
   }
 }

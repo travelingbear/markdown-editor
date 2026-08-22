@@ -55,6 +55,12 @@ body.theme-transitioning * {
   height: 100vh;
 }
 
+/* Reveal the complete shell in one paint after settings and layout are ready. */
+body:not(.app-initialized) .app,
+body.splash-visible .app {
+  visibility: hidden;
+}
+
 /* Toolbar */
 .toolbar {
   display: flex;
@@ -104,6 +110,87 @@ body.theme-transitioning * {
   background-color: #5e60e7;
   color: white;
   border-color: #7e80e3;
+}
+
+.quick-settings-toolbar,
+.quick-settings-direct {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-settings-toolbar:not(.has-pinned),
+.quick-setting-btn:not(.is-pinned),
+.quick-settings-menu .dropdown-item:not(.is-pinned) {
+  display: none;
+}
+
+.quick-setting-btn.active,
+.quick-settings-menu .dropdown-item.active {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-hover);
+  color: white;
+}
+
+.quick-settings-toolbar .quick-settings-overflow {
+  display: none;
+}
+
+.quick-settings-toolbar .quick-settings-menu {
+  min-width: 220px;
+  right: 0;
+  left: auto;
+  gap: 6px;
+  padding: 6px;
+}
+
+.quick-settings-menu .dropdown-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  width: 100%;
+  height: auto;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-primary);
+  border-left: 4px solid transparent;
+  border-radius: 5px;
+  background: var(--bg-secondary);
+}
+
+.quick-settings-menu .dropdown-item:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.quick-settings-menu .dropdown-item.active {
+  border-color: var(--accent-hover);
+  border-left-color: var(--accent-hover);
+}
+
+.quick-setting-menu-label {
+  font-weight: 600;
+}
+
+.quick-setting-menu-state {
+  align-self: center;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.8;
+}
+
+@media (max-width: 1180px) {
+  .quick-settings-toolbar.has-pinned .quick-settings-direct {
+    display: none;
+  }
+
+  .quick-settings-toolbar.has-pinned .quick-settings-overflow {
+    display: block;
+  }
 }
 
 .mode-btn.disabled,
@@ -186,11 +273,13 @@ body.app-initialized .markdown-toolbar {
   border-right: none;
 }
 
-.main-content.preview-mode .editor-pane {
+.main-content.preview-mode .editor-pane,
+.main-content.welcome-mode .editor-pane {
   display: none;
 }
 
-.main-content.preview-mode .preview-pane {
+.main-content.preview-mode .preview-pane,
+.main-content.welcome-mode .preview-pane {
   width: 100%;
 }
 
@@ -217,34 +306,84 @@ body.app-initialized .markdown-toolbar {
 }
 
 .main-content.code-mode .splitter,
-.main-content.preview-mode .splitter {
+.main-content.preview-mode .splitter,
+.main-content.welcome-mode .splitter {
   display: none;
 }
 
-/* Monaco Editor */
-.monaco-editor-container {
+/* Editor host (legacy class name retained for plugin/layout compatibility) */
+.editor-container {
   flex: 1;
   width: 100%;
   height: 100%;
 }
 
-/* Monaco Editor strikethrough support */
-.monaco-editor .view-line .mtk1 {
-  text-decoration: inherit;
+.editor-container > .cm-editor {
+  width: 100%;
+  height: 100%;
+  color: var(--text-primary);
+  background: var(--bg-primary);
 }
 
-.monaco-editor .strikethrough {
-  text-decoration: line-through;
+.editor-container > .cm-editor .cm-scroller {
+  height: 100%;
 }
 
-/* Monaco Find Widget Overlay */
-.monaco-editor .find-widget {
-  position: absolute !important;
-  top: 0 !important;
-  right: 0 !important;
-  z-index: 1000 !important;
-  margin: 0 !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+.editor-container > .cm-editor .cm-content,
+.editor-container > .cm-editor .cm-line {
+  caret-color: var(--text-primary);
+}
+
+.editor-container > .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* Semantic CodeMirror classes keep Markdown punctuation readable in every theme. */
+.cm-editor .cm-md-mark {
+  color: #0969da;
+  font-weight: 650;
+}
+
+.cm-editor .cm-md-heading {
+  color: #8250df;
+  font-weight: 700;
+}
+
+.cm-editor .cm-md-strong {
+  color: #953800;
+  font-weight: 700;
+}
+
+.cm-editor .cm-md-emphasis {
+  color: #0550ae;
+  font-style: italic;
+}
+
+.cm-editor .cm-md-link {
+  color: #0969da;
+  text-decoration: underline;
+  text-decoration-color: rgba(9, 105, 218, 0.45);
+}
+
+.cm-editor .cm-md-code {
+  color: #116329;
+}
+
+.cm-editor .cm-md-block,
+.cm-editor .cm-md-comment {
+  color: #57606a;
+}
+
+.cm-editor .cm-md-invalid {
+  color: #cf222e;
+  text-decoration: underline wavy;
+}
+
+.cm-editor.cm-find-only .cm-search br,
+.cm-editor.cm-find-only .cm-search input[name="replace"],
+.cm-editor.cm-find-only .cm-search button[name="replace"],
+.cm-editor.cm-find-only .cm-search button[name="replaceAll"] {
+  display: none;
 }
 
 /* Fallback Editor */
@@ -259,19 +398,6 @@ body.app-initialized .markdown-toolbar {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   resize: none;
-}
-
-/* Monaco Editor background override */
-.monaco-editor .monaco-editor-background {
-  background-color: var(--bg-primary) !important;
-}
-
-.monaco-editor {
-  background-color: var(--bg-primary) !important;
-}
-
-.monaco-editor .margin {
-  background-color: var(--bg-tertiary) !important;
 }
 
 /* Preview */
@@ -308,7 +434,7 @@ body.centered-layout:not(.split-mode) .preview-content {
 }
 
 /* Centered Layout for Code Mode */
-body.centered-layout.code-mode .monaco-editor-container,
+body.centered-layout.code-mode .editor-container,
 body.centered-layout.code-mode #editor {
   max-width: var(--current-page-width);
   margin: 0 auto;
@@ -455,88 +581,6 @@ body.centered-layout .preview-pane {
 
 /* Phase 3: Advanced Features Styles */
 
-/* Mermaid Diagrams - Rendered */
-.mermaid-diagram {
-  margin: 20px 0;
-  text-align: center;
-  background-color: var(--bg-primary);
-  border-radius: 6px;
-  padding: 16px;
-  border: 1px solid var(--border-primary);
-}
-
-.mermaid-diagram svg {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Mermaid Diagram Placeholders (fallback) */
-.mermaid-placeholder {
-  margin: 20px 0;
-  padding: 16px;
-  background-color: var(--bg-secondary);
-  border-radius: 6px;
-  border: 2px dashed var(--border-primary);
-  text-align: center;
-}
-
-.mermaid-placeholder.mermaid-fallback {
-  border-color: #f85149;
-  background-color: rgba(248, 81, 73, 0.1);
-}
-
-.placeholder-header {
-  font-weight: 600;
-  color: var(--accent-primary);
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-
-.diagram-code {
-  background-color: var(--bg-tertiary);
-  padding: 12px;
-  border-radius: 4px;
-  margin: 12px 0;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 12px;
-  text-align: left;
-  overflow-x: auto;
-}
-
-.placeholder-note {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-style: italic;
-  margin-top: 8px;
-}
-
-/* Mermaid Error States */
-.mermaid-error {
-  margin: 20px 0;
-  padding: 16px;
-  background-color: rgba(248, 81, 73, 0.1);
-  border-radius: 6px;
-  border: 2px solid #f85149;
-  text-align: center;
-}
-
-.error-header {
-  font-weight: 600;
-  color: #f85149;
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-
-.error-message {
-  font-size: 12px;
-  color: #f85149;
-  font-style: italic;
-  margin-top: 8px;
-  background-color: rgba(248, 81, 73, 0.05);
-  padding: 8px;
-  border-radius: 4px;
-}
-
 /* Footnotes */
 .footnotes {
   margin-top: 32px;
@@ -655,73 +699,6 @@ body.centered-layout .preview-pane {
 
 .preview-content .task-list-nested .task-list-item.nested {
   margin-left: 0;
-}
-
-/* Math Expressions - Rendered with KaTeX */
-.math-display {
-  margin: 16px 0;
-  text-align: center;
-  padding: 12px;
-  background-color: var(--bg-secondary);
-  border-radius: 6px;
-  border-left: 4px solid var(--accent-primary);
-  overflow-x: auto;
-}
-
-.math-display .katex-display {
-  margin: 0;
-}
-
-.math-inline {
-  display: inline;
-  margin: 0 2px;
-}
-
-/* Math Expressions - Fallback styling */
-.math-display.math-fallback {
-  border-left-color: #f85149;
-  background-color: rgba(248, 81, 73, 0.1);
-}
-
-.math-display.math-fallback code {
-  font-size: 1.1em;
-  background-color: transparent;
-  padding: 0;
-  color: #f85149;
-  font-weight: 500;
-}
-
-.math-inline.math-fallback {
-  background-color: rgba(248, 81, 73, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid #f85149;
-}
-
-.math-inline.math-fallback code {
-  background-color: transparent;
-  padding: 0;
-  color: #f85149;
-  font-size: 0.95em;
-}
-
-/* Math Error States */
-.math-error {
-  border-left-color: #f85149 !important;
-  background-color: rgba(248, 81, 73, 0.1) !important;
-}
-
-.math-error code {
-  color: #f85149 !important;
-}
-
-/* KaTeX Styling Adjustments */
-.katex {
-  font-size: 1.1em;
-}
-
-.katex-display {
-  margin: 0.5em 0;
 }
 
 /* highlight.js theme integration */
@@ -1312,37 +1289,13 @@ kbd {
     grid-template-columns: 1fr;
   }
   
-  .mermaid-diagram {
-    margin: 10px 0;
-    padding: 8px;
-  }
-  
-  .mermaid-placeholder {
-    margin: 10px 0;
-    padding: 8px;
-  }
-  
-  .katex {
-    font-size: 1em;
-  }
-  
-  .math-display {
-    padding: 8px;
-    margin: 12px 0;
-  }
-  
   .preview-content table {
     font-size: 12px;
   }
   
-  .diagram-code {
-    font-size: 11px;
-    padding: 8px;
-  }
-  
   /* Responsive centered layout adjustments */
   body.centered-layout .preview-content,
-  body.centered-layout .monaco-editor-container,
+  body.centered-layout .editor-container,
   body.centered-layout #editor {
     max-width: 95vw;
     margin: 0 auto;
@@ -1607,7 +1560,7 @@ body.distraction-free .main-content {
 }
 
 [data-theme="light"] body.distraction-free .preview-content,
-[data-theme="light"] body.distraction-free .monaco-editor-container,
+[data-theme="light"] body.distraction-free .editor-container,
 [data-theme="light"] body.distraction-free #editor {
   background: #ffffff;
   border-color: #e1e4e8;
@@ -1685,7 +1638,7 @@ body.distraction-free.centered-layout.preview-mode .preview-content {
   border-radius: 0;
 }
 
-body.distraction-free.centered-layout.code-mode .monaco-editor-container,
+body.distraction-free.centered-layout.code-mode .editor-container,
 body.distraction-free.centered-layout.code-mode #editor {
   max-width: var(--current-page-width);
   border-left: 1px solid var(--border-primary);
@@ -1711,7 +1664,7 @@ body.distraction-free.code-mode .editor-pane {
   margin: 0 auto;
 }
 
-body.distraction-free.code-mode .monaco-editor-container,
+body.distraction-free.code-mode .editor-container,
 body.distraction-free.code-mode #editor {
   width: 100%;
   height: 100%;
@@ -1799,17 +1752,17 @@ body.distraction-free.code-mode #editor {
 
 /* Ultra-minimal scrollbar for distraction-free mode */
 body.distraction-free .preview-content::-webkit-scrollbar,
-body.distraction-free .monaco-editor-container::-webkit-scrollbar {
+body.distraction-free .editor-container::-webkit-scrollbar {
   width: 3px;
 }
 
 body.distraction-free .preview-content::-webkit-scrollbar-track,
-body.distraction-free .monaco-editor-container::-webkit-scrollbar-track {
+body.distraction-free .editor-container::-webkit-scrollbar-track {
   background: transparent;
 }
 
 body.distraction-free .preview-content::-webkit-scrollbar-thumb,
-body.distraction-free .monaco-editor-container::-webkit-scrollbar-thumb {
+body.distraction-free .editor-container::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 2px;
   transition: all 0.3s ease;
@@ -1817,19 +1770,19 @@ body.distraction-free .monaco-editor-container::-webkit-scrollbar-thumb {
 }
 
 body.distraction-free .preview-content:hover::-webkit-scrollbar-thumb,
-body.distraction-free .monaco-editor-container:hover::-webkit-scrollbar-thumb {
+body.distraction-free .editor-container:hover::-webkit-scrollbar-thumb {
   opacity: 1;
   background: rgba(0, 0, 0, 0.3);
 }
 
 /* Firefox scrollbar */
 body.distraction-free .preview-content,
-body.distraction-free .monaco-editor-container {
+body.distraction-free .editor-container {
   scrollbar-width: none;
 }
 
 body.distraction-free .preview-content:hover,
-body.distraction-free .monaco-editor-container:hover {
+body.distraction-free .editor-container:hover {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
 }
@@ -2722,20 +2675,54 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
   transition: opacity 0.5s ease-out;
 }
 
+.splash-screen.active {
+  opacity: 1;
+}
+
 .splash-screen.fade-out {
   opacity: 0;
 }
 
 .splash-content {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
   animation: splashFadeIn 0.8s ease-out;
 }
 
 .splash-image {
   width: 500px;
+  max-width: 90vw;
+  max-height: 70vh;
   height: auto;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.splash-progress {
+  width: 200px;
+  height: 4px;
+  overflow: hidden;
+  background: #e0e0e0;
+  border-radius: 2px;
+}
+
+.splash-progress .progress-bar {
+  width: 0;
+  height: 100%;
+  background: #007acc;
+  border-radius: 2px;
+  transition: width 0.15s ease-out;
+}
+
+[data-theme="dark"] .splash-screen {
+  background: #1e1e1e;
+}
+
+[data-theme="dark"] .splash-progress {
+  background: #333;
 }
 
 @keyframes splashFadeIn {
@@ -3649,4 +3636,67 @@ body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
 .context-submenu .context-menu-item {
   padding: 6px 12px;
   font-size: 12px;
+}
+
+/* Application-owned unsaved changes prompt for consistent Windows/Linux behavior. */
+.unsaved-changes-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.unsaved-changes-dialog {
+  width: min(460px, 100%);
+  padding: 22px;
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+}
+
+.unsaved-changes-dialog h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+}
+
+.unsaved-changes-dialog p {
+  margin: 0 0 8px;
+}
+
+.unsaved-changes-guidance {
+  color: var(--text-secondary);
+}
+
+.unsaved-changes-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.unsaved-changes-actions button {
+  padding: 8px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.unsaved-discard-btn {
+  background: #b42318;
+  color: #fff;
+  border-color: #b42318 !important;
+}
+
+.unsaved-return-btn {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary) !important;
 }

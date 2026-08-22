@@ -1,3 +1,5 @@
+import { shouldShowMarkdownToolbar } from './toolbarState.js';
+
 /**
  * Toolbar Component
  * Manages main toolbar and markdown toolbar functionality
@@ -18,6 +20,12 @@ class ToolbarComponent extends BaseComponent {
     this.mdToolbarSize = localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium';
     this.fontSize = parseInt(localStorage.getItem('markdownViewer_fontSize') || '14');
     this.previewZoom = 1.0;
+    this.quickSettingsState = {
+      extended: localStorage.getItem('markdownViewer_advancedRendering') === 'true',
+      pinnedTabsEnabled: localStorage.getItem('markdownViewer_pinnedTabs') === 'true',
+      renderingPinned: localStorage.getItem('markdownViewer_pinRenderingControl') === 'true',
+      pinnedTabsPinned: localStorage.getItem('markdownViewer_pinPinnedTabsControl') === 'true'
+    };
   }
 
   async onInit() {
@@ -49,6 +57,13 @@ class ToolbarComponent extends BaseComponent {
     this.exportDropdownMenu = document.getElementById('export-dropdown-menu');
     this.exportHtmlBtn = document.getElementById('export-html-btn');
     this.exportPdfBtn = document.getElementById('export-pdf-btn');
+    this.quickSettingsToolbar = document.getElementById('quick-settings-toolbar');
+    this.quickRenderingBtn = document.getElementById('quick-rendering-btn');
+    this.quickPinnedTabsBtn = document.getElementById('quick-pinned-tabs-btn');
+    this.quickSettingsMenuBtn = document.getElementById('quick-settings-menu-btn');
+    this.quickSettingsMenu = document.getElementById('quick-settings-menu');
+    this.quickRenderingMenuItem = document.getElementById('quick-rendering-menu-item');
+    this.quickPinnedTabsMenuItem = document.getElementById('quick-pinned-tabs-menu-item');
     this.distractionBtn = document.getElementById('distraction-btn');
     this.themeBtn = document.getElementById('theme-btn');
     this.settingsBtn = document.getElementById('settings-btn');
@@ -62,6 +77,8 @@ class ToolbarComponent extends BaseComponent {
     
     // Markdown toolbar
     this.markdownToolbar = document.getElementById('markdown-toolbar');
+    this.mountMarkdownToolbar();
+    this.setupResponsiveOverflow();
     
     // Font size controls
     this.fontSizeDisplay = document.getElementById('font-size-display');
@@ -86,6 +103,83 @@ class ToolbarComponent extends BaseComponent {
     if (!this.newBtn || !this.codeBtn) {
       throw new Error('Toolbar elements not found');
     }
+  }
+
+  mountMarkdownToolbar() {
+    const editorPane = document.querySelector('.editor-pane');
+    if (this.markdownToolbar && editorPane && !editorPane.contains(this.markdownToolbar)) {
+      editorPane.insertBefore(this.markdownToolbar, editorPane.firstChild);
+    }
+  }
+
+  setupResponsiveOverflow() {
+    if (!this.markdownToolbar || document.getElementById('md-overflow-btn')) return;
+
+    const toolbarContent = this.markdownToolbar.querySelector('.toolbar-content');
+    const searchGroup = this.markdownToolbar.querySelector('#find-replace-btn')?.closest('.toolbar-group');
+    if (!toolbarContent || !searchGroup) return;
+
+    const overflowGroup = document.createElement('div');
+    overflowGroup.className = 'toolbar-group toolbar-overflow-group';
+    overflowGroup.innerHTML = `
+      <div class="md-overflow-container">
+        <button id="md-overflow-btn" class="md-btn" type="button"
+                aria-haspopup="menu" aria-expanded="false" title="More Markdown tools">
+          <span class="md-overflow-label">More</span><span aria-hidden="true">⋯</span>
+        </button>
+        <div id="md-overflow-menu" class="md-overflow-menu" role="menu" aria-label="More Markdown tools">
+          <section class="md-overflow-section overflow-section-history" aria-label="History">
+            <div class="md-overflow-heading">History</div>
+            <button type="button" class="md-overflow-item" data-command="undo" role="menuitem">
+              <span class="md-overflow-icon">↶</span><span>Undo</span><kbd>Ctrl Z</kbd>
+            </button>
+            <button type="button" class="md-overflow-item" data-command="redo" role="menuitem">
+              <span class="md-overflow-icon">↷</span><span>Redo</span><kbd>Ctrl Y</kbd>
+            </button>
+          </section>
+          <section class="md-overflow-section overflow-section-headings" aria-label="Headings">
+            <div class="md-overflow-heading">Headings</div>
+            <button type="button" class="md-overflow-item" data-action="h1" role="menuitem"><span class="md-overflow-icon">H1</span><span>Heading 1</span></button>
+            <button type="button" class="md-overflow-item" data-action="h2" role="menuitem"><span class="md-overflow-icon">H2</span><span>Heading 2</span></button>
+            <button type="button" class="md-overflow-item" data-action="h3" role="menuitem"><span class="md-overflow-icon">H3</span><span>Heading 3</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-formatting" aria-label="Formatting">
+            <div class="md-overflow-heading">Formatting</div>
+            <button type="button" class="md-overflow-item" data-action="strikethrough" role="menuitem"><span class="md-overflow-icon"><s>S</s></span><span>Strikethrough</span></button>
+            <button type="button" class="md-overflow-item" data-action="underline" role="menuitem"><span class="md-overflow-icon"><u>U</u></span><span>Underline</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-insert" aria-label="Insert">
+            <div class="md-overflow-heading">Insert</div>
+            <button type="button" class="md-overflow-item" data-action="link" role="menuitem"><span class="md-overflow-icon">↗</span><span>Link</span></button>
+            <button type="button" class="md-overflow-item" data-action="image" role="menuitem"><span class="md-overflow-icon">▧</span><span>Image</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-structure" aria-label="Lists and table">
+            <div class="md-overflow-heading">Lists &amp; table</div>
+            <button type="button" class="md-overflow-item" data-action="ul" role="menuitem"><span class="md-overflow-icon">•</span><span>Bulleted list</span></button>
+            <button type="button" class="md-overflow-item" data-action="ol" role="menuitem"><span class="md-overflow-icon">1.</span><span>Numbered list</span></button>
+            <button type="button" class="md-overflow-item" data-action="task" role="menuitem"><span class="md-overflow-icon">☐</span><span>Task list</span></button>
+            <button type="button" class="md-overflow-item" data-action="table" role="menuitem"><span class="md-overflow-icon">▦</span><span>Table</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-blocks" aria-label="Blocks">
+            <div class="md-overflow-heading">Blocks</div>
+            <button type="button" class="md-overflow-item" data-action="code" role="menuitem"><span class="md-overflow-icon">&lt;/&gt;</span><span>Inline code</span></button>
+            <button type="button" class="md-overflow-item" data-action="codeblock" role="menuitem"><span class="md-overflow-icon">{ }</span><span>Code block</span></button>
+            <button type="button" class="md-overflow-item" data-action="quote" role="menuitem"><span class="md-overflow-icon">❞</span><span>Blockquote</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-alignment" aria-label="Alignment">
+            <div class="md-overflow-heading">Alignment</div>
+            <button type="button" class="md-overflow-item" data-action="align-left" role="menuitem"><span class="md-overflow-icon">≡</span><span>Align left</span></button>
+            <button type="button" class="md-overflow-item" data-action="align-center" role="menuitem"><span class="md-overflow-icon">≣</span><span>Align center</span></button>
+            <button type="button" class="md-overflow-item" data-action="align-right" role="menuitem"><span class="md-overflow-icon">≡</span><span>Align right</span></button>
+            <button type="button" class="md-overflow-item" data-action="align-justify" role="menuitem"><span class="md-overflow-icon">☰</span><span>Justify</span></button>
+          </section>
+        </div>
+      </div>
+    `;
+    toolbarContent.insertBefore(overflowGroup, searchGroup);
+
+    this.overflowButton = overflowGroup.querySelector('#md-overflow-btn');
+    this.overflowMenu = overflowGroup.querySelector('#md-overflow-menu');
   }
 
   setupEventListeners() {
@@ -143,6 +237,26 @@ class ToolbarComponent extends BaseComponent {
     this.exportPdfBtn.addEventListener('click', () => {
       this.hideExportDropdown();
       this.emit('export-pdf-requested');
+    });
+
+    this.quickRenderingBtn?.addEventListener('click', () => {
+      this.emit('rendering-mode-toggle-requested');
+    });
+    this.quickPinnedTabsBtn?.addEventListener('click', () => {
+      this.emit('pinned-tabs-toggle-requested');
+    });
+    this.quickRenderingMenuItem?.addEventListener('click', () => {
+      this.hideQuickSettingsMenu();
+      this.emit('rendering-mode-toggle-requested');
+    });
+    this.quickPinnedTabsMenuItem?.addEventListener('click', () => {
+      this.hideQuickSettingsMenu();
+      this.emit('pinned-tabs-toggle-requested');
+    });
+    this.quickSettingsMenuBtn?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = this.quickSettingsMenu?.classList.toggle('show') === true;
+      this.quickSettingsMenuBtn.setAttribute('aria-expanded', String(isOpen));
     });
     
     // UI controls
@@ -226,12 +340,14 @@ class ToolbarComponent extends BaseComponent {
     
     // Markdown toolbar events
     this.setupMarkdownToolbarEvents();
+    this.setupResponsiveOverflowEvents();
     
     // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.dropdown-container')) {
         this.hideExportDropdown();
         this.hideSaveDropdown();
+        this.hideQuickSettingsMenu();
       }
     });
     
@@ -280,6 +396,45 @@ class ToolbarComponent extends BaseComponent {
     
     // Setup modal functionality
     this.setupMarkdownModals();
+  }
+
+  setupResponsiveOverflowEvents() {
+    if (!this.overflowButton || !this.overflowMenu) return;
+
+    this.overflowButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const isOpen = this.overflowMenu.classList.toggle('show');
+      this.overflowButton.setAttribute('aria-expanded', isOpen.toString());
+    });
+
+    this.overflowMenu.addEventListener('click', (event) => {
+      const item = event.target.closest('.md-overflow-item');
+      if (!item) return;
+
+      const action = item.dataset.action;
+      const command = item.dataset.command;
+      if (action) this.emit('markdown-action', { action });
+      if (command === 'undo') this.emit('editor-undo');
+      if (command === 'redo') this.emit('editor-redo');
+      this.hideResponsiveOverflow();
+    });
+
+    this.overflowMenu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        this.hideResponsiveOverflow();
+        this.overflowButton.focus();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.md-overflow-container')) this.hideResponsiveOverflow();
+    });
+  }
+
+  hideResponsiveOverflow() {
+    this.overflowMenu?.classList.remove('show');
+    this.overflowButton?.setAttribute('aria-expanded', 'false');
   }
   
   setupMarkdownDropdowns() {
@@ -510,15 +665,20 @@ class ToolbarComponent extends BaseComponent {
    */
   updateToolbarVisibility() {
     if (this.markdownToolbar) {
-      const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && this.isToolbarEnabled;
+      const shouldShow = shouldShowMarkdownToolbar({
+        mode: this.currentMode,
+        isDistractionFree: this.isDistractionFree,
+        isToolbarEnabled: this.isToolbarEnabled
+      });
       
       if (shouldShow) {
-        this.markdownToolbar.style.setProperty('display', 'block', 'important');
-        this.markdownToolbar.style.setProperty('visibility', 'visible', 'important');
+        this.markdownToolbar.style.display = 'block';
+        this.markdownToolbar.style.visibility = 'visible';
         this.markdownToolbar.classList.add('visible');
       } else {
         this.markdownToolbar.style.display = 'none';
         this.markdownToolbar.classList.remove('visible');
+        this.hideResponsiveOverflow();
       }
     }
   }
@@ -651,10 +811,79 @@ class ToolbarComponent extends BaseComponent {
     this.updateModeButtons();
     this.updateToolbarVisibility();
     this.updateZoomControlsVisibility();
+    this.updateQuickSettings(this.quickSettingsState);
     
     // Apply toolbar sizes
     document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
+  }
+
+  updateQuickSettings(state = {}) {
+    this.quickSettingsState = { ...this.quickSettingsState, ...state };
+    const {
+      extended,
+      pinnedTabsEnabled,
+      renderingPinned,
+      pinnedTabsPinned
+    } = this.quickSettingsState;
+
+    const renderingLabel = `MD: ${extended ? 'Extended' : 'Pure'}`;
+    if (this.quickRenderingBtn) {
+      this.quickRenderingBtn.textContent = renderingLabel;
+      this.quickRenderingBtn.title = `Markdown rendering: ${extended ? 'Extended' : 'Pure'} (click to toggle)`;
+      this.quickRenderingBtn.classList.toggle('is-pinned', renderingPinned);
+      this.quickRenderingBtn.classList.toggle('active', extended);
+      this.quickRenderingBtn.setAttribute('aria-pressed', String(extended));
+    }
+    if (this.quickRenderingMenuItem) {
+      this.updateQuickMenuItem(
+        this.quickRenderingMenuItem,
+        'Markdown rendering',
+        extended ? 'Extended' : 'Pure',
+        extended
+      );
+      this.quickRenderingMenuItem.classList.toggle('is-pinned', renderingPinned);
+    }
+
+    if (this.quickPinnedTabsBtn) {
+      this.quickPinnedTabsBtn.textContent = 'Tabs';
+      this.quickPinnedTabsBtn.classList.toggle('is-pinned', pinnedTabsPinned);
+      this.quickPinnedTabsBtn.classList.toggle('active', pinnedTabsEnabled);
+      this.quickPinnedTabsBtn.title = `Pinned Tabs: ${pinnedTabsEnabled ? 'Enabled' : 'Disabled'} (click to toggle)`;
+      this.quickPinnedTabsBtn.setAttribute('aria-pressed', String(pinnedTabsEnabled));
+    }
+    if (this.quickPinnedTabsMenuItem) {
+      this.updateQuickMenuItem(
+        this.quickPinnedTabsMenuItem,
+        'Pinned tabs',
+        pinnedTabsEnabled ? 'Enabled' : 'Disabled',
+        pinnedTabsEnabled
+      );
+      this.quickPinnedTabsMenuItem.classList.toggle('is-pinned', pinnedTabsPinned);
+    }
+
+    const hasPinnedControls = renderingPinned || pinnedTabsPinned;
+    this.quickSettingsToolbar?.classList.toggle('has-pinned', hasPinnedControls);
+    if (!hasPinnedControls) this.hideQuickSettingsMenu();
+  }
+
+  updateQuickMenuItem(button, label, value, active) {
+    const labelElement = document.createElement('span');
+    labelElement.className = 'quick-setting-menu-label';
+    labelElement.textContent = label;
+
+    const stateElement = document.createElement('span');
+    stateElement.className = 'quick-setting-menu-state';
+    stateElement.textContent = value;
+
+    button.replaceChildren(labelElement, stateElement);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+
+  hideQuickSettingsMenu() {
+    this.quickSettingsMenu?.classList.remove('show');
+    this.quickSettingsMenuBtn?.setAttribute('aria-expanded', 'false');
   }
 
   /**

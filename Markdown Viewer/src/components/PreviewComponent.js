@@ -1,3 +1,5 @@
+import { sanitizeRenderedHtml } from '../rendering/security.js';
+
 /**
  * Preview Component
  * Manages markdown rendering and preview functionality
@@ -5,17 +7,18 @@
 class PreviewComponent extends BaseComponent {
   constructor(options = {}) {
     super('PreviewComponent', options);
+    this.rendererRegistry = options.rendererRegistry || null;
     
     // Preview state
     this.currentContent = '';
     this.previewZoom = 1.0;
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+    this.advancedRenderingEnabled = localStorage.getItem('markdownViewer_advancedRendering') === 'true';
     
     // Libraries
-    this.mermaidInitialized = false;
-    this.katexInitialized = false;
-    this.mermaid = null;
-    this.katex = null;
+    this.highlightInitialized = false;
+    this.highlighter = null;
+    this.renderVersion = 0;
     
     // Task list states
     this.taskListStates = new Map();
@@ -50,10 +53,6 @@ class PreviewComponent extends BaseComponent {
 
   async initializeAdvancedFeatures() {
     // Libraries will be loaded lazily when needed
-    this.mermaidInitialized = false;
-    this.katexInitialized = false;
-    this.mermaid = null;
-    this.katex = null;
   }
 
   setupEventListeners() {
@@ -74,6 +73,11 @@ class PreviewComponent extends BaseComponent {
     this.on('zoom-changed', (data) => {
       this.updateZoom(data.zoom);
     });
+
+    this.on('rendering-mode-changed', (data) => {
+      this.advancedRenderingEnabled = data.extended === true;
+      this.updatePreview();
+    });
     
     // Setup context menu
     this.setupContextMenu();
@@ -82,8 +86,10 @@ class PreviewComponent extends BaseComponent {
   /**
    * Update preview with new content
    */
-  async updatePreview(markdown = '') {
-    if (!markdown && markdown !== '') {
+  async updatePreview(markdown = null) {
+    const renderVersion = ++this.renderVersion;
+
+    if (markdown === null || markdown === undefined) {
       markdown = this.currentContent;
     }
     
@@ -107,14 +113,19 @@ class PreviewComponent extends BaseComponent {
       // Parse markdown to HTML
       let html = marked.parse(markdown);
       
-      // Process advanced features
-      html = await this.processMathInHtml(html);
-      html = await this.processMermaidInHtml(html);
       html = this.processTaskListsInHtml(html);
       html = this.processFootnotesInHtml(html);
       html = this.processSupSubScript(html);
       html = this.processLinksInHtml(html);
       html = this.postProcessHtmlImages(html);
+      const rendererContext = this.createRendererContext(markdown, renderVersion);
+      if (this.rendererRegistry) {
+        html = await this.rendererRegistry.transformHtml(html, rendererContext);
+        if (renderVersion !== this.renderVersion) return;
+      }
+      html = sanitizeRenderedHtml(html);
+
+      if (renderVersion !== this.renderVersion) return;
       
       // Set the HTML content
       this.preview.innerHTML = html;
@@ -124,16 +135,22 @@ class PreviewComponent extends BaseComponent {
         checkbox.removeAttribute('disabled');
       });
       
-      // Render advanced features
-      await this.renderMermaidDiagrams();
+      if (this.rendererRegistry) {
+        await this.rendererRegistry.afterRender(this.preview, { ...rendererContext, html });
+        if (renderVersion !== this.renderVersion) return;
+      }
       this.setupTaskListInteractions();
       this.setupAnchorLinks();
-      this.applySyntaxHighlighting();
+      if (this.advancedRenderingEnabled) {
+        await this.applySyntaxHighlighting();
+        if (renderVersion !== this.renderVersion) return;
+      }
       this.setupCodeBlockButtons();
       
       // Process images only if there are images in the content
       if (html.includes('<img')) {
         await this.processImages();
+        if (renderVersion !== this.renderVersion) return;
       }
       
       this.emit('preview-updated', { content: html });
@@ -143,6 +160,17 @@ class PreviewComponent extends BaseComponent {
       this.preview.innerHTML = '<p>⚠️ Markdown rendering error</p>';
       this.emit('preview-error', { error: error.message });
     }
+  }
+
+  createRendererContext(markdown, renderVersion) {
+    return {
+      markdown,
+      mode: this.advancedRenderingEnabled ? 'extended' : 'pure',
+      theme: this.theme,
+      filePath: this.currentFilePath || null,
+      renderVersion,
+      isCurrent: () => renderVersion === this.renderVersion
+    };
   }
 
   configureMarked() {
@@ -183,137 +211,6 @@ class PreviewComponent extends BaseComponent {
         renderer: renderer
       });
     }
-  }
-
-  async loadMermaid() {
-    if (this.mermaidInitialized) return;
-    
-    try {
-      const mermaidModule = await import('https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.esm.min.mjs');
-      this.mermaid = mermaidModule.default;
-      this.mermaid.initialize({
-        startOnLoad: false,
-        theme: this.theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'loose',
-        fontFamily: 'inherit',
-        pie: { useMaxWidth: true }
-      });
-      this.mermaidInitialized = true;
-    } catch (error) {
-      console.warn('[Preview] Failed to load Mermaid:', error);
-      this.mermaidInitialized = false;
-    }
-  }
-
-  async loadKaTeX() {
-    if (this.katexInitialized) return;
-    
-    try {
-      const katexModule = await import('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.mjs');
-      this.katex = katexModule.default;
-      this.katexInitialized = true;
-    } catch (error) {
-      console.warn('[Preview] Failed to load KaTeX:', error);
-      this.katexInitialized = false;
-    }
-  }
-
-  async processMathInHtml(html) {
-    // Check if math expressions exist before loading KaTeX
-    const hasMath = html.includes('$$') || /\$[^$]+\$/.test(html);
-    if (!hasMath) return html;
-    
-    // Lazy load KaTeX when needed
-    if (!this.katexInitialized) {
-      await this.loadKaTeX();
-    }
-    
-    if (this.katexInitialized && this.katex) {
-      // Process display math: $$...$$
-      html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        
-        try {
-          // Decode HTML entities and tags that markdown parser added
-          const decodedMath = math.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/<br\s*\/?>/gi, '\n');
-          const rendered = this.katex.renderToString(decodedMath.trim(), {
-            displayMode: true,
-            throwOnError: false
-          });
-          return `<div class="math-display">${rendered}</div>`;
-        } catch (error) {
-          return `<div class="math-display math-error"><code>${math.trim()}</code></div>`;
-        }
-      });
-      
-      // Process inline math: $...$
-      html = html.replace(/\$([^$\n]+?)\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        
-        try {
-          // Decode HTML entities and tags that markdown parser added
-          const decodedMath = math.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/<br\s*\/?>/gi, '\n');
-          const rendered = this.katex.renderToString(decodedMath.trim(), {
-            displayMode: false,
-            throwOnError: false
-          });
-          return `<span class="math-inline">${rendered}</span>`;
-        } catch (error) {
-          return `<span class="math-inline math-error"><code>${math.trim()}</code></span>`;
-        }
-      });
-    } else {
-      // Fallback styling
-      html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        return `<div class="math-display math-fallback"><code>${math.trim()}</code></div>`;
-      });
-      
-      html = html.replace(/\$([^$\n]+?)\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        return `<span class="math-inline math-fallback"><code>${math.trim()}</code></span>`;
-      });
-    }
-    
-    return html;
-  }
-
-  async processMermaidInHtml(html) {
-    // Check if mermaid diagrams exist before loading
-    const hasMermaid = html.includes('language-mermaid');
-    if (!hasMermaid) return html;
-    
-    // Lazy load Mermaid when needed
-    if (!this.mermaidInitialized) {
-      await this.loadMermaid();
-    }
-    
-    if (this.mermaidInitialized && this.mermaid) {
-      html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
-        const id = 'mermaid-' + Math.random().toString(36).substring(2, 11);
-        return `<div class="mermaid-diagram" id="${id}" data-mermaid-code="${encodeURIComponent(decodedCode.trim())}"></div>`;
-      });
-    } else {
-      html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
-        return `<div class="mermaid-placeholder mermaid-fallback">
-          <div class="placeholder-header">📊 Mermaid Diagram</div>
-          <pre class="diagram-code">${decodedCode}</pre>
-          <div class="placeholder-note">Mermaid.js not loaded - showing code instead</div>
-        </div>`;
-      });
-    }
-    
-    return html;
   }
 
   processTaskListsInHtml(html) {
@@ -496,34 +393,6 @@ class PreviewComponent extends BaseComponent {
     return (codeOpenBefore > codeCloseBefore) || (preOpenBefore > preCloseBefore);
   }
 
-  async renderMermaidDiagrams() {
-    if (!this.mermaidInitialized || !this.mermaid) {
-      return;
-    }
-    
-    const diagrams = document.querySelectorAll('.mermaid-diagram');
-    
-    for (let i = 0; i < diagrams.length; i++) {
-      const diagram = diagrams[i];
-      const code = decodeURIComponent(diagram.getAttribute('data-mermaid-code'));
-      
-      try {
-        diagram.innerHTML = '';
-        const { svg } = await this.mermaid.render(diagram.id + '-svg', code);
-        diagram.innerHTML = svg;
-      } catch (error) {
-        console.error(`[Preview] Mermaid error:`, error);
-        diagram.innerHTML = `
-          <div class="mermaid-error">
-            <div class="error-header">⚠️ Mermaid Rendering Error</div>
-            <pre class="diagram-code">${code}</pre>
-            <div class="error-message">${error.message}</div>
-          </div>
-        `;
-      }
-    }
-  }
-
   setupTaskListInteractions() {
     const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
     
@@ -640,9 +509,26 @@ class PreviewComponent extends BaseComponent {
     return null;
   }
 
-  applySyntaxHighlighting() {
-    if (typeof hljs !== 'undefined') {
-      this.preview.querySelectorAll('pre code:not([data-highlighted])').forEach((block) => {
+  async applySyntaxHighlighting() {
+    const codeBlocks = this.preview.querySelectorAll('pre code:not([data-highlighted])');
+    if (codeBlocks.length === 0) return;
+
+    if (!this.highlightInitialized) {
+      try {
+        const [highlightModule] = await Promise.all([
+          import('highlight.js/lib/common'),
+          import('highlight.js/styles/github.css')
+        ]);
+        this.highlighter = highlightModule.default;
+        this.highlightInitialized = true;
+      } catch (error) {
+        console.warn('[Preview] Failed to load syntax highlighting:', error);
+        return;
+      }
+    }
+
+    if (this.highlighter) {
+      codeBlocks.forEach((block) => {
         try {
           // Store original text content if not already stored
           if (!block.hasAttribute('data-original-text')) {
@@ -656,7 +542,7 @@ class PreviewComponent extends BaseComponent {
           // Remove all hljs classes
           block.className = block.className.replace(/\bhljs[\w-]*\b/g, '').trim();
           
-          hljs.highlightElement(block);
+          this.highlighter.highlightElement(block);
           block.setAttribute('data-highlighted', 'yes');
         } catch (error) {
           // Silently handle highlighting errors
@@ -829,16 +715,9 @@ class PreviewComponent extends BaseComponent {
    */
   updateTheme(theme) {
     this.theme = theme;
-    
-    if (this.mermaidInitialized && this.mermaid) {
-      this.mermaid.initialize({
-        theme: theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'loose',
-        fontFamily: 'inherit'
-      });
-      // Re-render diagrams with new theme
-      this.updatePreview();
-    }
+    // Re-render the generic pipeline so theme-aware renderer plugins receive
+    // fresh context without the preview core knowing which plugins use it.
+    if (this.currentContent) this.updatePreview();
   }
 
   /**

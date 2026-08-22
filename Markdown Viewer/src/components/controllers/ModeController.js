@@ -5,7 +5,7 @@ class ModeController extends BaseComponent {
   constructor() {
     super('ModeController');
     
-    this.currentMode = 'preview';
+    this.currentMode = 'welcome';
     this.lastModeSwitchTime = 0;
     
     // Dependencies (injected)
@@ -14,6 +14,7 @@ class ModeController extends BaseComponent {
     this.toolbarComponent = null;
     this.settingsController = null;
     this.tabManager = null;
+    this.scrollCoordinator = null;
   }
 
   setDependencies(editorComponent, previewComponent, toolbarComponent, settingsController, tabManager) {
@@ -24,35 +25,78 @@ class ModeController extends BaseComponent {
     this.tabManager = tabManager;
   }
 
+  setScrollCoordinator(scrollCoordinator) {
+    this.scrollCoordinator = scrollCoordinator;
+  }
+
   getCurrentMode() {
     return this.currentMode;
   }
 
+  isWelcomeMode() {
+    return this.currentMode === 'welcome';
+  }
+
+  hasActiveDocument() {
+    return Boolean(
+      this.toolbarComponent?.hasDocument &&
+      this.tabManager?.getActiveTab()
+    );
+  }
+
+  enterWelcomeMode() {
+    this.currentMode = 'welcome';
+
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      mainContent.classList.add('welcome-mode');
+    }
+
+    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+    document.body.classList.add('welcome-mode');
+
+    const editorPane = document.querySelector('.editor-pane');
+    const previewPane = document.querySelector('.preview-pane');
+    const splitter = document.getElementById('splitter');
+    if (editorPane && previewPane && splitter) {
+      editorPane.style.setProperty('display', 'none', 'important');
+      previewPane.style.setProperty('display', 'block', 'important');
+      previewPane.style.setProperty('visibility', 'visible', 'important');
+      splitter.style.setProperty('display', 'none', 'important');
+    }
+
+    this.previewComponent?.showWelcome();
+    this.toolbarComponent?.emit('mode-changed', { mode: 'welcome' });
+    this.settingsController?.updateSystemInfo(
+      this.editorComponent,
+      this.previewComponent,
+      'welcome'
+    );
+    this.emit('mode-changed', { mode: 'welcome' });
+  }
+
   async setMode(mode) {
-    if (this.currentMode === mode) return;
+    if (!['code', 'preview', 'split'].includes(mode)) return false;
+    if (!this.hasActiveDocument()) return false;
+    if (this.currentMode === mode) return true;
     
     const startTime = performance.now();
-    
-    // Check if we have tabs or document content for code/split modes
-    const hasContent = this.tabManager && this.tabManager.hasTabs();
-    if (!hasContent && (mode === 'code' || mode === 'split')) {
-      return;
-    }
     
     // Save current scroll position to active tab
     if (this.tabManager) {
       const activeTab = this.tabManager.getActiveTab();
       if (activeTab) {
-        this.saveScrollPositionToTab(activeTab);
+        this.scrollCoordinator?.capture(activeTab, this.currentMode);
       }
     }
     
-    // Load Monaco Editor lazily when switching to code or split mode
-    if ((mode === 'code' || mode === 'split') && !this.editorComponent.isMonacoLoaded) {
+    // Load the configured editor engine lazily when switching to code or split mode.
+    if ((mode === 'code' || mode === 'split') && !this.editorComponent.isEditorReady()) {
       try {
-        await this.editorComponent.loadMonacoEditor();
+        await this.editorComponent.loadEditor();
       } catch (error) {
-        console.error('[ModeController] Failed to load Monaco Editor:', error);
+        console.error('[ModeController] Failed to load editor:', error);
         this.editorComponent.fallbackToTextarea();
       }
     }
@@ -62,13 +106,17 @@ class ModeController extends BaseComponent {
     // Update main content class
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
+      mainContent.classList.remove('welcome-mode', 'code-mode', 'preview-mode', 'split-mode');
       mainContent.classList.add(`${mode}-mode`);
     }
     
     // Update body class for CSS selectors
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
+    document.body.classList.remove('welcome-mode', 'code-mode', 'preview-mode', 'split-mode');
     document.body.classList.add(`${mode}-mode`);
+
+    if (mode === 'preview' || mode === 'split') {
+      this.previewComponent.showPreview();
+    }
     
     // Show/hide appropriate panes based on mode
     const editorPane = document.querySelector('.editor-pane');
@@ -108,10 +156,11 @@ class ModeController extends BaseComponent {
       
 
       
-      // Trigger Monaco layout after display changes
-      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
+      // Recalculate the editor layout after display changes.
+      const editor = this.editorComponent.getEditorAdapter();
+      if (editor) {
         setTimeout(() => {
-          this.editorComponent.monacoEditor.layout();
+          editor.layout();
         }, 50);
       }
     }
@@ -126,15 +175,7 @@ class ModeController extends BaseComponent {
       this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.currentMode);
     }
     
-    // Restore scroll position after layout
-    setTimeout(() => {
-      if (this.tabManager) {
-        const activeTab = this.tabManager.getActiveTab();
-        if (activeTab) {
-          this.restoreScrollPositionFromTab(activeTab);
-        }
-      }
-    }, 100);
+    this.scrollCoordinator?.scheduleActiveRestore(100, mode);
     
     this.lastModeSwitchTime = performance.now() - startTime;
     if (this.settingsController) {
@@ -143,37 +184,9 @@ class ModeController extends BaseComponent {
     
     // Emit mode change event
     this.emit('mode-changed', { mode });
+    return true;
   }
   
-  saveScrollPositionToTab(tab) {
-    if (!this.tabManager) return;
-    
-    const editor = this.editorComponent && this.editorComponent.monacoEditor;
-    const previewPane = document.querySelector('.preview-pane');
-    
-    if (editor) {
-      const viewState = editor.saveViewState();
-      this.tabManager.saveTabEditorState(tab.id, viewState);
-    }
-    
-    if (previewPane) {
-      this.tabManager.updateTabScroll(tab.id, null, previewPane.scrollTop);
-    }
-  }
-  
-  restoreScrollPositionFromTab(tab) {
-    const editor = this.editorComponent && this.editorComponent.monacoEditor;
-    const previewPane = document.querySelector('.preview-pane');
-    
-    if ((this.currentMode === 'code' || this.currentMode === 'split') && editor && tab.editorViewState) {
-      editor.restoreViewState(tab.editorViewState);
-    }
-    
-    if ((this.currentMode === 'preview' || this.currentMode === 'split') && previewPane && tab.scrollPosition?.preview) {
-      previewPane.scrollTop = tab.scrollPosition.preview;
-    }
-  }
-
   // Mode switching shortcuts
   switchToCodeMode() {
     this.setMode('code');

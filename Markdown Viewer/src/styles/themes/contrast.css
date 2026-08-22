@@ -35,57 +35,31 @@ body.contrast-theme .preview-content a:hover,
   color: #ffff99;
 }
 
-/* High contrast Monaco Editor */
-body.contrast-theme .monaco-editor,
-[data-theme="contrast"] .monaco-editor {
-  background-color: #000000 !important;
+/* High contrast CodeMirror editor */
+body.contrast-theme .cm-editor,
+[data-theme="contrast"] .cm-editor {
+  background-color: #000000;
+  color: #ffffff;
 }
 
-body.contrast-theme .monaco-editor .monaco-editor-background,
-[data-theme="contrast"] .monaco-editor .monaco-editor-background {
-  background-color: #000000 !important;
+body.contrast-theme .cm-editor .cm-gutters,
+[data-theme="contrast"] .cm-editor .cm-gutters {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-right-color: #ffffff;
 }
 
-body.contrast-theme .monaco-editor .view-lines,
-[data-theme="contrast"] .monaco-editor .view-lines {
-  color: #ffffff !important;
+body.contrast-theme .cm-editor :is(.cm-md-mark, .cm-md-heading, .cm-md-strong, .cm-md-link),
+[data-theme="contrast"] .cm-editor :is(.cm-md-mark, .cm-md-heading, .cm-md-strong, .cm-md-link) {
+  color: #ffff00;
 }
 
-body.contrast-theme .monaco-editor .view-line,
-[data-theme="contrast"] .monaco-editor .view-line {
-  color: #ffffff !important;
+body.contrast-theme .cm-editor :is(.cm-md-emphasis, .cm-md-code),
+[data-theme="contrast"] .cm-editor :is(.cm-md-emphasis, .cm-md-code) {
+  color: #00ffff;
 }
 
-body.contrast-theme .monaco-editor .mtk1,
-[data-theme="contrast"] .monaco-editor .mtk1 {
-  color: #ffffff !important;
-}
-
-body.contrast-theme .monaco-editor .margin,
-[data-theme="contrast"] .monaco-editor .margin {
-  background-color: #1a1a1a !important;
-}
-
-body.contrast-theme .monaco-editor .token.string,
-body.contrast-theme .monaco-editor .token.string.md,
-body.contrast-theme .monaco-editor .token.code,
-body.contrast-theme .monaco-editor .token.code.md,
-body.contrast-theme .monaco-editor .mtk4,
-body.contrast-theme .monaco-editor .mtk22,
-body.contrast-theme .monaco-editor [class*="mtk"],
-[data-theme="contrast"] .monaco-editor .token.string,
-[data-theme="contrast"] .monaco-editor .token.string.md,
-[data-theme="contrast"] .monaco-editor .token.code,
-[data-theme="contrast"] .monaco-editor .token.code.md,
-[data-theme="contrast"] .monaco-editor .mtk4,
-[data-theme="contrast"] .monaco-editor .mtk22,
-[data-theme="contrast"] .monaco-editor [class*="mtk"] {
-  color: #ffff00 !important;
-}
-
-body.contrast-theme .monaco-editor .token.code,
-body.contrast-theme .monaco-editor .token.code.md,
-[data-theme="contrast"] .monaco-editor .token.code,
-[data-theme="contrast"] .monaco-editor .token.code.md {
-  background-color: #333333 !important;
+body.contrast-theme .cm-editor :is(.cm-md-block, .cm-md-comment),
+[data-theme="contrast"] .cm-editor :is(.cm-md-block, .cm-md-comment) {
+  color: #ffffff;
 }

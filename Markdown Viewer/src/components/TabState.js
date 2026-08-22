@@ -1,3 +1,5 @@
+import { clampScrollRatio } from './scrollState.js';
+
 /**
  * TabState - Individual tab state management
  */
@@ -7,12 +9,23 @@ class TabState {
     this.fileName = options.fileName || 'untitled.md';
     this.filePath = options.filePath || null;
     this.content = options.content || '';
+    this.savedContent = options.savedContent ?? (options.isDirty ? null : this.content);
     this.isDirty = options.isDirty || false;
     this.isActive = options.isActive || false;
     this.cursorPosition = options.cursorPosition || { line: 1, col: 1 };
-    this.scrollPosition = options.scrollPosition || { editor: 0, preview: 0 };
+    const savedScroll = options.scrollPosition || {};
+    this.scrollPosition = {
+      editor: Number.isFinite(savedScroll.editor) ? savedScroll.editor : 0,
+      preview: Number.isFinite(savedScroll.preview) ? savedScroll.preview : 0,
+      // Older persisted tabs have no ratio. Their absolute position is used
+      // once and converted when the tab next becomes active.
+      ratio: Object.prototype.hasOwnProperty.call(savedScroll, 'ratio')
+        ? clampScrollRatio(savedScroll.ratio, 0)
+        : (options.scrollPosition ? null : 0),
+      source: savedScroll.source || null
+    };
     this.editorViewState = options.editorViewState || null;
-    this.monacoModel = null;
+    this.editorDocument = null;
     this.createdAt = options.createdAt || Date.now();
     this.lastModified = options.lastModified || Date.now();
   }
@@ -29,6 +42,7 @@ class TabState {
   // Mark as saved
   markSaved(filePath = null) {
     this.isDirty = false;
+    this.savedContent = this.content;
     if (filePath) {
       this.filePath = filePath;
       this.fileName = this.extractFileName(filePath);
@@ -42,30 +56,39 @@ class TabState {
   }
 
   // Set scroll positions
-  setScrollPosition(editor = null, preview = null) {
+  setScrollPosition(editor = null, preview = null, ratio = null, source = null) {
     if (editor !== null) this.scrollPosition.editor = editor;
     if (preview !== null) this.scrollPosition.preview = preview;
+    if (ratio !== null) this.scrollPosition.ratio = clampScrollRatio(ratio, 0);
+    if (source !== null) this.scrollPosition.source = source;
   }
 
-  // Set Monaco Editor view state
+  // Set editor view state
   setEditorViewState(viewState) {
     this.editorViewState = viewState;
   }
 
-  // Get or create Monaco model for this tab
-  getMonacoModel() {
-    if (!this.monacoModel && typeof monaco !== 'undefined') {
-      this.monacoModel = monaco.editor.createModel(this.content, 'markdown');
+  // Get or create the engine-owned document for this tab.
+  getEditorDocument(editorAdapter) {
+    if (!this.editorDocument && editorAdapter) {
+      this.editorDocument = editorAdapter.createDocument(this.content, 'markdown');
     }
-    return this.monacoModel;
+    return this.editorDocument;
   }
 
-  // Update model content
-  updateModelContent(content) {
-    if (this.monacoModel) {
-      this.monacoModel.setValue(content);
+  // Update cached content. The active editor document is synchronized by the adapter.
+  updateEditorDocument(content, editorAdapter = null) {
+    if (this.editorDocument && editorAdapter) {
+      editorAdapter.updateDocument(this.editorDocument, content);
     }
     this.setContent(content);
+  }
+
+  disposeEditorDocument(editorAdapter) {
+    if (this.editorDocument && editorAdapter) {
+      editorAdapter.disposeDocument(this.editorDocument);
+    }
+    this.editorDocument = null;
   }
 
   // Set active state
@@ -87,6 +110,10 @@ class TabState {
   // Get title with dirty indicator
   getTitle() {
     return `${this.fileName}${this.isDirty ? ' *' : ''}`;
+  }
+
+  hasUnsavedChanges() {
+    return this.isDirty || this.savedContent === null || this.content !== this.savedContent;
   }
 
   // Serialize for persistence

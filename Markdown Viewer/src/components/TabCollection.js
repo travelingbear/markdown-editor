@@ -1,3 +1,5 @@
+import { normalizeFilePath } from './filePathIdentity.js';
+
 /**
  * TabCollection - Manages array of tabs and operations
  */
@@ -21,7 +23,7 @@ class TabCollection extends BaseComponent {
     
     // Add new tab at the beginning for dropdown priority
     this.tabs.unshift(tab);
-    this.setActiveTab(id);
+    if (options.activate !== false) this.setActiveTab(id);
     
     this.emit('tab-created', { tab });
     return tab;
@@ -54,6 +56,7 @@ class TabCollection extends BaseComponent {
   setActiveTab(tabId) {
     const tab = this.getTab(tabId);
     if (!tab) return false;
+    if (this.activeTabId === tabId && tab.isActive) return true;
 
     // Deactivate current active tab
     if (this.activeTabId) {
@@ -120,7 +123,7 @@ class TabCollection extends BaseComponent {
 
   // Get dirty tabs
   getDirtyTabs() {
-    return this.tabs.filter(tab => tab.isDirty);
+    return this.tabs.filter(tab => tab.hasUnsavedChanges());
   }
 
 
@@ -129,20 +132,13 @@ class TabCollection extends BaseComponent {
   findTabByPath(filePath) {
     if (!filePath) return null;
     
-    // Normalize path for comparison (handle different path separators and resolve)
-    const normalizedPath = this.normalizePath(filePath);
+    const normalizedPath = normalizeFilePath(filePath);
     
     return this.tabs.find(tab => {
       if (!tab.filePath) return false;
-      const tabPath = this.normalizePath(tab.filePath);
+      const tabPath = normalizeFilePath(tab.filePath);
       return tabPath === normalizedPath;
     });
-  }
-  
-  // Normalize file path for consistent comparison
-  normalizePath(filePath) {
-    if (!filePath) return null;
-    return filePath.replace(/\\/g, '/').toLowerCase().trim();
   }
 
   // Close all tabs

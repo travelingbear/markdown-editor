@@ -300,8 +300,9 @@ class BaseComponent {
       this.extensionAPI.destroy();
     }
     
-    // Destroy child components
-    this.childComponents.forEach(component => {
+    // Consumers are normally added after their dependencies, so dispose in
+    // reverse order to let coordinators detach before providers disappear.
+    Array.from(this.childComponents.values()).reverse().forEach(component => {
       component.destroy();
     });
     this.childComponents.clear();

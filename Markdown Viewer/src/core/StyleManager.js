@@ -1,3 +1,24 @@
+import darkThemeUrl from '../styles/themes/dark.css?url';
+import retroThemeUrl from '../styles/themes/retro.css?url';
+import contrastThemeUrl from '../styles/themes/contrast.css?url';
+import printStylesUrl from '../styles/utilities/print.css?url';
+import markdownToolbarStylesUrl from '../styles/features/markdown-toolbar.css?url';
+import settingsModalStylesUrl from '../styles/features/settings-modal.css?url';
+import tabSystemStylesUrl from '../styles/features/tab-system.css?url';
+
+const THEME_URLS = {
+  dark: darkThemeUrl,
+  retro: retroThemeUrl,
+  contrast: contrastThemeUrl
+};
+
+const FEATURE_URLS = {
+  'utilities/print': printStylesUrl,
+  'features/markdown-toolbar': markdownToolbarStylesUrl,
+  'features/settings-modal': settingsModalStylesUrl,
+  'features/tab-system': tabSystemStylesUrl
+};
+
 /**
  * StyleManager - Dynamic CSS Loading System
  * Handles on-demand loading of themes and features
@@ -20,7 +41,7 @@ class StyleManager {
       // Only preload when user is about to switch themes
       const link = document.createElement('link');
       link.rel = 'prefetch'; // Use prefetch instead of preload
-      link.href = `./styles/themes/${themeName}.css`;
+      link.href = THEME_URLS[themeName];
       link.setAttribute('data-prefetch-theme', themeName);
       document.head.appendChild(link);
       this.preloadedThemes.add(themeName);
@@ -42,9 +63,16 @@ class StyleManager {
     document.querySelectorAll('link[data-theme]').forEach(link => link.remove());
     
     if (themeName !== 'light') { // Light is default in main CSS
+      const themeUrl = THEME_URLS[themeName];
+      if (!themeUrl) {
+        this.isTransitioning = false;
+        document.body.classList.remove('theme-transitioning');
+        throw new Error(`Unknown theme: ${themeName}`);
+      }
+
       const link = document.createElement('link');
       link.rel = 'stylesheet';
-      link.href = `./styles/themes/${themeName}.css`;
+      link.href = themeUrl;
       link.setAttribute('data-theme', themeName);
       
       // Wait for CSS to load before applying theme class
@@ -56,6 +84,7 @@ class StyleManager {
     }
     
     this.currentTheme = themeName;
+    this.loadedThemes.add(themeName);
     
     // Preserve existing classes while updating theme
     const existingClasses = Array.from(document.body.classList)
@@ -76,10 +105,15 @@ class StyleManager {
    */
   async loadFeature(featureName, type = 'utilities') {
     if (!this.loadedFeatures.has(featureName)) {
+      const featureUrl = FEATURE_URLS[`${type}/${featureName}`];
+      if (!featureUrl) {
+        throw new Error(`Unknown feature stylesheet: ${type}/${featureName}`);
+      }
+
       return new Promise((resolve, reject) => {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = `./styles/${type}/${featureName}.css`;
+        link.href = featureUrl;
         link.setAttribute('data-feature', featureName);
         
         link.onload = () => {

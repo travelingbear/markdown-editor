@@ -9,10 +9,12 @@ class SettingsController extends BaseComponent {
     this.theme = 'light';
     this.isRetroTheme = false;
     this.defaultMode = 'preview';
-    this.suggestionsEnabled = true;
+    this.advancedRenderingEnabled = false;
     this.centeredLayoutEnabled = false;
     this.isToolbarEnabled = true;
     this.pinnedTabsEnabled = false;
+    this.renderingControlPinned = false;
+    this.pinnedTabsControlPinned = false;
     this.isSplashEnabled = true;
     this.splashDuration = 2;
     this.currentPageSize = 'a4';
@@ -29,6 +31,7 @@ class SettingsController extends BaseComponent {
   async onInit() {
     this.loadSettings();
     this.setupSettingsControls();
+    this.updateSettingsDisplay();
   }
 
   loadSettings() {
@@ -38,10 +41,14 @@ class SettingsController extends BaseComponent {
     
     // Load UI settings
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') !== 'false';
+    // Remove the obsolete editor-suggestions preference from older versions.
+    localStorage.removeItem('markdownViewer_suggestionsEnabled');
+    this.advancedRenderingEnabled = localStorage.getItem('markdownViewer_advancedRendering') === 'true';
     this.centeredLayoutEnabled = localStorage.getItem('markdownViewer_centeredLayout') === 'true';
     this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
     this.pinnedTabsEnabled = localStorage.getItem('markdownViewer_pinnedTabs') === 'true';
+    this.renderingControlPinned = localStorage.getItem('markdownViewer_pinRenderingControl') === 'true';
+    this.pinnedTabsControlPinned = localStorage.getItem('markdownViewer_pinPinnedTabsControl') === 'true';
     this.isSplashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration')) || 2;
     this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
@@ -144,8 +151,8 @@ class SettingsController extends BaseComponent {
     
     // Update all other settings buttons
     const allSettings = {
-      'suggestions-on-btn': this.suggestionsEnabled,
-      'suggestions-off-btn': !this.suggestionsEnabled,
+      'rendering-pure-btn': !this.advancedRenderingEnabled,
+      'rendering-extended-btn': this.advancedRenderingEnabled,
       'layout-on-btn': this.centeredLayoutEnabled,
       'layout-off-btn': !this.centeredLayoutEnabled,
       'toolbar-on-btn': this.isToolbarEnabled,
@@ -162,6 +169,12 @@ class SettingsController extends BaseComponent {
         btn.classList.toggle('active', active);
       }
     });
+
+    const renderingPinCheckbox = document.getElementById('rendering-pin-checkbox');
+    if (renderingPinCheckbox) renderingPinCheckbox.checked = this.renderingControlPinned;
+
+    const pinnedTabsPinCheckbox = document.getElementById('pinned-tabs-pin-checkbox');
+    if (pinnedTabsPinCheckbox) pinnedTabsPinCheckbox.checked = this.pinnedTabsControlPinned;
     
     // Update splash duration buttons
     for (let i = 1; i <= 5; i++) {
@@ -268,12 +281,39 @@ class SettingsController extends BaseComponent {
       // Will be called from MarkdownEditor with proper references
       return;
     }
+    const pluginManager = previewComponent.parentComponent?.pluginManager || null;
+    const katexPluginStatus = pluginManager?.getPluginStatus?.('katex-plugin') || null;
+    const mermaidPluginStatus = pluginManager?.getPluginStatus?.('mermaid-plugin') || null;
+    const katexRenderer = previewComponent.rendererRegistry?.getAll?.()
+      .find((entry) => entry.id === 'katex-plugin.math');
+    const katexStatus = katexRenderer?.renderer?.getStatus?.();
+    const katexIsEnabled = katexPluginStatus
+      ? katexPluginStatus.isEnabled
+      : Boolean(katexRenderer);
+    const katexLabel = !katexIsEnabled
+      ? 'Disabled'
+      : katexStatus?.loaded
+        ? `Loaded${katexStatus.version ? ` (${katexStatus.version})` : ''}`
+        : 'Not Loaded';
+    const mermaidRenderer = previewComponent.rendererRegistry?.getAll?.()
+      .find((entry) => entry.id === 'mermaid-plugin.diagrams');
+    const mermaidStatus = mermaidRenderer?.renderer?.getStatus?.();
+    const mermaidIsEnabled = mermaidPluginStatus
+      ? mermaidPluginStatus.isEnabled
+      : Boolean(mermaidRenderer);
+    const mermaidLabel = !mermaidIsEnabled
+      ? 'Disabled'
+      : mermaidStatus?.loaded
+        ? `Loaded${mermaidStatus.version ? ` (${mermaidStatus.version})` : ''}`
+        : 'Not Loaded';
     const systemInfo = {
       'info-default-mode': this.defaultMode,
       'info-current-mode': currentMode || 'preview',
-      'info-monaco': (editorComponent && editorComponent.isMonacoLoaded === true) ? 'Loaded' : 'Not Loaded',
-      'info-mermaid': (previewComponent && previewComponent.mermaidInitialized === true) ? 'Loaded' : 'Not Loaded',
-      'info-katex': (previewComponent && previewComponent.katexInitialized === true) ? 'Loaded' : 'Not Loaded'
+      'info-code-editor': editorComponent?.isEditorReady()
+        ? `${editorComponent.getEditorEngine?.() || 'Editor'} (Loaded)`
+        : 'Not Loaded',
+      'info-mermaid': mermaidLabel,
+      'info-katex': katexLabel
     };
     
     Object.entries(systemInfo).forEach(([id, value]) => {
@@ -291,31 +331,6 @@ class SettingsController extends BaseComponent {
       return `${used}MB / ${total}MB`;
     }
     return 'Not Available';
-  }
-
-  async playRetroStartupSound() {
-    const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
-    if (!soundEnabled) return;
-    
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const response = await fetch('assets/windows95_startup_hifi.mp3');
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const source = audioContext.createBufferSource();
-      const gainNode = audioContext.createGain();
-      
-      source.buffer = audioBuffer;
-      gainNode.gain.value = 0.5;
-      
-      source.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      source.start(0);
-    } catch (error) {
-      console.warn('[SettingsController] Retro sound failed:', error);
-    }
   }
 
   setupSettingsControls() {
@@ -341,7 +356,6 @@ class SettingsController extends BaseComponent {
             this.theme = 'light';
             this.isRetroTheme = true;
             document.body.classList.add('retro-theme');
-            this.playRetroStartupSound();
           }
           localStorage.setItem('markdownViewer_defaultTheme', this.theme);
           localStorage.setItem('markdownViewer_retroTheme', this.isRetroTheme.toString());
@@ -379,23 +393,20 @@ class SettingsController extends BaseComponent {
     
     if (testSoundBtn) {
       testSoundBtn.addEventListener('click', () => {
-        this.playRetroStartupSound();
+        this.emit('retro-sound-test-requested');
       });
     }
     
-    // Suggestions controls
-    ['suggestions-on-btn', 'suggestions-off-btn'].forEach(id => {
+    // Preview rendering controls. Pure Markdown is the lightweight default.
+    ['rendering-pure-btn', 'rendering-extended-btn'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.suggestionsEnabled = id === 'suggestions-on-btn';
-          localStorage.setItem('markdownViewer_suggestionsEnabled', this.suggestionsEnabled.toString());
-          this.emit('suggestions-changed', { enabled: this.suggestionsEnabled });
-          this.updateSettingsDisplay();
+          this.setAdvancedRenderingEnabled(id === 'rendering-extended-btn');
         });
       }
     });
-    
+
     // Layout controls
     ['layout-on-btn', 'layout-off-btn'].forEach(id => {
       const btn = document.getElementById(id);
@@ -428,13 +439,16 @@ class SettingsController extends BaseComponent {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.pinnedTabsEnabled = id === 'pinned-tabs-on-btn';
-          localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
-          this.applyPinnedTabsVisibility();
-          this.emit('pinned-tabs-changed', { enabled: this.pinnedTabsEnabled });
-          this.updateSettingsDisplay();
+          this.setPinnedTabsEnabled(id === 'pinned-tabs-on-btn');
         });
       }
+    });
+
+    document.getElementById('rendering-pin-checkbox')?.addEventListener('change', (event) => {
+      this.setToolbarPin('rendering', event.target.checked);
+    });
+    document.getElementById('pinned-tabs-pin-checkbox')?.addEventListener('change', (event) => {
+      this.setToolbarPin('pinnedTabs', event.target.checked);
     });
     
     // Splash controls
@@ -521,8 +535,8 @@ class SettingsController extends BaseComponent {
     return this.defaultMode;
   }
 
-  getSuggestionsEnabled() {
-    return this.suggestionsEnabled;
+  getAdvancedRenderingEnabled() {
+    return this.advancedRenderingEnabled;
   }
 
   getToolbarEnabled() {
@@ -531,6 +545,54 @@ class SettingsController extends BaseComponent {
 
   getPinnedTabsEnabled() {
     return this.pinnedTabsEnabled;
+  }
+
+  setAdvancedRenderingEnabled(enabled) {
+    this.advancedRenderingEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_advancedRendering', this.advancedRenderingEnabled.toString());
+    this.emit('rendering-mode-changed', { extended: this.advancedRenderingEnabled });
+    this.updateSettingsDisplay();
+  }
+
+  toggleAdvancedRendering() {
+    this.setAdvancedRenderingEnabled(!this.advancedRenderingEnabled);
+  }
+
+  setPinnedTabsEnabled(enabled) {
+    this.pinnedTabsEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
+    this.applyPinnedTabsVisibility();
+    this.emit('pinned-tabs-changed', { enabled: this.pinnedTabsEnabled });
+    this.updateSettingsDisplay();
+  }
+
+  togglePinnedTabs() {
+    this.setPinnedTabsEnabled(!this.pinnedTabsEnabled);
+  }
+
+  setToolbarPin(control, pinned) {
+    if (control === 'rendering') {
+      this.renderingControlPinned = pinned === true;
+      localStorage.setItem('markdownViewer_pinRenderingControl', this.renderingControlPinned.toString());
+    } else if (control === 'pinnedTabs') {
+      this.pinnedTabsControlPinned = pinned === true;
+      localStorage.setItem('markdownViewer_pinPinnedTabsControl', this.pinnedTabsControlPinned.toString());
+    } else {
+      return false;
+    }
+
+    this.emit('toolbar-pins-changed', this.getToolbarQuickSettings());
+    this.updateSettingsDisplay();
+    return true;
+  }
+
+  getToolbarQuickSettings() {
+    return {
+      extended: this.advancedRenderingEnabled,
+      pinnedTabsEnabled: this.pinnedTabsEnabled,
+      renderingPinned: this.renderingControlPinned,
+      pinnedTabsPinned: this.pinnedTabsControlPinned
+    };
   }
 
   // Performance tracking methods

@@ -43,20 +43,19 @@ class MarkdownActionController extends BaseComponent {
   }
 
   async handleMarkdownAction(action) {
-    if (!this.editorComponent.isMonacoLoaded || !this.editorComponent.monacoEditor) return;
+    const editor = this.editorComponent.getEditorAdapter();
+    if (!editor) return;
     
     await this.executeHook('beforeMarkdownAction', { action });
     
-    const editor = this.editorComponent.monacoEditor;
-    const model = editor.getModel();
     const selection = editor.getSelection();
-    const position = editor.getPosition();
+    const position = editor.getCursorPosition();
     let selectedText = '';
     let isMultiLine = false;
     
-    if (selection && !selection.isEmpty()) {
-      selectedText = model.getValueInRange(selection);
-      isMultiLine = selection.startLineNumber !== selection.endLineNumber;
+    if (selection && !selection.isEmpty) {
+      selectedText = editor.getTextInRange(selection);
+      isMultiLine = selection.startLine !== selection.endLine;
     }
     
     // Handle multi-line selections
@@ -85,7 +84,10 @@ class MarkdownActionController extends BaseComponent {
         break;
       case 'italic':
         if (selectedText) {
-          if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length > 2 && !selectedText.startsWith('**')) {
+          if (selectedText.startsWith('***') && selectedText.endsWith('***') && selectedText.length > 6) {
+            // Remove only the italic layer and retain the inner bold markers.
+            replacement = selectedText.slice(1, -1);
+          } else if (selectedText.startsWith('*') && selectedText.endsWith('*') && selectedText.length > 2 && !selectedText.startsWith('**')) {
             replacement = selectedText.slice(1, -1);
           } else {
             replacement = `*${selectedText}*`;
@@ -258,51 +260,50 @@ class MarkdownActionController extends BaseComponent {
     
     // Handle insertion
     if (insertAtNewLine && !selectedText) {
-      const lineContent = model.getLineContent(position.lineNumber);
+      const lineContent = editor.getLineContent(position.line);
       if (lineContent.trim() === '') {
-        editor.executeEdits('markdown-toolbar', [{
-          range: new monaco.Range(position.lineNumber, 1, position.lineNumber, position.column),
+        editor.applyEdits('markdown-toolbar', [{
+          range: { startLine: position.line, startColumn: 1, endLine: position.line, endColumn: position.column },
           text: replacement
         }]);
       } else {
-        editor.executeEdits('markdown-toolbar', [{
-          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+        editor.applyEdits('markdown-toolbar', [{
+          range: { startLine: position.line, startColumn: position.column, endLine: position.line, endColumn: position.column },
           text: `\n${replacement}`
         }]);
       }
-    } else if (selection && !selection.isEmpty()) {
-      editor.executeEdits('markdown-toolbar', [{
+    } else if (selection && !selection.isEmpty) {
+      editor.applyEdits('markdown-toolbar', [{
         range: selection,
         text: replacement
       }]);
     } else {
-      editor.executeEdits('markdown-toolbar', [{
-        range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+      editor.applyEdits('markdown-toolbar', [{
+        range: { startLine: position.line, startColumn: position.column, endLine: position.line, endColumn: position.column },
         text: replacement
       }]);
       
       if (cursorOffset !== 0) {
-        const newPosition = editor.getPosition();
+        const newPosition = editor.getCursorPosition();
         const targetColumn = newPosition.column + cursorOffset;
-        editor.setPosition({
-          lineNumber: newPosition.lineNumber,
+        editor.setCursorPosition({
+          line: newPosition.line,
           column: Math.max(1, targetColumn)
-        });
+        }, false);
       }
     }
     
     editor.focus();
-    this.documentComponent.handleContentChange(editor.getValue());
+    this.documentComponent.handleContentChange(editor.getContent());
     
     await this.executeHook('afterMarkdownAction', { action, selectedText, isMultiLine });
   }
   
   handleMultiLineFormatting(editor, selection, action) {
-    const model = editor.getModel();
     const edits = [];
     
-    for (let lineNum = selection.startLineNumber; lineNum <= selection.endLineNumber; lineNum++) {
-      const lineContent = model.getLineContent(lineNum);
+    for (let lineNum = selection.startLine; lineNum <= selection.endLine; lineNum++) {
+      const lineContent = editor.getLineContent(lineNum);
       if (lineContent.trim() === '') continue;
       
       let newContent = '';
@@ -316,7 +317,9 @@ class MarkdownActionController extends BaseComponent {
           }
           break;
         case 'italic':
-          if (lineContent.startsWith('*') && lineContent.endsWith('*') && lineContent.length > 2 && !lineContent.startsWith('**')) {
+          if (lineContent.startsWith('***') && lineContent.endsWith('***') && lineContent.length > 6) {
+            newContent = lineContent.slice(1, -1);
+          } else if (lineContent.startsWith('*') && lineContent.endsWith('*') && lineContent.length > 2 && !lineContent.startsWith('**')) {
             newContent = lineContent.slice(1, -1);
           } else {
             newContent = `*${lineContent}*`;
@@ -370,7 +373,7 @@ class MarkdownActionController extends BaseComponent {
           newContent = `- ${lineContent}`;
           break;
         case 'ol':
-          newContent = `${lineNum - selection.startLineNumber + 1}. ${lineContent}`;
+          newContent = `${lineNum - selection.startLine + 1}. ${lineContent}`;
           break;
         case 'task':
           newContent = `- [ ] ${lineContent}`;
@@ -384,22 +387,21 @@ class MarkdownActionController extends BaseComponent {
       }
       
       edits.push({
-        range: new monaco.Range(lineNum, 1, lineNum, lineContent.length + 1),
+        range: { startLine: lineNum, startColumn: 1, endLine: lineNum, endColumn: lineContent.length + 1 },
         text: newContent
       });
     }
     
-    editor.executeEdits('markdown-toolbar-multiline', edits);
-    this.documentComponent.handleContentChange(editor.getValue());
+    editor.applyEdits('markdown-toolbar-multiline', edits);
+    this.documentComponent.handleContentChange(editor.getContent());
   }
   
   handleMultiLineAlignment(editor, selection, action) {
-    const model = editor.getModel();
     const edits = [];
     const alignType = action.replace('align-', '');
     
-    for (let lineNum = selection.startLineNumber; lineNum <= selection.endLineNumber; lineNum++) {
-      const lineContent = model.getLineContent(lineNum);
+    for (let lineNum = selection.startLine; lineNum <= selection.endLine; lineNum++) {
+      const lineContent = editor.getLineContent(lineNum);
       if (lineContent.trim() === '') continue;
       
       let newContent = '';
@@ -414,30 +416,25 @@ class MarkdownActionController extends BaseComponent {
       }
       
       edits.push({
-        range: new monaco.Range(lineNum, 1, lineNum, lineContent.length + 1),
+        range: { startLine: lineNum, startColumn: 1, endLine: lineNum, endColumn: lineContent.length + 1 },
         text: newContent
       });
     }
     
-    editor.executeEdits('markdown-toolbar-alignment', edits);
-    this.documentComponent.handleContentChange(editor.getValue());
+    editor.applyEdits('markdown-toolbar-alignment', edits);
+    this.documentComponent.handleContentChange(editor.getContent());
   }
   
   insertMarkdownText(text) {
-    if (!this.editorComponent.isMonacoLoaded || !this.editorComponent.monacoEditor) {
+    const editor = this.editorComponent.getEditorAdapter();
+    if (!editor) {
       return;
     }
-    
-    const editor = this.editorComponent.monacoEditor;
-    const position = editor.getPosition();
-    
-    editor.executeEdits('markdown-insert', [{
-      range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
-      text: text
-    }]);
+
+    editor.insertText(text, undefined, 'markdown-insert');
     
     editor.focus();
-    this.documentComponent.handleContentChange(editor.getValue());
+    this.documentComponent.handleContentChange(editor.getContent());
   }
 
   updateTaskInMarkdown(taskText, checked) {

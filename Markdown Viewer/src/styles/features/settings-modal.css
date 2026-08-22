@@ -105,7 +105,78 @@
 
 .setting-control {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+.setting-item .toolbar-pin-option {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.plugin-setting-help {
+  position: relative;
+}
+
+.plugin-setting-help::after {
+  content: attr(data-setting-help);
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 12px;
+  width: min(360px, calc(100% - 24px));
+  padding: 9px 11px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.22);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition:
+    opacity 120ms ease 0s,
+    transform 120ms ease 0s,
+    visibility 0s linear 120ms;
+  z-index: 40;
+}
+
+.plugin-setting-help:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 1s, 1s, 1s;
+}
+
+.plugin-setting-help:focus-within::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 250ms, 250ms, 250ms;
+}
+
+.plugin-setting-help-above::after {
+  top: auto;
+  bottom: calc(100% - 2px);
+}
+
+.toolbar-pin-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
 }
 
 .setting-btn {
@@ -372,6 +443,45 @@
   color: #856404;
 }
 
+.plugin-status.activating,
+.plugin-status.deactivating {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.plugin-status.error {
+  background: #f8d7da;
+  color: #842029;
+}
+
+.plugin-error,
+.plugin-warnings {
+  margin-top: 4px;
+  font-size: 0.8em;
+}
+
+.plugin-error {
+  color: #b42318;
+}
+
+.plugin-diagnostic {
+  margin: 6px 4px;
+  padding: 7px 9px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  font-size: 0.8em;
+  overflow-wrap: anywhere;
+}
+
+.plugin-diagnostic.error {
+  border-left: 3px solid #dc3545;
+  color: #b42318;
+}
+
+.plugin-warnings {
+  color: #9a6700;
+}
+
 .no-plugins {
   text-align: center;
   color: var(--text-secondary);
@@ -437,5 +547,319 @@
   .performance-actions .settings-btn {
     width: 100%;
     max-width: 150px;
+  }
+}
+
+.plugin-action-status {
+  display: none;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 5px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.plugin-action-status.show {
+  display: block;
+}
+
+.plugin-action-status.error {
+  border-color: #dc3545;
+  color: #b42318;
+}
+
+.perf-action-status {
+  display: none;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 5px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.perf-action-status.show {
+  display: block;
+}
+
+/* Compact plugin controls in the main Settings modal */
+.plugin-status.paused {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.plugin-summary-list {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.plugin-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.plugin-summary-item:last-child {
+  border-bottom: 0;
+}
+
+.plugin-summary-identity,
+.plugin-summary-controls,
+.plugin-manager-heading,
+.plugin-system-controls,
+.plugin-manager-actions,
+.plugin-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plugin-summary-identity {
+  min-width: 0;
+}
+
+.plugin-summary-controls {
+  flex-shrink: 0;
+}
+
+.plugin-summary-controls .setting-btn {
+  min-width: 76px;
+  padding: 6px 10px;
+}
+
+/* Dedicated Plugin Manager */
+.plugin-manager-window {
+  max-width: 900px;
+  height: min(720px, 88vh);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.plugin-manager-header {
+  flex: 0 0 auto;
+}
+
+.plugin-manager-back-btn {
+  display: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.plugin-manager-back-btn.visible {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plugin-manager-back-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.plugin-manager-body {
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.plugin-manager-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 10px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.plugin-manager-tab {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-manager-tab:hover {
+  background: var(--bg-tertiary);
+}
+
+.plugin-manager-tab.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-hover);
+  color: white;
+}
+
+.plugin-manager-tab:focus-visible,
+.plugin-manager-back-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.plugin-manager-panels {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.plugin-manager-panel {
+  display: none;
+}
+
+.plugin-manager-panel.active {
+  display: block;
+}
+
+.plugin-manager-panel h3 {
+  color: var(--accent-primary);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.plugin-manager-panel h3:not(:first-child) {
+  margin-top: 28px;
+}
+
+.plugin-panel-header {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.plugin-panel-header h3 {
+  margin-bottom: 4px;
+}
+
+.plugin-manager-description {
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.plugin-panel-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  color: var(--text-secondary);
+}
+
+.plugin-system-controls,
+.plugin-manager-actions {
+  flex-wrap: wrap;
+}
+
+.plugin-danger-btn {
+  padding: 8px 16px;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  background: transparent;
+  color: #b42318;
+  cursor: pointer;
+}
+
+.plugin-danger-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.plugin-reset-button {
+  margin-top: 22px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.plugin-reset-button:hover {
+  border-color: #dc3545;
+  color: #b42318;
+}
+
+.plugin-settings-host .settings-section {
+  margin: 0;
+}
+
+.plugin-settings-host .settings-section > h3 {
+  display: none;
+}
+
+.plugin-manager-action-status {
+  flex: 0 0 auto;
+  margin: 0;
+  border-width: 1px 0 0;
+  border-radius: 0;
+}
+
+@media (max-width: 768px) {
+  .plugin-summary-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .plugin-summary-controls {
+    width: 100%;
+  }
+
+  .plugin-summary-controls .setting-btn {
+    flex: 1;
+  }
+
+  .plugin-manager-window {
+    width: 96%;
+    height: 92vh;
+    max-height: 92vh;
+  }
+
+  .plugin-manager-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .plugin-manager-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .plugin-manager-tab {
+    width: auto;
+    min-width: max-content;
+  }
+
+  .plugin-manager-panels {
+    padding: 18px;
+  }
+
+  .plugin-panel-header {
+    flex-direction: column;
   }
 }

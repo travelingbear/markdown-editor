@@ -1,3 +1,5 @@
+import { RetroSoundPlayer } from '../../audio/RetroSoundPlayer.js';
+
 /**
  * UI Controller - Manages UI state, themes, modals, and layout
  * Extracted from MarkdownEditor for better separation of concerns
@@ -27,14 +29,14 @@ class UIController extends BaseComponent {
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration') || '1');
     
     // Other settings
-    this.suggestionsEnabled = localStorage.getItem('markdownViewer_suggestionsEnabled') === 'true';
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
+    this.retroSoundPlayer = new RetroSoundPlayer();
+    this.modalDomListeners = [];
   }
 
   async onInit() {
     this.setupModalEventHandlers();
-    this.setupSettingsControls();
-    this.applyInitialSettings();
+    await this.applyInitialSettings();
     this.setupExtensionPoints();
   }
 
@@ -123,7 +125,7 @@ class UIController extends BaseComponent {
     
     if (this.isRetroTheme) {
       document.body.classList.add('retro-theme');
-      this.playRetroStartupSound();
+      await this.playRetroStartupSound();
       // Load retro theme dynamically
       if (window.styleManager) {
         await window.styleManager.loadTheme('retro');
@@ -262,6 +264,7 @@ class UIController extends BaseComponent {
     if (settingsModal) {
       settingsModal.style.display = 'flex';
       this.updateSettingsDisplay();
+      this.emit('settings-shown');
     }
   }
   
@@ -313,11 +316,6 @@ class UIController extends BaseComponent {
         this.defaultMode = value;
         localStorage.setItem('markdownViewer_defaultMode', value);
         break;
-      case 'suggestionsEnabled':
-        this.suggestionsEnabled = value;
-        localStorage.setItem('markdownViewer_suggestionsEnabled', value.toString());
-        this.emit('suggestions-changed', { enabled: value });
-        break;
       case 'centeredLayout':
         this.setCenteredLayout(value);
         break;
@@ -341,9 +339,9 @@ class UIController extends BaseComponent {
     }
   }
 
-  applyInitialSettings() {
+  async applyInitialSettings() {
     // Apply theme
-    this.setTheme(this.theme, this.isRetroTheme);
+    await this.setTheme(this.theme, this.isRetroTheme);
     
     // Apply centered layout
     this.applyCenteredLayout();
@@ -368,147 +366,36 @@ class UIController extends BaseComponent {
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     const settingsOverlay = document.querySelector('.settings-overlay');
     if (settingsCloseBtn) {
-      settingsCloseBtn.addEventListener('click', () => this.hideSettings());
+      this.addModalListener(settingsCloseBtn, () => this.hideSettings());
     }
     if (settingsOverlay) {
-      settingsOverlay.addEventListener('click', () => this.hideSettings());
+      this.addModalListener(settingsOverlay, () => this.hideSettings());
     }
     
     // Help modal
     const helpCloseBtn = document.getElementById('help-close-btn');
     const helpOverlay = document.querySelector('.help-overlay');
     if (helpCloseBtn) {
-      helpCloseBtn.addEventListener('click', () => this.hideHelp());
+      this.addModalListener(helpCloseBtn, () => this.hideHelp());
     }
     if (helpOverlay) {
-      helpOverlay.addEventListener('click', () => this.hideHelp());
+      this.addModalListener(helpOverlay, () => this.hideHelp());
     }
     
     // About modal
     const aboutCloseBtn = document.getElementById('about-close-btn');
     const aboutOverlay = document.querySelector('.about-overlay');
     if (aboutCloseBtn) {
-      aboutCloseBtn.addEventListener('click', () => this.hideAbout());
+      this.addModalListener(aboutCloseBtn, () => this.hideAbout());
     }
     if (aboutOverlay) {
-      aboutOverlay.addEventListener('click', () => this.hideAbout());
+      this.addModalListener(aboutOverlay, () => this.hideAbout());
     }
   }
 
-  setupSettingsControls() {
-    // Theme controls
-    const themeBtns = ['theme-light-btn', 'theme-dark-btn', 'theme-retro-btn', 'theme-contrast-btn'];
-    themeBtns.forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          if (id === 'theme-light-btn') {
-            this.setTheme('light', false);
-          } else if (id === 'theme-dark-btn') {
-            this.setTheme('dark', false);
-          } else if (id === 'theme-contrast-btn') {
-            this.setTheme('contrast', false);
-          } else {
-            this.setTheme('light', true);
-          }
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Mode controls
-    ['mode-code-btn', 'mode-preview-btn', 'mode-split-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          const mode = id.replace('mode-', '').replace('-btn', '');
-          this.setSetting('defaultMode', mode);
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Retro sound controls
-    const retroSoundCheckbox = document.getElementById('retro-sound-checkbox');
-    const testSoundBtn = document.getElementById('test-startup-sound-btn');
-    
-    if (retroSoundCheckbox) {
-      retroSoundCheckbox.addEventListener('change', (e) => {
-        localStorage.setItem('markdownViewer_retroSound', e.target.checked.toString());
-      });
-    }
-    
-    if (testSoundBtn) {
-      testSoundBtn.addEventListener('click', () => {
-        this.playRetroStartupSound();
-      });
-    }
-    
-    // Other setting controls
-    const settingControls = [
-      { ids: ['suggestions-on-btn', 'suggestions-off-btn'], key: 'suggestionsEnabled' },
-      { ids: ['layout-on-btn', 'layout-off-btn'], key: 'centeredLayout' },
-      { ids: ['toolbar-on-btn', 'toolbar-off-btn'], key: 'toolbarEnabled' },
-      { ids: ['pinned-tabs-on-btn', 'pinned-tabs-off-btn'], key: 'pinnedTabs' },
-      { ids: ['splash-on-btn', 'splash-off-btn'], key: 'splashEnabled' }
-    ];
-    
-    settingControls.forEach(({ ids, key }) => {
-      ids.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) {
-          btn.addEventListener('click', () => {
-            const value = id.includes('-on-');
-            this.setSetting(key, value);
-            this.updateSettingsDisplay();
-          });
-        }
-      });
-    });
-    
-    // Splash duration controls
-    for (let i = 1; i <= 5; i++) {
-      const btn = document.getElementById(`splash-${i}s-btn`);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.setSetting('splashDuration', i);
-          this.updateSettingsDisplay();
-        });
-      }
-    }
-    
-    // Page size controls
-    ['page-a4-btn', 'page-letter-btn', 'page-a3-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          const pageSize = id.replace('page-', '').replace('-btn', '');
-          this.setSetting('pageSize', pageSize);
-          this.updateSettingsDisplay();
-        });
-      }
-    });
-    
-    // Toolbar size controls
-    const toolbarSizeControls = [
-      { prefix: 'main-toolbar-', key: 'mainToolbarSize' },
-      { prefix: 'md-toolbar-', key: 'mdToolbarSize' },
-      { prefix: 'status-bar-', key: 'statusBarSize' }
-    ];
-    
-    toolbarSizeControls.forEach(({ prefix, key }) => {
-      ['small', 'medium', 'large'].forEach(size => {
-        const btn = document.getElementById(`${prefix}${size}`);
-        if (btn) {
-          btn.addEventListener('click', () => {
-            this[key] = size;
-            localStorage.setItem(`markdownViewer_${key}`, size);
-            document.body.setAttribute(`data-${prefix.replace('-', '-')}size`, size);
-            this.updateSettingsDisplay();
-          });
-        }
-      });
-    });
+  addModalListener(element, handler) {
+    element.addEventListener('click', handler);
+    this.modalDomListeners.push({ element, handler });
   }
 
   updateSettingsDisplay() {
@@ -556,8 +443,6 @@ class UIController extends BaseComponent {
     
     // All other settings
     const allSettings = {
-      'suggestions-on-btn': this.suggestionsEnabled,
-      'suggestions-off-btn': !this.suggestionsEnabled,
       'layout-on-btn': this.centeredLayoutEnabled,
       'layout-off-btn': !this.centeredLayoutEnabled,
       'toolbar-on-btn': this.isToolbarEnabled,
@@ -638,24 +523,20 @@ class UIController extends BaseComponent {
     if (!soundEnabled) return;
     
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const response = await fetch('assets/windows95_startup_hifi.mp3');
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const source = audioContext.createBufferSource();
-      const gainNode = audioContext.createGain();
-      
-      source.buffer = audioBuffer;
-      gainNode.gain.value = 0.5;
-      
-      source.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      source.start(0);
+      await this.retroSoundPlayer.play();
     } catch (error) {
       console.warn('[UIController] Retro sound failed:', error);
     }
+  }
+
+  onDestroy() {
+    this.modalDomListeners.forEach(({ element, handler }) => {
+      element.removeEventListener('click', handler);
+    });
+    this.modalDomListeners = [];
+    this.retroSoundPlayer.dispose().catch((error) => {
+      console.warn('[UIController] Failed to release Retro audio:', error);
+    });
   }
 
   // Getters for current state
@@ -680,7 +561,6 @@ class UIController extends BaseComponent {
       theme: this.theme,
       isRetroTheme: this.isRetroTheme,
       defaultMode: this.defaultMode,
-      suggestionsEnabled: this.suggestionsEnabled,
       centeredLayoutEnabled: this.centeredLayoutEnabled,
       isToolbarEnabled: this.isToolbarEnabled,
       pinnedTabsEnabled: this.pinnedTabsEnabled,

@@ -158,7 +158,7 @@ body.retro-theme .setting-btn.active {
 }
 
 body.retro-theme .preview-content,
-body.retro-theme .monaco-editor-container,
+body.retro-theme .editor-container,
 body.retro-theme #editor {
   background: #ffffff;
   color: #000000;
@@ -167,48 +167,20 @@ body.retro-theme #editor {
   font-size: 12px;
 }
 
-body.retro-theme .monaco-editor {
-  background: #ffffff !important;
+body.retro-theme .cm-editor,
+body.retro-theme.distraction-free .cm-editor {
+  background: #ffffff;
+  color: #000000;
 }
 
-body.retro-theme .monaco-editor .monaco-editor-background {
-  background-color: #ffffff !important;
+body.retro-theme .cm-editor .cm-gutters,
+body.retro-theme.distraction-free .cm-editor .cm-gutters {
+  background-color: #e0e0e0;
+  color: #000000;
 }
 
-body.retro-theme .monaco-editor .view-lines {
-  color: #000000 !important;
-}
-
-body.retro-theme .monaco-editor .view-line {
-  color: #000000 !important;
-}
-
-body.retro-theme .monaco-editor .mtk1 {
-  color: #000000 !important;
-}
-
-/* Make blue text darker in retro mode Monaco editor */
-body.retro-theme .monaco-editor .mtk12,
-body.retro-theme .monaco-editor .mtk4,
-body.retro-theme .monaco-editor .mtk22 {
-  color: #1111b3 !important;
-}
-
-body.retro-theme .monaco-editor .margin {
-  background-color: #e0e0e0 !important;
-}
-
-/* Distraction-free Monaco editor styling */
-body.retro-theme.distraction-free .monaco-editor {
-  background: #ffffff !important;
-}
-
-body.retro-theme.distraction-free .monaco-editor .monaco-editor-background {
-  background-color: #ffffff !important;
-}
-
-body.retro-theme.distraction-free .monaco-editor .margin {
-  background-color: #e0e0e0 !important;
+body.retro-theme .cm-editor :is(.cm-md-mark, .cm-md-link, .cm-md-emphasis) {
+  color: #1111b3;
 }
 
 body.retro-theme .main-content {
@@ -224,7 +196,7 @@ body.retro-theme.distraction-free.code-mode .editor-pane {
   background: #c0c0c0 !important;
 }
 
-body.retro-theme.distraction-free.code-mode .monaco-editor-container,
+body.retro-theme.distraction-free.code-mode .editor-container,
 body.retro-theme.distraction-free.code-mode #editor {
   background: #ffffff !important;
   border: 2px inset #c0c0c0 !important;
@@ -238,7 +210,7 @@ body.retro-theme.distraction-free.split-mode .editor-pane {
   background: #c0c0c0 !important;
 }
 
-body.retro-theme.distraction-free.split-mode .monaco-editor-container,
+body.retro-theme.distraction-free.split-mode .editor-container,
 body.retro-theme.distraction-free.split-mode #editor {
   background: #ffffff !important;
   border: 2px inset #c0c0c0 !important;
@@ -410,6 +382,10 @@ body.retro-theme .preview-content pre {
   background: #e0e0e0;
   border: 2px inset #c0c0c0;
   font-family: 'Courier New', monospace;
+  /* The shared code-block rule uses 85% sizing. Override it here so Retro's
+     compact 12px document font does not shrink fenced code to roughly 10px. */
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 body.retro-theme .preview-content blockquote {

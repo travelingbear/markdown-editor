@@ -135,13 +135,7 @@ class FileController extends BaseComponent {
       }
     }
     
-    const startTime = performance.now();
     await documentComponent.openFile();
-    
-    // Track file open performance only if file was actually opened
-    if (this.performanceOptimizer && tabManager.getTabsCount() > currentTabCount) {
-      this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
-    }
 
     await this.executeHook('afterOpenFile', { documentComponent, tabManager });
     this.emit('file-open-completed');
@@ -190,7 +184,7 @@ class FileController extends BaseComponent {
     const activeTab = tabManager.getActiveTab();
     if (activeTab) {
       // Check for unsaved changes first, before animation
-      if (activeTab.isDirty) {
+      if (activeTab.hasUnsavedChanges()) {
         const shouldClose = await tabManager.confirmCloseUnsaved(activeTab);
         if (!shouldClose) return;
       }
@@ -209,7 +203,7 @@ class FileController extends BaseComponent {
       }
       
       // Remove tab without additional confirmation since we already confirmed
-      tabManager.tabCollection.removeTab(activeTab.id);
+      tabManager.removeTab(activeTab.id);
       this.emit('file-close-completed');
     }
   }
@@ -221,6 +215,7 @@ class FileController extends BaseComponent {
         const newContent = await documentComponent.readFile(activeTab.filePath);
         if (newContent !== activeTab.content) {
           activeTab.setContent(newContent);
+          activeTab.markSaved(activeTab.filePath);
           editorComponent.emit('set-content', { content: newContent });
           previewComponent.emit('update-preview', { 
             content: newContent,

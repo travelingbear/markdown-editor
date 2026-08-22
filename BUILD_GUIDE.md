@@ -1,208 +1,136 @@
-# Build Guide - Markdown Viewer
+# Build Guide
 
-## 🏗️ Building from Source
+This guide describes the maintained Tauri 2 and Vite 8 build workflow. Run all commands from the `Markdown Viewer` directory.
 
-### Prerequisites
- 
-#### Windows
-- **Rust**: Install from [rustup.rs](https://rustup.rs/)
-- **Node.js**: Version 18+ from [nodejs.org](https://nodejs.org/)
-- **Visual Studio Build Tools**: Required for Windows builds
-- **WebView2**: Usually pre-installed on Windows 10/11
+## Prerequisites
 
-#### macOS
-- **Rust**: Install from [rustup.rs](https://rustup.rs/)
-- **Node.js**: Version 18+ from [nodejs.org](https://nodejs.org/)
-- **Xcode Command Line Tools**: `xcode-select --install`
+- Node.js 20.19+ or 22.12+
+- npm
+- A current stable Rust toolchain installed with rustup
+- Platform tooling required by Tauri 2
 
-#### Linux (Ubuntu/Debian)
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+Use the official [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) page for the current operating-system packages. In particular:
 
-# Install Node.js
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
+- Windows requires Microsoft C++ Build Tools and WebView2. MSI creation also requires the Windows VBSCRIPT optional feature used by WiX.
+- macOS requires Xcode or Xcode Command Line Tools.
+- Debian/Ubuntu Tauri 2 builds use WebKitGTK 4.1 development packages, not the older WebKitGTK 4.0 packages.
 
-# Install system dependencies
-sudo apt-get install -y \
-    libwebkit2gtk-4.0-dev \
-    build-essential \
-    curl \
-    wget \
-    libssl-dev \
-    libgtk-3-dev \
-    libayatana-appindicator3-dev \
-    librsvg2-dev
-```
+Vite's current Node requirements are documented in the [Vite getting-started guide](https://vite.dev/guide/).
 
-### Build Commands
+## Install
 
-#### Development Build
-```bash
+```powershell
 cd "Markdown Viewer"
-npm install
-npm run dev
+npm ci
 ```
 
-#### Production Build
-```bash
-cd "Markdown Viewer"
-npm install
-npm run tauri build
+Use `npm install` when intentionally changing dependencies. Commit both `package.json` and `package-lock.json` for dependency changes.
+
+## Development
+
+Run the native application with the Vite development server:
+
+```powershell
+npm run tauri dev
 ```
 
-#### Platform-Specific Builds
-```bash
-# Windows (MSI + NSIS installer)
-npm run tauri build
+Run only the web frontend when native file dialogs and Tauri IPC are not required:
 
-# macOS (DMG + App Bundle)
-npm run tauri build
-
-# Linux (AppImage + DEB)
-npm run tauri build
-
-# Cross-platform (use platform-specific scripts)
-./release-build.bat  # Windows
-./release-build.sh   # macOS/Linux
+```powershell
+npm run dev:web
 ```
 
-#### Clean Build
-```bash
-npm run clean
-npm run tauri build
+## Validation
+
+Run the complete automated test suite:
+
+```powershell
+npm test
 ```
 
-## 📦 Distribution Packages
+Build only the frontend bundle:
 
-### Windows
-- **MSI Installer**: `src-tauri/target/release/bundle/msi/Markdown Viewer_1.0.0_x64_en-US.msi`
-- **NSIS Installer**: `src-tauri/target/release/bundle/nsis/Markdown Viewer_1.0.0_x64-setup.exe`
-- **Portable**: `src-tauri/target/release/markdown-viewer.exe`
+```powershell
+npm run build:web
+```
 
-### macOS
-- **DMG Package**: `src-tauri/target/release/bundle/dmg/Markdown Viewer_1.0.0_x64.dmg`
-- **App Bundle**: `src-tauri/target/release/bundle/macos/Markdown Viewer.app`
+Inspect the installed Tauri environment:
 
-### Linux
-- **AppImage**: `src-tauri/target/release/bundle/appimage/markdown-viewer_1.0.0_amd64.AppImage`
-- **DEB Package**: `src-tauri/target/release/bundle/deb/markdown-viewer_1.0.0_amd64.deb`
-
-## 🔧 Build Configuration
-
-### Version Management
-Update version in these files:
-- `package.json` - Frontend version
-- `src-tauri/Cargo.toml` - Rust package version
-- `src-tauri/tauri.conf.json` - Application version
-
-### Bundle Configuration
-Edit `src-tauri/tauri.conf.json`:
-- **Icons**: Update icon paths in `bundle.icon`
-- **File Associations**: Modify `bundle.fileAssociations`
-- **Windows**: Configure MSI/NSIS options in `bundle.windows`
-- **macOS**: Set minimum version in `bundle.macOS`
-- **Linux**: Configure DEB/AppImage in `bundle.linux`
-
-## 🧪 Testing Builds
-
-### Automated Testing
-```bash
-# Check build environment
+```powershell
 npm run info
+```
 
-# Verify Tauri installation
-npm run version
+The normal validation sequence for a code change is:
 
-# Test development build
-npm run dev
+```powershell
+npm test
+npm run build:web
+npm run tauri dev
+```
 
-# Test production build
+## Native builds
+
+Create a release application and the bundle types configured in `src-tauri/tauri.conf.json`:
+
+```powershell
+npm run build
+```
+
+Create an unoptimized native debug build:
+
+```powershell
 npm run build:debug
 ```
 
-### Manual Testing Checklist
-- [ ] Application launches successfully
-- [ ] File associations work (double-click .md files)
-- [ ] All three modes (Code/Preview/Split) function
-- [ ] Drag-drop functionality works
-- [ ] Export features (HTML/PDF) work
-- [ ] Keyboard shortcuts respond
-- [ ] Theme switching works
-- [ ] Window close handler prompts for unsaved changes
-- [ ] Settings persist across sessions
+Native output is written below:
 
-## 🚀 Release Process
-
-### 1. Pre-Release Checklist
-- [ ] Update version numbers in all files
-- [ ] Update CHANGELOG.md with new features
-- [ ] Run full test suite
-- [ ] Build all platform packages
-- [ ] Test installation packages on clean systems
-
-### 2. Build Release Packages
-```bash
-# Clean build environment
-npm run clean
-
-# Build for all platforms
-npm run build:all
-
-# Verify package integrity
-# Test installation on target platforms
+```text
+src-tauri/target/debug/
+src-tauri/target/release/
 ```
 
-### 3. Package Verification
-- **Windows**: Test MSI and NSIS installers
-- **macOS**: Test DMG mounting and app installation
-- **Linux**: Test AppImage execution and DEB installation
+Installers and platform bundles are written below the corresponding `bundle` directory.
 
-### 4. Distribution
-- Upload packages to release platform
-- Update download links in documentation
-- Announce release with changelog
+Build release packages on their target operating system whenever possible. Windows MSI/NSIS, macOS application/DMG, and Linux DEB/RPM/AppImage packaging use host-specific tooling. The platform scripts in `package.json` select Rust targets; they do not install cross-compilers or replace target-platform testing.
 
-## 🔍 Troubleshooting
+## Version updates
 
-### Common Build Issues
+Keep the application version synchronized in:
 
-#### Windows
-- **WebView2 Error**: Install WebView2 Runtime
-- **MSVC Error**: Install Visual Studio Build Tools
-- **Permission Error**: Run as administrator
+- `Markdown Viewer/package.json`
+- `Markdown Viewer/src-tauri/Cargo.toml`
+- `Markdown Viewer/src-tauri/tauri.conf.json`
 
-#### macOS
-- **Code Signing**: Requires Apple Developer account for distribution
-- **Notarization**: Required for macOS 10.15+ distribution
-- **Gatekeeper**: Users may need to allow app in Security preferences
+Then update `CHANGELOG.md` and confirm that the lockfiles contain the intended dependency versions.
 
-#### Linux
-- **Missing Dependencies**: Install webkit2gtk and other system libraries
-- **AppImage Permissions**: Make AppImage executable (`chmod +x`)
-- **DEB Installation**: Use `sudo dpkg -i` or package manager
+## Release checklist
 
-### Build Optimization
-- **Bundle Size**: Use `--release` flag for smaller binaries
-- **Startup Time**: Optimize frontend dependencies
-- **Memory Usage**: Profile with development tools
+1. Run `npm ci` from a clean dependency installation.
+2. Run `npm test`.
+3. Run `npm run build:web` and inspect bundle warnings.
+4. Run `npm run tauri dev` and complete the manual smoke test.
+5. Build on each supported target operating system.
+6. Test every generated installer on a clean or representative machine.
+7. Test file associations, single-instance file forwarding, local file opening, saving, and exports.
+8. Confirm Code, Preview, and both Split orientations.
+9. Confirm Pure and Extended rendering with KaTeX and Mermaid enabled and disabled.
+10. Confirm application close silently restores dirty sessions, while document close still asks before discarding changes.
+11. Confirm the application works without network access.
 
-## 📊 Build Metrics
+## Troubleshooting
 
-### Target Specifications
-- **Bundle Size**: < 50MB for all platforms
-- **Startup Time**: < 2 seconds on modern hardware
-- **Memory Usage**: < 200MB for typical documents
-- **Build Time**: < 5 minutes for release builds
+### `light.exe` fails while creating an MSI
 
-### Performance Monitoring
-- Monitor bundle sizes across versions
-- Track startup performance on different platforms
-- Measure memory usage with various document sizes
-- Profile build times for optimization opportunities
+The native executable may already have compiled successfully. On current Windows versions, verify that the VBSCRIPT optional feature is enabled, then retry the bundle. Tauri documents this requirement in its [Windows installer guide](https://v2.tauri.app/distribute/windows-installer/).
 
----
+### Linux WebKit package cannot be found
 
-**For development setup and contribution guidelines, see README.md**
-**For detailed project architecture, see PROJECT_PLAN.md**
+Use a distribution supported by the current Tauri 2 prerequisites and install the WebKitGTK 4.1 package for that distribution. Do not substitute the Tauri 1 WebKitGTK 4.0 package list.
+
+### Frontend works but native operations fail
+
+Make sure the test was run with `npm run tauri dev`. The web-only server cannot provide native dialogs, filesystem permissions, single-instance handling, or Tauri commands.
+
+### Build reports large JavaScript chunks
+
+KaTeX, Mermaid, and CodeMirror have substantial optional/runtime chunks. Check that renderer chunks remain lazy and that no new import pulls them into the startup path. Treat a new or significantly larger startup chunk as a regression to investigate.

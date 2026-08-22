@@ -18,6 +18,7 @@ class PerformanceOptimizer {
     this.memoryPressureThreshold = 0.8; // 80% of available memory
     this.tabUnloadQueue = [];
     this.isLowPowerMode = false;
+    this.autoVirtualizationPaused = false;
     
     this.startMemoryMonitoring();
     this.setupPerformanceTracking();
@@ -30,22 +31,19 @@ class PerformanceOptimizer {
     // 1. Implement tab virtualization with lazy loading
     this.setupTabVirtualization();
     
-    // 2. Monaco editor pooling with smart disposal
-    this.setupMonacoPooling();
-    
-    // 3. Preview content caching with intelligent eviction
+    // 2. Preview content caching with intelligent eviction
     this.setupPreviewCaching();
     
-    // 4. Memory cleanup strategies with pressure detection
+    // 3. Memory cleanup strategies with pressure detection
     this.setupMemoryCleanup();
     
-    // 5. Phase 6: Lazy loading for inactive tabs
+    // 4. Phase 6: Lazy loading for inactive tabs
     this.setupLazyTabLoading();
     
-    // 6. Phase 6: Smart tab unloading for memory pressure
+    // 5. Phase 6: Smart tab unloading for memory pressure
     this.setupSmartTabUnloading();
     
-    // 7. Phase 6: Performance dashboard
+    // 6. Phase 6: Performance dashboard
     this.setupPerformanceDashboard();
   }
 
@@ -60,7 +58,7 @@ class PerformanceOptimizer {
   // Phase 6: Lazy loading for inactive tabs
   setupLazyTabLoading() {
     this.lazyLoadThreshold = 10; // Start lazy loading after 10 tabs
-    this.maxActiveEditors = 5; // Maximum Monaco editors to keep active
+    this.maxActiveDocuments = 5;
     
 
   }
@@ -87,65 +85,6 @@ class PerformanceOptimizer {
     
     // Track tab access patterns
     this.tabAccessPattern = new Map();
-  }
-
-  setupMonacoPooling() {
-    // Pool of Monaco editor instances to reuse
-    this.monacoPool = [];
-    this.maxPoolSize = 5;
-    
-    // Pre-create Monaco instances for faster tab switching
-    this.preCreateMonacoInstances();
-  }
-
-  preCreateMonacoInstances() {
-    // Create instances in background for instant tab switching
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        this.createPooledMonacoInstance();
-      }, i * 100);
-    }
-  }
-
-  createPooledMonacoInstance() {
-    if (typeof monaco === 'undefined') return;
-    
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.width = '800px';
-    container.style.height = '600px';
-    document.body.appendChild(container);
-    
-    const editor = monaco.editor.create(container, {
-      value: '',
-      language: 'markdown',
-      theme: 'vs',
-      automaticLayout: false
-    });
-    
-    this.monacoPool.push({
-      editor,
-      container,
-      inUse: false
-    });
-  }
-
-  getPooledMonacoInstance() {
-    const available = this.monacoPool.find(item => !item.inUse);
-    if (available) {
-      available.inUse = true;
-      return available;
-    }
-    
-    // Create new instance if pool is empty
-    this.createPooledMonacoInstance();
-    return this.monacoPool[this.monacoPool.length - 1];
-  }
-
-  releaseMonacoInstance(instance) {
-    instance.inUse = false;
-    instance.editor.setValue('');
   }
 
   setupPreviewCaching() {
@@ -197,14 +136,30 @@ class PerformanceOptimizer {
     this.setupTabCloseCleanup();
   }
 
-  performMemoryCleanup() {
+  performMemoryCleanup({ aggressive = false } = {}) {
+    const previewEntriesBefore = this.previewCache?.size || 0;
+    let editorDocumentsDisposed = 0;
 
-    
-    // Clear old preview cache entries
-    this.cleanupPreviewCache();
-    
-    // Release unused Monaco instances
-    this.cleanupMonacoPool();
+    // A manual cleanup is intentionally stronger than the periodic sweep.
+    // Cached HTML and inactive CodeMirror documents can always be recreated
+    // from the canonical tab content, so releasing them cannot lose work.
+    if (aggressive) {
+      this.autoVirtualizationPaused = false;
+      this.previewCache?.clear();
+
+      const editor = window.markdownEditor?.editorComponent?.getEditorAdapter?.();
+      const tabManager = window.markdownEditor?.tabManager;
+      const activeTabId = tabManager?.getActiveTab()?.id;
+      for (const tab of tabManager?.getAllTabs?.() || []) {
+        if (tab.id !== activeTabId && tab.editorDocument) {
+          tab.disposeEditorDocument(editor);
+          this.virtualizedTabs.add(tab.id);
+          editorDocumentsDisposed++;
+        }
+      }
+    } else {
+      this.cleanupPreviewCache();
+    }
     
     // Force garbage collection if available
     if (window.gc) {
@@ -213,6 +168,11 @@ class PerformanceOptimizer {
     
     // Log memory usage
     this.logMemoryUsage();
+
+    return {
+      previewEntriesCleared: previewEntriesBefore - (this.previewCache?.size || 0),
+      editorDocumentsDisposed
+    };
   }
 
   cleanupPreviewCache() {
@@ -224,32 +184,6 @@ class PerformanceOptimizer {
         this.previewCache.delete(key);
       }
     }
-  }
-
-  cleanupMonacoPool() {
-    // Remove excess unused instances efficiently
-    const toKeep = [];
-    const toRemove = [];
-    let unusedCount = 0;
-    
-    for (const item of this.monacoPool) {
-      if (item.inUse) {
-        toKeep.push(item);
-      } else if (unusedCount < this.maxPoolSize) {
-        toKeep.push(item);
-        unusedCount++;
-      } else {
-        toRemove.push(item);
-      }
-    }
-    
-    // Dispose removed instances
-    toRemove.forEach(item => {
-      item.editor.dispose();
-      item.container.remove();
-    });
-    
-    this.monacoPool = toKeep;
   }
 
   setupTabCloseCleanup() {
@@ -345,6 +279,8 @@ class PerformanceOptimizer {
   
   // Phase 6: Force virtualization for testing
   forceVirtualization(tabCount) {
+    if (this.autoVirtualizationPaused) return;
+
     // Don't create fake tabs - only virtualize real tabs
     if (window.markdownEditor?.tabManager) {
       const allTabs = window.markdownEditor.tabManager.getAllTabs();
@@ -471,9 +407,9 @@ class PerformanceOptimizer {
   }
 
   // Performance benchmarking for multi-tab operations
-  benchmarkTabOperation(operation, startTime, tabCount = 1) {
+  benchmarkTabOperation(operation, startTime, tabCount = 1, targetOverride = null) {
     const duration = performance.now() - startTime;
-    const target = this.getTargetForOperation(operation);
+    const target = targetOverride ?? this.getTargetForOperation(operation);
     
     // Only log slow operations
     if (target && duration > target) {
@@ -528,8 +464,6 @@ class PerformanceOptimizer {
       memoryTrend: memoryMetrics,
       cacheStats: {
         previewCacheSize: this.previewCache?.size || 0,
-        monacoPoolSize: this.monacoPool?.length || 0,
-        monacoPoolInUse: this.monacoPool?.filter(item => item.inUse).length || 0,
         virtualizedTabs: this.virtualizedTabs.size,
         inactiveTabsData: this.inactiveTabsData.size
       },
@@ -564,7 +498,10 @@ class PerformanceOptimizer {
     
     if (cleanupBtn) {
       cleanupBtn.addEventListener('click', () => {
-        this.performMemoryCleanup();
+        const result = this.performMemoryCleanup({ aggressive: true });
+        this.showPerformanceActionStatus(
+          `Memory cleaned: ${result.previewEntriesCleared} cached preview(s) and ${result.editorDocumentsDisposed} inactive editor document(s) released.`
+        );
         // Update dashboard immediately and again after cleanup
         this.updatePerformanceDashboard();
         setTimeout(() => this.updatePerformanceDashboard(), 100);
@@ -575,12 +512,24 @@ class PerformanceOptimizer {
     const clearVirtualBtn = document.getElementById('perf-clear-virtual-btn');
     if (clearVirtualBtn) {
       clearVirtualBtn.addEventListener('click', () => {
-        this.clearAllVirtualTabs();
+        const result = this.clearAllVirtualTabs();
+        this.showPerformanceActionStatus(
+          result.virtualTabsCleared > 0
+            ? `${result.virtualTabsCleared} virtual tab(s) restored. No documents were closed.`
+            : 'No virtual tabs needed restoring.'
+        );
         // Update dashboard immediately and again after cleanup
         this.updatePerformanceDashboard();
         setTimeout(() => this.updatePerformanceDashboard(), 100);
       });
     }
+  }
+
+  showPerformanceActionStatus(message) {
+    const status = document.getElementById('perf-action-status');
+    if (!status) return;
+    status.textContent = message;
+    status.classList.add('show');
   }
   
   // Phase 6: Check if we're in debug mode
@@ -637,12 +586,6 @@ class PerformanceOptimizer {
     if (actualTabCount === 0) {
       this.virtualizedTabs.clear();
       virtualCount = 0;
-    }
-    
-    // Force virtualization if we have many tabs
-    if (actualTabCount > 15 && virtualCount === 0) {
-      this.forceVirtualization(actualTabCount);
-      virtualCount = this.virtualizedTabs.size;
     }
     
     const tabCountText = `${actualTabCount} (${virtualCount} virtual)`;
@@ -943,8 +886,13 @@ class PerformanceOptimizer {
   
   // Manual cleanup for virtual tabs when all tabs are closed
   clearAllVirtualTabs() {
+    const virtualTabsCleared = this.virtualizedTabs.size;
+    for (const tabId of this.virtualizedTabs) this.restoreTab(tabId);
 
-    
+    // Respect the explicit manual action for the rest of this session. A
+    // later Clean Memory action or application restart can enable automatic
+    // virtualization again.
+    this.autoVirtualizationPaused = true;
     this.virtualizedTabs.clear();
     this.lastAccessTime.clear();
     this.tabAccessPattern.clear();
@@ -956,8 +904,7 @@ class PerformanceOptimizer {
     if (window.gc) {
       window.gc();
     }
-    
-
+    return { virtualTabsCleared };
   }
   
   // Phase 6: Enhanced cleanup with tab tracking
@@ -975,14 +922,6 @@ class PerformanceOptimizer {
     
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
-    }
-    
-    // Clean up Monaco pool
-    if (this.monacoPool) {
-      this.monacoPool.forEach(item => {
-        if (item.editor) item.editor.dispose();
-        if (item.container) item.container.remove();
-      });
     }
     
     // Clear all maps and caches

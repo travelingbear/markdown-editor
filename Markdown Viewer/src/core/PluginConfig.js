@@ -10,17 +10,35 @@ class PluginConfig {
   loadConfig() {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      return stored ? JSON.parse(stored) : {
-        enabledPlugins: [], // Sample plugin enabled by default
-        pluginSettings: {}
+      if (!stored) return this.createDefaultConfig();
+
+      const parsed = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Plugin configuration must be an object');
+      }
+
+      return {
+        systemEnabled: parsed.systemEnabled !== false,
+        enabledPlugins: Array.isArray(parsed.enabledPlugins)
+          ? [...new Set(parsed.enabledPlugins.filter((pluginId) => typeof pluginId === 'string'))]
+          : [],
+        initializedPlugins: Array.isArray(parsed.initializedPlugins)
+          ? [...new Set(parsed.initializedPlugins.filter((pluginId) => typeof pluginId === 'string'))]
+          : [],
+        pluginSettings: parsed.pluginSettings
+          && typeof parsed.pluginSettings === 'object'
+          && !Array.isArray(parsed.pluginSettings)
+          ? parsed.pluginSettings
+          : {}
       };
     } catch (error) {
       console.error('[PluginConfig] Failed to load config:', error);
-      return {
-        enabledPlugins: [],
-        pluginSettings: {}
-      };
+      return this.createDefaultConfig();
     }
+  }
+
+  createDefaultConfig() {
+    return { systemEnabled: true, enabledPlugins: [], initializedPlugins: [], pluginSettings: {} };
   }
 
   saveConfig() {
@@ -35,6 +53,15 @@ class PluginConfig {
 
   isPluginEnabled(pluginId) {
     return this.config.enabledPlugins.includes(pluginId);
+  }
+
+  isSystemEnabled() {
+    return this.config.systemEnabled !== false;
+  }
+
+  setSystemEnabled(enabled) {
+    this.config.systemEnabled = enabled === true;
+    return this.saveConfig();
   }
 
   enablePlugin(pluginId) {
@@ -60,6 +87,17 @@ class PluginConfig {
     return [...this.config.enabledPlugins];
   }
 
+  ensurePluginDefault(pluginId, enabledByDefault = false) {
+    if (this.config.initializedPlugins.includes(pluginId)) return false;
+
+    this.config.initializedPlugins.push(pluginId);
+    if (enabledByDefault && !this.config.enabledPlugins.includes(pluginId)) {
+      this.config.enabledPlugins.push(pluginId);
+    }
+    this.saveConfig();
+    return enabledByDefault;
+  }
+
   getPluginSetting(pluginId, key, defaultValue = null) {
     return this.config.pluginSettings[pluginId]?.[key] ?? defaultValue;
   }
@@ -69,7 +107,7 @@ class PluginConfig {
       this.config.pluginSettings[pluginId] = {};
     }
     this.config.pluginSettings[pluginId][key] = value;
-    this.saveConfig();
+    return this.saveConfig();
   }
 
   getPluginSettings(pluginId) {
@@ -82,10 +120,8 @@ class PluginConfig {
   }
 
   resetAllConfig() {
-    this.config = {
-      enabledPlugins: [],
-      pluginSettings: {}
-    };
+    const initializedPlugins = [...this.config.initializedPlugins];
+    this.config = { ...this.createDefaultConfig(), initializedPlugins };
     this.saveConfig();
   }
 }

@@ -1,6 +1,6 @@
 # Markdown Editor - Complete User Manual
 
-*Version 2.0 - A comprehensive guide to mastering your markdown editing experience*
+*Version 3.3 Development - A comprehensive guide to the current markdown editing experience*
 
 ---
 
@@ -29,11 +29,12 @@ Welcome to the Markdown Editor, a powerful application designed to provide you w
 
 The application requires no complex configuration to get started. Simply launch the executable file, and you're ready to begin editing. The interface automatically adapts to your system's theme preferences.
 
-**New in Version 2.0:**
-- Enhanced startup performance (<60ms)
-- Plugin system (disabled by default)
-- Context menu integration
-- Performance monitoring dashboard
+**Current development highlights:**
+- Lightweight CodeMirror editor and component-based startup
+- Pure Markdown and Extended rendering modes
+- Dedicated Plugin Manager with persistent plugin settings
+- Lazy local KaTeX renderer with strict false-positive protection
+- Per-document tab, scroll, and unsaved-change state
 
 ---
 
@@ -51,14 +52,28 @@ The toolbar includes:
 - **Editing Tools**: Undo, Redo, Find & Replace
 - **View Controls**: Theme toggle, Distraction-free mode, Settings
 - **Export Options**: HTML export, PDF printing
+- **Optional Quick Controls**: Markdown rendering and Pinned Tabs controls can be pinned after Export; narrow windows combine them under Quick
+
+### Welcome Screen
+
+- **New and Open**: Start a document or select existing files without entering an editor mode first
+- **Help and About**: Open the same application modals used by the toolbar
+- **Settings**: Opens fully refreshed application, performance, system, and plugin information, just like `Ctrl+,` and the toolbar Settings button
+- **Clear History**: Removes the recent-file list without closing current or persisted tabs
 
 ### Enhanced Tab System
 
 The tab system now supports:
 - **Smart Dropdown**: Shows 9 most recent tabs with numbers
-- **Tab Modal**: Search and navigate all open tabs (Ctrl+Shift+Tab)
+- **Tab Modal**: Search and navigate all open tabs (Ctrl+Shift+M)
 - **Context Menus**: Right-click for advanced tab operations
 - **Performance Virtualization**: Handles 50+ tabs efficiently
+- **Consistent Document State**: Open, reload, edit, save, and dirty-state events update the active tab, toolbar, and optional pinned tabs together
+- **Consistent Editor State**: Editing updates the active tab and Preview immediately, while cursor position remains attached to the correct document when switching tabs
+
+### Retro Startup Sound
+
+When the Retro theme and Startup Sound setting are enabled, the bundled local clip is loaded and decoded before playback begins. This can introduce a brief delay on the first launch after rebuilding, but prevents the sound from pausing while the application is still loading. Use **Settings → Appearance → Startup Sound → Test** to replay the cached clip.
 
 ---
 
@@ -67,10 +82,11 @@ The tab system now supports:
 ### Multi-Mode Editing Experience
 
 #### Code Mode
-- **Monaco Editor Integration**: Professional-grade editing with VS Code engine
+- **CodeMirror Integration**: Lightweight editing suitable for lower-end Windows and Linux systems
 - **Syntax Highlighting**: Full markdown syntax support
-- **Advanced Search**: Regex support, case-sensitive matching
-- **Multi-cursor Editing**: Block selection and simultaneous editing
+- **Search and Replace**: Ctrl+F toggles Find and Ctrl+H toggles Replace without changing the editor layout
+- **Editing History**: Ctrl+Z and Ctrl+Y perform single-step undo and redo
+- **Formatting Toggles**: Bold and italic may be combined; toggling Italic on `***bold italic***` retains the bold layer instead of adding more asterisks
 - **Scroll Position Memory**: Remembers cursor and scroll positions
 
 #### Preview Mode
@@ -82,15 +98,16 @@ The tab system now supports:
 
 #### Split Mode
 - **Synchronized Views**: Code and preview side-by-side
-- **Independent Scrolling**: Each pane scrolls independently
-- **Adjustable Split**: Drag divider to resize panes
+- **Coordinated Scrolling**: Code and preview retain the same document-relative position across mode changes
+- **Adjustable Split**: Drag the divider to resize pane widths vertically or pane heights when the Horizontal Split plugin is active
 - **Unified Operations**: Actions affect both panes appropriately
 
 ### File Operations
 
 #### Opening Files
 - **Traditional Dialog**: Ctrl+O opens file picker
-- **Drag & Drop**: Drop files directly onto window
+- **Drag & Drop to open**: Drop a Markdown or text file on the welcome screen, toolbar, or Preview pane to open it. Dropping an already-open path activates its existing tab.
+- **Drag & Drop in Code mode**: With a document open, drop files into the Code editor to insert their names or native paths at the drop position.
 - **File Associations**: Double-click .md files in explorer
 - **Multiple Files**: Each file opens in new tab
 
@@ -100,13 +117,19 @@ The tab system now supports:
 - **Auto-save Indicators**: Visual cues for unsaved changes
 - **Dropdown Options**: Save with encoding options
 
+#### Closing Documents and the Application
+
+- **Close a document**: If the document has unsaved changes, the application asks whether to close without saving or return to the document.
+- **Close the application**: No save prompt is shown. Open tabs, modified content, dirty indicators, cursor positions, and scroll positions are retained in the local session and restored when the application is launched again.
+- **Important**: Session recovery protects work between application launches, but it does not replace saving important documents to a file.
+
 ---
 
 ## Advanced Functionality
 
 ### Mathematical Expression Support
 
-Full KaTeX integration for publication-quality mathematical notation:
+KaTeX is a bundled local renderer plugin. It is enabled by default for compatibility, but its runtime and styles remain unloaded until Extended rendering encounters configured math syntax. No CDN or network service is used.
 
 ```latex
 $$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$
@@ -116,9 +139,31 @@ Inline math: $E = mc^2$
 Matrix notation: $\begin{pmatrix} a & b \\ c & d \end{pmatrix}$
 ```
 
+#### Rendering mode requirements
+
+- **Pure Markdown** leaves all dollar-delimited text unchanged and never invokes KaTeX.
+- **Extended** allows enabled renderer plugins to process their syntax.
+- Disabling the KaTeX plugin immediately returns formulas to literal Markdown.
+
+#### KaTeX plugin settings
+
+Open **Settings → Plugins → Manager → KaTeX Math Renderer**. Hover over any configuration row for one second to see its explanation.
+
+- **Detection — Strict**: Requires recognizable mathematical syntax. Prices such as `$5`, shell variables such as `$PATH`, ordinary prose, escaped dollars, and text inside code are ignored.
+- **Detection — Permissive**: Accepts any correctly paired dollar-delimited text for compatibility with older documents.
+- **Inline `$…$`**: Enables or disables single-dollar inline formulas independently.
+- **Display `$$…$$`**: Enables or disables double-dollar block formulas independently.
+- **Invalid Formulas — Keep Source**: Leaves invalid expressions unchanged.
+- **Invalid Formulas — Show Warning**: Displays KaTeX's visible error output.
+- **Bundled Runtime**: A read-only status that shows Not Loaded until real math is encountered, then reports the bundled local KaTeX version.
+
+System Info reports **Disabled** only when the plugin is disabled or unavailable, **Not Loaded** when it is enabled but still lazy, and **Loaded (version)** after the first formula is rendered.
+
 ### Diagram Creation
 
-Mermaid.js integration supports multiple diagram types:
+Mermaid is a bundled local renderer plugin. It is enabled by default, but its runtime and feature styles remain unloaded until Extended rendering encounters a fenced code block labelled `mermaid`. No CDN or external rendering service is used. In Pure Markdown mode, or while the plugin is disabled, the diagram remains a normal readable code block.
+
+Mermaid supports multiple diagram types:
 
 ```mermaid
 graph TD
@@ -134,6 +179,20 @@ sequenceDiagram
     A->>B: Hello Bob!
     B-->>A: Hello Alice!
 ```
+
+#### Mermaid plugin settings
+
+Open **Settings → Plugins → Manager → Mermaid Diagram Renderer**. Hover over any configuration row for one second to see its explanation.
+
+- **Theme — Application**: Uses Mermaid's dark theme when the application is dark and its default theme otherwise.
+- **Theme — Default/Dark/Neutral/Forest**: Keeps that fixed diagram theme regardless of the application theme.
+- **Maximum Width**: Fits flowcharts and pie charts to the preview width; disable it to preserve Mermaid's intrinsic width.
+- **Invalid Diagrams — Keep Source**: Restores a readable `mermaid` code block when Mermaid rejects the diagram.
+- **Invalid Diagrams — Show Warning**: Displays the source and Mermaid's error message.
+- **Security — Strict**: This is intentionally fixed. Mermaid uses strict security, and the application sanitizes and parses the generated SVG into DOM nodes before displaying it.
+- **Bundled Runtime**: A read-only status that shows Not Loaded until the first Mermaid fence is encountered, then reports the pinned Mermaid version without fetching package metadata or accessing the network.
+
+System Info reports **Disabled** only when the Mermaid plugin is disabled or unavailable, **Not Loaded** while the enabled runtime remains lazy, and **Loaded (version)** after the first diagram is rendered.
 
 ### Interactive Task Lists
 
@@ -171,10 +230,11 @@ Click checkboxes in Preview mode to toggle states. Changes automatically sync to
 #### Tab Dropdown
 - **Recent 9 Tabs**: Shows most recently accessed files
 - **Numbered Access**: Alt+1-9 for quick switching
+- **Sequential Access**: Ctrl+Tab and Ctrl+Shift+Tab move forward and backward with wraparound
 - **Visual Indicators**: Shows dirty state, active tab
 - **Overflow Handling**: "More" button for additional tabs
 
-#### Tab Modal (Ctrl+Shift+Tab)
+#### Tab Modal (Ctrl+Shift+M)
 - **Search Functionality**: Filter tabs by filename
 - **Keyboard Navigation**: Arrow keys and Enter to select
 - **Batch Operations**: Close multiple tabs
@@ -189,6 +249,7 @@ Click checkboxes in Preview mode to toggle states. Changes automatically sync to
 - **Duplicate Tab**: Create copy of current tab
 - **Reveal in Explorer**: Show file in system file manager
 - **Move to Position**: Move tab to specific position (1-9)
+- **Command Ownership**: Context commands update the same tab collection used by pinned tabs, the status-bar list, and session restoration
 
 #### Advanced Features
 - **Tab Persistence**: Restores all tabs on app restart
@@ -238,14 +299,16 @@ Right-click on tabs for:
 The application features an extensible plugin system for enhanced functionality:
 
 #### Plugin Management
-- **Settings Integration**: Manage plugins in Settings > Plugins
-- **Enable/Disable**: Toggle plugins without restart
+- **Settings Integration**: Use Settings > Plugins for the system switch and concise plugin controls, then select Manager for plugin-specific tabs
+- **Enable/Disable**: Toggle plugins without restarting; repeat clicks do not leave controls stuck in transitional states
 - **Status Indicators**: Visual feedback for plugin state
-- **Refresh System**: Reload plugins while preserving states
+- **Reload and Reset**: Reload plugins while preserving choices, or reset one plugin without affecting another
 
 #### Default Configuration
-- **Disabled by Default**: All plugins start disabled for security
-- **Manual Activation**: Users must explicitly enable plugins
+- **KaTeX Compatibility Default**: KaTeX is enabled the first time this version discovers it, preserving existing Extended-rendering behavior
+- **Mermaid Compatibility Default**: Mermaid is enabled the first time this version discovers it, preserving existing Extended-rendering behavior
+- **User Choice Wins**: Once a plugin is enabled or disabled, that choice persists across restarts
+- **Master Pause**: The plugin system can pause all plugin code without forgetting which plugins should resume
 - **State Persistence**: Plugin preferences saved across sessions
 
 #### Plugin Development
@@ -254,13 +317,11 @@ The application features an extensible plugin system for enhanced functionality:
 - **UI Integration**: Add custom UI elements
 - **File Operations**: Access to file system through secure API
 
-### Sample Plugin
+### Bundled Plugins
 
-The application includes a sample plugin demonstrating:
-- **Basic Structure**: Plugin architecture example
-- **API Usage**: How to interact with application
-- **Event Handling**: Responding to application events
-- **UI Integration**: Adding custom interface elements
+- **KaTeX Math Renderer**: Lazy local math rendering and syntax-detection controls
+- **Mermaid Diagram Renderer**: Lazy local diagrams with theme, sizing, failure, security, and runtime controls
+- **Horizontal Split**: Vertical/horizontal split orientation, toolbar visibility, and pane order
 
 ---
 
@@ -309,7 +370,7 @@ Access via Settings > Performance for real-time monitoring:
 
 ### Theme Selection
 
-Three carefully crafted themes:
+Four carefully crafted themes:
 
 #### Light Theme
 - **Clean Interface**: Bright, professional appearance
@@ -326,6 +387,11 @@ Three carefully crafted themes:
 - **MS Sans Serif Font**: Period-appropriate typography
 - **3D Interface Elements**: Classic raised/inset button styling
 - **Nostalgic Color Scheme**: Gray backgrounds with navy accents
+- **Readable Code Blocks**: Fenced code uses a 14px monospace font while normal preview text remains compact
+
+#### High Contrast Theme
+- **Maximum Separation**: Strong foreground, background, and border contrast
+- **Accessible Syntax Colors**: Distinct editor and preview code highlighting
 
 ### Font and Display Settings
 
@@ -367,7 +433,7 @@ Three carefully crafted themes:
 - **Image Support**: Local and remote image rendering
 
 #### Advanced Extensions
-- **KaTeX Mathematics**: LaTeX-style mathematical expressions
+- **KaTeX Mathematics**: Lazy, plugin-owned LaTeX-style mathematical expressions
 - **Mermaid Diagrams**: Text-based diagram creation
 - **Interactive Elements**: Clickable task lists and links
 - **Custom Styling**: Theme-aware rendering
@@ -375,15 +441,18 @@ Three carefully crafted themes:
 ### Performance Architecture
 
 #### Frontend Technologies
-- **Monaco Editor**: VS Code editing engine
+- **CodeMirror**: Lightweight code editing engine
 - **Marked.js**: Fast markdown parsing
 - **KaTeX**: Mathematical typesetting
 - **Mermaid.js**: Diagram rendering
+- **Staged Bootstrap**: Loads the maintained component graph and registered plugins without legacy application entry points or sample code
 - **Highlight.js**: Syntax highlighting
+- **Local Asset Set**: Keeps only artwork and audio used by the native application; the welcome screen and browser shell share a compact branded icon
 
 #### Backend Technologies
 - **Rust/Tauri**: Native performance with web flexibility
 - **File System Integration**: Secure file operations
+- **Native Window Lifecycle**: Window-close session persistence and files forwarded from a second launch are handled by a focused controller with disposable listeners
 - **Memory Management**: Efficient resource utilization
 - **Cross-platform**: Windows, macOS, Linux support
 
@@ -419,8 +488,9 @@ Three carefully crafted themes:
 - **Encoding Problems**: Use Save As with specific encoding
 
 #### Rendering Issues
-- **Math Not Displaying**: Check KaTeX syntax validity
-- **Diagrams Not Rendering**: Verify Mermaid syntax
+- **Math Not Displaying**: Confirm Extended mode, enable the KaTeX plugin, verify its inline/display setting, and check formula validity
+- **Dollar Text Rendered as Math**: Select Strict detection in the KaTeX plugin; escape intentional currency delimiters with `\$` where necessary
+- **Diagrams Not Rendering**: Confirm Extended mode, enable the Mermaid plugin, verify the fence is labelled `mermaid`, and check the Invalid Diagrams setting for a readable error
 - **Theme Problems**: Reset theme settings to default
 - **Font Issues**: Clear font cache and restart
 
@@ -455,23 +525,28 @@ Three carefully crafted themes:
 - `F5` - Reload file
 
 #### View Modes
-- `Ctrl+1` - Code mode
-- `Ctrl+2` - Preview mode
-- `Ctrl+3` - Split mode
+- `Ctrl+Shift+1` - Code mode
+- `Ctrl+Shift+2` - Preview mode
+- `Ctrl+Shift+3` - Split mode
 
 #### Tab Navigation
 - `Alt+1-9` - Switch to numbered tab
 - `Ctrl+Tab` - Next tab
-- `Ctrl+Shift+Tab` - Open tab modal
+- `Ctrl+Shift+Tab` - Previous tab
+- `Ctrl+Shift+M` - Open tab modal
 - `Ctrl+W` - Close current tab
 
 #### Editor Controls
-- `Ctrl+F` - Find/Replace
+- `Ctrl+1` / `Ctrl+2` / `Ctrl+3` - Heading 1/2/3 in Code mode
+- `Ctrl+F` - Toggle Find
+- `Ctrl+H` - Toggle Find and Replace
 - `Ctrl+Z` - Undo
 - `Ctrl+Y` - Redo
 - `Ctrl+=` - Zoom in (Preview)
 - `Ctrl+-` - Zoom out (Preview)
 - `Ctrl+0` - Reset zoom
+- `Ctrl+P` - Print/export PDF
+- `Ctrl+Shift+E` - Export HTML
 
 #### Application
 - `Ctrl+T` - Toggle theme
@@ -533,8 +608,10 @@ Three carefully crafted themes:
 
 ---
 
-*This manual represents the complete feature set of Markdown Editor v2.0. For additional support or feature requests, please refer to the project documentation.*
+*This manual represents the current development feature set. Developers should use `TECHNICAL_DOCUMENTATION.md` for architecture and `BUILD_GUIDE.md` for build and release instructions.*
 
-**Document Version**: 2.0  
-**Last Updated**: December 2024  
-**Application Version**: 2.0+
+**Document Version**: 3.3 Development
+
+**Last Updated**: August 2026
+
+**Application Version**: 3.2.1 development branch

@@ -5,8 +5,8 @@ description = "A powerful native desktop markdown viewer and editor with real-ti
 authors = ["Markdown Viewer Team"]
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/markdown-viewer/markdown-viewer"
-homepage = "https://markdown-viewer.app"
+repository = "https://github.com/travelingbear/markdown-editor"
+homepage = "https://github.com/travelingbear/markdown-editor"
 keywords = ["markdown", "editor", "viewer", "desktop", "tauri"]
 categories = ["text-editors", "development-tools"]
 
@@ -32,4 +32,3 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 base64 = "0.21"
 dirs = "5.0"
-

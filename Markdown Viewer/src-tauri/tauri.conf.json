@@ -4,7 +4,10 @@
   "version": "3.2.1",
   "identifier": "com.markdownviewer.desktop",
   "build": {
-    "frontendDist": "../src"
+    "beforeDevCommand": "npm run dev:web",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build:web",
+    "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,
@@ -22,7 +25,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' data: https: http: file: asset: tauri:; media-src 'self' data: https: http: file: asset: tauri:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; connect-src 'self' https: http: ipc: tauri:; font-src 'self' https: data:;",
+      "csp": "default-src 'self' customprotocol: asset:; img-src 'self' data: blob: https: http: asset: http://asset.localhost; media-src 'self' data: blob: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost; font-src 'self' data:; worker-src 'self' blob:;",
       "capabilities": [
         {
           "identifier": "main-capability",
@@ -85,7 +88,7 @@
     "copyright": "Copyright © 2024 Markdown Viewer Team",
     "category": "Productivity",
     "shortDescription": "Professional markdown viewer and editor",
-    "longDescription": "A powerful native desktop markdown viewer and editor built with Tauri + Rust + TypeScript. Features three-mode interface, Monaco Editor, real-time preview, KaTeX math, Mermaid diagrams, and advanced export options.",
+    "longDescription": "A lightweight native desktop markdown viewer and editor built with Tauri and Rust. Features a three-mode interface, CodeMirror editing, real-time preview, local KaTeX math, Mermaid diagrams, and export options.",
     "icon": [
       "icons/favicon.ico",
       "icons/32x32.png",

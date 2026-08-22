@@ -5,12 +5,24 @@
 class KeyboardController extends BaseComponent {
   constructor(options = {}) {
     super('KeyboardController', options);
-    
-    // References to other components (injected)
-    this.markdownEditor = null;
+
+    // Explicit dependencies keep this controller independent of the
+    // MarkdownEditor composition root.
+    this.documentComponent = null;
     this.fileController = null;
     this.uiController = null;
     this.tabManager = null;
+    this.modeController = null;
+    this.toolbarComponent = null;
+    this.markdownActionController = null;
+    this.pluginModalController = null;
+    this.tabUIController = null;
+    this.exportController = null;
+    this.performanceOptimizer = null;
+    this.actions = {};
+
+    this.boundKeydownHandler = (event) => this.handleKeyboardShortcuts(event);
+    this.boundWheelHandler = (event) => this.handleMouseWheelShortcuts(event);
   }
 
   async onInit() {
@@ -18,32 +30,47 @@ class KeyboardController extends BaseComponent {
   }
 
   // Inject dependencies
-  setDependencies(markdownEditor, fileController, uiController, tabManager) {
-    this.markdownEditor = markdownEditor;
+  setDependencies({
+    documentComponent,
+    fileController,
+    uiController,
+    tabManager,
+    modeController,
+    toolbarComponent,
+    markdownActionController,
+    pluginModalController,
+    tabUIController,
+    exportController,
+    performanceOptimizer,
+    actions = {}
+  }) {
+    this.documentComponent = documentComponent;
     this.fileController = fileController;
     this.uiController = uiController;
     this.tabManager = tabManager;
+    this.modeController = modeController;
+    this.toolbarComponent = toolbarComponent;
+    this.markdownActionController = markdownActionController;
+    this.pluginModalController = pluginModalController;
+    this.tabUIController = tabUIController;
+    this.exportController = exportController;
+    this.performanceOptimizer = performanceOptimizer;
+    this.actions = actions;
   }
 
   setupKeyboardEventHandlers() {
-    // Use capture phase for keyboard to intercept F1 before Monaco
-    document.addEventListener('keydown', (e) => {
-      this.handleKeyboardShortcuts(e);
-    }, true);
-    
-    document.addEventListener('wheel', (e) => {
-      this.handleMouseWheelShortcuts(e);
-    }, { passive: false });
-    
-    this.setupTabKeyboardShortcuts();
+    // Use capture phase so application shortcuts take precedence over the editor.
+    document.addEventListener('keydown', this.boundKeydownHandler, true);
+    document.addEventListener('wheel', this.boundWheelHandler, { passive: false });
   }
 
   handleKeyboardShortcuts(e) {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
     const useCtrlForModes = e.ctrlKey || (!isMac && e.metaKey);
     const useCtrlForOther = e.ctrlKey || e.metaKey;
+    const currentMode = this.modeController.getCurrentMode();
     
-    // Handle F1 globally to override Monaco's command palette
+    // Handle F1 globally for application help.
     if (e.key === 'F1') {
       e.preventDefault();
       e.stopPropagation();
@@ -55,30 +82,33 @@ class KeyboardController extends BaseComponent {
       switch (e.key) {
         case 'n':
           e.preventDefault();
-          this.fileController.newFile(this.tabManager);
+          this.fileController.newFile(this.documentComponent, this.tabManager);
           break;
         case 'o':
           e.preventDefault();
-          this.fileController.openFile(this.markdownEditor.documentComponent, this.tabManager);
+          this.fileController.openFile(this.documentComponent, this.tabManager);
           break;
         case 's':
         case 'S':
           e.preventDefault();
           if (e.shiftKey) {
-            this.fileController.saveAsFile(this.markdownEditor.documentComponent, this.tabManager);
+            this.fileController.saveAsFile(this.documentComponent, this.tabManager);
           } else {
-            this.fileController.saveFile(this.markdownEditor.documentComponent, this.tabManager);
+            this.fileController.saveFile(this.documentComponent, this.tabManager);
           }
           break;
         case 'w':
           e.preventDefault();
-          this.fileController.closeFile(this.tabManager, this.markdownEditor.performanceOptimizer);
+          this.fileController.closeFile(
+            this.documentComponent,
+            this.tabManager,
+            this.performanceOptimizer
+          );
           break;
         case 't':
-        case '/':
+        case 'T':
           e.preventDefault();
-          const themeData = this.uiController.toggleTheme();
-          this.markdownEditor.handleThemeChange(themeData);
+          this.uiController.toggleTheme();
           break;
         case ',':
           e.preventDefault();
@@ -88,73 +118,111 @@ class KeyboardController extends BaseComponent {
         case 'M':
           if (e.shiftKey) {
             e.preventDefault();
-            this.markdownEditor.showTabModal();
+            this.tabUIController.showTabModal();
           }
           break;
         case 'p':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.markdownEditor.exportToPdf();
-          }
+        case 'P':
+          e.preventDefault();
+          this.exportController.exportToPdf();
           break;
         case 'e':
+        case 'E':
           if (e.shiftKey) {
             e.preventDefault();
-            this.markdownEditor.exportToHtml();
+            this.exportController.exportToHtml();
           }
           break;
         case 'f':
-          if (this.markdownEditor.currentMode !== 'preview') {
+        case 'F':
+          if (currentMode === 'code' || currentMode === 'split') {
             e.preventDefault();
-            this.markdownEditor.openFindReplace();
+            e.stopImmediatePropagation();
+            this.actions.toggleFindReplace(false);
+          }
+          break;
+        case 'h':
+        case 'H':
+          if (currentMode === 'code' || currentMode === 'split') {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            this.actions.toggleFindReplace(true);
           }
           break;
         case 'r':
           e.preventDefault();
-          this.markdownEditor.performManualScrollSync();
+          this.actions.performManualScrollSync();
           break;
         case '?':
+        case '/':
           if (e.shiftKey) {
             e.preventDefault();
-            this.markdownEditor.toggleMarkdownToolbar();
+            this.actions.toggleMarkdownToolbar();
+          }
+          break;
+        case '=':
+        case '+':
+          e.preventDefault();
+          if (currentMode === 'code') {
+            this.toolbarComponent.changeFontSize(2);
+          } else if (currentMode === 'preview' || currentMode === 'split') {
+            this.toolbarComponent.changeZoom(0.1);
+          }
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          if (currentMode === 'code') {
+            this.toolbarComponent.changeFontSize(-2);
+          } else if (currentMode === 'preview' || currentMode === 'split') {
+            this.toolbarComponent.changeZoom(-0.1);
+          }
+          break;
+        case '0':
+          e.preventDefault();
+          if (currentMode === 'code') {
+            this.toolbarComponent.resetFontSize();
+          } else if (currentMode === 'preview' || currentMode === 'split') {
+            this.toolbarComponent.resetZoom();
           }
           break;
       }
     }
     
-    // Mode switching
-    if (useCtrlForModes) {
-      switch (e.key) {
-        case '1':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.markdownEditor.setMode('code');
-          }
-          break;
-        case '2':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.markdownEditor.setMode('preview');
-          }
-          break;
-        case '3':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.markdownEditor.setMode('split');
-          }
-          break;
+    // Use the physical digit code because Shift changes event.key to !, @, #,
+    // or locale-specific symbols on different keyboard layouts.
+    const shortcutDigit = ({ Digit1: '1', Digit2: '2', Digit3: '3' })[e.code]
+      || (['1', '2', '3'].includes(e.key) ? e.key : null);
+    if (useCtrlForModes && shortcutDigit) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (e.shiftKey) {
+        const modes = { '1': 'code', '2': 'preview', '3': 'split' };
+        this.modeController.setMode(modes[shortcutDigit]);
+      } else if (currentMode === 'code' || currentMode === 'split') {
+        this.markdownActionController.handleMarkdownAction(`h${shortcutDigit}`);
       }
     }
-    
+
     // Handle Ctrl+Tab separately
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
       if (e.shiftKey) {
-        this.markdownEditor.switchToPreviousTab();
+        this.actions.switchToPreviousTab();
       } else {
-        this.markdownEditor.switchToNextTab();
+        this.actions.switchToNextTab();
       }
       return;
+    }
+
+    const useAltKey = e.altKey || (isMac && e.metaKey && !e.ctrlKey);
+    if (useAltKey && e.key >= '1' && e.key <= '9') {
+      const tabIndex = Number.parseInt(e.key, 10) - 1;
+      const tab = this.tabManager.getAllTabs().slice(0, 9)[tabIndex];
+      if (tab) {
+        e.preventDefault();
+        this.actions.switchToTab(tab.id);
+      }
     }
     
     // Function keys
@@ -162,14 +230,14 @@ class KeyboardController extends BaseComponent {
       // F1 is handled at the top of the function
       case 'F5':
         e.preventDefault();
-        this.markdownEditor.reloadCurrentFile();
+        this.actions.reloadCurrentFile();
         break;
       case 'F11':
         e.preventDefault();
         if (e.shiftKey) {
           this.uiController.toggleDistractionFree();
         } else {
-          this.markdownEditor.toggleFullscreen();
+          this.actions.toggleFullscreen();
         }
         break;
       case 'Escape':
@@ -179,22 +247,25 @@ class KeyboardController extends BaseComponent {
   }
 
   handleEscapeKey() {
+    const pluginManagerModal = document.getElementById('plugin-manager-modal');
     const settingsModal = document.getElementById('settings-modal');
     const helpModal = document.getElementById('help-modal');
     const aboutModal = document.getElementById('about-modal');
     const linkModal = document.getElementById('link-modal');
     const imageModal = document.getElementById('image-modal');
     
-    if (settingsModal && settingsModal.style.display === 'flex') {
+    if (pluginManagerModal && pluginManagerModal.style.display === 'flex') {
+      this.pluginModalController?.closeFromKeyboard();
+    } else if (settingsModal && settingsModal.style.display === 'flex') {
       this.uiController.hideSettings();
     } else if (helpModal && helpModal.style.display === 'flex') {
       this.uiController.hideHelp();
     } else if (aboutModal && aboutModal.style.display === 'flex') {
       this.uiController.hideAbout();
     } else if (linkModal && linkModal.style.display === 'flex') {
-      this.markdownEditor.toolbarComponent.hideLinkModal();
+      this.toolbarComponent.hideLinkModal();
     } else if (imageModal && imageModal.style.display === 'flex') {
-      this.markdownEditor.toolbarComponent.hideImageModal();
+      this.toolbarComponent.hideImageModal();
     } else if (this.uiController.isDistractionFree) {
       this.uiController.exitDistractionFree();
     } else if (document.fullscreenElement) {
@@ -204,21 +275,22 @@ class KeyboardController extends BaseComponent {
 
   handleMouseWheelShortcuts(e) {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const currentMode = this.modeController.getCurrentMode();
     
     // Font size and zoom controls
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
       e.preventDefault();
       if (e.deltaY < 0) {
-        if (this.markdownEditor.currentMode === 'code') {
-          this.markdownEditor.toolbarComponent.changeFontSize(2);
-        } else if (this.markdownEditor.currentMode === 'preview' || this.markdownEditor.currentMode === 'split') {
-          this.markdownEditor.toolbarComponent.changeZoom(0.1);
+        if (currentMode === 'code') {
+          this.toolbarComponent.changeFontSize(2);
+        } else if (currentMode === 'preview' || currentMode === 'split') {
+          this.toolbarComponent.changeZoom(0.1);
         }
       } else if (e.deltaY > 0) {
-        if (this.markdownEditor.currentMode === 'code') {
-          this.markdownEditor.toolbarComponent.changeFontSize(-2);
-        } else if (this.markdownEditor.currentMode === 'preview' || this.markdownEditor.currentMode === 'split') {
-          this.markdownEditor.toolbarComponent.changeZoom(-0.1);
+        if (currentMode === 'code') {
+          this.toolbarComponent.changeFontSize(-2);
+        } else if (currentMode === 'preview' || currentMode === 'split') {
+          this.toolbarComponent.changeZoom(-0.1);
         }
       }
       return;
@@ -228,14 +300,14 @@ class KeyboardController extends BaseComponent {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
       e.preventDefault();
       const modes = ['code', 'preview', 'split'];
-      const currentIndex = modes.indexOf(this.markdownEditor.currentMode);
+      const currentIndex = modes.indexOf(currentMode);
       
       if (e.deltaY < 0) {
         const nextIndex = (currentIndex + 1) % modes.length;
-        this.markdownEditor.setMode(modes[nextIndex]);
+        this.modeController.setMode(modes[nextIndex]);
       } else if (e.deltaY > 0) {
         const prevIndex = currentIndex === 0 ? modes.length - 1 : currentIndex - 1;
-        this.markdownEditor.setMode(modes[prevIndex]);
+        this.modeController.setMode(modes[prevIndex]);
       }
       return;
     }
@@ -245,76 +317,30 @@ class KeyboardController extends BaseComponent {
       e.preventDefault();
       
       if (e.deltaY < 0) {
-        this.markdownEditor.switchToPreviousTab();
+        this.actions.switchToPreviousTab();
       } else if (e.deltaY > 0) {
-        this.markdownEditor.switchToNextTab();
+        this.actions.switchToNextTab();
       }
       return;
     }
   }
 
-  setupTabKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const useAltKey = e.altKey || (isMac && e.metaKey);
-      
-      if (useAltKey && e.key >= '1' && e.key <= '9') {
-        const tabIndex = parseInt(e.key) - 1;
-        const tabs = this.tabManager.getAllTabs();
-        const availableTabs = tabs.slice(0, 9);
-        
-        if (availableTabs[tabIndex]) {
-          e.preventDefault();
-          this.markdownEditor.switchToTab(availableTabs[tabIndex].id);
-        }
-      }
-    });
-  }
+  onDestroy() {
+    document.removeEventListener('keydown', this.boundKeydownHandler, true);
+    document.removeEventListener('wheel', this.boundWheelHandler);
 
-  handleTabModalKeyboard(e) {
-    const tabModalList = document.getElementById('tab-modal-list');
-    if (!tabModalList) return;
-    
-    const visibleItems = Array.from(tabModalList.querySelectorAll('.tab-modal-item:not(.filtered-out)'));
-    if (visibleItems.length === 0) return;
-    
-    let currentIndex = visibleItems.findIndex(item => item.classList.contains('keyboard-focus'));
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        if (currentIndex < visibleItems.length - 1) {
-          this.setTabModalKeyboardFocus(currentIndex + 1, visibleItems);
-        }
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        if (currentIndex > 0) {
-          this.setTabModalKeyboardFocus(currentIndex - 1, visibleItems);
-        } else if (currentIndex === -1 && visibleItems.length > 0) {
-          this.setTabModalKeyboardFocus(visibleItems.length - 1, visibleItems);
-        }
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (currentIndex >= 0 && visibleItems[currentIndex]) {
-          visibleItems[currentIndex].click();
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        this.markdownEditor.hideTabModal();
-        break;
-    }
-  }
-  
-  setTabModalKeyboardFocus(index, items) {
-    items.forEach(item => item.classList.remove('keyboard-focus'));
-    
-    if (index >= 0 && index < items.length) {
-      items[index].classList.add('keyboard-focus');
-      items[index].scrollIntoView({ block: 'nearest' });
-    }
+    this.documentComponent = null;
+    this.fileController = null;
+    this.uiController = null;
+    this.tabManager = null;
+    this.modeController = null;
+    this.toolbarComponent = null;
+    this.markdownActionController = null;
+    this.pluginModalController = null;
+    this.tabUIController = null;
+    this.exportController = null;
+    this.performanceOptimizer = null;
+    this.actions = {};
   }
 
 

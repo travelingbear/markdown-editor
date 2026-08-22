@@ -19,6 +19,7 @@
 
 .pinned-tab {
   display: flex;
+  position: relative;
   align-items: center;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
@@ -31,6 +32,8 @@
   min-width: 80px;
   max-width: 200px;
   transition: all 0.2s;
+  touch-action: none;
+  user-select: none;
 }
 
 .pinned-tab-number {
@@ -163,6 +166,26 @@
   transition: all 0.2s;
   border-bottom: 1px solid var(--border-primary);
   gap: 8px;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+
+.tab-reorder-handle {
+  flex: 0 0 auto;
+  color: currentColor;
+  cursor: grab;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -3px;
+  line-height: 18px;
+  opacity: 0.5;
+  padding: 0 4px 0 1px;
+}
+
+.tab-dropdown-item:hover .tab-reorder-handle,
+.tab-modal-item:hover .tab-reorder-handle {
+  opacity: 0.9;
 }
 
 .tab-dropdown-number {
@@ -344,6 +367,8 @@
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  touch-action: none;
+  user-select: none;
 }
 
 .tab-modal-item:hover {
@@ -638,4 +663,68 @@
     height: 18px;
     font-size: 10px;
   }
+}
+
+.pinned-tab.dragging,
+.tab-dropdown-item.dragging,
+.tab-modal-item.dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+body.reordering-pinned-tabs,
+body.reordering-pinned-tabs *,
+body.reordering-tabs,
+body.reordering-tabs * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+.pinned-tab.drag-over-before::after,
+.pinned-tab.drag-over-after::after,
+.tab-dropdown-item.drag-over-before::after,
+.tab-dropdown-item.drag-over-after::after,
+.tab-modal-item.drag-over-before::after,
+.tab-modal-item.drag-over-after::after {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--accent-primary);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--bg-primary), 0 0 7px var(--accent-primary);
+}
+
+.pinned-tab.drag-over-before::after,
+.pinned-tab.drag-over-after::after {
+  top: -3px;
+  bottom: -3px;
+  width: 4px;
+}
+
+.pinned-tab.drag-over-before::after {
+  left: -4px;
+}
+
+.pinned-tab.drag-over-after::after {
+  right: -4px;
+}
+
+.tab-dropdown-item.drag-over-before::after,
+.tab-dropdown-item.drag-over-after::after,
+.tab-modal-item.drag-over-before::after,
+.tab-modal-item.drag-over-after::after {
+  left: 5px;
+  right: 5px;
+  height: 4px;
+}
+
+.tab-dropdown-item.drag-over-before::after,
+.tab-modal-item.drag-over-before::after {
+  top: -3px;
+}
+
+.tab-dropdown-item.drag-over-after::after,
+.tab-modal-item.drag-over-after::after {
+  bottom: -3px;
 }

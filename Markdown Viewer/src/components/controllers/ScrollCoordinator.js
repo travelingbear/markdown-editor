@@ -228,6 +228,30 @@ class ScrollCoordinator extends BaseComponent {
     this.tabManager.updateTabScroll(activeTab.id, null, previewTop);
   }
 
+  alignPreviewFromEditor() {
+    const activeTab = this.tabManager?.getActiveTab();
+    const editor = this.editorComponent?.getEditorAdapter();
+    const previewPane = this.getPreviewPane();
+    if (!activeTab || !editor || !previewPane) return;
+
+    const editorMetrics = editor.getScrollMetrics();
+    const ratio = getScrollRatio(editorMetrics.top, editorMetrics.maxScroll);
+    const previewTop = getScrollTopFromRatio(
+      ratio,
+      Math.max(0, previewPane.scrollHeight - previewPane.clientHeight)
+    );
+    this.runProgrammatic(() => {
+      previewPane.scrollTop = previewTop;
+    });
+    this.tabManager.updateTabScroll(
+      activeTab.id,
+      editorMetrics.top,
+      previewTop,
+      ratio,
+      'editor'
+    );
+  }
+
   alignBothPanes() {
     const activeTab = this.tabManager?.getActiveTab();
     const editor = this.editorComponent?.getEditorAdapter();

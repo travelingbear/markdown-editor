@@ -1,3 +1,5 @@
+import { updateMarkdownTaskAtLine } from '../../rendering/taskSyntax.js';
+
 /**
  * MarkdownActionController - Handles markdown formatting actions
  * Manages text insertion, task list updates, and multi-line formatting
@@ -437,8 +439,15 @@ class MarkdownActionController extends BaseComponent {
     this.documentComponent.handleContentChange(editor.getContent());
   }
 
-  updateTaskInMarkdown(taskText, checked) {
+  updateTaskInMarkdown(taskText, checked, sourceLine = null) {
     const content = this.editorComponent.getContent();
+    const directlyUpdatedContent = updateMarkdownTaskAtLine(content, sourceLine, checked);
+    if (directlyUpdatedContent !== null) {
+      this.editorComponent.setContent(directlyUpdatedContent);
+      this.documentComponent.handleContentChange(directlyUpdatedContent);
+      return;
+    }
+
     const lines = content.split('\n');
     let inCodeBlock = false;
     let matchingLines = [];

@@ -663,8 +663,8 @@ body.centered-layout .preview-pane {
   margin-left: 0;
 }
 
-/* Checkboxes - now fully clickable */
-.preview-content .task-list-item input[type="checkbox"] {
+/* Checkboxes - normalized across standalone, flat, and nested task markup */
+.preview-content .markdown-task-checkbox {
   width: 16px;
   height: 16px;
   cursor: pointer;
@@ -678,14 +678,15 @@ body.centered-layout .preview-pane {
 }
 
 /* Labels */
-.preview-content .task-list-item label {
+.preview-content .task-list-item label,
+.preview-content .markdown-task-label {
   cursor: pointer;
   user-select: none;
   flex: 1;
   line-height: 1.4;
 }
 
-.preview-content .task-list-item input[type="checkbox"]:checked + label {
+.preview-content .markdown-task-checkbox:checked + .markdown-task-label {
   opacity: 0.6;
   color: var(--text-secondary);
 }

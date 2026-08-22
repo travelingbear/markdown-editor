@@ -102,6 +102,26 @@ describe('ScrollCoordinator', () => {
     );
   });
 
+  it('explicitly aligns Preview from the current editor position', () => {
+    const tab = { id: 'tab-1', scrollPosition: { ratio: 0 } };
+    const { coordinator, tabManager } = createCoordinator({
+      mode: 'preview',
+      tab,
+      editorMetrics: { top: 300, maxScroll: 600 }
+    });
+
+    coordinator.alignPreviewFromEditor();
+
+    expect(document.querySelector('.preview-pane').scrollTop).toBe(400);
+    expect(tabManager.updateTabScroll).toHaveBeenCalledWith(
+      'tab-1',
+      300,
+      400,
+      0.5,
+      'editor'
+    );
+  });
+
   it('ignores user-scroll handlers while restoring programmatically', () => {
     const tab = { id: 'tab-1', scrollPosition: { ratio: 0.5 } };
     const { coordinator, tabManager } = createCoordinator({ mode: 'split', tab });

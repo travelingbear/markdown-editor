@@ -34,6 +34,7 @@ class MarkdownEditor extends BaseComponent {
     this.tabSessionController = this.controllers.tabSessionController || null;
     this.documentLifecycleController = this.controllers.documentLifecycleController || null;
     this.editorLifecycleController = this.controllers.editorLifecycleController || null;
+    this.previewLifecycleController = this.controllers.previewLifecycleController || null;
     this.markdownActionController = this.controllers.markdownActionController || null;
     this.exportController = this.controllers.exportController || null;
     this.pluginModalController = this.controllers.pluginModalController || null;
@@ -155,6 +156,7 @@ class MarkdownEditor extends BaseComponent {
     this.registry.register('tabSession', TabSessionController);
     this.registry.register('documentLifecycle', DocumentLifecycleController);
     this.registry.register('editorLifecycle', EditorLifecycleController);
+    this.registry.register('previewLifecycle', PreviewLifecycleController);
     this.registry.register('markdownAction', MarkdownActionController);
     this.registry.register('export', ExportController);
     this.registry.register('nativeWindow', NativeWindowController);
@@ -361,6 +363,25 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.editorLifecycleController);
     await this.editorLifecycleController.init();
 
+    if (!this.previewLifecycleController) {
+      this.previewLifecycleController = this.registry.createInstance('previewLifecycle');
+    }
+    this.previewLifecycleController.setDependencies({
+      previewComponent: this.previewComponent,
+      editorComponent: this.editorComponent,
+      documentComponent: this.documentComponent,
+      tabManager: this.tabManager,
+      modeController: this.modeController,
+      settingsController: this.settingsController,
+      markdownActionController: this.markdownActionController,
+      fileController: this.fileController,
+      exportController: this.exportController,
+      scrollCoordinator: this.scrollCoordinator,
+      handleError: (error, context) => this.handleError(error, context)
+    });
+    this.addChild(this.previewLifecycleController);
+    await this.previewLifecycleController.init();
+
     // KeyboardController is the sole owner of application-level shortcuts.
     if (!this.keyboardController) {
       this.keyboardController = this.registry.createInstance('keyboard');
@@ -384,7 +405,7 @@ class MarkdownEditor extends BaseComponent {
         switchToPreviousTab: () => this.tabSessionController.switchToPreviousTab(),
         switchToNextTab: () => this.tabSessionController.switchToNextTab(),
         switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId),
-        reloadCurrentFile: () => this.reloadCurrentFile(),
+        reloadCurrentFile: () => this.previewLifecycleController.reloadCurrentFile(),
         toggleFullscreen: () => this.toggleFullscreen()
       }
     });
@@ -393,58 +414,7 @@ class MarkdownEditor extends BaseComponent {
   }
 
   setupComponentCommunication() {
-    // Document, editor, and tab lifecycle events are owned by their controllers.
-    
-    // Preview Component Events
-    this.previewComponent.on('task-toggled', (data) => {
-      // Add small delay to ensure preview has finished processing
-      setTimeout(() => {
-        this.markdownActionController.updateTaskInMarkdown(data.taskText, data.checked);
-      }, 10);
-    });
-    
-    this.previewComponent.on('external-link-clicked', (data) => {
-      this.openExternalLink(data.href);
-    });
-    
-    this.previewComponent.on('preview-error', (data) => {
-      this.handleError(new Error(data.error), 'Preview');
-    });
-
-    // Rendering can change the preview's total height. Reapply the tab's
-    // relative position so an edit does not make the two panes drift.
-    this.previewComponent.on('preview-updated', () => {
-      this.scrollCoordinator.alignPreviewToActiveTab();
-    });
-    
-    this.previewComponent.on('mermaid-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    this.previewComponent.on('katex-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    // Preview Context Menu Events
-    this.previewComponent.on('reload-file-requested', () => {
-      this.reloadCurrentFile();
-    });
-    
-    this.previewComponent.on('sync-from-code-requested', () => {
-      this.syncFromCode();
-    });
-    
-    this.previewComponent.on('restart-app-requested', () => {
-      this.restartApplication();
-    });
-    
-    this.previewComponent.on('export-html-requested', () => {
-      this.exportController.exportToHtml();
-    });
-    
-    this.previewComponent.on('export-pdf-requested', () => {
-      this.exportController.exportToPdf();
-    });
+    // Document, editor, preview, and tab lifecycle events are controller-owned.
     
     // File Controller Events
     this.fileController.on('file-new-completed', () => {
@@ -530,7 +500,7 @@ class MarkdownEditor extends BaseComponent {
     });
     
     this.toolbarComponent.on('file-reload-requested', () => {
-      this.reloadCurrentFile();
+      this.previewLifecycleController.reloadCurrentFile();
     });
     
     this.toolbarComponent.on('markdown-insert', (data) => {
@@ -738,18 +708,6 @@ class MarkdownEditor extends BaseComponent {
 
 
 
-  async openExternalLink(href) {
-    try {
-      if (window.__TAURI__?.core?.invoke) {
-        await window.__TAURI__.core.invoke('plugin:opener|open_url', { url: href });
-      } else {
-        window.open(href, '_blank');
-      }
-    } catch (error) {
-      console.error('[MarkdownEditor] Error opening external link:', error);
-    }
-  }
-  
   openFindReplace(showReplace = true) {
     if (this.modeController.getCurrentMode() === 'preview') {
       // Get selected text from code mode if available
@@ -794,99 +752,6 @@ class MarkdownEditor extends BaseComponent {
     this.toolbarComponent.updateToolbarVisibility();
   }
   
-  async reloadCurrentFile() {
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab && activeTab.filePath) {
-      try {
-        const newContent = await this.documentComponent.readFile(activeTab.filePath);
-        if (newContent !== activeTab.content) {
-          activeTab.setContent(newContent);
-          this.editorComponent.emit('set-content', { content: newContent });
-          this.previewComponent.emit('update-preview', { 
-            content: newContent,
-            filePath: activeTab.filePath 
-          });
-          this.documentComponent.content = newContent;
-          this.documentComponent.markClean();
-        }
-      } catch (error) {
-        console.error('Failed to reload file:', error);
-      }
-    }
-  }
-  
-  syncFromCode() {
-    const content = this.editorComponent.getContent();
-    const activeTab = this.tabManager.getActiveTab();
-    
-    // Update preview content
-    this.previewComponent.emit('update-preview', { 
-      content,
-      filePath: activeTab?.filePath 
-    });
-    
-    // Sync scroll position from editor to preview
-    setTimeout(() => {
-      const editor = this.editorComponent.getEditorAdapter();
-      if (editor) {
-        const previewPane = document.querySelector('.preview-pane');
-        
-        if (previewPane) {
-          const editorScroll = editor.getScrollMetrics();
-          
-          let scrollRatio = 0;
-          if (editorScroll.maxScroll > 0) {
-            scrollRatio = editorScroll.top / editorScroll.maxScroll;
-          }
-          
-          const previewHeight = previewPane.clientHeight;
-          const previewScrollHeight = previewPane.scrollHeight;
-          const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
-          const targetScroll = scrollRatio * previewMaxScroll;
-          
-          previewPane.scrollTop = Math.max(0, Math.min(targetScroll, previewMaxScroll));
-        }
-      }
-    }, 100);
-  }
-  
-  async restartApplication() {
-    try {
-      if (window.__TAURI__?.process) {
-        await window.__TAURI__.process.relaunch();
-      } else {
-        location.reload();
-      }
-    } catch (error) {
-      console.error('Failed to restart application:', error);
-      location.reload();
-    }
-  }
-
-  refreshPreview() {
-    const content = this.editorComponent.getContent();
-    
-    // Phase 6: Use debounced preview updates for better performance
-    if (this.performanceOptimizer && window.PerformanceUtils) {
-      if (!this.debouncedPreviewUpdate) {
-        this.debouncedPreviewUpdate = window.PerformanceUtils.debounce((content) => {
-          const activeTab = this.tabManager.getActiveTab();
-          this.previewComponent.emit('update-preview', { 
-            content,
-            filePath: activeTab?.filePath 
-          });
-        }, 150);
-      }
-      this.debouncedPreviewUpdate(content);
-    } else {
-      const activeTab = this.tabManager.getActiveTab();
-      this.previewComponent.emit('update-preview', { 
-        content,
-        filePath: activeTab?.filePath 
-      });
-    }
-  }
-
   async toggleFullscreen() {
     try {
       if (window.__TAURI__?.window) {
@@ -1000,11 +865,6 @@ class MarkdownEditor extends BaseComponent {
   }
 
   onDestroy() {
-    // Clean up debounced functions
-    if (this.debouncedPreviewUpdate) {
-      this.debouncedPreviewUpdate = null;
-    }
-    
     // Phase 6: Clean up performance optimizer
     if (this.performanceOptimizer) {
       this.performanceOptimizer.destroy();

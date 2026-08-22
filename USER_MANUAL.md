@@ -91,6 +91,9 @@ When the Retro theme and Startup Sound setting are enabled, the bundled local cl
 
 #### Preview Mode
 - **GitHub-Flavored Markdown**: Standard-compliant rendering
+- **Preview Commands**: The context menu can reload the active file, explicitly synchronize from Code, export, or restart the application
+- **Interactive Coordination**: Task changes, external links, renderer status, and scroll restoration remain synchronized with the active document
+- **Reliable Task Identity**: Preview checkboxes retain their source-line identity, so similar or repeated task labels update only the checkbox that was clicked
 - **Real-time Updates**: Live preview as you type
 - **Interactive Elements**: Clickable task lists, working links
 - **Context Menu**: Right-click for reload, sync, export options
@@ -206,7 +209,7 @@ Task lists are fully interactive in Preview mode:
   - [ ] Nested pending task
 ```
 
-Click checkboxes in Preview mode to toggle states. Changes automatically sync to source markdown.
+Click checkboxes in Preview mode to toggle states. Changes automatically sync to source markdown. Checked task text uses the same subdued appearance for top-level and nested tasks; checking a parent does not change the appearance of its children.
 
 ### Export and Sharing
 

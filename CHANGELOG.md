@@ -22,6 +22,9 @@
 - Extracted file-open batches, full-path duplicate handling, document dirty/save transitions, and document-to-tab updates into a lifecycle-managed controller with complete listener teardown.
 - Extracted editor content, cursor, lazy-load status, and markdown-command routing into a lifecycle-managed controller so tab/document/preview state follows one synchronization path; fallback-textarea DOM listeners are now also removed during teardown.
 - Fixed repeated Italic commands accumulating asterisks on combined bold-and-italic selections; single-line and multi-line toggles now remove only the italic layer and preserve bold.
+- Extracted task interaction, safe external links, renderer status refresh, Preview context commands, exports, and post-render scroll restoration into `PreviewLifecycleController`; all Preview listeners and delayed tasks now have deterministic teardown, and delayed task/sync work cannot spill into a newly selected tab.
+- Replaced fuzzy Preview-task identification with fenced-code-aware source-line mapping, preventing similar or repeated checkbox labels from triggering conflict warnings or updating the wrong Markdown line.
+- Normalized Preview task labels so checked-state styling is consistent for standalone, top-level, and nested checkboxes without dimming child tasks with their parent.
 
 ### Plugin System
 - Added a dedicated Plugin Manager modal with a General tab and one settings tab per plugin.

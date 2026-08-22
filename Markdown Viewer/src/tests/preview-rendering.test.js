@@ -71,4 +71,56 @@ describe('PreviewComponent rendering isolation', () => {
     );
     preview.destroy();
   });
+
+  it('emits the exact source line for similar task labels', async () => {
+    const preview = new window.PreviewComponent();
+    await preview.init();
+    const taskToggled = vi.fn();
+    preview.on('task-toggled', taskToggled);
+
+    await preview.updatePreview([
+      '- [ ] unchecked item 1',
+      '- [ ] unchecked item 2',
+      '- [ ] unchecked item 3'
+    ].join('\n'));
+    const checkboxes = preview.preview.querySelectorAll('input[data-source-line]');
+    checkboxes[1].checked = true;
+    checkboxes[1].dispatchEvent(new Event('change'));
+
+    expect(taskToggled).toHaveBeenCalledWith(expect.objectContaining({
+      taskText: 'unchecked item 2',
+      checked: true,
+      sourceLine: 1
+    }));
+    preview.destroy();
+  });
+
+  it('gives checked tasks the same isolated label treatment at every nesting level', async () => {
+    const preview = new window.PreviewComponent();
+    await preview.init();
+
+    await preview.updatePreview([
+      '- [x] checked parent',
+      '  - [x] checked child',
+      '  - [ ] open child',
+      '- [ ] open sibling'
+    ].join('\n'));
+
+    const checkboxes = [...preview.preview.querySelectorAll('.markdown-task-checkbox')];
+    const labels = checkboxes.map((checkbox) => checkbox.nextElementSibling);
+
+    expect(checkboxes).toHaveLength(4);
+    expect(labels.every((label) => label.classList.contains('markdown-task-label'))).toBe(true);
+    expect(labels.map((label) => label.textContent.trim())).toEqual([
+      'checked parent',
+      'checked child',
+      'open child',
+      'open sibling'
+    ]);
+    expect(preview.preview.querySelectorAll(
+      '.markdown-task-checkbox:checked + .markdown-task-label'
+    )).toHaveLength(2);
+
+    preview.destroy();
+  });
 });

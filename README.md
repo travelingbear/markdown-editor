@@ -21,7 +21,7 @@
 - **Real-Time Preview**: GitHub-flavored markdown with live updates
 - **Pure or Extended Rendering**: Keep rendering lightweight and predictable, or enable optional local renderers
 - **Advanced Rendering**: Lazy plugin-owned KaTeX math expressions and Mermaid diagrams without external services
-- **Interactive Elements**: Clickable task lists with state persistence
+- **Interactive Elements**: Clickable task lists update their exact source lines, even when labels are similar or repeated, with consistent checked styling at every nesting level
 - **Scroll Position Memory**: Independent per-document positions synchronized across Code, Preview, and Split modes
 - **Recoverable Sessions**: Closing the application silently preserves modified tabs for the next launch; closing a document still asks before discarding changes
 
@@ -105,6 +105,7 @@
 - **Welcome and Modal Ownership**: Welcome commands and modal close behavior use disposable listeners, while every Settings entry point triggers one canonical refresh
 - **Document Lifecycle Ownership**: File-open batches, full-path duplicate handling, dirty/save transitions, and document-to-tab synchronization use one disposable controller
 - **Editor Lifecycle Ownership**: Content, cursor, lazy-load status, and editor markdown commands synchronize through one disposable controller
+- **Preview Lifecycle Ownership**: Task interaction, safe external links, renderer status, exports, reload/restart commands, and scroll restoration use one disposable controller
 - **Plugin System**: Lifecycle-managed plugins with scoped settings, automatic cleanup, a dedicated manager, and an ordered renderer registry
 - **Tab System**: Session-owned activation and wraparound navigation, UI-owned context commands, virtualization, and performance optimization
 - **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, 50 tab limit with warnings

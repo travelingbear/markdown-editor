@@ -38,7 +38,7 @@ src/index.html
 
 - `DocumentComponent` owns the current file content, path, dirty transition, and native open/save operations.
 - `EditorComponent` presents the editor abstraction to the application.
-- `PreviewComponent` owns base Markdown parsing, sanitization, preview updates, and renderer-registry integration.
+- `PreviewComponent` owns base Markdown parsing, sanitization, preview updates, renderer-registry integration, and per-task label normalization so checked styling remains isolated across nested lists.
 - `ToolbarComponent` owns toolbar DOM behavior and emits commands rather than performing file or editor work directly.
 - `TabState`, `TabCollection`, and `TabManager` own persistent per-document state and collection operations.
 
@@ -48,6 +48,8 @@ src/index.html
 - `FileDropController`: browser and Tauri file-drop normalization, open-versus-insert routing, overlay state, and listener cleanup.
 - `DocumentLifecycleController`: file-open batches, full-path duplicate routing, new/close/dirty/save transitions, and external document-content updates.
 - `EditorLifecycleController`: editor content propagation, cursor persistence, lazy-load status refresh, markdown-command routing, and application-listener teardown. `EditorComponent` separately releases its fallback DOM listeners and editor adapter.
+- `PreviewLifecycleController`: task interaction, external-link routing, renderer status, errors, Preview context commands, export routing, post-render scroll restoration, and listener/timer teardown.
+- `taskSyntax`: pure fenced-code-aware task extraction and exact source-line updates shared by Preview and Markdown actions; visible task text is no longer used as primary identity.
 - `MarkdownActionController`: editor-neutral Markdown insertion and formatting, including independently composable bold and italic toggle layers.
 - `KeyboardController`: the sole application-level keyboard/wheel listener, connected through explicit services and action callbacks rather than the composition root.
 - `MarkdownActionController`: formatting commands.
@@ -166,7 +168,7 @@ Tests live in `src/tests` and run with:
 npm test
 ```
 
-Current coverage includes startup staging, component lifecycle, native-window listener disposal and file forwarding, browser/native file-drop routing and teardown, document and editor lifecycle routing, welcome/modal routing and teardown, tab/session safety, path identity, CodeMirror loading and commands, scroll coordination, toolbar state, keyboard shortcuts, plugin lifecycle/configuration, renderer isolation, math detection, Mermaid sanitization, and system status.
+Current coverage includes startup staging, component lifecycle, native-window listener disposal and file forwarding, browser/native file-drop routing and teardown, document/editor/Preview lifecycle routing, welcome/modal routing and teardown, tab/session safety, path identity, CodeMirror loading and commands, scroll coordination, toolbar state, keyboard shortcuts, plugin lifecycle/configuration, renderer isolation, math detection, Mermaid sanitization, and system status.
 
 Every behavioral batch also requires a production frontend build and user-approved native smoke test:
 

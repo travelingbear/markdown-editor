@@ -1,4 +1,5 @@
 import { sanitizeRenderedHtml } from '../rendering/security.js';
+import { extractMarkdownTasks } from '../rendering/taskSyntax.js';
 
 /**
  * Preview Component
@@ -129,11 +130,6 @@ class PreviewComponent extends BaseComponent {
       
       // Set the HTML content
       this.preview.innerHTML = html;
-      
-      // Remove disabled attribute from checkboxes
-      this.preview.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.removeAttribute('disabled');
-      });
       
       if (this.rendererRegistry) {
         await this.rendererRegistry.afterRender(this.preview, { ...rendererContext, html });
@@ -394,18 +390,62 @@ class PreviewComponent extends BaseComponent {
   }
 
   setupTaskListInteractions() {
-    const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
-    
-    checkboxes.forEach((checkbox) => {
+    // Marked task inputs are disabled before activation, while the fallback
+    // renderer wraps its generated inputs in task-list-item. This avoids
+    // attaching Markdown behavior to unrelated raw HTML checkboxes.
+    const checkboxes = this.preview.querySelectorAll(
+      'input[disabled][type="checkbox"], .task-list-item input[type="checkbox"]'
+    );
+    const sourceTasks = extractMarkdownTasks(this.currentContent);
+
+    checkboxes.forEach((checkbox, taskIndex) => {
+      const sourceTask = sourceTasks[taskIndex];
+      const taskLabel = this.prepareTaskLabel(checkbox);
+      checkbox.classList.add('markdown-task-checkbox');
+      checkbox.removeAttribute('disabled');
+      if (sourceTask) checkbox.dataset.sourceLine = String(sourceTask.lineIndex);
       checkbox.addEventListener('change', (e) => {
-        const taskText = e.target.parentElement.textContent.trim();
+        const taskText = sourceTask?.text
+          || taskLabel?.textContent.trim()
+          || e.target.parentElement.textContent.trim();
+        const sourceLine = Number.parseInt(e.target.dataset.sourceLine, 10);
         
         this.emit('task-toggled', {
           taskText: taskText,
-          checked: e.target.checked
+          checked: e.target.checked,
+          sourceLine: Number.isInteger(sourceLine) ? sourceLine : null
         });
       });
     });
+  }
+
+  prepareTaskLabel(checkbox) {
+    const existingLabel = checkbox.nextElementSibling;
+    if (existingLabel?.tagName === 'LABEL') {
+      existingLabel.classList.add('markdown-task-label');
+      return existingLabel;
+    }
+
+    const container = checkbox.parentElement;
+    if (!container) return null;
+
+    const label = document.createElement('span');
+    label.className = 'markdown-task-label';
+    const labelNodes = [];
+    let sibling = checkbox.nextSibling;
+
+    while (sibling) {
+      const nextSibling = sibling.nextSibling;
+      const isNestedList = sibling.nodeType === 1
+        && (sibling.tagName === 'UL' || sibling.tagName === 'OL');
+      if (isNestedList) break;
+      labelNodes.push(sibling);
+      sibling = nextSibling;
+    }
+
+    labelNodes.forEach((node) => label.appendChild(node));
+    checkbox.after(label);
+    return label;
   }
 
   setupAnchorLinks() {

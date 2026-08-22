@@ -60,4 +60,30 @@ describe('MarkdownActionController formatting toggles', () => {
       '**one**\n**two**'
     );
   });
+
+  it('updates the selected source task instead of fuzzy-matching similar labels', () => {
+    const content = [
+      '- [ ] unchecked item 1',
+      '- [ ] unchecked item 2',
+      '- [ ] unchecked item 3'
+    ].join('\n');
+    const editorComponent = {
+      getContent: vi.fn(() => content),
+      setContent: vi.fn()
+    };
+    const documentComponent = { handleContentChange: vi.fn() };
+    const controller = new window.MarkdownActionController();
+    controller.setDependencies(editorComponent, documentComponent);
+
+    controller.updateTaskInMarkdown('unchecked item 2', true, 1);
+
+    const expected = [
+      '- [ ] unchecked item 1',
+      '- [x] unchecked item 2',
+      '- [ ] unchecked item 3'
+    ].join('\n');
+    expect(editorComponent.setContent).toHaveBeenCalledWith(expected);
+    expect(documentComponent.handleContentChange).toHaveBeenCalledWith(expected);
+    expect(document.getElementById('task-conflict-modal')).toBeNull();
+  });
 });

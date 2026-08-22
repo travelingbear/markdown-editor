@@ -53,6 +53,7 @@ The toolbar includes:
 - **View Controls**: Theme toggle, Distraction-free mode, Settings
 - **Export Options**: HTML export, PDF printing
 - **Optional Quick Controls**: Markdown rendering and Pinned Tabs controls can be pinned after Export; narrow windows combine them under Quick
+- **Consistent Commands**: Every toolbar button, dropdown item, and overflow menu entry runs the same command as its keyboard shortcut, so the theme toggle, mode buttons, and formatting tools behave identically from either entry point
 
 ### Welcome Screen
 

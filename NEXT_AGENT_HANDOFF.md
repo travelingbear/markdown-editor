@@ -26,7 +26,17 @@ Preserve unrelated user changes. Use `apply_patch` for source/document edits. Do
 
 The broad modernization checkpoint precedes this handoff. Use `git log --oneline` for its exact history.
 
-The latest approved batch completed pipeline item 1:
+The latest approved batch completed pipeline item 2:
+
+- Extracted all toolbar command routing into `src/components/controllers/ToolbarLifecycleController.js`, the sole owner of the 22 `ToolbarComponent` output events.
+- Covered file new/open/save/save-as/close/reload, mode changes, exports, distraction-free/theme/Settings/Help, quick rendering and pinned-tab toggles, font size, Preview zoom, undo/redo, Markdown actions/inserts, and find/replace.
+- Removed every toolbar listener from `MarkdownEditor`; `ToolbarComponent` still owns only toolbar DOM, responsive presentation, and menus.
+- Fixed the toolbar theme button applying the theme twice. `UIController.setTheme()` emits `theme-changed`, which the composition root already handles, so the toolbar now only calls `toggleTheme()` and matches `Ctrl+T`.
+- Reduced `MarkdownEditor.js` from 906 to 845 lines.
+- Added `src/tests/toolbar-lifecycle-controller.test.js` covering routing, the single theme path, complete teardown, and no double-binding on reinitialization.
+- Updated all four required documentation files.
+
+The preceding approved batch completed pipeline item 1:
 
 - Extracted all Preview event/command ownership into `src/components/controllers/PreviewLifecycleController.js` with deterministic listener and timer teardown.
 - Routed reload, sync, restart, export, task toggle, external link, renderer status, errors, and post-render scroll alignment through that controller.
@@ -39,42 +49,18 @@ The latest approved batch completed pipeline item 1:
 
 Validation at handoff:
 
-- `43` Vitest files passed.
-- `197` tests passed.
+- `44` Vitest files passed.
+- `204` tests passed.
 - `npm run build:web` passed.
-- `cargo check` passed during the Preview-lifecycle batch.
+- `cargo check` passed during the Preview-lifecycle batch. The toolbar-routing batch changed no Rust, native commands, or capabilities, so it was not rerun.
 - `git diff --check` passed; Git may still print informational LF-to-CRLF warnings on Windows.
-- Expected development startup log: `[Bootstrap] 40 modules ready ...`.
+- Expected development startup log: `[Bootstrap] 41 modules ready ...`.
 
 ## Remaining agreed pipeline
 
 Do these in order and treat each numbered item as a separate approval boundary.
 
-### 2. Extract toolbar command routing
-
-Current hotspots:
-
-- `src/components/ToolbarComponent.js` — about 1,112 lines.
-- `src/components/MarkdownEditor.js` — toolbar event routing is concentrated around the current `429–510` area; line numbers will drift.
-
-Goal:
-
-- Keep `ToolbarComponent` responsible for toolbar DOM, responsive presentation, menus, and emitting intent.
-- Move application command routing into a disposable controller, following `EditorLifecycleController` and `PreviewLifecycleController`.
-- Cover file new/open/save/save-as/close, mode changes, exports, distraction-free/theme/settings/help, font/zoom, undo/redo, Markdown actions, find/replace, reload, and Markdown insert events.
-- Centralize listener registration and teardown. Do not leave duplicate root listeners in `MarkdownEditor`.
-- Preserve quick toolbar controls, responsive More menus, shortcut behavior, and dirty/save-button state.
-
-Minimum manual tests:
-
-- Main toolbar file commands and dirty-state highlight.
-- Code/Preview/Split switching.
-- Undo/redo and Bold/Italic formatting.
-- Search toggle via button and keyboard.
-- Export, settings, help, theme, distraction-free, and quick settings.
-- Horizontal/vertical split toolbar responsiveness.
-
-### 3. Extract Settings/UI coordination
+### 2. Extract Settings/UI coordination
 
 Current hotspots:
 
@@ -98,7 +84,7 @@ Minimum manual tests:
 - Enable/disable/configure each plugin and reopen the manager to confirm persisted values.
 - Verify System Info before and after rendering KaTeX/Mermaid.
 
-### 4. Finish the composition root
+### 3. Finish the composition root
 
 Goal:
 
@@ -109,11 +95,11 @@ Goal:
 
 Tests should prove initialization order, injected dependencies, listener teardown, and that reinitialization does not double-bind commands.
 
-### 5. Decompose the largest remaining modules
+### 4. Decompose the largest remaining modules
 
 Current approximate sizes at handoff:
 
-- `styles.css`: 3,703 lines (handled primarily in item 6).
+- `styles.css`: 3,703 lines (handled primarily in item 5).
 - `styles/themes/retro.css`: 1,225 lines.
 - `ToolbarComponent.js`: 1,112 lines.
 - `performance-optimizer.js`: 1,004 lines.
@@ -132,7 +118,7 @@ Preserve:
 - Windows/Linux file, search, shortcut, and path behavior.
 - Plugin lifecycle isolation and lazy rendering.
 
-### 6. Modularize CSS
+### 5. Modularize CSS
 
 Current CSS already has `styles/features`, `styles/themes`, and `styles/utilities`; continue that structure.
 
@@ -146,7 +132,7 @@ Goal:
 
 Manually compare Light, Dark, and Retro across welcome, toolbar, Settings, Plugin Manager, tabs, Code, Preview, vertical/horizontal Split, dialogs, task lists, code blocks, Mermaid, KaTeX, and responsive widths.
 
-## Final audit after items 2–6
+## Final audit after items 2–5
 
 - Run the full automated suite and `npm run build:web`.
 - Run `cargo check` and native development smoke tests.

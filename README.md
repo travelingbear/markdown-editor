@@ -106,6 +106,7 @@
 - **Document Lifecycle Ownership**: File-open batches, full-path duplicate handling, dirty/save transitions, and document-to-tab synchronization use one disposable controller
 - **Editor Lifecycle Ownership**: Content, cursor, lazy-load status, and editor markdown commands synchronize through one disposable controller
 - **Preview Lifecycle Ownership**: Task interaction, safe external links, renderer status, exports, reload/restart commands, and scroll restoration use one disposable controller
+- **Toolbar Command Ownership**: `ToolbarComponent` emits intent only; file, mode, export, UI, settings, editing, and Markdown commands are routed by one disposable controller
 - **Plugin System**: Lifecycle-managed plugins with scoped settings, automatic cleanup, a dedicated manager, and an ordered renderer registry
 - **Tab System**: Session-owned activation and wraparound navigation, UI-owned context commands, virtualization, and performance optimization
 - **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, 50 tab limit with warnings

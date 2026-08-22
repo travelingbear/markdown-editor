@@ -35,6 +35,7 @@ class MarkdownEditor extends BaseComponent {
     this.documentLifecycleController = this.controllers.documentLifecycleController || null;
     this.editorLifecycleController = this.controllers.editorLifecycleController || null;
     this.previewLifecycleController = this.controllers.previewLifecycleController || null;
+    this.toolbarLifecycleController = this.controllers.toolbarLifecycleController || null;
     this.markdownActionController = this.controllers.markdownActionController || null;
     this.exportController = this.controllers.exportController || null;
     this.pluginModalController = this.controllers.pluginModalController || null;
@@ -157,6 +158,7 @@ class MarkdownEditor extends BaseComponent {
     this.registry.register('documentLifecycle', DocumentLifecycleController);
     this.registry.register('editorLifecycle', EditorLifecycleController);
     this.registry.register('previewLifecycle', PreviewLifecycleController);
+    this.registry.register('toolbarLifecycle', ToolbarLifecycleController);
     this.registry.register('markdownAction', MarkdownActionController);
     this.registry.register('export', ExportController);
     this.registry.register('nativeWindow', NativeWindowController);
@@ -382,6 +384,31 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.previewLifecycleController);
     await this.previewLifecycleController.init();
 
+    // ToolbarLifecycleController is the sole owner of toolbar command routing.
+    if (!this.toolbarLifecycleController) {
+      this.toolbarLifecycleController = this.registry.createInstance('toolbarLifecycle');
+    }
+    this.toolbarLifecycleController.setDependencies({
+      toolbarComponent: this.toolbarComponent,
+      documentComponent: this.documentComponent,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      tabManager: this.tabManager,
+      fileController: this.fileController,
+      modeController: this.modeController,
+      exportController: this.exportController,
+      uiController: this.uiController,
+      settingsController: this.settingsController,
+      markdownActionController: this.markdownActionController,
+      previewLifecycleController: this.previewLifecycleController,
+      performanceOptimizer: this.performanceOptimizer,
+      actions: {
+        toggleFindReplace: (showReplace) => this.toggleFindReplace(showReplace)
+      }
+    });
+    this.addChild(this.toolbarLifecycleController);
+    await this.toolbarLifecycleController.init();
+
     // KeyboardController is the sole owner of application-level shortcuts.
     if (!this.keyboardController) {
       this.keyboardController = this.registry.createInstance('keyboard');
@@ -425,88 +452,8 @@ class MarkdownEditor extends BaseComponent {
       this.handleError(data.error, data.type);
     });
     
-    // Toolbar Component Events
-    this.toolbarComponent.on('file-new-requested', () => {
-      this.fileController.newFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-open-requested', () => {
-      this.fileController.openFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-save-requested', () => {
-      this.fileController.saveFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-save-as-requested', () => {
-      this.fileController.saveAsFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-close-requested', () => {
-      this.fileController.closeFile(this.documentComponent, this.tabManager, this.performanceOptimizer);
-    });
-    
-    this.toolbarComponent.on('mode-change-requested', (data) => {
-      this.modeController.setMode(data.mode);
-    });
-    
-    this.toolbarComponent.on('export-html-requested', () => {
-      this.exportController.exportToHtml();
-    });
-    
-    this.toolbarComponent.on('export-pdf-requested', () => {
-      this.exportController.exportToPdf();
-    });
-    
-    this.toolbarComponent.on('distraction-free-toggle', () => {
-      this.uiController.toggleDistractionFree();
-    });
-    
-    this.toolbarComponent.on('theme-toggle', () => {
-      const themeData = this.uiController.toggleTheme();
-      this.handleThemeChange(themeData);
-    });
-    
-    this.toolbarComponent.on('settings-show', () => {
-      this.uiController.showSettings();
-    });
-    
-    this.toolbarComponent.on('help-show', () => {
-      this.uiController.showHelp();
-    });
-    
-    this.toolbarComponent.on('font-size-changed', (data) => {
-      this.editorComponent.emit('font-size-changed', data);
-    });
-    
-    this.toolbarComponent.on('zoom-changed', (data) => {
-      this.previewComponent.emit('zoom-changed', data);
-    });
-    
-    this.toolbarComponent.on('editor-undo', () => {
-      this.editorComponent.undo();
-    });
-    
-    this.toolbarComponent.on('editor-redo', () => {
-      this.editorComponent.redo();
-    });
-    
-    this.toolbarComponent.on('markdown-action', async (data) => {
-      await this.markdownActionController.handleMarkdownAction(data.action);
-    });
-    
-    this.toolbarComponent.on('find-replace-requested', () => {
-      this.toggleFindReplace(true);
-    });
-    
-    this.toolbarComponent.on('file-reload-requested', () => {
-      this.previewLifecycleController.reloadCurrentFile();
-    });
-    
-    this.toolbarComponent.on('markdown-insert', (data) => {
-      this.markdownActionController.insertMarkdownText(data.text);
-    });
-    
+    // Toolbar command routing is owned by ToolbarLifecycleController.
+
     // UI Controller Events
     this.uiController.on('theme-changed', (data) => {
       this.handleThemeChange(data);
@@ -552,14 +499,6 @@ class MarkdownEditor extends BaseComponent {
       this.toolbarComponent.updateQuickSettings(data);
     });
 
-    this.toolbarComponent.on('rendering-mode-toggle-requested', () => {
-      this.settingsController.toggleAdvancedRendering();
-    });
-
-    this.toolbarComponent.on('pinned-tabs-toggle-requested', () => {
-      this.settingsController.togglePinnedTabs();
-    });
-    
     // Update system info when settings change
     this.settingsController.on('settings-changed', () => {
       this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());

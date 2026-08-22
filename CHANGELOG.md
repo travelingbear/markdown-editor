@@ -25,6 +25,8 @@
 - Extracted task interaction, safe external links, renderer status refresh, Preview context commands, exports, and post-render scroll restoration into `PreviewLifecycleController`; all Preview listeners and delayed tasks now have deterministic teardown, and delayed task/sync work cannot spill into a newly selected tab.
 - Replaced fuzzy Preview-task identification with fenced-code-aware source-line mapping, preventing similar or repeated checkbox labels from triggering conflict warnings or updating the wrong Markdown line.
 - Normalized Preview task labels so checked-state styling is consistent for standalone, top-level, and nested checkboxes without dimming child tasks with their parent.
+- Extracted toolbar command routing into `ToolbarLifecycleController`; `MarkdownEditor` no longer registers toolbar listeners, and every toolbar command has one owner with deterministic teardown.
+- Fixed the toolbar theme button applying the theme twice, which re-rendered Preview and re-applied the current view mode on every toggle; toolbar and `Ctrl+T` now follow the same single theme path.
 
 ### Plugin System
 - Added a dedicated Plugin Manager modal with a General tab and one settings tab per plugin.

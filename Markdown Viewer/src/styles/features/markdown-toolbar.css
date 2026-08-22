@@ -1,11 +1,18 @@
 /* Markdown Toolbar Feature Styles */
 
 /* Markdown Toolbar Styles - Simple toggle */
+/*
+ * The toolbar lives inside the code pane, so it must never paint over the
+ * Preview pane beside it. Clipping only the inline axis keeps that guarantee
+ * while leaving the block axis visible, which is what the Markdown dropdowns
+ * and the More menu need in order to hang below the toolbar.
+ */
 .markdown-toolbar {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-primary);
   padding: 0;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
   height: 0;
   opacity: 0;
   transition: all 0.3s ease;
@@ -14,7 +21,6 @@
 }
 
 .markdown-toolbar.visible {
-  overflow: visible;
   height: auto;
   opacity: 1;
 }
@@ -38,9 +44,33 @@ body:has(.markdown-toolbar.pinned) .main-content {
   min-width: 0;
 }
 
+/*
+ * Formatting groups live in a shrinkable region. Without it every group refused
+ * to shrink (flex items default to min-width: auto), so a narrow code pane —
+ * a vertical split on a portrait monitor — pushed the trailing controls past
+ * the pane edge. `gap: inherit` keeps whatever gap the active size sets on
+ * .toolbar-content, and the inline-axis clip matches .markdown-toolbar so the
+ * Markdown dropdowns can still open downwards.
+ */
+.toolbar-primary {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 .toolbar-spacer {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* Pinned controls keep their size so they stay reachable inside the pane. */
+.toolbar-overflow-group,
+.toolbar-group-search {
+  flex: 0 0 auto;
 }
 
 .toolbar-group {
@@ -67,8 +97,9 @@ body:has(.markdown-toolbar.pinned) .main-content {
   font-weight: 500;
   transition: all 0.2s;
   white-space: nowrap;
+  line-height: 1.2;
   min-width: 32px;
-  height: 28px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -308,7 +339,9 @@ body.distraction-free .markdown-toolbar {
   display: none;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
-  width: min(430px, calc(100vw - 24px));
+  /* Sized against the code pane, not the window, so the menu stays inside
+     the pane in a split view instead of being clipped at its edge. */
+  width: min(430px, calc(100cqi - 24px));
   max-height: min(460px, 72vh);
   overflow-y: auto;
   padding: 10px;
@@ -424,7 +457,7 @@ body.distraction-free .markdown-toolbar {
   padding: 3px 6px;
   font-size: 9px;
   min-width: 24px;
-  height: 22px;
+  min-height: 22px;
 }
 
 [data-md-toolbar-size="small"] .font-size-display {
@@ -443,7 +476,7 @@ body.distraction-free .markdown-toolbar {
   padding: 8px 14px;
   font-size: 13px;
   min-width: 40px;
-  height: 36px;
+  min-height: 36px;
 }
 
 [data-md-toolbar-size="large"] .font-size-display {
@@ -609,7 +642,7 @@ body.distraction-free .markdown-toolbar {
 @container editor-pane (max-width: 440px) {
   .md-overflow-menu {
     grid-template-columns: 1fr;
-    width: min(270px, calc(100vw - 18px));
+    width: min(270px, calc(100cqi - 18px));
   }
 }
 

@@ -27,6 +27,17 @@
 - Normalized Preview task labels so checked-state styling is consistent for standalone, top-level, and nested checkboxes without dimming child tasks with their parent.
 - Extracted toolbar command routing into `ToolbarLifecycleController`; `MarkdownEditor` no longer registers toolbar listeners, and every toolbar command has one owner with deterministic teardown.
 - Fixed the toolbar theme button applying the theme twice, which re-rendered Preview and re-applied the current view mode on every toggle; toolbar and `Ctrl+T` now follow the same single theme path.
+- Extracted Settings, UI, and Plugin Manager communication into `SettingsCoordinator`; theme application, rendering mode, pinned tabs, quick-control pins, and the Settings refresh now have one owner with deterministic listener and timer teardown.
+- Removed a duplicate Settings modal renderer that painted the same controls from a second copy of the preference state; opening Settings from any entry point now renders once from `SettingsController`.
+- Fixed the Markdown toolbar On/Off buttons showing a stale value when the toolbar was toggled with `Ctrl+Shift+/` while Settings was open; the shortcut and the Settings buttons now share one write path.
+- Fixed Settings highlighting the previously chosen theme after the theme was changed with the toolbar button or `Ctrl+T`. `SettingsController` kept an independent copy of the theme that only its own buttons updated; it now adopts whichever theme was actually applied, including the Retro-only settings that depend on it.
+
+### Toolbar Layout Fixes
+- Fixed main toolbar labels and icons spilling outside their buttons at the Large size in Light, Dark, and High Contrast. Buttons were pinned to a fixed height that was smaller than the text line box; they now centre their content in a box that grows when needed.
+- Fixed the Retro theme ignoring the main toolbar size setting. Toolbar geometry moved into shared size tokens that every theme reads, so Retro keeps its own look while still following Small, Medium, and Large. Retro button text remains one pixel smaller than the other themes at each size.
+- Fixed the Markdown toolbar painting over the Preview pane in a vertical split, where the search button could appear inside Preview on narrow or portrait displays. Formatting groups now occupy a shrinkable region, the More and search controls are pinned inside the code pane, and the toolbar clips its inline axis while still letting dropdowns open downwards.
+- Sized the Markdown toolbar More menu against the code pane instead of the window so it cannot extend past the pane in a split view.
+- Applied the same fixed-height fix to the Markdown toolbar buttons and made split-button arrows match their button height at every size.
 
 ### Plugin System
 - Added a dedicated Plugin Manager modal with a General tab and one settings tab per plugin.

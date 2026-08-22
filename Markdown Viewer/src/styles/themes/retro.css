@@ -69,12 +69,15 @@ body.retro-theme .mode-btn {
   outline: 1px solid #808080;
   color: #000000;
   font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  font-size: 11px;
   font-weight: normal;
   border-radius: 0;
-  padding: 6px 12px;
   box-shadow: none;
-  height: 28px;
+  /* Retro owns the look, not the geometry: reading the shared size tokens
+     keeps the Settings toolbar size working in this theme too. The 1px
+     reduction preserves the established MS Sans Serif proportions. */
+  min-height: var(--main-toolbar-btn-min-height);
+  padding: var(--main-toolbar-btn-padding);
+  font-size: calc(var(--main-toolbar-btn-font-size) - 1px);
   display: flex;
   align-items: center;
   justify-content: center;

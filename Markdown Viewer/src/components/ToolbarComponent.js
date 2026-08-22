@@ -661,6 +661,14 @@ class ToolbarComponent extends BaseComponent {
   }
 
   /**
+   * Apply the Markdown toolbar preference owned by SettingsController.
+   */
+  setToolbarEnabled(enabled) {
+    this.isToolbarEnabled = enabled === true;
+    this.updateToolbarVisibility();
+  }
+
+  /**
    * Update toolbar visibility
    */
   updateToolbarVisibility() {

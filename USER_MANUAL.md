@@ -54,6 +54,7 @@ The toolbar includes:
 - **Export Options**: HTML export, PDF printing
 - **Optional Quick Controls**: Markdown rendering and Pinned Tabs controls can be pinned after Export; narrow windows combine them under Quick
 - **Consistent Commands**: Every toolbar button, dropdown item, and overflow menu entry runs the same command as its keyboard shortcut, so the theme toggle, mode buttons, and formatting tools behave identically from either entry point
+- **Markdown Toolbar Fit**: The Markdown toolbar stays inside the code pane. As the pane narrows — a vertical split, a portrait monitor, or a resized window — formatting groups move into the **More** menu, while More and Find & Replace stay reachable at the right edge
 
 ### Welcome Screen
 
@@ -418,10 +419,17 @@ Four carefully crafted themes:
 - **Medium**: Balanced approach, standard sizing
 - **Large**: Enhanced accessibility, bigger touch targets
 
+Every theme, including Retro, follows the size you choose, and buttons grow to fit their label rather than letting text or icons spill outside.
+
 #### Layout Options
 - **Main Toolbar**: File operations and mode controls
 - **Markdown Toolbar**: Formatting and editing tools
 - **Status Bar**: Information and quick controls
+
+#### Settings Consistency
+- **One Source of Truth**: The Settings modal always shows the values currently in effect, whichever entry point opened it — toolbar, `Ctrl+,`, welcome screen, or returning from the Plugin Manager
+- **Live Updates**: Toggling the Markdown toolbar with `Ctrl+Shift+/` while Settings is open updates its On/Off buttons immediately
+- **Theme Agreement**: Settings highlights the theme that is actually applied, whether you chose it in Settings, with the toolbar theme button, or with `Ctrl+T`
 
 ---
 

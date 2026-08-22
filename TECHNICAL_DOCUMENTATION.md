@@ -49,6 +49,7 @@ src/index.html
 - `DocumentLifecycleController`: file-open batches, full-path duplicate routing, new/close/dirty/save transitions, and external document-content updates.
 - `EditorLifecycleController`: editor content propagation, cursor persistence, lazy-load status refresh, markdown-command routing, and application-listener teardown. `EditorComponent` separately releases its fallback DOM listeners and editor adapter.
 - `PreviewLifecycleController`: task interaction, external-link routing, renderer status, errors, Preview context commands, export routing, post-render scroll restoration, and listener/timer teardown.
+- `SettingsCoordinator`: the sole owner of Settings/UI/Plugin Manager communication — theme application, rendering mode, pinned tabs, pinned quick controls, Markdown toolbar visibility, distraction-free forwarding, Retro sound tests, and the one canonical Settings refresh (settings display, performance dashboard, system information, plugin summary) shared by every entry point. Preference values stay in `SettingsController` and presentation stays in `UIController`/`ToolbarComponent`; neither reaches into the other's fields.
 - `ToolbarLifecycleController`: the sole owner of toolbar command routing — file new/open/save/save-as/close/reload, mode changes, exports, distraction-free/theme/Settings/Help, quick rendering and pinned-tab controls, font size and Preview zoom, undo/redo, Markdown actions and insertions, find/replace — plus listener teardown. Toolbar intent reaches services through this controller only, so the composition root registers no toolbar listeners.
 - `taskSyntax`: pure fenced-code-aware task extraction and exact source-line updates shared by Preview and Markdown actions; visible task text is no longer used as primary identity.
 - `MarkdownActionController`: editor-neutral Markdown insertion and formatting, including independently composable bold and italic toggle layers.
@@ -58,10 +59,10 @@ src/index.html
 - `NativeWindowController`: application-close session persistence, single-instance file forwarding, focus restoration, and native listener cleanup.
 - `ScrollCoordinator`: per-tab scroll capture and Code/Preview synchronization.
 - `SplitPaneController`: bounded vertical pane resizing, editor relayout scheduling, and disposable mouse listeners; horizontal height resizing remains plugin-owned.
-- `SettingsController`: preference loading, persistence, and settings UI state.
+- `SettingsController`: preference loading, persistence, the single write path for each preference, and the canonical Settings modal paint.
 - `TabSessionController`: activation, wraparound navigation, dormant-tab loading, editor documents, and session restoration.
 - `TabUIController`: pinned tabs, status-bar tab manager, context commands, menus, and tab reordering.
-- `UIController`: themes, layout, modals, and Retro audio.
+- `UIController`: themes, layout, modals, and Retro audio. `setTheme()` is the canonical theme write path for the Settings buttons, the toolbar button, and `Ctrl+T` alike; `SettingsController` adopts the result through `syncTheme()` rather than tracking the theme independently. It announces `settings-shown` rather than painting the Settings modal itself, so preference state has one renderer.
 - `WelcomeController`: welcome-screen new/open/help/about/settings/history commands and their DOM listener lifecycle.
 - `ExportController`: HTML and PDF/print preparation.
 
@@ -160,6 +161,11 @@ Renderer sanitization and native filesystem permissions are high-risk areas. Cha
 `src/styles.css` contains the current base styles. Feature, theme, and print styles live below `src/styles/` and are loaded through `StyleManager` where appropriate.
 
 The base stylesheet remains a major modularization target. New work should prefer a feature or theme stylesheet when ownership is clear and should avoid adding another competing style source.
+
+Two layout rules are load-bearing and covered by tests:
+
+- **Toolbar geometry is tokenized.** `[data-main-toolbar-size]` scopes redefine `--main-toolbar-*` custom properties only; no size rule targets a control directly. Base rules and themes both read those tokens, so a more specific theme selector cannot silently drop the user's size choice. Toolbar controls use `min-height` rather than `height`, because a fixed height smaller than the text line box pushes labels and icons outside the button.
+- **The Markdown toolbar is contained by the code pane.** `.toolbar-primary` holds the formatting groups in a shrinkable, inline-clipped region; the More and search controls sit after the spacer with `flex: 0 0 auto` so they stay reachable. `.markdown-toolbar` clips only its inline axis, leaving the block axis visible for dropdowns. `.editor-pane` is the `editor-pane` query container, so responsive collapsing and the More menu width both measure the pane rather than the window — a viewport unit here reappears as overflow into Preview during a vertical split.
 
 ## Testing
 

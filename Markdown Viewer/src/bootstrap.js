@@ -47,6 +47,7 @@ const applicationModuleStages = [
       () => import('./components/controllers/EditorLifecycleController.js'),
       () => import('./components/controllers/PreviewLifecycleController.js'),
       () => import('./components/controllers/ToolbarLifecycleController.js'),
+      () => import('./components/controllers/SettingsCoordinator.js'),
       () => import('./components/controllers/MarkdownActionController.js'),
       () => import('./components/controllers/ExportController.js'),
       () => import('./components/controllers/NativeWindowController.js'),

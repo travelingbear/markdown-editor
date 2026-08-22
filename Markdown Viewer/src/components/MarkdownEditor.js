@@ -36,6 +36,7 @@ class MarkdownEditor extends BaseComponent {
     this.editorLifecycleController = this.controllers.editorLifecycleController || null;
     this.previewLifecycleController = this.controllers.previewLifecycleController || null;
     this.toolbarLifecycleController = this.controllers.toolbarLifecycleController || null;
+    this.settingsCoordinator = this.controllers.settingsCoordinator || null;
     this.markdownActionController = this.controllers.markdownActionController || null;
     this.exportController = this.controllers.exportController || null;
     this.pluginModalController = this.controllers.pluginModalController || null;
@@ -159,6 +160,7 @@ class MarkdownEditor extends BaseComponent {
     this.registry.register('editorLifecycle', EditorLifecycleController);
     this.registry.register('previewLifecycle', PreviewLifecycleController);
     this.registry.register('toolbarLifecycle', ToolbarLifecycleController);
+    this.registry.register('settingsCoordinator', SettingsCoordinator);
     this.registry.register('markdownAction', MarkdownActionController);
     this.registry.register('export', ExportController);
     this.registry.register('nativeWindow', NativeWindowController);
@@ -409,6 +411,26 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.toolbarLifecycleController);
     await this.toolbarLifecycleController.init();
 
+    // SettingsCoordinator is the sole owner of Settings/UI/Plugin Manager
+    // communication and the canonical Settings refresh.
+    if (!this.settingsCoordinator) {
+      this.settingsCoordinator = this.registry.createInstance('settingsCoordinator');
+    }
+    this.settingsCoordinator.setDependencies({
+      settingsController: this.settingsController,
+      uiController: this.uiController,
+      pluginModalController: this.pluginModalController,
+      toolbarComponent: this.toolbarComponent,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      tabManager: this.tabManager,
+      tabUIController: this.tabUIController,
+      modeController: this.modeController,
+      performanceOptimizer: this.performanceOptimizer
+    });
+    this.addChild(this.settingsCoordinator);
+    await this.settingsCoordinator.init();
+
     // KeyboardController is the sole owner of application-level shortcuts.
     if (!this.keyboardController) {
       this.keyboardController = this.registry.createInstance('keyboard');
@@ -428,7 +450,7 @@ class MarkdownEditor extends BaseComponent {
       actions: {
         toggleFindReplace: (showReplace) => this.toggleFindReplace(showReplace),
         performManualScrollSync: () => this.performManualScrollSync(),
-        toggleMarkdownToolbar: () => this.toggleMarkdownToolbar(),
+        toggleMarkdownToolbar: () => this.settingsCoordinator.toggleMarkdownToolbar(),
         switchToPreviousTab: () => this.tabSessionController.switchToPreviousTab(),
         switchToNextTab: () => this.tabSessionController.switchToNextTab(),
         switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId),
@@ -454,61 +476,9 @@ class MarkdownEditor extends BaseComponent {
     
     // Toolbar command routing is owned by ToolbarLifecycleController.
 
-    // UI Controller Events
-    this.uiController.on('theme-changed', (data) => {
-      this.handleThemeChange(data);
-    });
+    // Settings, UI, and Plugin Manager communication is owned by
+    // SettingsCoordinator.
 
-    this.uiController.on('settings-shown', () => {
-      this.updateSettingsDisplay();
-    });
-    
-    this.uiController.on('distraction-free-changed', (data) => {
-      this.toolbarComponent.emit('distraction-free-changed', data);
-    });
-    
-    // Settings Controller Events
-    this.settingsController.on('theme-changed', async (data) => {
-      // Route settings changes through UIController so the corresponding
-      // stylesheet is loaded before CodeMirror is notified.
-      await this.uiController.setTheme(data.theme, data.isRetroTheme);
-    });
-    
-    this.settingsController.on('rendering-mode-changed', (data) => {
-      this.previewComponent.emit('rendering-mode-changed', data);
-      this.toolbarComponent.updateQuickSettings(this.settingsController.getToolbarQuickSettings());
-    });
-
-    this.settingsController.on('retro-sound-test-requested', () => {
-      this.uiController.playRetroStartupSound();
-    });
-    
-    this.settingsController.on('toolbar-enabled-changed', (data) => {
-      this.toolbarComponent.isToolbarEnabled = data.enabled;
-      this.toolbarComponent.updateToolbarVisibility();
-    });
-    
-    this.settingsController.on('pinned-tabs-changed', (data) => {
-      if (data.enabled) {
-        this.tabUIController.updatePinnedTabs();
-      }
-      this.toolbarComponent.updateQuickSettings(this.settingsController.getToolbarQuickSettings());
-    });
-
-    this.settingsController.on('toolbar-pins-changed', (data) => {
-      this.toolbarComponent.updateQuickSettings(data);
-    });
-
-    // Update system info when settings change
-    this.settingsController.on('settings-changed', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    // Plugin Manager Events
-    if (this.pluginManager) {
-      this.pluginManager.on = this.pluginManager.on || (() => {}); // Ensure event support
-    }
-    
     // Mode Controller Events
     this.modeController.on('mode-changed', (data) => {
       this.scrollCoordinator.updateButton();
@@ -517,10 +487,6 @@ class MarkdownEditor extends BaseComponent {
     // Tab UI Controller Events
     this.tabUIController.on('tab-switch-requested', (data) => {
       this.tabSessionController.switchToTab(data.tabId);
-    });
-    
-    this.tabUIController.on('settings-update-requested', () => {
-      this.updateSettingsDisplay();
     });
     
     // Export Controller Events
@@ -532,7 +498,7 @@ class MarkdownEditor extends BaseComponent {
   applyInitialSettings() {
     // Apply settings through controllers
     this.settingsController.applySettings();
-    this.toolbarComponent.updateQuickSettings(this.settingsController.getToolbarQuickSettings());
+    this.settingsCoordinator.syncToolbarQuickSettings();
     
     // Initialize pinned tabs if enabled
     if (this.settingsController.getPinnedTabsEnabled()) {
@@ -562,7 +528,7 @@ class MarkdownEditor extends BaseComponent {
     this.tabUIController.updateTabUI();
     
     // Initialize system info
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    this.settingsCoordinator.refreshSystemInfo();
   }
 
   setupGlobalEventHandlers() {
@@ -580,33 +546,6 @@ class MarkdownEditor extends BaseComponent {
     
 
   }
-
-  // Theme change handler
-  handleThemeChange(themeData) {
-    // Update the active editor theme through its neutral adapter.
-    this.editorComponent.updateTheme(themeData.theme);
-    
-    // Notify other components
-    this.previewComponent.emit('theme-changed', { theme: themeData.theme });
-    this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
-    
-    // CRITICAL: Reapply current mode after theme change to fix display issues
-    setTimeout(() => {
-      this.modeController.setMode(this.modeController.getCurrentMode());
-    }, 100);
-    
-    // Refresh preview if we have active tab content
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab) {
-      this.previewComponent.emit('update-preview', { 
-        content: activeTab.content,
-        filePath: activeTab.filePath 
-      });
-    }
-  }
-
-
-
 
 
   // Utility Functions
@@ -682,15 +621,6 @@ class MarkdownEditor extends BaseComponent {
     }
   }
   
-  toggleMarkdownToolbar() {
-    const currentEnabled = this.settingsController.getToolbarEnabled();
-    this.settingsController.isToolbarEnabled = !currentEnabled;
-    localStorage.setItem('markdownViewer_toolbarEnabled', (!currentEnabled).toString());
-    this.settingsController.applyMarkdownToolbarVisibility();
-    this.toolbarComponent.isToolbarEnabled = !currentEnabled;
-    this.toolbarComponent.updateToolbarVisibility();
-  }
-  
   async toggleFullscreen() {
     try {
       if (window.__TAURI__?.window) {
@@ -708,19 +638,6 @@ class MarkdownEditor extends BaseComponent {
     } catch (error) {
       console.error('[MarkdownEditor] Error toggling fullscreen:', error);
     }
-  }
-
-  updateSettingsDisplay() {
-    this.settingsController.updateSettingsDisplay();
-    this.settingsController.updatePerformanceDashboard(this.performanceOptimizer, this.tabManager);
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    
-    // Update plugin display when settings modal is shown
-    this.updatePluginDisplay();
-  }
-  
-  updatePluginDisplay() {
-    this.pluginModalController?.refresh();
   }
 
   updateSplashProgress(progress, message) {

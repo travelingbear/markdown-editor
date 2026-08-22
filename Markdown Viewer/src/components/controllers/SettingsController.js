@@ -425,11 +425,7 @@ class SettingsController extends BaseComponent {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.isToolbarEnabled = id === 'toolbar-on-btn';
-          localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
-          this.applyMarkdownToolbarVisibility();
-          this.emit('toolbar-enabled-changed', { enabled: this.isToolbarEnabled });
-          this.updateSettingsDisplay();
+          this.setToolbarEnabled(id === 'toolbar-on-btn');
         });
       }
     });
@@ -545,6 +541,29 @@ class SettingsController extends BaseComponent {
 
   getPinnedTabsEnabled() {
     return this.pinnedTabsEnabled;
+  }
+
+  /**
+   * Adopt the theme applied elsewhere. UIController.setTheme() is the canonical
+   * theme write path — it also serves the toolbar button and Ctrl+T — so this
+   * controller has to follow it instead of keeping an independent copy that
+   * only its own buttons update. Deliberately silent: emitting `theme-changed`
+   * here would route straight back into UIController.setTheme().
+   */
+  syncTheme({ theme, isRetroTheme }) {
+    this.theme = theme;
+    this.isRetroTheme = isRetroTheme === true;
+    this.updateSettingsDisplay();
+  }
+
+  // Single write path for Markdown toolbar visibility, shared by the Settings
+  // On/Off buttons and the Ctrl+Shift+/ shortcut.
+  setToolbarEnabled(enabled) {
+    this.isToolbarEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
+    this.applyMarkdownToolbarVisibility();
+    this.emit('toolbar-enabled-changed', { enabled: this.isToolbarEnabled });
+    this.updateSettingsDisplay();
   }
 
   setAdvancedRenderingEnabled(enabled) {

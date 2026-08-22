@@ -67,6 +67,9 @@
       <!-- Markdown Toolbar -->
       <div id="markdown-toolbar" class="markdown-toolbar">
         <div class="toolbar-content" role="toolbar" aria-label="Markdown formatting">
+          <!-- Formatting groups shrink and clip here so the pinned controls
+               after the spacer can never be pushed outside the code pane. -->
+          <div class="toolbar-primary">
           <div class="toolbar-group toolbar-group-history">
             <button id="undo-btn" class="md-btn" title="Undo (Ctrl+Z)">↶</button>
             <button id="redo-btn" class="md-btn" title="Redo (Ctrl+Y)">↷</button>
@@ -221,6 +224,8 @@
             </button>
           </div>
           
+          </div>
+
           <div class="toolbar-spacer"></div>
           
           <div class="toolbar-group toolbar-group-search">

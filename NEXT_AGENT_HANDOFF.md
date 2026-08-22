@@ -26,7 +26,20 @@ Preserve unrelated user changes. Use `apply_patch` for source/document edits. Do
 
 The broad modernization checkpoint precedes this handoff. Use `git log --oneline` for its exact history.
 
-The latest approved batch completed pipeline item 2:
+The latest approved batch completed pipeline item 2 and two reported layout bugs:
+
+- Extracted Settings/UI/Plugin Manager communication into `src/components/controllers/SettingsCoordinator.js`, owner of the 11 events connecting `SettingsController`, `UIController`, `TabUIController`, and the Plugin Manager, with listener and timer teardown.
+- Made `refreshSettingsDisplay()` the one canonical Settings refresh for every entry point: toolbar, `Ctrl+,`, welcome screen, status-bar tab manager, and the Plugin Manager return flow.
+- Removed the duplicate Settings renderer in `UIController`, which painted the same controls from a second copy of the preference state; `UIController` dropped from 590 to 471 lines.
+- Replaced cross-controller field mutation with explicit methods: `SettingsController.setToolbarEnabled()`, `ToolbarComponent.setToolbarEnabled()`, and `SettingsController.syncTheme()`.
+- Fixed the Markdown toolbar On/Off buttons going stale when `Ctrl+Shift+/` was used while Settings was open.
+- Fixed Settings highlighting the previously chosen theme after the toolbar button or `Ctrl+T` changed it. `UIController.setTheme()` is the canonical theme write path and `SettingsController` now adopts its result.
+- Fixed main toolbar labels/icons spilling outside buttons at Large, and the Retro theme ignoring the toolbar size entirely. Toolbar geometry now lives in `--main-toolbar-*` tokens that every theme reads, and controls use `min-height` instead of `height`.
+- Fixed the Markdown toolbar painting over the Preview pane in a vertical split. Formatting groups moved into a shrinkable `.toolbar-primary` region, More/search are pinned with `flex: 0 0 auto`, the toolbar clips only its inline axis, and the More menu is sized in `cqi` against the code pane.
+- Reduced `MarkdownEditor.js` from 845 to 762 lines; `setupComponentCommunication()` is down to five listeners.
+- Updated all four required documentation files.
+
+The preceding approved batch completed pipeline item 1 (toolbar command routing):
 
 - Extracted all toolbar command routing into `src/components/controllers/ToolbarLifecycleController.js`, the sole owner of the 22 `ToolbarComponent` output events.
 - Covered file new/open/save/save-as/close/reload, mode changes, exports, distraction-free/theme/Settings/Help, quick rendering and pinned-tab toggles, font size, Preview zoom, undo/redo, Markdown actions/inserts, and find/replace.
@@ -36,7 +49,7 @@ The latest approved batch completed pipeline item 2:
 - Added `src/tests/toolbar-lifecycle-controller.test.js` covering routing, the single theme path, complete teardown, and no double-binding on reinitialization.
 - Updated all four required documentation files.
 
-The preceding approved batch completed pipeline item 1:
+The batch before that completed the Preview lifecycle extraction:
 
 - Extracted all Preview event/command ownership into `src/components/controllers/PreviewLifecycleController.js` with deterministic listener and timer teardown.
 - Routed reload, sync, restart, export, task toggle, external link, renderer status, errors, and post-render scroll alignment through that controller.
@@ -49,42 +62,18 @@ The preceding approved batch completed pipeline item 1:
 
 Validation at handoff:
 
-- `44` Vitest files passed.
-- `204` tests passed.
+- `47` Vitest files passed.
+- `230` tests passed.
 - `npm run build:web` passed.
-- `cargo check` passed during the Preview-lifecycle batch. The toolbar-routing batch changed no Rust, native commands, or capabilities, so it was not rerun.
+- `cargo check` passed during the Preview-lifecycle batch. The batches since then changed no Rust, native commands, or capabilities, so it was not rerun.
 - `git diff --check` passed; Git may still print informational LF-to-CRLF warnings on Windows.
-- Expected development startup log: `[Bootstrap] 41 modules ready ...`.
+- Expected development startup log: `[Bootstrap] 42 modules ready ...`.
 
 ## Remaining agreed pipeline
 
 Do these in order and treat each numbered item as a separate approval boundary.
 
-### 2. Extract Settings/UI coordination
-
-Current hotspots:
-
-- `SettingsController.js` — about 613 lines.
-- `UIController.js` — about 590 lines.
-- `PluginModalController.js` — about 539 lines.
-- `MarkdownEditor.js` currently coordinates settings/UI/plugin events around the area following toolbar routing.
-
-Goal:
-
-- Give one disposable coordinator ownership of Settings/UI/Plugin Manager communication.
-- Remove cross-controller state mutation where an event or explicit method can express the change.
-- Consolidate opening/closing/return flows, toolbar visibility and size, pinned quick controls, rendering mode, pinned tabs, theme, performance/system information, and plugin settings refresh.
-- Preserve lazy plugin runtime status: enabled-but-unused KaTeX/Mermaid must report **Not Loaded**, not **Disabled**.
-
-Minimum manual tests:
-
-- Open Settings from welcome page, toolbar, keyboard, and Plugin Manager return flow.
-- Change every toolbar size and enable/disable option.
-- Pin/unpin Markdown rendering and Pinned Tabs quick controls.
-- Enable/disable/configure each plugin and reopen the manager to confirm persisted values.
-- Verify System Info before and after rendering KaTeX/Mermaid.
-
-### 3. Finish the composition root
+### 2. Finish the composition root
 
 Goal:
 
@@ -95,13 +84,13 @@ Goal:
 
 Tests should prove initialization order, injected dependencies, listener teardown, and that reinitialization does not double-bind commands.
 
-### 4. Decompose the largest remaining modules
+### 3. Decompose the largest remaining modules
 
 Current approximate sizes at handoff:
 
-- `styles.css`: 3,703 lines (handled primarily in item 5).
-- `styles/themes/retro.css`: 1,225 lines.
-- `ToolbarComponent.js`: 1,112 lines.
+- `styles.css`: 3,724 lines (handled primarily in item 4).
+- `styles/themes/retro.css`: 1,228 lines.
+- `ToolbarComponent.js`: 1,120 lines.
 - `performance-optimizer.js`: 1,004 lines.
 - `TabUIController.js`: 974 lines.
 - `PreviewComponent.js`: 938 lines.
@@ -118,21 +107,21 @@ Preserve:
 - Windows/Linux file, search, shortcut, and path behavior.
 - Plugin lifecycle isolation and lazy rendering.
 
-### 5. Modularize CSS
+### 4. Modularize CSS
 
 Current CSS already has `styles/features`, `styles/themes`, and `styles/utilities`; continue that structure.
 
 Goal:
 
-- Split component-owned blocks out of the 3,703-line `src/styles.css`.
+- Split component-owned blocks out of the 3,724-line `src/styles.css`.
 - Keep only shared tokens, reset/base layout, and genuinely global rules in the base stylesheet.
 - Preserve loading order and theme overrides.
 - Avoid visual changes in a mechanical extraction batch.
-- Then, if useful, simplify the 1,225-line Retro theme as a separate approval batch.
+- Then, if useful, simplify the 1,228-line Retro theme as a separate approval batch.
 
 Manually compare Light, Dark, and Retro across welcome, toolbar, Settings, Plugin Manager, tabs, Code, Preview, vertical/horizontal Split, dialogs, task lists, code blocks, Mermaid, KaTeX, and responsive widths.
 
-## Final audit after items 2–5
+## Final audit after items 2–4
 
 - Run the full automated suite and `npm run build:web`.
 - Run `cargo check` and native development smoke tests.

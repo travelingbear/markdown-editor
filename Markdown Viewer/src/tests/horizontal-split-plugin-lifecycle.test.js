@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HorizontalSplitPlugin } from '../plugins/HorizontalSplitPlugin.js';
+import { HORIZONTAL_SPLIT_CSS } from '../plugins/horizontalSplitStyles.js';
 
 function createPlugin() {
   const settings = new Map();
@@ -111,5 +112,32 @@ describe('HorizontalSplitPlugin lifecycle', () => {
     expect(plugin.getSetting('horizontalSplitToolbar', 'show')).toBe('hide');
     expect(plugin.getSetting('horizontalSplitPaneOrder', 'preview-top')).toBe('code-top');
     expect(localStorage.getItem('markdownViewer_defaultSplitOrientation')).toBeNull();
+  });
+});
+
+describe('HorizontalSplitPlugin styles', () => {
+  it('mounts exactly the shared stylesheet and removes it on destroy', async () => {
+    const plugin = createPlugin();
+    plugin.injectCSS();
+
+    const style = plugin.styleElement;
+    expect(style.textContent).toBe(HORIZONTAL_SPLIT_CSS);
+    expect(document.head.contains(style)).toBe(true);
+
+    await plugin.destroy();
+    expect(document.head.contains(style)).toBe(false);
+  });
+
+  it('carries the layout rules the plugin depends on', () => {
+    // The plugin owns horizontal split entirely; the base stylesheet has no
+    // rules for it, so these selectors only exist here.
+    for (const selector of [
+      '.main-content.split-mode.split-horizontal .editor-pane',
+      '.main-content.split-mode.split-horizontal.code-top .editor-pane',
+      '.main-content.split-mode.split-horizontal .splitter',
+      '#split-orientation-menu'
+    ]) {
+      expect(HORIZONTAL_SPLIT_CSS, `missing rules for ${selector}`).toContain(selector);
+    }
   });
 });

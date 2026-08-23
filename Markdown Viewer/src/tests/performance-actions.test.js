@@ -86,3 +86,103 @@ describe('performance settings actions', () => {
     expect(status.textContent).toContain('Memory cleaned');
   });
 });
+
+describe('performance dashboard rendering', () => {
+  function mountDashboard() {
+    document.body.innerHTML = `
+      <span id="perf-tab-count"></span>
+      <span id="perf-memory"></span>
+      <span id="perf-startup"></span>
+      <span id="perf-tab-switch"></span>
+      <span id="perf-status"></span>
+      <span id="active-tabs-count"></span>
+      <span id="memory-usage"></span>
+      <span id="memory-pressure"></span>
+      <span id="tab-switch-avg"></span>
+    `;
+  }
+
+  it('writes every measurement into both current and retained element ids', () => {
+    const instance = createOptimizer();
+    mountDashboard();
+    window.markdownEditor = {
+      startupTime: 42.5,
+      tabManager: { getTabsCount: () => 5, getAllTabs: () => [], getActiveTab: () => null }
+    };
+    instance.performanceMetrics.get('tabSwitches').push({ duration: 20 }, { duration: 40 });
+
+    instance.updatePerformanceDashboard();
+
+    expect(document.getElementById('perf-tab-count').textContent).toBe('5 (0 virtual)');
+    expect(document.getElementById('active-tabs-count').textContent).toBe('5 (0 virtual)');
+    expect(document.getElementById('perf-startup').textContent).toBe('42.50ms');
+    expect(document.getElementById('perf-tab-switch').textContent).toBe('30.0ms');
+    expect(document.getElementById('tab-switch-avg').textContent).toBe('30.0ms');
+    expect(document.getElementById('tab-switch-avg').className).toBe('perf-value good');
+  });
+
+  it('reports a healthy session as good, with the reason on the status', () => {
+    const instance = createOptimizer();
+    mountDashboard();
+    window.markdownEditor = {
+      startupTime: 50,
+      tabManager: { getTabsCount: () => 1, getAllTabs: () => [], getActiveTab: () => null }
+    };
+
+    instance.updatePerformanceDashboard();
+
+    const status = document.getElementById('perf-status');
+    expect(status.textContent).toBe('Good');
+    expect(status.className).toBe('status-good');
+    expect(status.title).toBe('Performance is good');
+  });
+
+  it('surfaces slow tab switching as a warning', () => {
+    const instance = createOptimizer();
+    mountDashboard();
+    window.markdownEditor = {
+      tabManager: { getTabsCount: () => 1, getAllTabs: () => [], getActiveTab: () => null }
+    };
+    instance.performanceMetrics.get('tabSwitches').push({ duration: 150 });
+
+    instance.updatePerformanceDashboard();
+
+    const status = document.getElementById('perf-status');
+    expect(status.textContent).toBe('Warning');
+    expect(status.title).toContain('Slow tab switching');
+    expect(document.getElementById('perf-tab-switch').textContent).toBe('150.0ms');
+  });
+
+  it('counts virtual tabs and clears them once every tab is gone', () => {
+    const instance = createOptimizer();
+    mountDashboard();
+    instance.virtualizedTabs.add('ghost');
+    window.markdownEditor = {
+      tabManager: { getTabsCount: () => 0, getAllTabs: () => [], getActiveTab: () => null }
+    };
+
+    instance.updatePerformanceDashboard();
+
+    expect(instance.virtualizedTabs.size).toBe(0);
+    expect(document.getElementById('perf-tab-count').textContent).toBe('0 (0 virtual)');
+  });
+
+  it('falls back to the rendered tab dropdown without an editor', () => {
+    const instance = createOptimizer();
+    mountDashboard();
+    document.body.insertAdjacentHTML('beforeend',
+      '<div class="tab-dropdown-item"></div><div class="tab-dropdown-item"></div>');
+    delete window.markdownEditor;
+
+    instance.updatePerformanceDashboard();
+
+    expect(document.getElementById('perf-tab-count').textContent).toBe('2 (0 virtual)');
+  });
+
+  it('renders nothing and does not throw when the section is absent', () => {
+    const instance = createOptimizer();
+    document.body.innerHTML = '';
+
+    expect(() => instance.updatePerformanceDashboard()).not.toThrow();
+  });
+});

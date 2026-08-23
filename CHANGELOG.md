@@ -39,6 +39,10 @@
 - Fixed the Markdown insert dialogs never releasing their listeners: the dropdowns, both dialogs, the image tabs, the drop zone, and the file input had no teardown at all, and a pending focus timer could fire after disposal.
 - Fixed a link or image dropdown menu being moved to `<body>` on first use and never returned; the restore looked for a container id that does not exist in the shell.
 
+- Removed an unreachable tab-virtualization subtree from `PerformanceOptimizer`: `handleHighTabCount()` had no callers anywhere and was the only caller of `selectTabsForVirtualization()`, `virtualizeTab()`, and `initializeTabAccessTracking()`. Also dropped four fields that were assigned and never read. `performance-optimizer.js` went from 1,004 to 786 lines.
+- Extracted the tab-unloading policy and access average into a pure `performance/tabPolicy.js`, covering the idle, visit-count, ordering, and per-pass limits that decide which tabs are released under memory pressure.
+- Extracted the Performance Monitor's formatting and thresholds into a pure `performance/dashboardView.js`, replacing a 160-line DOM method with a view model plus a small binding, and covering the previously untestable severity and status rules.
+
 ### Markdown Rendering Fixes
 - Extracted the Preview post-parse HTML pipeline into a pure `rendering/previewHtml.js` module — task-list fallback, footnotes, super/subscript, link normalization, image tagging, and href validation — taking `PreviewComponent` from 946 to 725 lines and making every transform directly testable.
 - Removed the unreachable list-converting branches from the task-list fallback. `marked` already converts `- [ ]` into a checkbox, so those branches only ever ran on hand-written HTML lists, where a nested list produced malformed markup with an unclosed element inside a label. Standalone `[x] text` paragraphs, which `marked` does leave alone, still become checkboxes.

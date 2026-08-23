@@ -79,8 +79,6 @@ class ToolbarLifecycleController extends BaseComponent {
     // Markdown commands
     this.listen('markdown-action', ({ action }) =>
       this.markdownActionController.handleMarkdownAction(action));
-    this.listen('markdown-insert', ({ text }) =>
-      this.markdownActionController.insertMarkdownText(text));
 
     // Search
     this.listen('find-replace-requested', () => this.actions.toggleFindReplace(true));

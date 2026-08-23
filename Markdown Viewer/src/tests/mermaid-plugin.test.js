@@ -57,7 +57,10 @@ describe('Mermaid renderer plugin', () => {
       render: expect.any(Function)
     }));
     expect(runtime.version).toBe(BUNDLED_MERMAID_VERSION);
-  });
+    // Importing the real bundled runtime pulls in a large module graph, which
+    // can exceed the default 5s timeout when the suite runs in parallel. This
+    // is genuinely slow work, not a hang.
+  }, 30000);
 
   it('registers without loading Mermaid until a diagram is transformed', async () => {
     const runtime = createRuntime();

@@ -26,7 +26,16 @@ Preserve unrelated user changes. Use `apply_patch` for source/document edits. Do
 
 The broad modernization checkpoint precedes this handoff. Use `git log --oneline` for its exact history.
 
-The latest approved batch completed pipeline item 2 (composition root):
+The latest approved batch started pipeline item 2 (decomposition) and fixed
+reported Markdown rendering bugs:
+
+- Extracted the Link and Image insert flow out of `ToolbarComponent` into `MarkdownDialogController` plus a pure `markdownInsertSyntax` module, taking the component from 1,120 to 788 lines. Fixed the dialogs never releasing any listener, and a dropdown menu being reparented to `<body>` and never returned.
+- Fixed multi-line display math being destroyed by Markdown parsing. Renderers now have a `transformMarkdown` phase that runs before `marked`, and KaTeX renders each formula from the source, so a `$$` block containing a lone `=` line no longer becomes a setext heading that swallows the closing tag and leaves an unclosed `<h1>` dragging the rest of the document to heading size.
+- Fixed fenced code never being recognised as closed in CRLF documents, which had hidden most math in Windows-authored files.
+- Retuned the Markdown toolbar collapse breakpoints from the CSS box model; they had been ~25% below what the row actually needs.
+- Gave the Mermaid runtime-loading test an explicit 30s timeout; it imports the real bundled runtime and intermittently exceeded the 5s default under parallel load.
+
+The preceding approved batch completed pipeline item 2 (composition root):
 
 - Reduced `MarkdownEditor` to construction, injection, initialization, startup staging, the error boundary, and disposal. `setupComponentCommunication()` is gone; every cross-component event has an owning controller that also removes it. 762 to 608 lines.
 - Added `StatusBarController` (cursor position and the untabbed document name) and `SearchController` (editor adapter in Code/Split, native find in Preview).
@@ -71,12 +80,41 @@ Earlier still, the Preview lifecycle extraction:
 
 Validation at handoff:
 
-- `50` Vitest files passed.
-- `269` tests passed.
+- `53` Vitest files passed.
+- `316` tests passed.
 - `npm run build:web` passed.
 - `cargo check` passed during the Preview-lifecycle batch. The batches since then changed no Rust, native commands, or capabilities, so it was not rerun.
 - `git diff --check` passed; Git may still print informational LF-to-CRLF warnings on Windows.
-- Expected development startup log: `[Bootstrap] 44 modules ready ...`.
+- Expected development startup log: `[Bootstrap] 45 modules ready ...`.
+
+## Known open issue (deferred by the user)
+
+**Markdown toolbar leaves unused width before the More button.** In a narrow code
+pane a formatting group collapses into More while there is still visibly room for
+it, so an empty gap sits between the last formatting button and the pinned
+More/Find controls. The user has accepted the current behaviour for now.
+
+Cause: the collapse breakpoints in `styles/features/markdown-toolbar.css` are
+derived from the CSS box model rather than measured, and are deliberately
+conservative so the row can never overflow into Preview. See the technical
+documentation's Styling section for how they are computed.
+
+Constraints learned the hard way while attempting this:
+
+- This project has **no browser-based test runner** — only jsdom, which has no
+  layout engine. Flexbox, wrapping, and `offsetTop`/`offsetParent` cannot be
+  verified here. Two attempted fixes passed their tests and still failed in the
+  application. Do not ship a layout change validated only in jsdom.
+- A `flex-wrap`/`max-height` single-row variant and a `ResizeObserver`-based
+  measurement controller were both tried and reverted; neither could be verified.
+- Find & Replace must stay pinned at the right edge of the toolbar, with More
+  beside it. Moving either control was explicitly rejected.
+- What jsdom *can* verify: DOM order, and static analysis of the container
+  queries. `src/tests/toolbar-layout-styles.test.js` and
+  `src/tests/toolbar-overflow-placement.test.js` use both.
+
+The safe fix is either an accurate measurement pass validated in a real browser,
+or lowering individual tiers against observed pane widths reported by the user.
 
 ## Remaining agreed pipeline
 
@@ -88,10 +126,10 @@ Current approximate sizes at handoff:
 
 - `styles.css`: 3,724 lines (handled primarily in item 3).
 - `styles/themes/retro.css`: 1,228 lines.
-- `ToolbarComponent.js`: 1,120 lines (largest JavaScript module; start here).
+- `ToolbarComponent.js`: 788 lines (Link/Image dialogs already extracted).
 - `performance-optimizer.js`: 1,004 lines.
 - `TabUIController.js`: 974 lines.
-- `PreviewComponent.js`: 938 lines.
+- `PreviewComponent.js`: 946 lines.
 - `HorizontalSplitPlugin.js`: 911 lines.
 
 Handle one module/subsystem per approval batch. Extract cohesive pure helpers or controllers with explicit dependencies. Avoid moving code solely to reduce line counts. Good boundaries include toolbar layout/menu presentation, tab drag/reorder UI, Preview post-processing, performance measurements versus virtualization, and horizontal-split layout/settings.

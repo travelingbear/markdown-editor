@@ -16,6 +16,7 @@ class KeyboardController extends BaseComponent {
     this.toolbarComponent = null;
     this.markdownActionController = null;
     this.pluginModalController = null;
+    this.markdownDialogController = null;
     this.tabUIController = null;
     this.exportController = null;
     this.performanceOptimizer = null;
@@ -39,6 +40,7 @@ class KeyboardController extends BaseComponent {
     toolbarComponent,
     markdownActionController,
     pluginModalController,
+    markdownDialogController,
     tabUIController,
     exportController,
     performanceOptimizer,
@@ -52,6 +54,7 @@ class KeyboardController extends BaseComponent {
     this.toolbarComponent = toolbarComponent;
     this.markdownActionController = markdownActionController;
     this.pluginModalController = pluginModalController;
+    this.markdownDialogController = markdownDialogController;
     this.tabUIController = tabUIController;
     this.exportController = exportController;
     this.performanceOptimizer = performanceOptimizer;
@@ -263,9 +266,9 @@ class KeyboardController extends BaseComponent {
     } else if (aboutModal && aboutModal.style.display === 'flex') {
       this.uiController.hideAbout();
     } else if (linkModal && linkModal.style.display === 'flex') {
-      this.toolbarComponent.hideLinkModal();
+      this.markdownDialogController.hideLinkModal();
     } else if (imageModal && imageModal.style.display === 'flex') {
-      this.toolbarComponent.hideImageModal();
+      this.markdownDialogController.hideImageModal();
     } else if (this.uiController.isDistractionFree) {
       this.uiController.exitDistractionFree();
     } else if (document.fullscreenElement) {
@@ -337,6 +340,7 @@ class KeyboardController extends BaseComponent {
     this.toolbarComponent = null;
     this.markdownActionController = null;
     this.pluginModalController = null;
+    this.markdownDialogController = null;
     this.tabUIController = null;
     this.exportController = null;
     this.performanceOptimizer = null;

@@ -3,6 +3,7 @@ import {
   containsMathSyntax,
   isLikelyMathExpression,
   replaceInlineMath,
+  replaceMathOutsideCode,
   stripMarkdownCode
 } from '../rendering/mathSyntax.js';
 
@@ -52,5 +53,65 @@ describe('math syntax detection', () => {
 
     expect(result).toBe('The prices are $5 and $10.');
     expect(replacer).not.toHaveBeenCalled();
+  });
+});
+
+describe('replaceMathOutsideCode', () => {
+  it('applies the replacement to ordinary prose', () => {
+    expect(replaceMathOutsideCode('a $x$ b', (part) => part.toUpperCase()))
+      .toBe('A $X$ B');
+  });
+
+  it('leaves fenced blocks untouched', () => {
+    const source = ['before', '```', '$x + y$', '```', 'after'].join('\n');
+    const result = replaceMathOutsideCode(source, (part) => part.replace(/\$/g, 'D'));
+    expect(result).toContain('$x + y$');
+    expect(result.startsWith('before')).toBe(true);
+  });
+
+  it('leaves tilde fences and inline code untouched', () => {
+    const source = ['~~~', '$a$', '~~~', '', 'text `$b$` more $c$'].join('\n');
+    const result = replaceMathOutsideCode(source, (part) => part.replace(/\$/g, 'D'));
+    expect(result).toContain('$a$');
+    expect(result).toContain('`$b$`');
+    expect(result).toContain('DcD');
+  });
+
+  it('rebuilds the source exactly when the replacement is the identity', () => {
+    const source = ['# Title', '', '```js', 'const a = `$x$`;', '```', '', 'Tail $y$.'].join('\n');
+    expect(replaceMathOutsideCode(source, (part) => part)).toBe(source);
+  });
+
+  it('closes a fence written with CRLF line endings', () => {
+    // A Windows-authored document puts \r before the newline. When the closing
+    // fence was not recognised, the fence swallowed the rest of the file and no
+    // math after the first code block was ever rendered.
+    const source = ['before $a$', '```js', 'const x = 1;', '```', 'after $b$'].join('\r\n');
+    const result = replaceMathOutsideCode(source, (part) => part.replace(/\$/g, 'D'));
+
+    expect(result).toContain('DaD');
+    expect(result).toContain('DbD');
+    expect(result).toContain('const x = 1;');
+  });
+
+  it('detects math after a CRLF fenced block', () => {
+    const source = ['```', 'code', '```', '', 'Area: $\\pi r^2$'].join('\r\n');
+    expect(stripMarkdownCode(source)).toContain('$\\pi r^2$');
+    expect(containsMathSyntax(source)).toBe(true);
+  });
+
+  it('allows trailing spaces after a closing fence', () => {
+    const source = ['$a$', '```', 'code', '```   ', 'tail $b$'].join('\n');
+    const result = replaceMathOutsideCode(source, (part) => part.replace(/\$/g, 'D'));
+
+    expect(result).toContain('DaD');
+    expect(result).toContain('DbD');
+  });
+
+  it('handles an unterminated fence by treating the rest as code', () => {
+    const source = ['ok $x$', '```', '$y$'].join('\n');
+    const result = replaceMathOutsideCode(source, (part) => part.replace(/\$/g, 'D'));
+    expect(result).toContain('DxD');
+    expect(result).toContain('$y$');
   });
 });

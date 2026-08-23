@@ -59,10 +59,11 @@ describe('KaTeX renderer plugin', () => {
     expect(renderer.shouldRender({ markdown: 'It costs $5 today.' })).toBe(false);
     expect(renderer.shouldRender({ markdown: 'Area: $\\pi r^2$.' })).toBe(true);
 
-    const result = await renderer.transformHtml('<p>Area: $\\pi r^2$.</p>', {
-      markdown: 'Area: $\\pi r^2$.',
-      isCurrent: () => true
-    });
+    // Math is rendered from the source, then substituted back after parsing.
+    const context = { markdown: 'Area: $\\pi r^2$.', isCurrent: () => true };
+    const protectedSource = await renderer.transformMarkdown('Area: $\\pi r^2$.', context);
+    expect(protectedSource).not.toContain('$');
+    const result = await renderer.transformHtml(`<p>${protectedSource}</p>`, context);
 
     expect(runtimeLoader).toHaveBeenCalledOnce();
     expect(result).toContain('class="math-inline"');
@@ -84,13 +85,20 @@ describe('KaTeX renderer plugin', () => {
     await plugin.init();
     const renderer = harness.getRenderer();
 
-    expect(await renderer.transformHtml('<p>Price $5 and $10.</p>', {
+    // Currency never becomes math in strict mode.
+    expect(await renderer.transformMarkdown('Price $5 and $10.', {
       markdown: 'Price $5 and $10.'
-    })).toBe('<p>Price $5 and $10.</p>');
-    expect(await renderer.transformHtml('<pre><code>$x + y$</code></pre>', {
-      markdown: 'Outside $x + y$',
-      isCurrent: () => true
-    })).toBe('<pre><code>$x + y$</code></pre>');
+    })).toBe('Price $5 and $10.');
+
+    // Code is protected at the source, before Markdown turns it into elements.
+    const fenced = ['```', '$x + y$', '```'].join('\n');
+    const fencedContext = { markdown: fenced, isCurrent: () => true };
+    expect(await renderer.transformMarkdown(fenced, fencedContext)).toBe(fenced);
+
+    const inlineCode = 'Literal `$x + y$` stays put.';
+    const inlineContext = { markdown: inlineCode, isCurrent: () => true };
+    expect(await renderer.transformMarkdown(inlineCode, inlineContext)).toBe(inlineCode);
+
     expect(renderToString).not.toHaveBeenCalled();
   });
 
@@ -120,7 +128,7 @@ describe('KaTeX renderer plugin', () => {
     expect(harness.preview.updatePreview).toHaveBeenCalled();
 
     host.querySelector('[data-katex-setting="inlineMath"][data-katex-value="true"]').click();
-    await harness.getRenderer().transformHtml('<p>$x$</p>', {
+    await harness.getRenderer().transformMarkdown('$x$', {
       markdown: '$x$',
       isCurrent: () => true
     });

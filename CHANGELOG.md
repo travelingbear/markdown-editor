@@ -35,6 +35,17 @@
 - Added `StatusBarController` for the cursor and document-name readouts, and `SearchController` for find/replace routing between the editor adapter and the browser's native find.
 - Moved fullscreen into `NativeWindowController`, the welcome application state into `WelcomeController`, tab-switch requests into `TabSessionController`, sync-button mode tracking into `ScrollCoordinator`, and the `FileController` new/error transitions into `DocumentLifecycleController`.
 - Routed export failures straight to the application error boundary, since export is reachable from both the toolbar and Preview and neither routing controller owns its failures.
+- Extracted the Link and Image insert flow out of `ToolbarComponent` into `MarkdownDialogController`, taking it from 1,120 to 787 lines, and split the link/image Markdown construction into a pure, directly testable `markdownInsertSyntax` module.
+- Fixed the Markdown insert dialogs never releasing their listeners: the dropdowns, both dialogs, the image tabs, the drop zone, and the file input had no teardown at all, and a pending focus timer could fire after disposal.
+- Fixed a link or image dropdown menu being moved to `<body>` on first use and never returned; the restore looked for a container id that does not exist in the shell.
+
+### Markdown Rendering Fixes
+- Fixed multi-line display math being destroyed by Markdown parsing. A `$$` block containing a line break, or a lone `=` line as in a matrix product, was split across a setext heading and a paragraph before KaTeX ran; matching `$$...$$` in the resulting HTML then swallowed the closing `</h1>` and left an unclosed heading, so the block rendered with visible HTML tags and everything after it was drawn at heading size. Renderers now have a `transformMarkdown` phase that runs before parsing, and KaTeX renders each formula from the source.
+- Fixed blockquotes and inline math appearing at heading size after such a math block, which was that same unclosed heading.
+- Fixed inline math being larger than the text around it; it now matches the surrounding sentence, while display blocks stay slightly larger.
+- Code fences and inline code are now protected from math detection at the source rather than by inspecting parsed HTML, so `$` inside code stays literal in every position.
+- Fixed fenced code blocks never being recognised as closed in documents saved with Windows CRLF line endings. The closing-fence check required a bare newline, so the first fence absorbed the rest of the file and math after any code block went undetected.
+- An invalid formula kept as source no longer has its surrounding paragraph removed.
 
 ### Toolbar Layout Fixes
 - Fixed main toolbar labels and icons spilling outside their buttons at the Large size in Light, Dark, and High Contrast. Buttons were pinned to a fixed height that was smaller than the text line box; they now centre their content in a box that grows when needed.
@@ -42,6 +53,8 @@
 - Fixed the Markdown toolbar painting over the Preview pane in a vertical split, where the search button could appear inside Preview on narrow or portrait displays. Formatting groups now occupy a shrinkable region, the More and search controls are pinned inside the code pane, and the toolbar clips its inline axis while still letting dropdowns open downwards.
 - Sized the Markdown toolbar More menu against the code pane instead of the window so it cannot extend past the pane in a split view.
 - Applied the same fixed-height fix to the Markdown toolbar buttons and made split-button arrows match their button height at every size.
+- Fixed the pinned Find & Replace and More controls appearing to sit on top of the formatting buttons in a narrow code pane. The responsive breakpoints collapsed the toolbar far later than it actually needed: at the Medium size the full row requires about 1278px but only began collapsing below 1000px, so across that whole band the row overflowed and the clip sliced a button in half. Every breakpoint is now derived from the CSS box model with a margin for font rendering and the Retro theme.
+- Removed the fixed height on Markdown split-button arrows, which exceeded the button height at the Small size.
 
 ### Plugin System
 - Added a dedicated Plugin Manager modal with a General tab and one settings tab per plugin.

@@ -54,7 +54,8 @@ The toolbar includes:
 - **Export Options**: HTML export, PDF printing
 - **Optional Quick Controls**: Markdown rendering and Pinned Tabs controls can be pinned after Export; narrow windows combine them under Quick
 - **Consistent Commands**: Every toolbar button, dropdown item, and overflow menu entry runs the same command as its keyboard shortcut, so the theme toggle, mode buttons, and formatting tools behave identically from either entry point
-- **Markdown Toolbar Fit**: The Markdown toolbar stays inside the code pane. As the pane narrows — a vertical split, a portrait monitor, or a resized window — formatting groups move into the **More** menu, while More and Find & Replace stay reachable at the right edge
+- **Markdown Toolbar Fit**: The Markdown toolbar stays inside the code pane. As the pane narrows — a vertical split, a portrait monitor, or a resized window — formatting groups move into the **More** menu a group at a time, while **More** and **Find & Replace** stay pinned at the right edge
+- **More Menu**: **More** appears only once something no longer fits and lists exactly the commands the toolbar had to give up, so it never duplicates a button you can already see. It sits beside **Find & Replace** at the right edge
 
 ### Welcome Screen
 
@@ -143,6 +144,19 @@ Inline math: $E = mc^2$
 
 Matrix notation: $\begin{pmatrix} a & b \\ c & d \end{pmatrix}$
 ```
+
+A `$$` block may span as many lines as you need. Matrices, `align`, `cases`, and any environment containing a line that is just `=` render as one formula:
+
+```latex
+$$
+\begin{pmatrix} a & b \\ c & d \end{pmatrix}
+\begin{pmatrix} x \\ y \end{pmatrix}
+=
+\begin{pmatrix} ax + by \\ cx + dy \end{pmatrix}
+$$
+```
+
+Inline formulas match the size of the sentence around them; display blocks stay slightly larger. A `$` inside a code fence or inline code is always literal, wherever it appears.
 
 #### Rendering mode requirements
 

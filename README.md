@@ -21,6 +21,7 @@
 - **Real-Time Preview**: GitHub-flavored markdown with live updates
 - **Pure or Extended Rendering**: Keep rendering lightweight and predictable, or enable optional local renderers
 - **Advanced Rendering**: Lazy plugin-owned KaTeX math expressions and Mermaid diagrams without external services
+- **Multi-Line Math**: Display blocks such as matrices and aligned environments render as a single formula, because math is resolved from the source before Markdown parsing
 - **Interactive Elements**: Clickable task lists update their exact source lines, even when labels are similar or repeated, with consistent checked styling at every nesting level
 - **Scroll Position Memory**: Independent per-document positions synchronized across Code, Preview, and Split modes
 - **Recoverable Sessions**: Closing the application silently preserves modified tabs for the next launch; closing a document still asks before discarding changes
@@ -108,6 +109,7 @@
 - **Preview Lifecycle Ownership**: Task interaction, safe external links, renderer status, exports, reload/restart commands, and scroll restoration use one disposable controller
 - **Toolbar Command Ownership**: `ToolbarComponent` emits intent only; file, mode, export, UI, settings, editing, and Markdown commands are routed by one disposable controller
 - **Settings and UI Ownership**: One disposable coordinator connects Settings, UI, and the Plugin Manager, so each preference has a single write path and the Settings modal is rendered once from one state
+- **Dialog Ownership**: The Link and Image insert flow is a disposable controller with its own dialogs, dropdowns, and listener teardown, separate from toolbar chrome
 - **Composition Root**: `MarkdownEditor` only constructs, injects, initializes, and disposes; it registers no component event listeners, and every listener, timer, and adapter has one teardown owner
 - **Tokenized Toolbar Geometry**: Toolbar sizes are custom properties every theme reads, and the Markdown toolbar is measured against the code pane so it cannot overflow into Preview
 - **Plugin System**: Lifecycle-managed plugins with scoped settings, automatic cleanup, a dedicated manager, and an ordered renderer registry

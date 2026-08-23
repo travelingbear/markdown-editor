@@ -56,6 +56,7 @@ const applicationModuleStages = [
       () => import('./components/controllers/WelcomeController.js'),
       () => import('./components/controllers/StatusBarController.js'),
       () => import('./components/controllers/SearchController.js'),
+      () => import('./components/controllers/MarkdownDialogController.js'),
       () => import('./components/PluginModalController.js'),
       () => import('./components/DocumentComponent.js'),
       () => import('./components/EditorComponent.js'),

@@ -43,6 +43,25 @@ const SIZE_TOKENS = [
 
 const FIXED_HEIGHT = /(^|[^-])height:\s*\d/;
 
+const TIER_MARKERS = {
+  condense: '.toolbar-content',
+  alignment: 'toolbar-group-alignment',
+  code: 'toolbar-group-code',
+  structure: 'toolbar-group-structure',
+  media: 'toolbar-group-media',
+  secondary: 'toolbar-group-headings',
+  history: 'toolbar-group-history'
+};
+
+/** Every `@container editor-pane (max-width: N)` block with its body. */
+function containerBlocks() {
+  const pattern = /@container editor-pane \(max-width: (\d+)px\) \{([\s\S]*?)\n\}/g;
+  return [...toolbarStyles.matchAll(pattern)].map((match) => ({
+    width: Number(match[1]),
+    body: match[2]
+  }));
+}
+
 describe('Main toolbar sizing', () => {
   it('defines the same geometry tokens for every size', () => {
     const scopes = [
@@ -114,12 +133,18 @@ describe('Markdown toolbar containment', () => {
     expect(toolbar).not.toMatch(/overflow:\s*hidden/);
   });
 
-  it('puts the formatting groups in a shrinkable region', () => {
+  it('puts the formatting groups in a shrinkable, inline-clipped region', () => {
     const primary = ruleBody(toolbarStyles, '.toolbar-primary', 'min-width');
     expect(primary).toContain('min-width: 0');
     expect(primary).toMatch(/flex:\s*0 1 auto/);
     expect(primary).toContain('overflow-x: clip');
     expect(primary).toContain('overflow-y: visible');
+  });
+
+  it('keeps the pinned controls at the right edge with a growing spacer', () => {
+    const spacer = ruleBody(toolbarStyles, '.toolbar-spacer', 'flex');
+    expect(spacer).toMatch(/flex:\s*1 1 auto/);
+    expect(spacer).toContain('min-width: 0');
   });
 
   it('pins the overflow and search controls so they cannot be pushed out', () => {
@@ -131,22 +156,72 @@ describe('Markdown toolbar containment', () => {
     expect(pinned).toMatch(/flex:\s*0 0 auto/);
   });
 
-  it('keeps the pinned controls outside the shrinkable region in the shell', () => {
-    const content = shell.slice(shell.indexOf('<div class="toolbar-content"'));
-    const primaryStart = content.indexOf('<div class="toolbar-primary">');
-    const spacer = content.indexOf('<div class="toolbar-spacer">');
-    const search = content.indexOf('toolbar-group-search');
+  it('never pins a row item to a height that could exceed the smallest row', () => {
+    // The Small size gives buttons a 22px min-height; a hard 28px here was cut off.
+    const arrow = ruleBody(toolbarStyles, '.md-dropdown-arrow', 'min-width');
+    expect(arrow).not.toMatch(FIXED_HEIGHT);
+  });
 
-    expect(primaryStart).toBeGreaterThan(-1);
-    expect(primaryStart).toBeLessThan(spacer);
-    expect(spacer).toBeLessThan(search);
+  it('offers a command in More exactly when the toolbar hides it', () => {
+    // This is what makes More show only what is not already visible: every tier
+    // that removes a group reveals that group's section in the same breakpoint.
+    const pairs = [
+      ['toolbar-group-alignment', 'overflow-section-alignment'],
+      ['toolbar-group-code', 'overflow-section-blocks'],
+      ['toolbar-group-structure', 'overflow-section-structure'],
+      ['toolbar-group-media', 'overflow-section-insert'],
+      ['toolbar-group-history', 'overflow-section-history']
+    ];
 
-    // Every formatting group must sit inside the shrinkable region.
-    const primaryRegion = content.slice(primaryStart, spacer);
-    const groups = ['history', 'headings', 'formatting', 'media', 'structure', 'code', 'alignment'];
-    for (const group of groups) {
-      expect(primaryRegion, `toolbar-group-${group} escaped the shrinkable region`)
-        .toContain(`toolbar-group-${group}`);
+    for (const [group, section] of pairs) {
+      for (const block of containerBlocks()) {
+        const hidesGroup = new RegExp(`\\.${group}[^{]*\\{[^}]*display:\\s*none`).test(block.body)
+          || (block.body.includes(`.${group}`) && block.body.includes('display: none'));
+        if (!hidesGroup) continue;
+        expect(block.body, `${group} is hidden at ${block.width}px without revealing ${section}`)
+          .toContain(section);
+      }
+    }
+  });
+
+  it('reveals the More button in every tier that hides something', () => {
+    const hiding = containerBlocks().filter((block) => /toolbar-group-\w+[^{]*\{[^}]*display:\s*none/.test(block.body));
+    expect(hiding.length).toBeGreaterThan(0);
+
+    // The first tier per size carries the button; later tiers only add sections.
+    const withButton = hiding.filter((block) => block.body.includes('toolbar-overflow-group'));
+    expect(withButton).toHaveLength(3);
+
+    // Hidden by default and only ever revealed: no breakpoint may take it back
+    // while commands are still missing from the toolbar.
+    for (const block of containerBlocks()) {
+      if (!block.body.includes('toolbar-overflow-group')) continue;
+      expect(block.body, `a tier at ${block.width}px hides the More button`)
+        .not.toMatch(/toolbar-overflow-group[^{]*\{[^}]*display:\s*none/);
+    }
+  });
+
+  it('collapses progressively, and tightens spacing before dropping anything', () => {
+    for (const size of ['small', 'medium', 'large']) {
+      const widths = {};
+      for (const block of containerBlocks()) {
+        if (!block.body.includes(`[data-md-toolbar-size="${size}"]`)) continue;
+        for (const [tier, marker] of Object.entries(TIER_MARKERS)) {
+          if (block.body.includes(marker)) widths[tier] = block.width;
+        }
+      }
+
+      const order = ['alignment', 'code', 'structure', 'media', 'secondary', 'history'];
+      const present = order.filter((tier) => widths[tier] !== undefined);
+      expect(present, `${size} is missing collapse tiers`).toEqual(order);
+
+      for (let i = 1; i < order.length; i += 1) {
+        expect(widths[order[i]], `${size}: ${order[i]} must collapse after ${order[i - 1]}`)
+          .toBeLessThan(widths[order[i - 1]]);
+      }
+      // Spacing tightens first so groups survive a little longer.
+      expect(widths.condense, `${size}: spacing must tighten before groups drop`)
+        .toBeGreaterThan(widths.alignment);
     }
   });
 

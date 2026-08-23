@@ -5,9 +5,14 @@ const SUPPORTED_MODES = new Set(['pure', 'extended']);
  * Ordered, failure-isolated pipeline for optional preview renderers.
  *
  * A renderer may provide:
+ * - transformMarkdown(markdown, context): change the source before it is parsed
  * - transformHtml(html, context): change sanitized-later HTML
  * - afterRender(container, context): enhance the mounted preview DOM
  * - shouldRender(context): skip work when the document has no relevant syntax
+ *
+ * Syntax that Markdown would otherwise claim — multi-line math delimiters, for
+ * example — must be handled in transformMarkdown, because by the time HTML
+ * exists the construct may already be split across elements.
  *
  * Renderers default to extended mode and lower priorities run first.
  */
@@ -28,8 +33,9 @@ class RendererRegistry {
     if (this.renderers.has(id)) {
       throw new Error(`Renderer '${id}' is already registered`);
     }
-    if (typeof renderer.transformHtml !== 'function' && typeof renderer.afterRender !== 'function') {
-      throw new Error(`Renderer '${id}' must provide transformHtml() or afterRender()`);
+    const phases = ['transformMarkdown', 'transformHtml', 'afterRender'];
+    if (!phases.some((phase) => typeof renderer[phase] === 'function')) {
+      throw new Error(`Renderer '${id}' must provide one of: ${phases.join('(), ')}()`);
     }
 
     const modes = options.modes ?? renderer.modes ?? ['extended'];
@@ -72,6 +78,27 @@ class RendererRegistry {
 
   clearDiagnostics() {
     this.diagnostics = [];
+  }
+
+  async transformMarkdown(markdown, context = {}) {
+    let result = String(markdown ?? '');
+    for (const entry of this.getOrderedEntries()) {
+      if (this.isCancelled(context)) break;
+      if (typeof entry.renderer.transformMarkdown !== 'function') continue;
+      if (!await this.shouldRun(entry, context)) continue;
+
+      try {
+        const transformed = await entry.renderer.transformMarkdown(result, context);
+        if (this.isCancelled(context)) break;
+        if (typeof transformed !== 'string') {
+          throw new Error('transformMarkdown() must return a string');
+        }
+        result = transformed;
+      } catch (error) {
+        this.recordError(entry.id, 'transformMarkdown', error);
+      }
+    }
+    return result;
   }
 
   async transformHtml(html, context = {}) {

@@ -158,17 +158,16 @@ describe('ToolbarLifecycleController', () => {
     expect(context.actions.toggleFindReplace).toHaveBeenCalledWith(true);
   });
 
-  it('routes Markdown actions and Markdown insertions', async () => {
+  it('routes Markdown actions', async () => {
     const context = createController();
     await context.controller.init();
 
     context.toolbarComponent.emit('markdown-action', { action: 'bold' });
-    context.toolbarComponent.emit('markdown-insert', { text: '[label](https://example.com)' });
 
     expect(context.markdownActionController.handleMarkdownAction).toHaveBeenCalledWith('bold');
-    expect(context.markdownActionController.insertMarkdownText).toHaveBeenCalledWith(
-      '[label](https://example.com)'
-    );
+    // Link and image insertion belongs to MarkdownDialogController, which
+    // reaches MarkdownActionController directly.
+    expect(context.markdownActionController.insertMarkdownText).not.toHaveBeenCalled();
   });
 
   it('removes every toolbar listener on teardown', async () => {
@@ -180,8 +179,8 @@ describe('ToolbarLifecycleController', () => {
     context.toolbarComponent.emit('file-new-requested');
     context.toolbarComponent.emit('markdown-action', { action: 'bold' });
 
-    expect(registrations).toHaveLength(22);
-    expect(context.toolbarComponent.off).toHaveBeenCalledTimes(22);
+    expect(registrations).toHaveLength(21);
+    expect(context.toolbarComponent.off).toHaveBeenCalledTimes(21);
     for (const [event, handler] of registrations) {
       expect(context.toolbarComponent.off).toHaveBeenCalledWith(event, handler);
     }

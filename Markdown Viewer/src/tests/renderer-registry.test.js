@@ -93,6 +93,6 @@ describe('RendererRegistry', () => {
     expect(() => registry.register('Invalid renderer', { afterRender() {} }))
       .toThrow('Invalid renderer id');
     expect(() => registry.register('missing-methods', {}))
-      .toThrow('must provide transformHtml() or afterRender()');
+      .toThrow('must provide one of: transformMarkdown(), transformHtml(), afterRender()');
   });
 });

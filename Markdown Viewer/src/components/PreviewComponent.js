@@ -111,15 +111,23 @@ class PreviewComponent extends BaseComponent {
       // Configure marked
       this.configureMarked();
       
+      // Renderers own any syntax Markdown would otherwise claim, so they see
+      // the source before it is parsed.
+      const rendererContext = this.createRendererContext(markdown, renderVersion);
+      let source = markdown;
+      if (this.rendererRegistry) {
+        source = await this.rendererRegistry.transformMarkdown(markdown, rendererContext);
+        if (renderVersion !== this.renderVersion) return;
+      }
+
       // Parse markdown to HTML
-      let html = marked.parse(markdown);
+      let html = marked.parse(source);
       
       html = this.processTaskListsInHtml(html);
       html = this.processFootnotesInHtml(html);
       html = this.processSupSubScript(html);
       html = this.processLinksInHtml(html);
       html = this.postProcessHtmlImages(html);
-      const rendererContext = this.createRendererContext(markdown, renderVersion);
       if (this.rendererRegistry) {
         html = await this.rendererRegistry.transformHtml(html, rendererContext);
         if (renderVersion !== this.renderVersion) return;

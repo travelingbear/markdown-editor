@@ -46,6 +46,7 @@ class MarkdownEditor extends BaseComponent {
     this.welcomeController = this.controllers.welcomeController || null;
     this.statusBarController = this.controllers.statusBarController || null;
     this.searchController = this.controllers.searchController || null;
+    this.markdownDialogController = this.controllers.markdownDialogController || null;
     
     // Performance tracking
     this.startupTime = 0;
@@ -150,6 +151,7 @@ class MarkdownEditor extends BaseComponent {
     this.registry.register('welcome', WelcomeController);
     this.registry.register('statusBar', StatusBarController);
     this.registry.register('search', SearchController);
+    this.registry.register('markdownDialog', MarkdownDialogController);
     this.registry.register('pluginModal', PluginModalController);
     
     // Create settings controller first (or use injected one)
@@ -256,6 +258,15 @@ class MarkdownEditor extends BaseComponent {
     await this.markdownActionController.init();
     this.markdownActionController.setDependencies(this.editorComponent, this.documentComponent);
     
+    if (!this.markdownDialogController) {
+      this.markdownDialogController = this.registry.createInstance('markdownDialog');
+    }
+    this.markdownDialogController.setDependencies({
+      markdownActionController: this.markdownActionController
+    });
+    this.addChild(this.markdownDialogController);
+    await this.markdownDialogController.init();
+
     // Create export controller (or use injected one)
     if (!this.exportController) {
       this.exportController = this.registry.createInstance('export');
@@ -461,6 +472,7 @@ class MarkdownEditor extends BaseComponent {
       toolbarComponent: this.toolbarComponent,
       markdownActionController: this.markdownActionController,
       pluginModalController: this.pluginModalController,
+      markdownDialogController: this.markdownDialogController,
       tabUIController: this.tabUIController,
       exportController: this.exportController,
       performanceOptimizer: this.performanceOptimizer,

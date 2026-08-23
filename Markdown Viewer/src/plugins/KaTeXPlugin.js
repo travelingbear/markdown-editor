@@ -1,7 +1,8 @@
 import {
   containsMathSyntax,
   replaceDisplayMath,
-  replaceInlineMath
+  replaceInlineMath,
+  replaceMathOutsideCode
 } from '../rendering/mathSyntax.js';
 import { katexMetadata } from './katexManifest.js';
 
@@ -11,6 +12,16 @@ const DEFAULT_SETTINGS = Object.freeze({
   displayMath: true,
   errorMode: 'source'
 });
+
+const PLACEHOLDER_OPEN = '\uE000katex';
+const PLACEHOLDER_CLOSE = '\uE001';
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 const KATEX_PLUGIN_CSS = `
 .math-display {
@@ -24,10 +35,11 @@ const KATEX_PLUGIN_CSS = `
 }
 .math-display .katex-display { margin: 0; }
 .math-inline { display: inline; margin: 0 2px; }
-.katex { font-size: 1.1em; }
+.math-inline .katex { font-size: 1em; }
+.math-display .katex { font-size: 1.1em; }
 .katex-display { margin: 0.5em 0; }
 @media (max-width: 768px) {
-  .katex { font-size: 1em; }
+  .math-display .katex { font-size: 1em; }
   .math-display { margin: 12px 0; padding: 8px; }
 }`;
 
@@ -61,7 +73,8 @@ class KaTeXPlugin {
     this.isActive = true;
     this.renderer = {
       shouldRender: (context) => containsMathSyntax(context.markdown, this.getDetectionOptions()),
-      transformHtml: (html, context) => this.renderMath(html, context),
+      transformMarkdown: (markdown, context) => this.extractMath(markdown, context),
+      transformHtml: (html, context) => this.restoreMath(html, context),
       getStatus: () => this.getRuntimeStatus()
     };
 
@@ -143,30 +156,73 @@ class KaTeXPlugin {
     document.head.appendChild(this.styleElement);
   }
 
-  async renderMath(html, context = {}) {
+  /**
+   * Render every math span straight from the source and leave a placeholder in
+   * its place. Markdown cannot then split a multi-line display block across a
+   * paragraph, a `breaks` line break, or a setext heading, which previously
+   * left the delimiters in different elements and produced unbalanced HTML.
+   */
+  async extractMath(markdown, context = {}) {
     const options = this.getDetectionOptions();
-    if (!containsMathSyntax(context.markdown, options)) return html;
+    if (!containsMathSyntax(markdown, options)) return markdown;
 
     const katex = await this.ensureRuntime();
-    if (!katex || (typeof context.isCurrent === 'function' && !context.isCurrent())) return html;
+    if (!katex || (typeof context.isCurrent === 'function' && !context.isCurrent())) {
+      return markdown;
+    }
 
-    let result = replaceDisplayMath(html, (match, expression, offset, source) => {
-      if (this.isInsideCodeElement(source, offset)) return match;
-      return this.renderExpression(katex, match, expression, true);
-    }, options);
+    const placeholders = new Map();
+    const store = (expression, displayMode) => {
+      const token = `${PLACEHOLDER_OPEN}${placeholders.size}${PLACEHOLDER_CLOSE}`;
+      const html = this.renderExpression(katex, expression, displayMode);
+      placeholders.set(token, {
+        // Kept-source fallbacks stay inline text, so only a real display block
+        // may replace the paragraph Markdown wrapped around it.
+        isBlock: displayMode && html.startsWith('<div'),
+        html
+      });
+      return token;
+    };
 
-    result = replaceInlineMath(result, (match, expression, offset, source) => {
-      if (this.isInsideCodeElement(source, offset)) return match;
-      return this.renderExpression(katex, match, expression, false);
-    }, options);
+    const result = replaceMathOutsideCode(markdown, (segment) => {
+      const withDisplay = replaceDisplayMath(
+        segment,
+        (match, expression) => store(expression, true),
+        options
+      );
+      return replaceInlineMath(
+        withDisplay,
+        (match, expression) => store(expression, false),
+        options
+      );
+    });
 
+    context.mathPlaceholders = placeholders;
     return result;
   }
 
-  renderExpression(katex, original, expression, displayMode) {
-    const decodedExpression = this.decodeMarkdownHtml(expression).trim();
+  restoreMath(html, context = {}) {
+    const placeholders = context.mathPlaceholders;
+    if (!placeholders?.size) return html;
+
+    let result = String(html);
+    for (const [token, { isBlock, html: rendered }] of placeholders) {
+      if (isBlock) {
+        // A display block owns its line, so unwrap the paragraph Markdown put
+        // around it rather than nesting a div inside a p.
+        result = result.replace(new RegExp(`<p>\\s*${token}\\s*</p>`, 'g'), rendered);
+      }
+      result = result.split(token).join(rendered);
+    }
+    return result;
+  }
+
+  renderExpression(katex, expression, displayMode) {
+    // The expression comes from the raw source, so no Markdown entity or line
+    // break decoding is needed.
+    const source = String(expression).trim();
     try {
-      const rendered = katex.renderToString(decodedExpression, {
+      const rendered = katex.renderToString(source, {
         displayMode,
         throwOnError: this.getSetting('errorMode') !== 'warning',
         strict: 'warn',
@@ -177,25 +233,11 @@ class KaTeXPlugin {
       const className = displayMode ? 'math-display' : 'math-inline';
       return `<${tag} class="${className}">${rendered}</${tag}>`;
     } catch (error) {
-      return original;
+      // Keep Source: hand the original delimiters back as escaped text so the
+      // formula stays readable instead of disappearing.
+      const delimiter = displayMode ? '$$' : '$';
+      return escapeHtml(`${delimiter}${source}${delimiter}`);
     }
-  }
-
-  decodeMarkdownHtml(value) {
-    return String(value)
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#x27;|&#39;/g, "'")
-      .replace(/<br\s*\/?>/gi, '\n');
-  }
-
-  isInsideCodeElement(html, offset) {
-    const precedingHtml = String(html).slice(0, offset);
-    const codeOpenCount = (precedingHtml.match(/<code(?:\s[^>]*)?>/gi) || []).length;
-    const codeCloseCount = (precedingHtml.match(/<\/code>/gi) || []).length;
-    return codeOpenCount > codeCloseCount;
   }
 
   mountSettings(host) {

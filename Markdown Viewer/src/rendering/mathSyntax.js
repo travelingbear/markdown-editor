@@ -23,7 +23,7 @@ function normalizeOptions(options = {}) {
  */
 export function stripMarkdownCode(text) {
   return String(text ?? '')
-    .replace(/(^|\n)[ \t]{0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]{0,3}\2(?=\n|$)|$)/g, '$1')
+    .replace(/(^|\n)[ \t]{0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]{0,3}\2[ \t]*(?=\r?\n|$)|$)/g, '$1')
     .replace(/(`+)([^\n]*?)\1/g, '');
 }
 
@@ -62,6 +62,38 @@ export function containsMathSyntax(text, options = {}) {
     if (isLikelyMathExpression(match[1], normalized)) return true;
   }
   return false;
+}
+
+/**
+ * Fenced blocks and inline code spans, in source order. Math inside them is
+ * literal text and must survive untouched.
+ *
+ * The closing-fence lookahead has to tolerate CRLF: on a Windows-authored
+ * document `\r` sits between the fence and the newline, and a fence that never
+ * matches its close swallows the rest of the file as code.
+ */
+const CODE_REGION_SOURCE = String.raw`(?:^|\n)[ \t]{0,3}(\`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]{0,3}\1[ \t]*(?=\r?\n|$)|$)|(\`+)[^\n]*?\2`;
+
+/**
+ * Apply `replace` to every part of the Markdown source that is not code.
+ *
+ * Math has to be handled before Markdown parsing: a display block spanning
+ * several lines is otherwise cut apart by paragraphs, `breaks`, and setext
+ * headings, and the delimiters end up in different elements.
+ */
+export function replaceMathOutsideCode(markdown, replace) {
+  const source = String(markdown ?? '');
+  const pattern = new RegExp(CODE_REGION_SOURCE, 'g');
+  let result = '';
+  let lastIndex = 0;
+
+  for (const match of source.matchAll(pattern)) {
+    result += replace(source.slice(lastIndex, match.index));
+    result += match[0];
+    lastIndex = match.index + match[0].length;
+  }
+
+  return result + replace(source.slice(lastIndex));
 }
 
 export function replaceDisplayMath(text, replacer, options = {}) {

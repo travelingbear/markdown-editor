@@ -24,6 +24,7 @@ describe('PreviewComponent rendering isolation', () => {
       finishFirstRender = resolve;
     });
     const rendererRegistry = {
+      transformMarkdown: vi.fn(async (markdown) => markdown),
       transformHtml: vi.fn(async (html) => {
         if (html.includes('First tab')) await firstRenderGate;
         return html;
@@ -48,6 +49,7 @@ describe('PreviewComponent rendering isolation', () => {
 
   it('passes document context through the renderer pipeline', async () => {
     const rendererRegistry = {
+      transformMarkdown: vi.fn(async (markdown) => markdown),
       transformHtml: vi.fn(async (html, context) => `${html}<p>${context.mode}</p>`),
       afterRender: vi.fn()
     };

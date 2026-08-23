@@ -41,7 +41,7 @@ Its full method surface is `constructor`, `onInit`, `createComponents`, `applyIn
 - `DocumentComponent` owns the current file content, path, dirty transition, and native open/save operations.
 - `EditorComponent` presents the editor abstraction to the application.
 - `PreviewComponent` owns base Markdown parsing, sanitization, preview updates, renderer-registry integration, and per-task label normalization so checked styling remains isolated across nested lists.
-- `ToolbarComponent` owns toolbar DOM behavior and emits commands rather than performing file or editor work directly.
+- `ToolbarComponent` owns main-toolbar and Markdown-toolbar DOM behaviour, responsive presentation, and its own menus, and emits commands rather than performing file or editor work directly. The Link and Image insert flow is not part of it.
 - `TabState`, `TabCollection`, and `TabManager` own persistent per-document state and collection operations.
 
 ### Controllers
@@ -55,6 +55,8 @@ Its full method surface is `constructor`, `onInit`, `createComponents`, `applyIn
 - `ToolbarLifecycleController`: the sole owner of toolbar command routing — file new/open/save/save-as/close/reload, mode changes, exports, distraction-free/theme/Settings/Help, quick rendering and pinned-tab controls, font size and Preview zoom, undo/redo, Markdown actions and insertions, find/replace — plus listener teardown. Toolbar intent reaches services through this controller only, so the composition root registers no toolbar listeners.
 - `taskSyntax`: pure fenced-code-aware task extraction and exact source-line updates shared by Preview and Markdown actions; visible task text is no longer used as primary identity.
 - `MarkdownActionController`: editor-neutral Markdown insertion and formatting, including independently composable bold and italic toggle layers.
+- `MarkdownDialogController`: the Link and Image insert flow — the split-button dropdowns that open it, both dialogs, the image URL/file tabs and drop zone, and the resulting insertion. It reaches `MarkdownActionController` directly rather than routing back through the toolbar, and every listener it registers is removed on teardown.
+- `markdownInsertSyntax`: pure link and image Markdown construction shared by those dialogs, testable without DOM.
 - `KeyboardController`: the sole application-level keyboard/wheel listener, connected through explicit services and action callbacks rather than the composition root.
 - `MarkdownActionController`: formatting commands.
 - `ModeController`: Code, Preview, Split, and welcome states.
@@ -101,6 +103,13 @@ Closing an individual dirty document invokes the unsaved-changes dialog. Closing
 Pure mode runs the base Marked and DOMPurify path only. Renderer plugins are not invoked, so dollar text and Mermaid fences remain ordinary Markdown/code.
 
 ### Extended Markdown
+
+Renderers run in two phases, both ordered by priority and isolated from each other:
+
+1. `transformMarkdown(markdown, context)` sees the source **before** Markdown is parsed.
+2. `transformHtml(html, context)` sees the parsed HTML, and `afterRender(container, context)` sees the mounted DOM.
+
+Any syntax Markdown would otherwise claim belongs in the first phase. A `$$` block spanning several lines is cut apart by paragraphs, `breaks`, and setext headings, so matching it in HTML can span element boundaries and produce unbalanced markup. KaTeX therefore renders each formula from the source and leaves a private-use placeholder that Markdown carries through untouched, then swaps the rendered output back in during the HTML phase. `replaceMathOutsideCode()` keeps fenced and inline code literal at the source level.
 
 Extended mode runs enabled renderers from `RendererRegistry` in explicit order after base parsing. A renderer may detect relevant source without loading its heavy runtime. KaTeX and Mermaid dynamically import their local runtimes only when matching syntax is present.
 
@@ -169,7 +178,9 @@ The base stylesheet remains a major modularization target. New work should prefe
 Two layout rules are load-bearing and covered by tests:
 
 - **Toolbar geometry is tokenized.** `[data-main-toolbar-size]` scopes redefine `--main-toolbar-*` custom properties only; no size rule targets a control directly. Base rules and themes both read those tokens, so a more specific theme selector cannot silently drop the user's size choice. Toolbar controls use `min-height` rather than `height`, because a fixed height smaller than the text line box pushes labels and icons outside the button.
-- **The Markdown toolbar is contained by the code pane.** `.toolbar-primary` holds the formatting groups in a shrinkable, inline-clipped region; the More and search controls sit after the spacer with `flex: 0 0 auto` so they stay reachable. `.markdown-toolbar` clips only its inline axis, leaving the block axis visible for dropdowns. `.editor-pane` is the `editor-pane` query container, so responsive collapsing and the More menu width both measure the pane rather than the window — a viewport unit here reappears as overflow into Preview during a vertical split.
+- **The Markdown toolbar is contained by the code pane.** `.toolbar-primary` holds the formatting groups in a shrinkable, inline-clipped region and the More and search controls sit after the spacer with `flex: 0 0 auto`, so nothing can be pushed past the pane edge. `.markdown-toolbar` clips only its inline axis, leaving the block axis visible for dropdowns. `.editor-pane` is the `editor-pane` query container, so responsive collapsing and the More menu width both measure the pane rather than the window — a viewport unit here reappears as overflow into Preview during a vertical split.
+- **The collapse breakpoints must exceed what the toolbar actually needs.** Each `@container` tier removes one group and reveals that group's More section, which is what keeps the menu showing only what is not on the toolbar. The widths are derived from the CSS box model — button padding, borders, `min-width`, group gaps, separators, and the pinned controls — plus a margin for font rendering and the Retro theme's thicker borders. They were previously well below the real requirement (Medium needs about 1278px but only started collapsing below 1000px), so between tiers the row overflowed and the clip sliced a button in half. Recompute them if the button metrics change; `src/tests/toolbar-layout-styles.test.js` pins the pairing and the collapse order.
+- **Row order is `groups → spacer → More → search`.** The spacer absorbs the leftover width, keeping More and Find & Replace pinned at the toolbar's right edge, and `.md-overflow-container` stays positioned so the menu opens under its button with `right: 0` inside the pane.
 
 ## Testing
 

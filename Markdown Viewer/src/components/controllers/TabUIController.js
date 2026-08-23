@@ -1,4 +1,10 @@
 import { getPinnedTabDropIndex } from '../tabReorder.js';
+import {
+  clampMenuPosition,
+  matchesTabSearch,
+  resolveContextMenuState,
+  resolveTabModalKey
+} from '../tabChrome.js';
 
 /**
  * TabUIController - Manages tab UI interactions and display
@@ -585,58 +591,37 @@ class TabUIController extends BaseComponent {
     // Show menu first to get dimensions
     contextMenu.classList.add('show');
     
-    // Calculate position to prevent overflow
+    // Measured after showing, so the menu has dimensions to keep on screen.
     const menuRect = contextMenu.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    let left = e.clientX;
-    let top = e.clientY;
-    
-    // Adjust horizontal position if menu would overflow
-    if (left + menuRect.width > viewportWidth) {
-      left = viewportWidth - menuRect.width - 10;
-    }
-    
-    // Adjust vertical position if menu would overflow
-    if (top + menuRect.height > viewportHeight) {
-      top = viewportHeight - menuRect.height - 10;
-    }
-    
-    // Ensure menu doesn't go off-screen
-    left = Math.max(10, left);
-    top = Math.max(10, top);
-    
+    const { left, top } = clampMenuPosition({
+      pointer: { x: e.clientX, y: e.clientY },
+      menu: { width: menuRect.width, height: menuRect.height },
+      viewport: { width: window.innerWidth, height: window.innerHeight }
+    });
     contextMenu.style.left = `${left}px`;
     contextMenu.style.top = `${top}px`;
-    
 
-    
-    // Update menu items based on context
-    const tabs = this.tabManager.getAllTabs();
-    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    const closeOthersBtn = contextMenu.querySelector('[data-action="close-others"]');
-    const closeAllBtn = contextMenu.querySelector('[data-action="close-all"]');
-    const revealBtn = contextMenu.querySelector('[data-action="reveal"]');
-    
-    // Update position buttons - disable current position
-    for (let i = 1; i <= 9; i++) {
-      const posBtn = contextMenu.querySelector(`[data-action="move-to-${i}"]`);
-      if (posBtn) {
-        posBtn.disabled = tabIndex === (i - 1);
-      }
+    this.applyContextMenuState(contextMenu, tabId);
+  }
+
+  applyContextMenuState(contextMenu, tabId) {
+    const state = resolveContextMenuState({
+      tabs: this.tabManager.getAllTabs(),
+      tabId,
+      tab: this.tabManager.getTab(tabId)
+    });
+
+    const setDisabled = (action, disabled) => {
+      const button = contextMenu.querySelector(`[data-action="${action}"]`);
+      if (button) button.disabled = disabled;
+    };
+
+    for (const { position, disabled } of state.positions) {
+      setDisabled(`move-to-${position}`, disabled);
     }
-    
-    if (closeOthersBtn) {
-      closeOthersBtn.disabled = tabs.length <= 1;
-    }
-    if (closeAllBtn) {
-      closeAllBtn.disabled = tabs.length === 0;
-    }
-    if (revealBtn) {
-      const tab = this.tabManager.getTab(tabId);
-      revealBtn.disabled = !tab || !tab.filePath;
-    }
+    setDisabled('close-others', state.closeOthersDisabled);
+    setDisabled('close-all', state.closeAllDisabled);
+    setDisabled('reveal', state.revealDisabled);
   }
   
   hideTabContextMenu() {
@@ -702,17 +687,13 @@ class TabUIController extends BaseComponent {
     
     let visibleCount = 0;
     items.forEach(item => {
-      const name = item.querySelector('.tab-modal-name')?.textContent?.toLowerCase() || '';
-      const path = item.querySelector('.tab-modal-path')?.textContent?.toLowerCase() || '';
-      
-      const matches = !term || name.includes(term) || path.includes(term);
-      
-      if (matches) {
-        item.classList.remove('filtered-out');
-        visibleCount++;
-      } else {
-        item.classList.add('filtered-out');
-      }
+      const matches = matchesTabSearch({
+        name: item.querySelector('.tab-modal-name')?.textContent || '',
+        path: item.querySelector('.tab-modal-path')?.textContent || ''
+      }, term);
+
+      item.classList.toggle('filtered-out', !matches);
+      if (matches) visibleCount++;
     });
     
     // Show empty state if no matches
@@ -737,39 +718,20 @@ class TabUIController extends BaseComponent {
     const visibleItems = Array.from(tabModalList.querySelectorAll('.tab-modal-item:not(.filtered-out)'));
     if (visibleItems.length === 0) return;
     
-    let currentIndex = visibleItems.findIndex(item => item.classList.contains('keyboard-focus'));
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        if (currentIndex < visibleItems.length - 1) {
-          this.setTabModalKeyboardFocus(currentIndex + 1, visibleItems);
-        }
-        break;
-        
-      case 'ArrowUp':
-        e.preventDefault();
-        if (currentIndex > 0) {
-          this.setTabModalKeyboardFocus(currentIndex - 1, visibleItems);
-        } else if (currentIndex === -1 && visibleItems.length > 0) {
-          this.setTabModalKeyboardFocus(visibleItems.length - 1, visibleItems);
-        }
-        break;
-        
-      case 'Enter':
-        e.preventDefault();
-        if (currentIndex >= 0 && visibleItems[currentIndex]) {
-          visibleItems[currentIndex].click();
-        }
-        break;
-        
-      case 'Escape':
-        e.preventDefault();
-        this.hideTabModal();
-        break;
-    }
+    const currentIndex = visibleItems.findIndex(item => item.classList.contains('keyboard-focus'));
+    const { handled, action, index } = resolveTabModalKey(e.key, {
+      currentIndex,
+      itemCount: visibleItems.length
+    });
+
+    if (!handled) return;
+    e.preventDefault();
+
+    if (action === 'focus') this.setTabModalKeyboardFocus(index, visibleItems);
+    else if (action === 'select') visibleItems[index]?.click();
+    else if (action === 'close') this.hideTabModal();
   }
-  
+
   setTabModalKeyboardFocus(index, items) {
     // Remove existing focus
     items.forEach(item => item.classList.remove('keyboard-focus'));

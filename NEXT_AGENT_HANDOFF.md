@@ -26,7 +26,12 @@ Preserve unrelated user changes. Use `apply_patch` for source/document edits. Do
 
 The broad modernization checkpoint precedes this handoff. Use `git log --oneline` for its exact history.
 
-The latest approved batch started pipeline item 2 (decomposition) and fixed
+The latest approved batch continued pipeline item 2 (decomposition):
+
+- Extracted the Preview post-parse HTML pipeline into a pure `rendering/previewHtml.js`; `PreviewComponent` dropped from 946 to 725 lines and every transform is now testable without a mounted component.
+- Removed the unreachable list-converting branches of the task-list fallback, verified with a 15-document before/after diff of the full pipeline. `.task-list-container`, `.task-list-nested`, and `.task-list-item.nested` are now unused selectors, to be dropped during the CSS work.
+
+The preceding approved batch started pipeline item 2 and fixed
 reported Markdown rendering bugs:
 
 - Extracted the Link and Image insert flow out of `ToolbarComponent` into `MarkdownDialogController` plus a pure `markdownInsertSyntax` module, taking the component from 1,120 to 788 lines. Fixed the dialogs never releasing any listener, and a dropdown menu being reparented to `<body>` and never returned.
@@ -80,8 +85,8 @@ Earlier still, the Preview lifecycle extraction:
 
 Validation at handoff:
 
-- `53` Vitest files passed.
-- `316` tests passed.
+- `54` Vitest files passed.
+- `360` tests passed.
 - `npm run build:web` passed.
 - `cargo check` passed during the Preview-lifecycle batch. The batches since then changed no Rust, native commands, or capabilities, so it was not rerun.
 - `git diff --check` passed; Git may still print informational LF-to-CRLF warnings on Windows.
@@ -129,7 +134,7 @@ Current approximate sizes at handoff:
 - `ToolbarComponent.js`: 788 lines (Link/Image dialogs already extracted).
 - `performance-optimizer.js`: 1,004 lines.
 - `TabUIController.js`: 974 lines.
-- `PreviewComponent.js`: 946 lines.
+- `PreviewComponent.js`: 725 lines (post-parse pipeline already extracted).
 - `HorizontalSplitPlugin.js`: 911 lines.
 
 Handle one module/subsystem per approval batch. Extract cohesive pure helpers or controllers with explicit dependencies. Avoid moving code solely to reduce line counts. Good boundaries include toolbar layout/menu presentation, tab drag/reorder UI, Preview post-processing, performance measurements versus virtualization, and horizontal-split layout/settings.

@@ -1,5 +1,9 @@
 import { sanitizeRenderedHtml } from '../rendering/security.js';
 import { extractMarkdownTasks } from '../rendering/taskSyntax.js';
+import {
+  applyPreviewPostProcessing,
+  validateAndFixLink
+} from '../rendering/previewHtml.js';
 
 /**
  * Preview Component
@@ -123,11 +127,7 @@ class PreviewComponent extends BaseComponent {
       // Parse markdown to HTML
       let html = marked.parse(source);
       
-      html = this.processTaskListsInHtml(html);
-      html = this.processFootnotesInHtml(html);
-      html = this.processSupSubScript(html);
-      html = this.processLinksInHtml(html);
-      html = this.postProcessHtmlImages(html);
+      html = applyPreviewPostProcessing(html);
       if (this.rendererRegistry) {
         html = await this.rendererRegistry.transformHtml(html, rendererContext);
         if (renderVersion !== this.renderVersion) return;
@@ -215,186 +215,6 @@ class PreviewComponent extends BaseComponent {
         renderer: renderer
       });
     }
-  }
-
-  processTaskListsInHtml(html) {
-    // Check if we have task list items from our renderer
-    const hasTaskListClass = html.includes('task-list-item');
-    const hasCheckboxInputs = html.includes('<input') && html.includes('checkbox');
-    
-    // If we already have task lists from our renderer, we're good
-    if (hasTaskListClass && hasCheckboxInputs) {
-      return html;
-    }
-    
-    // Fallback: Handle any remaining task list patterns
-    let taskCount = 0;
-    
-    // Only process lists that actually contain task items
-    html = html.replace(/<(ul|ol)([^>]*)>([\s\S]*?)<\/(ul|ol)>/g, (match, tag, attrs, content) => {
-      // Check if this list contains any task items
-      const hasTaskItems = content.includes('[ ]') || content.includes('[x]');
-      
-      if (!hasTaskItems) {
-        return match; // Return unchanged if no task items
-      }
-      
-      const processedContent = content.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (liMatch, checked, liContent) => {
-        const isChecked = checked === 'x';
-        const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-        taskCount++;
-        
-        // Preserve HTML content including links
-        const processedLiContent = liContent.replace(/<(ul|ol)([^>]*)>([\s\S]*?)<\/(ul|ol)>/g, (nestedMatch, nestedTag, nestedAttrs, nestedContent) => {
-          const processedNestedContent = nestedContent.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (nestedLiMatch, nestedChecked, nestedLiContent) => {
-            const nestedIsChecked = nestedChecked === 'x';
-            const nestedId = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-            taskCount++;
-            return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}> <label for="${nestedId}">${nestedLiContent}</label></div>`;
-          });
-          return `<div class="task-list-nested"><${nestedTag}${nestedAttrs}>${processedNestedContent}</${nestedTag}></div>`;
-        });
-        
-        return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${processedLiContent}</label></div>`;
-      });
-      
-      // Only wrap if we actually processed task items
-      if (processedContent !== content && processedContent.includes('task-list-item')) {
-        return `<div class="task-list-container">${processedContent}</div>`;
-      }
-      
-      return match;
-    });
-    
-    // Handle remaining task lists in li elements (only if not already processed)
-    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (match, checked, content, offset, string) => {
-      if (this.isInsideCodeBlock(string, offset, match.length)) {
-        return match;
-      }
-      
-      // Skip if already inside a processed task list container
-      const beforeMatch = string.substring(0, offset);
-      const isInsideTaskContainer = beforeMatch.includes('task-list-container') && !beforeMatch.includes('</div>');
-      
-      if (isInsideTaskContainer) {
-        return match;
-      }
-      
-      const isChecked = checked === 'x';
-      const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-      taskCount++;
-      
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
-    });
-    
-    // Handle standalone checkbox patterns
-    html = html.replace(/<p>\[([ x])\]\s*([^<]*?)<\/p>/g, (match, checked, content, offset, string) => {
-      if (this.isInsideCodeBlock(string, offset, match.length)) {
-        return match;
-      }
-      
-      const isChecked = checked === 'x';
-      const cleanContent = content.trim();
-      const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-      taskCount++;
-      
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
-    });
-    
-    return html;
-  }
-
-  processFootnotesInHtml(html) {
-    const footnotes = new Map();
-    
-    // Collect definitions
-    html.replace(/\[\^([^\]]+)\]:\s*(.+?)(?=\n|$)/g, (match, id, definition) => {
-      footnotes.set(id, definition.trim());
-    });
-    
-    // Remove definition paragraphs
-    html = html.replace(/<p>\[\^[^\]]+\]:[^<]*<\/p>/g, '');
-    
-    // Process references
-    html = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
-      return footnotes.has(id) ? 
-        `<sup><a href="#footnote-${id}" id="footnote-ref-${id}" class="footnote-ref">${id}</a></sup>` : 
-        match;
-    });
-    
-    // Add footnotes section
-    if (footnotes.size > 0) {
-      let footnotesHtml = '<div class="footnotes"><hr><ol>';
-      for (const [id, definition] of footnotes) {
-        footnotesHtml += `<li id="footnote-${id}">${definition} <a href="#footnote-ref-${id}" class="footnote-backref">↩</a></li>`;
-      }
-      footnotesHtml += '</ol></div>';
-      html += footnotesHtml;
-    }
-    
-    return html;
-  }
-
-  processSupSubScript(html) {
-    // Superscript
-    html = html.replace(/\^\(([^)]+)\)\^/g, '<sup>$1</sup>');
-    html = html.replace(/\^([^\s^]+)\^/g, '<sup>$1</sup>');
-    
-    // Subscript
-    html = html.replace(/~\(([^)]+)\)~/g, '<sub>$1</sub>');
-    html = html.replace(/~([^\s~]+)~/g, '<sub>$1</sub>');
-    
-    return html;
-  }
-  
-  processLinksInHtml(html) {
-    // Fix email links that don't have mailto:
-    html = html.replace(/<a href="([^"]+@[^"]+\.[^"]+)">([^<]+)<\/a>/g, (match, href, text) => {
-      if (!href.startsWith('mailto:')) {
-        return `<a href="mailto:${href}">${text}</a>`;
-      }
-      return match;
-    });
-    
-    // Fix domain links that don't have protocol
-    html = html.replace(/<a href="([^"]+\.[a-zA-Z]{2,}[^"]*)">([^<]+)<\/a>/g, (match, href, text) => {
-      if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('mailto:') && !href.startsWith('#')) {
-        return `<a href="https://${href}">${text}</a>`;
-      }
-      return match;
-    });
-    
-    return html;
-  }
-
-  postProcessHtmlImages(html) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    
-    const allImages = tempDiv.querySelectorAll('img');
-    allImages.forEach(img => {
-      if (!img.classList.contains('markdown-image')) {
-        img.classList.add('markdown-image');
-        let srcValue = img.getAttribute('src') || img.src;
-        img.setAttribute('data-original-src', srcValue);
-        if (!img.style.maxWidth) {
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
-        }
-      }
-    });
-    
-    return tempDiv.innerHTML;
-  }
-
-  isInsideCodeBlock(html, offset, matchLength) {
-    const beforeMatch = html.substring(0, offset);
-    const codeOpenBefore = (beforeMatch.match(/<code[^>]*>/g) || []).length;
-    const codeCloseBefore = (beforeMatch.match(/<\/code>/g) || []).length;
-    const preOpenBefore = (beforeMatch.match(/<pre[^>]*>/g) || []).length;
-    const preCloseBefore = (beforeMatch.match(/<\/pre>/g) || []).length;
-    
-    return (codeOpenBefore > codeCloseBefore) || (preOpenBefore > preCloseBefore);
   }
 
   setupTaskListInteractions() {
@@ -501,7 +321,7 @@ class PreviewComponent extends BaseComponent {
         }
         
         // Validate and fix common link issues
-        let validHref = this.validateAndFixLink(href);
+        let validHref = validateAndFixLink(href);
         
         if (validHref) {
           e.preventDefault();
@@ -516,47 +336,6 @@ class PreviewComponent extends BaseComponent {
     this.preview.addEventListener('click', this.anchorClickHandler);
   }
   
-  validateAndFixLink(href) {
-    if (!href || typeof href !== 'string') {
-      return null;
-    }
-    
-    const trimmedHref = href.trim();
-    
-    // Already valid URLs
-    if (trimmedHref.startsWith('http://') || trimmedHref.startsWith('https://')) {
-      return trimmedHref;
-    }
-    
-    // Valid mailto links
-    if (trimmedHref.startsWith('mailto:')) {
-      return trimmedHref;
-    }
-    
-    // Fix common email patterns without mailto:
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (emailPattern.test(trimmedHref)) {
-      return `mailto:${trimmedHref}`;
-    }
-    
-    // Fix URLs missing protocol
-    if (trimmedHref.includes('.') && !trimmedHref.includes(' ')) {
-      // Looks like a domain, add https://
-      if (trimmedHref.match(/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) || trimmedHref.startsWith('www.')) {
-        return `https://${trimmedHref}`;
-      }
-    }
-    
-    // File protocols
-    if (trimmedHref.startsWith('file://')) {
-      return trimmedHref;
-    }
-    
-    // If we can't fix it, return null to prevent navigation
-    console.warn('[Preview] Could not validate link:', href);
-    return null;
-  }
-
   async applySyntaxHighlighting() {
     const codeBlocks = this.preview.querySelectorAll('pre code:not([data-highlighted])');
     if (codeBlocks.length === 0) return;

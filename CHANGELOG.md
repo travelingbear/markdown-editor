@@ -40,6 +40,8 @@
 - Fixed a link or image dropdown menu being moved to `<body>` on first use and never returned; the restore looked for a container id that does not exist in the shell.
 
 ### Markdown Rendering Fixes
+- Extracted the Preview post-parse HTML pipeline into a pure `rendering/previewHtml.js` module — task-list fallback, footnotes, super/subscript, link normalization, image tagging, and href validation — taking `PreviewComponent` from 946 to 725 lines and making every transform directly testable.
+- Removed the unreachable list-converting branches from the task-list fallback. `marked` already converts `- [ ]` into a checkbox, so those branches only ever ran on hand-written HTML lists, where a nested list produced malformed markup with an unclosed element inside a label. Standalone `[x] text` paragraphs, which `marked` does leave alone, still become checkboxes.
 - Fixed multi-line display math being destroyed by Markdown parsing. A `$$` block containing a line break, or a lone `=` line as in a matrix product, was split across a setext heading and a paragraph before KaTeX ran; matching `$$...$$` in the resulting HTML then swallowed the closing `</h1>` and left an unclosed heading, so the block rendered with visible HTML tags and everything after it was drawn at heading size. Renderers now have a `transformMarkdown` phase that runs before parsing, and KaTeX renders each formula from the source.
 - Fixed blockquotes and inline math appearing at heading size after such a math block, which was that same unclosed heading.
 - Fixed inline math being larger than the text around it; it now matches the surrounding sentence, while display blocks stay slightly larger.

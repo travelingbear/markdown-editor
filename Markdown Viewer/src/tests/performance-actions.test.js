@@ -186,3 +186,51 @@ describe('performance dashboard rendering', () => {
     expect(() => instance.updatePerformanceDashboard()).not.toThrow();
   });
 });
+
+describe('lazy tab loading', () => {
+  it('loads the first few documents eagerly and the rest on demand', () => {
+    const instance = createOptimizer();
+
+    // maxActiveEditors was only ever assigned by low power mode, so this
+    // comparison ran against undefined and lazy loading never engaged.
+    expect(instance.maxActiveEditors).toBe(5);
+    expect(instance.shouldLazyLoadTab(0, 50)).toBe(false);
+    expect(instance.shouldLazyLoadTab(4, 50)).toBe(false);
+    expect(instance.shouldLazyLoadTab(5, 50)).toBe(true);
+    expect(instance.shouldLazyLoadTab(20, 50)).toBe(true);
+  });
+
+  it('stays eager until the session is large enough to matter', () => {
+    const instance = createOptimizer();
+
+    expect(instance.shouldLazyLoadTab(5, 10)).toBe(false);
+    expect(instance.shouldLazyLoadTab(5, 11)).toBe(true);
+  });
+
+  it('keeps only one document eager in low power mode', () => {
+    const instance = createOptimizer();
+    instance.enableLowPowerMode();
+
+    expect(instance.maxActiveEditors).toBe(1);
+    expect(instance.shouldLazyLoadTab(1, 50)).toBe(true);
+  });
+});
+
+describe('teardown', () => {
+  it('tears down an instance that was never fully set up', () => {
+    // destroy() clears collections the setup methods create, so it used to
+    // throw when nothing had run between construction and disposal.
+    const bare = new window.PerformanceOptimizer();
+
+    expect(() => bare.destroy()).not.toThrow();
+  });
+
+  it('tears down a fully set up instance', () => {
+    const instance = createOptimizer();
+    instance.trackTabAccess('a');
+
+    expect(() => instance.destroy()).not.toThrow();
+    expect(instance.tabAccessPattern.size).toBe(0);
+    optimizer = null;
+  });
+});

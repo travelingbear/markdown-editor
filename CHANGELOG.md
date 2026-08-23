@@ -40,6 +40,8 @@
 - Fixed a link or image dropdown menu being moved to `<body>` on first use and never returned; the restore looked for a container id that does not exist in the shell.
 
 - Removed an unreachable tab-virtualization subtree from `PerformanceOptimizer`: `handleHighTabCount()` had no callers anywhere and was the only caller of `selectTabsForVirtualization()`, `virtualizeTab()`, and `initializeTabAccessTracking()`. Also dropped four fields that were assigned and never read. `performance-optimizer.js` went from 1,004 to 786 lines.
+- Fixed lazy tab loading never engaging outside low power mode. `shouldLazyLoadTab()` compared the tab position against `maxActiveEditors`, which was only ever assigned by low power mode, so the comparison ran against `undefined` and always answered false; every document loaded eagerly no matter how many tabs were open. Documents past the fifth now load on demand once a session exceeds ten tabs, and low power mode still reduces that to one.
+- Fixed `PerformanceOptimizer.destroy()` throwing on an instance that was never fully set up; the collections it clears are now owned from construction.
 - Extracted the tab-unloading policy and access average into a pure `performance/tabPolicy.js`, covering the idle, visit-count, ordering, and per-pass limits that decide which tabs are released under memory pressure.
 - Extracted the Performance Monitor's formatting and thresholds into a pure `performance/dashboardView.js`, replacing a 160-line DOM method with a view model plus a small binding, and covering the previously untestable severity and status rules.
 

@@ -15,6 +15,12 @@ class PerformanceOptimizer {
     
     this.memoryMonitor = null;
     this.performanceLog = [];
+    // Created here as well as in the setup methods so teardown is safe on an
+    // instance that was never fully set up.
+    this.virtualizedTabs = new Set();
+    this.unloadCandidates = new Map();
+    this.lastAccessTime = new Map();
+    this.tabAccessPattern = new Map();
     this.tabMemoryUsage = new Map();
     this.inactiveTabsData = new Map(); // Lazy loading storage
     this.performanceMetrics = new Map();
@@ -58,9 +64,11 @@ class PerformanceOptimizer {
   
   // Phase 6: Lazy loading for inactive tabs
   setupLazyTabLoading() {
-    this.lazyLoadThreshold = 10; // Start lazy loading after 10 tabs
-    
-
+    this.lazyLoadThreshold = 10; // Start lazy loading beyond 10 open tabs
+    // Documents past this position load their content on demand. Low power
+    // mode lowers it; without a default here shouldLazyLoadTab() compared
+    // against undefined and always answered false.
+    this.maxActiveEditors = 5;
   }
   
   // Phase 6: Smart tab unloading for memory pressure

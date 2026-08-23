@@ -111,3 +111,54 @@ describe('FileController startup-file ownership', () => {
     expect(invoke).toHaveBeenNthCalledWith(2, 'clear_startup_file');
   });
 });
+
+describe('NativeWindowController fullscreen', () => {
+  it('toggles the native window when Tauri is available', async () => {
+    const setFullscreen = vi.fn(async () => {});
+    const appWindow = { isFullscreen: vi.fn(async () => false), setFullscreen };
+    const controller = new window.NativeWindowController({
+      tauriProvider: () => ({ window: { getCurrentWindow: () => appWindow } })
+    });
+
+    await controller.toggleFullscreen();
+
+    expect(setFullscreen).toHaveBeenCalledWith(true);
+  });
+
+  it('leaves native fullscreen when it is already on', async () => {
+    const setFullscreen = vi.fn(async () => {});
+    const appWindow = { isFullscreen: vi.fn(async () => true), setFullscreen };
+    const controller = new window.NativeWindowController({
+      tauriProvider: () => ({ window: { getCurrentWindow: () => appWindow } })
+    });
+
+    await controller.toggleFullscreen();
+
+    expect(setFullscreen).toHaveBeenCalledWith(false);
+  });
+
+  it('falls back to the browser Fullscreen API outside Tauri', async () => {
+    const controller = new window.NativeWindowController({ tauriProvider: () => undefined });
+    const requestFullscreen = vi.fn(async () => {});
+    document.documentElement.requestFullscreen = requestFullscreen;
+
+    await controller.toggleFullscreen();
+
+    expect(requestFullscreen).toHaveBeenCalledOnce();
+  });
+
+  it('never lets a fullscreen failure escape', async () => {
+    const controller = new window.NativeWindowController({
+      tauriProvider: () => ({
+        window: {
+          getCurrentWindow: () => ({
+            isFullscreen: async () => { throw new Error('no window'); }
+          })
+        }
+      })
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(controller.toggleFullscreen()).resolves.toBeUndefined();
+  });
+});

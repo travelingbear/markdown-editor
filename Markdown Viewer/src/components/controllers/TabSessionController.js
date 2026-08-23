@@ -19,36 +19,11 @@ class TabSessionController extends BaseComponent {
     this.showWelcomePage = () => {};
     this.loadVersion = 0;
     this.tabEventHandlers = [];
+    this.tabSwitchRequestHandler = null;
   }
 
-  setDependencies({
-    tabManager,
-    editorComponent,
-    previewComponent,
-    documentComponent,
-    toolbarComponent,
-    modeController,
-    settingsController,
-    tabUIController,
-    scrollCoordinator,
-    performanceOptimizer,
-    updateFilename,
-    showWelcomePage
-  }) {
-    Object.assign(this, {
-      tabManager,
-      editorComponent,
-      previewComponent,
-      documentComponent,
-      toolbarComponent,
-      modeController,
-      settingsController,
-      tabUIController,
-      scrollCoordinator,
-      performanceOptimizer,
-      updateFilename,
-      showWelcomePage
-    });
+  setDependencies(dependencies) {
+    Object.assign(this, dependencies);
   }
 
   async onInit() {
@@ -60,6 +35,10 @@ class TabSessionController extends BaseComponent {
     this.listenToTabs('tab-content-updated', () => this.tabUIController.updateTabUI());
     this.listenToTabs('tab-saved', () => this.tabUIController.updateTabUI());
     this.listenToTabs('all-tabs-closed', (data) => this.handleAllTabsClosed(data));
+
+    // Tab chrome asks for a switch; activation is this controller's job.
+    this.tabSwitchRequestHandler = ({ tabId }) => this.switchToTab(tabId);
+    this.tabUIController.on('tab-switch-requested', this.tabSwitchRequestHandler);
   }
 
   listenToTabs(event, handler) {
@@ -278,6 +257,10 @@ class TabSessionController extends BaseComponent {
       this.tabManager?.off(event, handler);
     }
     this.tabEventHandlers = [];
+    if (this.tabSwitchRequestHandler) {
+      this.tabUIController?.off('tab-switch-requested', this.tabSwitchRequestHandler);
+      this.tabSwitchRequestHandler = null;
+    }
     this.loadVersion++;
   }
 }

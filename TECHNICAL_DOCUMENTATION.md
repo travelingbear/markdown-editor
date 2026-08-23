@@ -32,7 +32,9 @@ src/index.html
 
 ### MarkdownEditor
 
-`MarkdownEditor` is the application composition root. It creates components and controllers, connects cross-component events, starts plugins, and coordinates startup progress. Business logic and platform integration belong in focused controllers rather than expanding this class.
+`MarkdownEditor` is the application composition root and nothing else. It constructs components and controllers, injects their dependencies, orders initialization, stages startup progress, provides the error boundary, and disposes everything. It registers no component event listeners of its own: every cross-component event has an owning controller that also removes it. Business logic and platform integration belong in focused controllers rather than expanding this class.
+
+Its full method surface is `constructor`, `onInit`, `createComponents`, `applyInitialSettings`, `setupGlobalEventHandlers`, `updateSplashProgress`, `hideSplash`, `handleInitializationError`, `handleError`, and `onDestroy`. `src/tests/composition-root.test.js` pins that surface, proves every registered controller is constructed and staged in `bootstrap.js` before the root, and proves teardown order and single disposal.
 
 ### Components
 
@@ -46,7 +48,7 @@ src/index.html
 
 - `FileController`: new/open/save/reload workflows.
 - `FileDropController`: browser and Tauri file-drop normalization, open-versus-insert routing, overlay state, and listener cleanup.
-- `DocumentLifecycleController`: file-open batches, full-path duplicate routing, new/close/dirty/save transitions, and external document-content updates.
+- `DocumentLifecycleController`: file-open batches, full-path duplicate routing, new/close/dirty/save transitions, external document-content updates, and the `FileController` side of the same transitions including its failures.
 - `EditorLifecycleController`: editor content propagation, cursor persistence, lazy-load status refresh, markdown-command routing, and application-listener teardown. `EditorComponent` separately releases its fallback DOM listeners and editor adapter.
 - `PreviewLifecycleController`: task interaction, external-link routing, renderer status, errors, Preview context commands, export routing, post-render scroll restoration, and listener/timer teardown.
 - `SettingsCoordinator`: the sole owner of Settings/UI/Plugin Manager communication — theme application, rendering mode, pinned tabs, pinned quick controls, Markdown toolbar visibility, distraction-free forwarding, Retro sound tests, and the one canonical Settings refresh (settings display, performance dashboard, system information, plugin summary) shared by every entry point. Preference values stay in `SettingsController` and presentation stays in `UIController`/`ToolbarComponent`; neither reaches into the other's fields.
@@ -56,15 +58,17 @@ src/index.html
 - `KeyboardController`: the sole application-level keyboard/wheel listener, connected through explicit services and action callbacks rather than the composition root.
 - `MarkdownActionController`: formatting commands.
 - `ModeController`: Code, Preview, Split, and welcome states.
-- `NativeWindowController`: application-close session persistence, single-instance file forwarding, focus restoration, and native listener cleanup.
-- `ScrollCoordinator`: per-tab scroll capture and Code/Preview synchronization.
+- `NativeWindowController`: application-close session persistence, single-instance file forwarding, focus restoration, fullscreen, and native listener cleanup.
+- `ScrollCoordinator`: per-tab scroll capture, Code/Preview synchronization, and the sync button, which it keeps current by following mode changes itself.
 - `SplitPaneController`: bounded vertical pane resizing, editor relayout scheduling, and disposable mouse listeners; horizontal height resizing remains plugin-owned.
+- `SearchController`: find/replace routing — the editor adapter in Code and Split, the browser's native find in Preview.
 - `SettingsController`: preference loading, persistence, the single write path for each preference, and the canonical Settings modal paint.
-- `TabSessionController`: activation, wraparound navigation, dormant-tab loading, editor documents, and session restoration.
+- `StatusBarController`: the status bar readouts — cursor position and the untabbed document name, deferring to `TabUIController` whenever tabs exist.
+- `TabSessionController`: activation, wraparound navigation, dormant-tab loading, editor documents, tab-switch requests from the tab chrome, and session restoration.
 - `TabUIController`: pinned tabs, status-bar tab manager, context commands, menus, and tab reordering.
 - `UIController`: themes, layout, modals, and Retro audio. `setTheme()` is the canonical theme write path for the Settings buttons, the toolbar button, and `Ctrl+T` alike; `SettingsController` adopts the result through `syncTheme()` rather than tracking the theme independently. It announces `settings-shown` rather than painting the Settings modal itself, so preference state has one renderer.
-- `WelcomeController`: welcome-screen new/open/help/about/settings/history commands and their DOM listener lifecycle.
-- `ExportController`: HTML and PDF/print preparation.
+- `WelcomeController`: welcome-screen new/open/help/about/settings/history commands, the welcome application state entered when the last document closes, and their DOM listener lifecycle.
+- `ExportController`: HTML and PDF/print preparation. Export is reachable from both the toolbar and Preview, so neither routing controller owns its failures; they go straight to the injected error boundary.
 
 `ControllerRegistry` constructs controllers behind stable names so composition can be tested and gradually modularized.
 
@@ -175,7 +179,7 @@ Tests live in `src/tests` and run with:
 npm test
 ```
 
-Current coverage includes startup staging, component lifecycle, native-window listener disposal and file forwarding, browser/native file-drop routing and teardown, document/editor/Preview/toolbar lifecycle routing, welcome/modal routing and teardown, tab/session safety, path identity, CodeMirror loading and commands, scroll coordination, toolbar state, keyboard shortcuts, plugin lifecycle/configuration, renderer isolation, math detection, Mermaid sanitization, and system status.
+Current coverage includes startup staging, composition-root wiring and teardown, component lifecycle, native-window listener disposal and file forwarding, browser/native file-drop routing and teardown, document/editor/Preview/toolbar lifecycle routing, welcome/modal routing and teardown, tab/session safety, path identity, CodeMirror loading and commands, scroll coordination, toolbar state, keyboard shortcuts, plugin lifecycle/configuration, renderer isolation, math detection, Mermaid sanitization, and system status.
 
 Every behavioral batch also requires a production frontend build and user-approved native smoke test:
 

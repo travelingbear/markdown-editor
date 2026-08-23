@@ -1,5 +1,6 @@
 /**
- * Owns welcome-screen commands and their DOM listener lifecycle.
+ * Owns the welcome screen: its commands, their DOM listener lifecycle, and the
+ * application state shown when no document is open.
  */
 class WelcomeController extends BaseComponent {
   constructor(options = {}) {
@@ -8,15 +9,36 @@ class WelcomeController extends BaseComponent {
     this.documentComponent = null;
     this.tabManager = null;
     this.uiController = null;
+    this.editorComponent = null;
+    this.previewComponent = null;
+    this.toolbarComponent = null;
+    this.modeController = null;
+    this.tabUIController = null;
+    this.scrollCoordinator = null;
+    this.statusBarController = null;
     this.domListeners = [];
     this.isSetup = false;
   }
 
-  setDependencies({ fileController, documentComponent, tabManager, uiController }) {
-    this.fileController = fileController;
-    this.documentComponent = documentComponent;
-    this.tabManager = tabManager;
-    this.uiController = uiController;
+  setDependencies(dependencies) {
+    Object.assign(this, dependencies);
+  }
+
+  /**
+   * Return the application to the welcome state after the last document is
+   * closed. Welcome is an application state, not an empty preview document.
+   */
+  showWelcomePage() {
+    this.editorComponent.emit('set-content', { content: '' });
+    this.previewComponent.emit('update-preview', { content: '', filePath: null });
+    this.statusBarController.updateFilename('Welcome', false);
+    this.toolbarComponent.emit('document-state-changed', {
+      hasDocument: false,
+      isDirty: false
+    });
+    this.modeController.enterWelcomeMode();
+    this.tabUIController.updateTabUIForWelcome();
+    this.scrollCoordinator.updateButton();
   }
 
   addClickListener(elementId, handler) {
@@ -60,7 +82,15 @@ class WelcomeController extends BaseComponent {
     this.documentComponent = null;
     this.tabManager = null;
     this.uiController = null;
+    this.editorComponent = null;
+    this.previewComponent = null;
+    this.toolbarComponent = null;
+    this.modeController = null;
+    this.tabUIController = null;
+    this.scrollCoordinator = null;
+    this.statusBarController = null;
   }
 }
 
 window.WelcomeController = WelcomeController;
+export { WelcomeController };

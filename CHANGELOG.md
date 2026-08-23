@@ -31,6 +31,10 @@
 - Removed a duplicate Settings modal renderer that painted the same controls from a second copy of the preference state; opening Settings from any entry point now renders once from `SettingsController`.
 - Fixed the Markdown toolbar On/Off buttons showing a stale value when the toolbar was toggled with `Ctrl+Shift+/` while Settings was open; the shortcut and the Settings buttons now share one write path.
 - Fixed Settings highlighting the previously chosen theme after the theme was changed with the toolbar button or `Ctrl+T`. `SettingsController` kept an independent copy of the theme that only its own buttons updated; it now adopts whichever theme was actually applied, including the Retro-only settings that depend on it.
+- Reduced `MarkdownEditor` to a composition root. It now only constructs, injects, initializes, and disposes; `setupComponentCommunication()` is gone because every cross-component event has an owning controller that also removes it.
+- Added `StatusBarController` for the cursor and document-name readouts, and `SearchController` for find/replace routing between the editor adapter and the browser's native find.
+- Moved fullscreen into `NativeWindowController`, the welcome application state into `WelcomeController`, tab-switch requests into `TabSessionController`, sync-button mode tracking into `ScrollCoordinator`, and the `FileController` new/error transitions into `DocumentLifecycleController`.
+- Routed export failures straight to the application error boundary, since export is reachable from both the toolbar and Preview and neither routing controller owns its failures.
 
 ### Toolbar Layout Fixes
 - Fixed main toolbar labels and icons spilling outside their buttons at the Large size in Light, Dark, and High Contrast. Buttons were pinned to a fixed height that was smaller than the text line box; they now centre their content in a box that grows when needed.

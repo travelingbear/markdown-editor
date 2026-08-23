@@ -26,7 +26,16 @@ Preserve unrelated user changes. Use `apply_patch` for source/document edits. Do
 
 The broad modernization checkpoint precedes this handoff. Use `git log --oneline` for its exact history.
 
-The latest approved batch completed pipeline item 2 and two reported layout bugs:
+The latest approved batch completed pipeline item 2 (composition root):
+
+- Reduced `MarkdownEditor` to construction, injection, initialization, startup staging, the error boundary, and disposal. `setupComponentCommunication()` is gone; every cross-component event has an owning controller that also removes it. 762 to 608 lines.
+- Added `StatusBarController` (cursor position and the untabbed document name) and `SearchController` (editor adapter in Code/Split, native find in Preview).
+- Moved fullscreen into `NativeWindowController`, the welcome application state into `WelcomeController`, tab-switch requests into `TabSessionController`, sync-button mode tracking into `ScrollCoordinator`, and the `FileController` new/error transitions into `DocumentLifecycleController`.
+- Routed export failures straight to the injected error boundary, since export is reachable from both the toolbar and Preview.
+- Added `src/tests/composition-root.test.js`, which pins the root's method surface, proves every registered controller is constructed and staged in `bootstrap.js` before the root, and proves teardown order and single disposal.
+- Removed a dead `debounce()` helper.
+
+The preceding approved batch completed the Settings/UI coordination item and two reported layout bugs:
 
 - Extracted Settings/UI/Plugin Manager communication into `src/components/controllers/SettingsCoordinator.js`, owner of the 11 events connecting `SettingsController`, `UIController`, `TabUIController`, and the Plugin Manager, with listener and timer teardown.
 - Made `refreshSettingsDisplay()` the one canonical Settings refresh for every entry point: toolbar, `Ctrl+,`, welcome screen, status-bar tab manager, and the Plugin Manager return flow.
@@ -39,7 +48,7 @@ The latest approved batch completed pipeline item 2 and two reported layout bugs
 - Reduced `MarkdownEditor.js` from 845 to 762 lines; `setupComponentCommunication()` is down to five listeners.
 - Updated all four required documentation files.
 
-The preceding approved batch completed pipeline item 1 (toolbar command routing):
+The batch before that completed toolbar command routing:
 
 - Extracted all toolbar command routing into `src/components/controllers/ToolbarLifecycleController.js`, the sole owner of the 22 `ToolbarComponent` output events.
 - Covered file new/open/save/save-as/close/reload, mode changes, exports, distraction-free/theme/Settings/Help, quick rendering and pinned-tab toggles, font size, Preview zoom, undo/redo, Markdown actions/inserts, and find/replace.
@@ -49,7 +58,7 @@ The preceding approved batch completed pipeline item 1 (toolbar command routing)
 - Added `src/tests/toolbar-lifecycle-controller.test.js` covering routing, the single theme path, complete teardown, and no double-binding on reinitialization.
 - Updated all four required documentation files.
 
-The batch before that completed the Preview lifecycle extraction:
+Earlier still, the Preview lifecycle extraction:
 
 - Extracted all Preview event/command ownership into `src/components/controllers/PreviewLifecycleController.js` with deterministic listener and timer teardown.
 - Routed reload, sync, restart, export, task toggle, external link, renderer status, errors, and post-render scroll alignment through that controller.
@@ -62,35 +71,24 @@ The batch before that completed the Preview lifecycle extraction:
 
 Validation at handoff:
 
-- `47` Vitest files passed.
-- `230` tests passed.
+- `50` Vitest files passed.
+- `269` tests passed.
 - `npm run build:web` passed.
 - `cargo check` passed during the Preview-lifecycle batch. The batches since then changed no Rust, native commands, or capabilities, so it was not rerun.
 - `git diff --check` passed; Git may still print informational LF-to-CRLF warnings on Windows.
-- Expected development startup log: `[Bootstrap] 42 modules ready ...`.
+- Expected development startup log: `[Bootstrap] 44 modules ready ...`.
 
 ## Remaining agreed pipeline
 
 Do these in order and treat each numbered item as a separate approval boundary.
 
-### 2. Finish the composition root
-
-Goal:
-
-- Make `MarkdownEditor` primarily construct, inject, initialize, and destroy components/controllers.
-- Move remaining behavior/event clusters to narrowly owned controllers rather than creating a generic catch-all.
-- Ensure every registered listener, timer, adapter, and child component has one teardown owner.
-- Keep startup staging in `src/bootstrap.js` explicit and deterministic; update its expected module count if a new bootstrap module is added.
-
-Tests should prove initialization order, injected dependencies, listener teardown, and that reinitialization does not double-bind commands.
-
-### 3. Decompose the largest remaining modules
+### 2. Decompose the largest remaining modules
 
 Current approximate sizes at handoff:
 
-- `styles.css`: 3,724 lines (handled primarily in item 4).
+- `styles.css`: 3,724 lines (handled primarily in item 3).
 - `styles/themes/retro.css`: 1,228 lines.
-- `ToolbarComponent.js`: 1,120 lines.
+- `ToolbarComponent.js`: 1,120 lines (largest JavaScript module; start here).
 - `performance-optimizer.js`: 1,004 lines.
 - `TabUIController.js`: 974 lines.
 - `PreviewComponent.js`: 938 lines.
@@ -107,7 +105,7 @@ Preserve:
 - Windows/Linux file, search, shortcut, and path behavior.
 - Plugin lifecycle isolation and lazy rendering.
 
-### 4. Modularize CSS
+### 3. Modularize CSS
 
 Current CSS already has `styles/features`, `styles/themes`, and `styles/utilities`; continue that structure.
 
@@ -121,7 +119,7 @@ Goal:
 
 Manually compare Light, Dark, and Retro across welcome, toolbar, Settings, Plugin Manager, tabs, Code, Preview, vertical/horizontal Split, dialogs, task lists, code blocks, Mermaid, KaTeX, and responsive widths.
 
-## Final audit after items 2–4
+## Final audit after items 2–3
 
 - Run the full automated suite and `npm run build:web`.
 - Run `cargo check` and native development smoke tests.

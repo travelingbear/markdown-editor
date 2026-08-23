@@ -11,14 +11,17 @@ class ExportController extends BaseComponent {
     
     // Dependencies
     this.editorComponent = null;
+    // Export is reachable from the toolbar and from Preview, so neither routing
+    // controller owns its failures; they go straight to the error boundary.
+    this.handleError = () => {};
   }
 
   async onInit() {
     // Controller is ready
   }
 
-  setDependencies(editorComponent) {
-    this.editorComponent = editorComponent;
+  setDependencies(dependencies) {
+    Object.assign(this, dependencies);
   }
 
   async exportToHtml() {
@@ -31,7 +34,7 @@ class ExportController extends BaseComponent {
       await this.saveHtmlFile(htmlDocument);
       
     } catch (error) {
-      this.emit('export-error', { error, type: 'HTML Export' });
+      this.handleError(error, 'HTML Export');
     }
   }
 
@@ -79,7 +82,7 @@ class ExportController extends BaseComponent {
       }
       
     } catch (error) {
-      this.emit('export-error', { error, type: 'PDF Export' });
+      this.handleError(error, 'PDF Export');
     }
   }
   

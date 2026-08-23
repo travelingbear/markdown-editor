@@ -48,6 +48,11 @@ function createController({ pinnedTabs = false, currentMode = 'code' } = {}) {
   const switchToTab = vi.fn();
   const updateFilename = vi.fn();
   const handleError = vi.fn();
+  const fileEvents = new Map();
+  const fileController = {
+    on: vi.fn((event, handler) => fileEvents.set(event, handler)),
+    off: vi.fn()
+  };
   const controller = new window.DocumentLifecycleController();
   controller.setDependencies({
     documentComponent,
@@ -61,11 +66,14 @@ function createController({ pinnedTabs = false, currentMode = 'code' } = {}) {
     performanceOptimizer,
     switchToTab,
     updateFilename,
-    handleError
+    handleError,
+    fileController
   });
 
   return {
     controller,
+    fileController,
+    fileEvents,
     documentComponent,
     tabManager,
     modeController,
@@ -75,6 +83,7 @@ function createController({ pinnedTabs = false, currentMode = 'code' } = {}) {
     performanceOptimizer,
     switchToTab,
     updateFilename,
+    handleError,
     setActiveTab: (tab) => { activeTab = tab; }
   };
 }
@@ -169,6 +178,39 @@ describe('DocumentLifecycleController', () => {
       hasDocument: true,
       isDirty: true
     });
+  });
+
+  it('switches to Code once a new file is created', async () => {
+    const { controller, fileEvents, modeController } = createController();
+    await controller.init();
+
+    fileEvents.get('file-new-completed')();
+
+    expect(modeController.setMode).toHaveBeenCalledWith('code');
+  });
+
+  it('reports file operation failures through the error boundary', async () => {
+    const { controller, fileEvents, handleError } = createController();
+    await controller.init();
+    const error = new Error('disk full');
+
+    fileEvents.get('file-error')({ error, type: 'Save' });
+
+    expect(handleError).toHaveBeenCalledWith(error, 'Save');
+  });
+
+  it('removes the file listeners during teardown', async () => {
+    const { controller, fileController } = createController();
+    await controller.init();
+    const registrations = fileController.on.mock.calls;
+
+    controller.destroy();
+
+    expect(registrations).toHaveLength(2);
+    expect(fileController.off).toHaveBeenCalledTimes(2);
+    for (const [event, handler] of registrations) {
+      expect(fileController.off).toHaveBeenCalledWith(event, handler);
+    }
   });
 
   it('removes every document listener during teardown', async () => {

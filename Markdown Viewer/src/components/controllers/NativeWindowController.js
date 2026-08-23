@@ -39,6 +39,30 @@ class NativeWindowController extends BaseComponent {
     }
   }
 
+  /**
+   * Fullscreen is a native window property; the browser Fullscreen API is only
+   * the fallback for running the frontend outside Tauri.
+   */
+  async toggleFullscreen() {
+    try {
+      const nativeWindow = this.tauriProvider()?.window;
+      if (nativeWindow) {
+        const appWindow = nativeWindow.getCurrentWindow();
+        const isFullscreen = await appWindow.isFullscreen();
+        await appWindow.setFullscreen(!isFullscreen);
+        return;
+      }
+
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.error('[NativeWindowController] Error toggling fullscreen:', error);
+    }
+  }
+
   async setupWindowCloseHandler() {
     if (!this.tauriProvider()?.core?.invoke) return false;
 

@@ -24,6 +24,7 @@ class ScrollCoordinator extends BaseComponent {
     this.editorLoadedHandler = null;
     this.syncButton = null;
     this.syncButtonHandler = null;
+    this.modeChangedHandler = null;
   }
 
   setDependencies({ editorComponent, previewComponent, tabManager, modeController }) {
@@ -49,6 +50,11 @@ class ScrollCoordinator extends BaseComponent {
       this.syncButtonHandler = () => this.alignBothPanes();
       this.syncButton.addEventListener('click', this.syncButtonHandler);
     }
+
+    // The sync button is only meaningful in Code and Preview, so this
+    // controller follows the mode itself rather than being told about it.
+    this.modeChangedHandler = () => this.updateButton();
+    this.modeController.on('mode-changed', this.modeChangedHandler);
   }
 
   bindEditor(adapter) {
@@ -301,6 +307,10 @@ class ScrollCoordinator extends BaseComponent {
     }
     if (this.syncButton && this.syncButtonHandler) {
       this.syncButton.removeEventListener('click', this.syncButtonHandler);
+    }
+    if (this.modeChangedHandler) {
+      this.modeController?.off('mode-changed', this.modeChangedHandler);
+      this.modeChangedHandler = null;
     }
   }
 }

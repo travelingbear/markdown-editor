@@ -17,8 +17,10 @@ class DocumentLifecycleController extends BaseComponent {
     this.switchToTab = () => false;
     this.updateFilename = () => {};
     this.handleError = () => {};
+    this.fileController = null;
     this.fileOpenBatchStartedAt = null;
     this.documentEventHandlers = [];
+    this.fileEventHandlers = [];
   }
 
   setDependencies(dependencies) {
@@ -35,11 +37,20 @@ class DocumentLifecycleController extends BaseComponent {
     this.listen('document-saved', (data) => this.handleDocumentSaved(data));
     this.listen('document-error', (data) => this.handleDocumentError(data));
     this.listen('document-content-updated', (data) => this.handleContentUpdated(data));
+
+    // FileController drives the same document transitions from the file side.
+    this.listenToFiles('file-new-completed', () => this.modeController.setMode('code'));
+    this.listenToFiles('file-error', ({ error, type }) => this.handleError(error, type));
   }
 
   listen(event, handler) {
     this.documentComponent.on(event, handler);
     this.documentEventHandlers.push({ event, handler });
+  }
+
+  listenToFiles(event, handler) {
+    this.fileController.on(event, handler);
+    this.fileEventHandlers.push({ event, handler });
   }
 
   handleOpenBatchStarted() {
@@ -143,6 +154,10 @@ class DocumentLifecycleController extends BaseComponent {
       this.documentComponent?.off(event, handler);
     }
     this.documentEventHandlers = [];
+    for (const { event, handler } of this.fileEventHandlers) {
+      this.fileController?.off(event, handler);
+    }
+    this.fileEventHandlers = [];
     this.fileOpenBatchStartedAt = null;
   }
 }

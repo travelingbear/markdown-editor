@@ -108,6 +108,7 @@
 - **Preview Lifecycle Ownership**: Task interaction, safe external links, renderer status, exports, reload/restart commands, and scroll restoration use one disposable controller
 - **Toolbar Command Ownership**: `ToolbarComponent` emits intent only; file, mode, export, UI, settings, editing, and Markdown commands are routed by one disposable controller
 - **Settings and UI Ownership**: One disposable coordinator connects Settings, UI, and the Plugin Manager, so each preference has a single write path and the Settings modal is rendered once from one state
+- **Composition Root**: `MarkdownEditor` only constructs, injects, initializes, and disposes; it registers no component event listeners, and every listener, timer, and adapter has one teardown owner
 - **Tokenized Toolbar Geometry**: Toolbar sizes are custom properties every theme reads, and the Markdown toolbar is measured against the code pane so it cannot overflow into Preview
 - **Plugin System**: Lifecycle-managed plugins with scoped settings, automatic cleanup, a dedicated manager, and an ordered renderer registry
 - **Tab System**: Session-owned activation and wraparound navigation, UI-owned context commands, virtualization, and performance optimization

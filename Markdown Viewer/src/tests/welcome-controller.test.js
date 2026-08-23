@@ -38,15 +38,41 @@ function createHarness() {
     showAbout: vi.fn(),
     showSettings: vi.fn(async () => {})
   };
+  const editorComponent = { emit: vi.fn() };
+  const previewComponent = { emit: vi.fn() };
+  const toolbarComponent = { emit: vi.fn() };
+  const modeController = { enterWelcomeMode: vi.fn() };
+  const tabUIController = { updateTabUIForWelcome: vi.fn() };
+  const scrollCoordinator = { updateButton: vi.fn() };
+  const statusBarController = { updateFilename: vi.fn() };
   controller = new window.WelcomeController();
   controller.setDependencies({
     fileController,
     documentComponent,
     tabManager,
-    uiController
+    uiController,
+    editorComponent,
+    previewComponent,
+    toolbarComponent,
+    modeController,
+    tabUIController,
+    scrollCoordinator,
+    statusBarController
   });
 
-  return { documentComponent, fileController, tabManager, uiController };
+  return {
+    documentComponent,
+    fileController,
+    tabManager,
+    uiController,
+    editorComponent,
+    previewComponent,
+    toolbarComponent,
+    modeController,
+    tabUIController,
+    scrollCoordinator,
+    statusBarController
+  };
 }
 
 describe('WelcomeController', () => {
@@ -87,5 +113,26 @@ describe('WelcomeController', () => {
     expect(context.fileController.newFile).not.toHaveBeenCalled();
     expect(context.uiController.showHelp).not.toHaveBeenCalled();
     expect(context.fileController.clearFileHistory).not.toHaveBeenCalled();
+  });
+
+  it('returns the application to the welcome state', () => {
+    const context = createHarness();
+
+    controller.showWelcomePage();
+
+    expect(context.editorComponent.emit).toHaveBeenCalledWith('set-content', { content: '' });
+    expect(context.previewComponent.emit).toHaveBeenCalledWith('update-preview', {
+      content: '',
+      filePath: null
+    });
+    expect(context.statusBarController.updateFilename).toHaveBeenCalledWith('Welcome', false);
+    expect(context.toolbarComponent.emit).toHaveBeenCalledWith('document-state-changed', {
+      hasDocument: false,
+      isDirty: false
+    });
+    // Welcome is an application state, not an empty preview document.
+    expect(context.modeController.enterWelcomeMode).toHaveBeenCalledOnce();
+    expect(context.tabUIController.updateTabUIForWelcome).toHaveBeenCalledOnce();
+    expect(context.scrollCoordinator.updateButton).toHaveBeenCalledOnce();
   });
 });

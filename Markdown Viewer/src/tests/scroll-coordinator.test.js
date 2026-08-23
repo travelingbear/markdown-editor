@@ -24,7 +24,12 @@ function createCoordinator({ mode = 'split', tab = null, editorMetrics = { top: 
     saveTabEditorState: vi.fn(),
     hasTabs: vi.fn(() => Boolean(tab))
   };
-  const modeController = { getCurrentMode: vi.fn(() => mode) };
+  const modeEvents = new Map();
+  const modeController = {
+    getCurrentMode: vi.fn(() => mode),
+    on: vi.fn((event, handler) => modeEvents.set(event, handler)),
+    off: vi.fn()
+  };
   const coordinator = new window.ScrollCoordinator();
   coordinator.setDependencies({
     editorComponent,
@@ -32,7 +37,7 @@ function createCoordinator({ mode = 'split', tab = null, editorMetrics = { top: 
     tabManager,
     modeController
   });
-  return { coordinator, adapter, editorComponent, tabManager, modeController };
+  return { coordinator, adapter, editorComponent, tabManager, modeController, modeEvents };
 }
 
 describe('ScrollCoordinator', () => {
@@ -131,5 +136,29 @@ describe('ScrollCoordinator', () => {
     coordinator.handlePreviewScroll();
 
     expect(tabManager.updateTabScroll).not.toHaveBeenCalled();
+  });
+
+  it('follows the mode itself to keep the sync button correct', async () => {
+    const context = createCoordinator({ mode: 'code', tab: { id: 'a' } });
+    await context.coordinator.init();
+    const button = document.getElementById('scroll-sync-btn');
+
+    context.modeController.getCurrentMode.mockReturnValue('split');
+    context.modeEvents.get('mode-changed')({ mode: 'split' });
+    expect(button.style.display).toBe('none');
+
+    context.modeController.getCurrentMode.mockReturnValue('preview');
+    context.modeEvents.get('mode-changed')({ mode: 'preview' });
+    expect(button.style.display).toBe('inline-flex');
+  });
+
+  it('releases the mode subscription on teardown', async () => {
+    const context = createCoordinator();
+    await context.coordinator.init();
+    const [event, handler] = context.modeController.on.mock.calls[0];
+
+    context.coordinator.destroy();
+
+    expect(context.modeController.off).toHaveBeenCalledWith(event, handler);
   });
 });

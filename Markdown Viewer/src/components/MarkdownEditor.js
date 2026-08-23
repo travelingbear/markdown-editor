@@ -44,15 +44,14 @@ class MarkdownEditor extends BaseComponent {
     this.fileDropController = this.controllers.fileDropController || null;
     this.splitPaneController = this.controllers.splitPaneController || null;
     this.welcomeController = this.controllers.welcomeController || null;
+    this.statusBarController = this.controllers.statusBarController || null;
+    this.searchController = this.controllers.searchController || null;
     
     // Performance tracking
     this.startupTime = 0;
     this.lastModeSwitchTime = 0;
     this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
     
-    // Status bar elements
-    this.cursorPos = null;
-    this.filename = null;
   }
 
   async onInit() {
@@ -68,18 +67,10 @@ class MarkdownEditor extends BaseComponent {
       // Update splash screen progress
       this.updateSplashProgress(10, 'Initializing components...');
       
-      // Initialize DOM elements
-      this.initializeElements();
-      
       this.updateSplashProgress(25, 'Creating components...');
       
       // Create and initialize components
       await this.createComponents();
-      
-      this.updateSplashProgress(50, 'Setting up communication...');
-      
-      // Set up inter-component communication
-      this.setupComponentCommunication();
       
       this.updateSplashProgress(70, 'Applying settings...');
       
@@ -136,16 +127,6 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  initializeElements() {
-    // Status bar elements
-    this.cursorPos = document.getElementById('cursor-pos');
-    this.filename = document.getElementById('filename');
-    
-    if (!this.cursorPos || !this.filename) {
-      throw new Error('Status bar elements not found');
-    }
-  }
-
   async createComponents() {
     // Register default controllers in registry
     this.registry.register('settings', SettingsController);
@@ -167,6 +148,8 @@ class MarkdownEditor extends BaseComponent {
     this.registry.register('fileDrop', FileDropController);
     this.registry.register('splitPane', SplitPaneController);
     this.registry.register('welcome', WelcomeController);
+    this.registry.register('statusBar', StatusBarController);
+    this.registry.register('search', SearchController);
     this.registry.register('pluginModal', PluginModalController);
     
     // Create settings controller first (or use injected one)
@@ -201,6 +184,16 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.documentComponent);
     await this.documentComponent.init();
     
+    if (!this.statusBarController) {
+      this.statusBarController = this.registry.createInstance('statusBar');
+    }
+    this.statusBarController.setDependencies({
+      documentComponent: this.documentComponent,
+      tabManager: this.tabManager
+    });
+    this.addChild(this.statusBarController);
+    await this.statusBarController.init();
+
     // Create editor component
     this.editorComponent = new EditorComponent();
     this.addChild(this.editorComponent);
@@ -223,6 +216,16 @@ class MarkdownEditor extends BaseComponent {
     this.addChild(this.modeController);
     await this.modeController.init();
     this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
+
+    if (!this.searchController) {
+      this.searchController = this.registry.createInstance('search');
+    }
+    this.searchController.setDependencies({
+      editorComponent: this.editorComponent,
+      modeController: this.modeController
+    });
+    this.addChild(this.searchController);
+    await this.searchController.init();
 
     if (!this.scrollCoordinator) {
       this.scrollCoordinator = this.registry.createInstance('scroll');
@@ -259,7 +262,10 @@ class MarkdownEditor extends BaseComponent {
     }
     this.addChild(this.exportController);
     await this.exportController.init();
-    this.exportController.setDependencies(this.editorComponent);
+    this.exportController.setDependencies({
+      editorComponent: this.editorComponent,
+      handleError: (error, context) => this.handleError(error, context)
+    });
 
     if (!this.pluginModalController) {
       this.pluginModalController = this.registry.createInstance('pluginModal');
@@ -305,7 +311,14 @@ class MarkdownEditor extends BaseComponent {
       fileController: this.fileController,
       documentComponent: this.documentComponent,
       tabManager: this.tabManager,
-      uiController: this.uiController
+      uiController: this.uiController,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      toolbarComponent: this.toolbarComponent,
+      modeController: this.modeController,
+      tabUIController: this.tabUIController,
+      scrollCoordinator: this.scrollCoordinator,
+      statusBarController: this.statusBarController
     });
     this.addChild(this.welcomeController);
     await this.welcomeController.init();
@@ -324,8 +337,9 @@ class MarkdownEditor extends BaseComponent {
       tabUIController: this.tabUIController,
       scrollCoordinator: this.scrollCoordinator,
       performanceOptimizer: this.performanceOptimizer,
-      updateFilename: (fileName, isDirty) => this.updateFilename(fileName, isDirty),
-      showWelcomePage: () => this.showWelcomePage()
+      updateFilename: (fileName, isDirty) =>
+        this.statusBarController.updateFilename(fileName, isDirty),
+      showWelcomePage: () => this.welcomeController.showWelcomePage()
     });
     this.addChild(this.tabSessionController);
     await this.tabSessionController.init();
@@ -344,7 +358,9 @@ class MarkdownEditor extends BaseComponent {
       previewComponent: this.previewComponent,
       performanceOptimizer: this.performanceOptimizer,
       switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId),
-      updateFilename: (fileName, isDirty) => this.updateFilename(fileName, isDirty),
+      fileController: this.fileController,
+      updateFilename: (fileName, isDirty) =>
+        this.statusBarController.updateFilename(fileName, isDirty),
       handleError: (error, context) => this.handleError(error, context)
     });
     this.addChild(this.documentLifecycleController);
@@ -362,7 +378,8 @@ class MarkdownEditor extends BaseComponent {
       settingsController: this.settingsController,
       modeController: this.modeController,
       markdownActionController: this.markdownActionController,
-      updateCursorPosition: (line, col) => this.updateCursorPosition(line, col)
+      updateCursorPosition: (line, col) =>
+        this.statusBarController.updateCursorPosition(line, col)
     });
     this.addChild(this.editorLifecycleController);
     await this.editorLifecycleController.init();
@@ -405,7 +422,7 @@ class MarkdownEditor extends BaseComponent {
       previewLifecycleController: this.previewLifecycleController,
       performanceOptimizer: this.performanceOptimizer,
       actions: {
-        toggleFindReplace: (showReplace) => this.toggleFindReplace(showReplace)
+        toggleFindReplace: (showReplace) => this.searchController.toggle(showReplace)
       }
     });
     this.addChild(this.toolbarLifecycleController);
@@ -448,51 +465,18 @@ class MarkdownEditor extends BaseComponent {
       exportController: this.exportController,
       performanceOptimizer: this.performanceOptimizer,
       actions: {
-        toggleFindReplace: (showReplace) => this.toggleFindReplace(showReplace),
-        performManualScrollSync: () => this.performManualScrollSync(),
+        toggleFindReplace: (showReplace) => this.searchController.toggle(showReplace),
+        performManualScrollSync: () => this.scrollCoordinator.alignBothPanes(),
         toggleMarkdownToolbar: () => this.settingsCoordinator.toggleMarkdownToolbar(),
         switchToPreviousTab: () => this.tabSessionController.switchToPreviousTab(),
         switchToNextTab: () => this.tabSessionController.switchToNextTab(),
         switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId),
         reloadCurrentFile: () => this.previewLifecycleController.reloadCurrentFile(),
-        toggleFullscreen: () => this.toggleFullscreen()
+        toggleFullscreen: () => this.nativeWindowController.toggleFullscreen()
       }
     });
     this.addChild(this.keyboardController);
     await this.keyboardController.init();
-  }
-
-  setupComponentCommunication() {
-    // Document, editor, preview, and tab lifecycle events are controller-owned.
-    
-    // File Controller Events
-    this.fileController.on('file-new-completed', () => {
-      this.modeController.setMode('code');
-    });
-    
-    this.fileController.on('file-error', (data) => {
-      this.handleError(data.error, data.type);
-    });
-    
-    // Toolbar command routing is owned by ToolbarLifecycleController.
-
-    // Settings, UI, and Plugin Manager communication is owned by
-    // SettingsCoordinator.
-
-    // Mode Controller Events
-    this.modeController.on('mode-changed', (data) => {
-      this.scrollCoordinator.updateButton();
-    });
-    
-    // Tab UI Controller Events
-    this.tabUIController.on('tab-switch-requested', (data) => {
-      this.tabSessionController.switchToTab(data.tabId);
-    });
-    
-    // Export Controller Events
-    this.exportController.on('export-error', (data) => {
-      this.handleError(data.error, data.type);
-    });
   }
 
   applyInitialSettings() {
@@ -508,11 +492,9 @@ class MarkdownEditor extends BaseComponent {
     // Welcome is an application state, not an empty preview document.
     this.modeController.enterWelcomeMode();
     
-    // Update filename
-    this.updateFilename('Welcome', false);
-    
-    // Update cursor position
-    this.updateCursorPosition(1, 1);
+    // Seed the status bar for the welcome state
+    this.statusBarController.updateFilename('Welcome', false);
+    this.statusBarController.updateCursorPosition(1, 1);
     
     // Update toolbar state for no document
     this.toolbarComponent.emit('document-state-changed', { 
@@ -548,98 +530,6 @@ class MarkdownEditor extends BaseComponent {
   }
 
 
-  // Utility Functions
-  updateCursorPosition(line, col) {
-    if (this.cursorPos) {
-      this.cursorPos.textContent = `Line ${line}, Col ${col}`;
-    }
-  }
-
-  updateFilename(name = null, isDirty = null) {
-    const filenameBtn = document.getElementById('filename');
-    if (!filenameBtn) return;
-    
-    // If we have tabs, the filename is managed by updateTabUI
-    if (this.tabManager && this.tabManager.hasTabs()) {
-      return;
-    }
-    
-    const documentState = this.documentComponent.getDocumentState();
-    
-    if (name === null) {
-      if (documentState.currentFile) {
-        name = documentState.fileName;
-      } else if (documentState.hasDocument) {
-        name = 'untitled.md';
-      } else {
-        name = 'Welcome';
-      }
-    }
-    
-    if (isDirty === null) {
-      isDirty = documentState.isDirty;
-    }
-    
-    filenameBtn.textContent = `${name}${isDirty ? ' *' : ''}`;
-    filenameBtn.classList.remove('has-tabs');
-  }
-
-
-
-  openFindReplace(showReplace = true) {
-    if (this.modeController.getCurrentMode() === 'preview') {
-      // Get selected text from code mode if available
-      const searchText = this.editorComponent.getEditorAdapter()?.getSelectedText() || '';
-      
-      // Use browser's native find for preview mode
-      if (searchText && navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(searchText).then(() => {
-          document.execCommand('find');
-        }).catch(() => {
-          document.execCommand('find');
-        });
-      } else {
-        document.execCommand('find');
-      }
-      return;
-    }
-    
-    this.editorComponent.getEditorAdapter()?.openFindReplace(showReplace);
-  }
-
-  toggleFindReplace(showReplace = true) {
-    if (this.modeController.getCurrentMode() === 'preview') {
-      this.openFindReplace(showReplace);
-      return;
-    }
-
-    const editor = this.editorComponent.getEditorAdapter();
-    if (editor?.toggleFindReplace) {
-      editor.toggleFindReplace(showReplace);
-    } else {
-      editor?.openFindReplace(showReplace);
-    }
-  }
-  
-  async toggleFullscreen() {
-    try {
-      if (window.__TAURI__?.window) {
-        const { getCurrentWindow } = window.__TAURI__.window;
-        const appWindow = getCurrentWindow();
-        const isFullscreen = await appWindow.isFullscreen();
-        await appWindow.setFullscreen(!isFullscreen);
-      } else {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
-        }
-      }
-    } catch (error) {
-      console.error('[MarkdownEditor] Error toggling fullscreen:', error);
-    }
-  }
-
   updateSplashProgress(progress, message) {
     if (window.splashScreen) {
       window.splashScreen.updateProgress(progress, message);
@@ -674,50 +564,6 @@ class MarkdownEditor extends BaseComponent {
         { title: 'Error', type: 'error' }
       ).catch(() => console.error('[MarkdownEditor] Failed to show error dialog'));
     }
-  }
-
-  performManualScrollSync() {
-    this.scrollCoordinator.alignBothPanes();
-  }
-
-  updateScrollSyncButton() {
-    this.scrollCoordinator.updateButton();
-  }
-
-  // Tab Management Methods - Phase 6 Enhanced
-  showWelcomePage() {
-    this.editorComponent.emit('set-content', { content: '' });
-    this.previewComponent.emit('update-preview', { 
-      content: '',
-      filePath: null 
-    });
-    this.updateFilename('Welcome', false);
-    this.toolbarComponent.emit('document-state-changed', { 
-      hasDocument: false, 
-      isDirty: false 
-    });
-    this.modeController.enterWelcomeMode();
-    
-    // Force update tab UI to show Welcome instead of tabs
-    this.tabUIController.updateTabUIForWelcome();
-    
-    // Update scroll sync button
-    this.updateScrollSyncButton();
-  }
-  
-
-  
-  // Utility function for debouncing
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
   }
 
   onDestroy() {

@@ -48,11 +48,14 @@ function createSession({ activeTab = null, tabs = [], mode = 'code' } = {}) {
     getDefaultMode: vi.fn(() => 'code'),
     getPinnedTabsEnabled: vi.fn(() => false)
   };
+  const tabUIRequests = new Map();
   const tabUIController = {
     updateTabUI: vi.fn(),
     updatePinnedTabs: vi.fn(),
     showTabModal: vi.fn(),
-    hideTabModal: vi.fn()
+    hideTabModal: vi.fn(),
+    on: vi.fn((event, handler) => tabUIRequests.set(event, handler)),
+    off: vi.fn((event) => tabUIRequests.delete(event))
   };
   const scrollCoordinator = {
     capture: vi.fn(),
@@ -91,6 +94,7 @@ function createSession({ activeTab = null, tabs = [], mode = 'code' } = {}) {
     toolbarComponent,
     modeController,
     tabUIController,
+    tabUIRequests,
     scrollCoordinator,
     performanceOptimizer
   };
@@ -247,6 +251,28 @@ describe('TabSessionController', () => {
     await Promise.resolve();
 
     expect(tabManager.switchToTab).not.toHaveBeenCalled();
+  });
+
+  it('activates the tab requested by the tab chrome', async () => {
+    const target = { id: 'requested' };
+    const { session, tabUIRequests, tabManager } = createSession({ tabs: [target] });
+    await session.init();
+
+    tabUIRequests.get('tab-switch-requested')({ tabId: 'requested' });
+
+    expect(tabManager.switchToTab).toHaveBeenCalledWith('requested');
+  });
+
+  it('stops serving tab-switch requests after teardown', async () => {
+    const { session, tabUIController } = createSession();
+    await session.init();
+
+    session.destroy();
+
+    expect(tabUIController.off).toHaveBeenCalledWith(
+      'tab-switch-requested',
+      expect.any(Function)
+    );
   });
 
   it('disposes every editor document when all tabs close together', () => {

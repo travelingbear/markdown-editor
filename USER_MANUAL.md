@@ -391,6 +391,12 @@ Access via Settings > Performance for real-time monitoring:
 
 The splash screen can be enabled or disabled and shown for one to five seconds from Settings. Its animation is bundled with the application and works offline in both development and installed production builds.
 
+### Retro Desktop Colour
+
+With the Retro theme active, Settings offers a **Desktop Colour** row of eight swatches: Teal, Gray, Navy, Green, Olive, Maroon, Purple, and Black. These are the desktop colours Windows 3.1 offered from its sixteen-colour palette.
+
+The colour paints the welcome screen and the area around the document. In normal editing the page covers most of it; in centered layout and distraction-free mode it becomes the surround. The setting appears only under Retro and is hidden by the other themes.
+
 ### Theme Selection
 
 Four carefully crafted themes:

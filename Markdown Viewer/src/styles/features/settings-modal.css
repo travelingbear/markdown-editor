@@ -812,3 +812,19 @@
     flex-direction: column;
   }
 }
+
+/* Retro desktop colour swatches. Layout only -- the Retro theme paints the
+   bevel, and the control is hidden under every other theme. */
+.retro-desktop-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.retro-desktop-swatch {
+  width: 28px;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  background: var(--swatch);
+}

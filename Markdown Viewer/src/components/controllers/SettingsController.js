@@ -1,4 +1,5 @@
 import { resolvePageWidth } from '../pageLayout.js';
+import { DEFAULT_RETRO_DESKTOP, resolveRetroDesktop, retroDesktopNames } from '../retroDesktop.js';
 
 /**
  * Settings Controller - Manages application settings and persistence
@@ -10,6 +11,7 @@ class SettingsController extends BaseComponent {
     // Settings state
     this.theme = 'light';
     this.isRetroTheme = false;
+    this.retroDesktop = DEFAULT_RETRO_DESKTOP;
     this.defaultMode = 'preview';
     this.advancedRenderingEnabled = false;
     this.centeredLayoutEnabled = false;
@@ -40,6 +42,7 @@ class SettingsController extends BaseComponent {
     // Load theme settings
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
     this.isRetroTheme = localStorage.getItem('markdownViewer_retroTheme') === 'true';
+    this.retroDesktop = localStorage.getItem('markdownViewer_retroDesktop') || DEFAULT_RETRO_DESKTOP;
     
     // Load UI settings
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
@@ -65,6 +68,7 @@ class SettingsController extends BaseComponent {
     this.applyPinnedTabsVisibility();
     this.applyPageSize();
     this.applyToolbarSizes();
+    this.applyRetroDesktop();
   }
 
   applyTheme() {
@@ -108,6 +112,28 @@ class SettingsController extends BaseComponent {
     document.documentElement.style.setProperty('--current-page-width', resolvePageWidth(this.currentPageSize));
   }
 
+  /**
+   * The desktop colour behind the document and on the welcome screen. Only the
+   * Retro theme reads these properties, so they are harmless under the others
+   * and the setting is simply hidden.
+   */
+  applyRetroDesktop() {
+    const desktop = resolveRetroDesktop(this.retroDesktop);
+    document.documentElement.style.setProperty('--retro-desktop', desktop.value);
+    document.documentElement.style.setProperty('--retro-desktop-text', desktop.text);
+  }
+
+  setRetroDesktop(name) {
+    this.retroDesktop = retroDesktopNames().includes(name) ? name : DEFAULT_RETRO_DESKTOP;
+    localStorage.setItem('markdownViewer_retroDesktop', this.retroDesktop);
+    this.applyRetroDesktop();
+    this.updateSettingsDisplay();
+  }
+
+  getRetroDesktop() {
+    return this.retroDesktop;
+  }
+
   applyToolbarSizes() {
     document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
@@ -136,6 +162,17 @@ class SettingsController extends BaseComponent {
       retroSoundSetting.style.display = this.isRetroTheme ? 'flex' : 'none';
     }
     
+    // Show/hide the retro desktop colour, which only that theme reads
+    const retroDesktopSetting = document.querySelector('.retro-desktop-setting');
+    if (retroDesktopSetting) {
+      retroDesktopSetting.style.display = this.isRetroTheme ? 'flex' : 'none';
+    }
+
+    document.querySelectorAll('.retro-desktop-swatch').forEach(swatch => {
+      swatch.classList.toggle('active', swatch.dataset.desktop === this.retroDesktop);
+      swatch.setAttribute('aria-pressed', String(swatch.dataset.desktop === this.retroDesktop));
+    });
+
     // Update retro sound checkbox
     const retroSoundCheckbox = document.getElementById('retro-sound-checkbox');
     if (retroSoundCheckbox) {
@@ -476,6 +513,11 @@ class SettingsController extends BaseComponent {
       }
     }
     
+    // Retro desktop colour swatches
+    document.querySelectorAll('.retro-desktop-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => this.setRetroDesktop(swatch.dataset.desktop));
+    });
+
     // Page size controls
     ['page-a4-btn', 'page-letter-btn', 'page-a3-btn'].forEach(id => {
       const btn = document.getElementById(id);

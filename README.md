@@ -38,6 +38,7 @@
 - **Undo/Redo Buttons**: Quick access undo/redo in markdown toolbar
 - **Composable Formatting**: Bold and italic can be combined and toggled independently without accumulating Markdown markers
 - **Centered Layout**: Constrain Code or Preview to an A4, Letter, or A3 page width; suspended in Split, where two panes already share the window
+- **Retro Desktop Colour**: Eight Windows 3.1 desktop colours for the welcome screen and the surround around the document
 - **Toolbar Sizing**: Configurable toolbar sizes (Small/Medium/Large)
 - **Responsive Markdown Toolbar**: Tools condense into organized menus as the available width decreases
 - **Pinned Quick Settings**: Optionally place Markdown rendering and Pinned Tabs controls after Export; compact windows use a separated Quick menu

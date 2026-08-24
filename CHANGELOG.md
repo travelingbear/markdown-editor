@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (2026-08-22)
+## Unreleased (2026-08-24)
 
 ### Architecture and Performance
 - Replaced Monaco with a lighter CodeMirror editor adapter and removed obsolete Monaco-only settings.

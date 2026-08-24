@@ -37,6 +37,7 @@
 - **Find & Replace**: Toggle find widget with Ctrl+F/Cmd+F, appears as overlay without disrupting layout
 - **Undo/Redo Buttons**: Quick access undo/redo in markdown toolbar
 - **Composable Formatting**: Bold and italic can be combined and toggled independently without accumulating Markdown markers
+- **Centered Layout**: Constrain Code or Preview to an A4, Letter, or A3 page width; suspended in Split, where two panes already share the window
 - **Toolbar Sizing**: Configurable toolbar sizes (Small/Medium/Large)
 - **Responsive Markdown Toolbar**: Tools condense into organized menus as the available width decreases
 - **Pinned Quick Settings**: Optionally place Markdown rendering and Pinned Tabs controls after Export; compact windows use a separated Quick menu

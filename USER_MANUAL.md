@@ -68,7 +68,7 @@ The toolbar includes:
 
 The tab system now supports:
 - **Smart Dropdown**: Shows 9 most recent tabs with numbers
-- **Tab Modal**: Search and navigate all open tabs (Ctrl+Shift+M)
+- **Tab Modal**: Search and navigate all open tabs (Ctrl+Shift+M), reachable from the status bar whenever more than one document is open
 - **Context Menus**: Right-click for advanced tab operations
 - **Performance Virtualization**: Handles 50+ tabs efficiently
 - **Consistent Document State**: Open, reload, edit, save, and dirty-state events update the active tab, toolbar, and optional pinned tabs together
@@ -251,7 +251,7 @@ Click checkboxes in Preview mode to toggle states. Changes automatically sync to
 - **Numbered Access**: Alt+1-9 for quick switching
 - **Sequential Access**: Ctrl+Tab and Ctrl+Shift+Tab move forward and backward with wraparound
 - **Visual Indicators**: Shows dirty state, active tab
-- **Overflow Handling**: "More" button for additional tabs
+- **Tab Manager**: "More" opens the full tab manager. It appears as soon as a second document is open, since the manager offers search, reordering, and per-tab commands well before the dropdown runs out of room
 
 #### Tab Modal (Ctrl+Shift+M)
 - **Search Functionality**: Filter tabs by filename

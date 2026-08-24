@@ -161,8 +161,20 @@ Read this before planning work, because two attempts were wasted on it.
 
 ## Optional remaining work
 
-- **Simplify `styles/themes/retro.css`** (1,228 lines). Treat as its own
-  approval batch and compare Retro against Light and Dark across every surface.
+- **Simplify `styles/themes/retro.css`** (1,204 lines after the dead-rule pass).
+  What is left is not accidental complexity. High Contrast is a complete theme
+  in 65 lines because it redefines tokens the base stylesheet already reads;
+  Retro defines nine tokens and then hardcodes their exact values 263 more
+  times, so the obvious win is replacing those literals with the tokens that
+  hold the same value. That is mechanically safe — identical computed values —
+  but it touches most of the file, so it needs a full Retro pass across every
+  surface as its own approval batch.
+
+  **Its 45 `!important` declarations are not the same kind of debt.** They exist
+  because runtime injection order decides the cascade; see the Styling section
+  of the technical documentation. Removing one appears to work until the user
+  opens a modal whose stylesheet loads later. Make the order deterministic
+  first, or leave them.
 - **Make print honour the page size.** `styles/utilities/print.css` hardcodes
   `@page { size: letter }`, so printing ignores the A4/Letter/A3 choice. Legal
   was considered and deliberately dropped: centered layout constrains width

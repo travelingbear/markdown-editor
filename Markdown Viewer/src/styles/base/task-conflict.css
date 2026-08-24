@@ -143,10 +143,6 @@
     max-width: 200px;
   }
   
-  .help-tips ul {
-    grid-template-columns: 1fr;
-  }
-  
   .shortcut-item kbd {
     min-width: 50px;
     font-size: 10px;

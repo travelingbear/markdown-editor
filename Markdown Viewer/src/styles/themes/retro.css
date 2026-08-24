@@ -310,8 +310,6 @@ body.retro-theme .help-content,
 body.retro-theme .help-content h3,
 body.retro-theme .help-content .shortcut-item,
 body.retro-theme .help-content .shortcut-item span,
-body.retro-theme .help-content .help-tips,
-body.retro-theme .help-content .help-tips li,
 body.retro-theme .about-content,
 body.retro-theme .about-content h3,
 body.retro-theme .about-content p,
@@ -322,9 +320,7 @@ body.retro-theme .about-content li {
 }
 
 body.retro-theme .help-section,
-body.retro-theme .shortcut-item,
-body.retro-theme .help-tips,
-body.retro-theme .help-tips li {
+body.retro-theme .shortcut-item {
   border-radius: 0;
 }
 
@@ -557,26 +553,7 @@ body.retro-theme .about-close-btn:active {
 }
 
 /* Retro theme plugin styles */
-body.retro-theme .plugin-list {
-  background: transparent;
-  border: 2px inset #c0c0c0;
-}
-
-body.retro-theme .plugin-item {
-  background: #ffffff;
-  border-bottom: 1px solid #808080;
-  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  color: #000000;
-}
-
-body.retro-theme .plugin-name {
-  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  color: #000000;
-  font-weight: normal;
-}
-
-body.retro-theme .plugin-version,
-body.retro-theme .plugin-description {
+body.retro-theme .plugin-version {
   font-family: 'MS Sans Serif', sans-serif, 'Courier New';
   color: #404040;
 }
@@ -599,11 +576,6 @@ body.retro-theme .no-plugins {
 }
 
 /* Retro theme performance dashboard */
-body.retro-theme .performance-section h3 {
-  color: #1111b3;
-  font-family: 'MS Sans Serif', sans-serif, 'Courier New';
-  font-weight: normal;
-}
 
 body.retro-theme .performance-info {
   background: transparent;

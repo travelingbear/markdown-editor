@@ -245,17 +245,6 @@
 }
 
 /* Phase 6: Performance Dashboard Styles */
-.performance-section {
-  margin-bottom: 32px;
-}
-
-.performance-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 1.2em;
-  color: #5e60e7;
-  border-bottom: 1px solid var(--border-primary);
-  padding-bottom: 8px;
-}
 
 /* Performance Monitor Styles */
 .performance-info {
@@ -381,50 +370,10 @@
   border-color: var(--accent-hover) !important;
 }
 
-.plugin-list {
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid var(--border-primary);
-  border-radius: 4px;
-  padding: 8px;
-}
-
-.plugin-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid var(--border-primary);
-}
-
-.plugin-item:last-child {
-  border-bottom: none;
-}
-
-.plugin-info {
-  flex: 1;
-}
-
-.plugin-name {
-  font-weight: bold;
-  margin-bottom: 2px;
-}
-
 .plugin-version {
   font-size: 0.8em;
   color: var(--text-secondary);
   margin-bottom: 2px;
-}
-
-.plugin-description {
-  font-size: 0.9em;
-  color: var(--text-secondary);
-}
-
-.plugin-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .plugin-status {

@@ -185,6 +185,18 @@ Renderer sanitization and native filesystem permissions are high-risk areas. Cha
 
 Order is the whole safety property here: the parts are imported in the order they occupied in the single file, so the flattened result is what the browser used to see. `scripts/css-order.mjs` resolves the imports and flattens a stylesheet into the ordered list of rules a browser would apply, which is how the split was proven not to move anything — same 545 rules in the same order, and a byte-identical production bundle. Use it again before reordering or moving rules between parts.
 
+**Cascade position is decided at runtime, not by the file tree.** `StyleManager`
+appends both themes and feature stylesheets to `<head>` with `appendChild`, and
+features load on first use: `settings-modal.css` arrives the first time Settings
+is opened, which is after the theme loaded at startup. A feature rule therefore
+beats a theme rule of equal specificity. This is why `styles/themes/retro.css`
+carries 45 `!important` declarations and selectors as long as
+`body.retro-theme.distraction-free.code-mode` — they are defending against
+stylesheets that are not loaded yet when the theme is tested. **Do not remove an
+`!important` from a theme without first making the injection order
+deterministic**; the rule will keep working until the user opens the modal that
+pulls in the stylesheet that overrides it.
+
 Two layout rules are load-bearing and covered by tests:
 
 - **Toolbar geometry is tokenized.** `[data-main-toolbar-size]` scopes redefine `--main-toolbar-*` custom properties only; no size rule targets a control directly. Base rules and themes both read those tokens, so a more specific theme selector cannot silently drop the user's size choice. Toolbar controls use `min-height` rather than `height`, because a fixed height smaller than the text line box pushes labels and icons outside the button.

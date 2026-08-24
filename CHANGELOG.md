@@ -53,6 +53,7 @@
 - Fixed `PerformanceOptimizer.destroy()` throwing on an instance that was never fully set up; the collections it clears are now owned from construction.
 - Extracted the tab-unloading policy and access average into a pure `performance/tabPolicy.js`, covering the idle, visit-count, ordering, and per-pass limits that decide which tabs are released under memory pressure.
 - Extracted the Performance Monitor's formatting and thresholds into a pure `performance/dashboardView.js`, replacing a 160-line DOM method with a view model plus a small binding, and covering the previously untestable severity and status rules.
+- Removed 31 stylesheet rules targeting classes the application never renders: the old plugin list (`.plugin-list`, `.plugin-item`, `.plugin-name`, `.plugin-description`, `.plugin-info`, `.plugin-controls`), which the Plugin Manager rewrite replaced with `plugin-summary-*`, plus `.help-tips` and `.performance-section`. They spanned `styles/base/`, `styles/features/settings-modal.css`, and `styles/themes/retro.css`; the flattened base stylesheet went from 545 rules to 530 with the surviving order unchanged.
 
 ### Markdown Rendering Fixes
 - Extracted the Preview post-parse HTML pipeline into a pure `rendering/previewHtml.js` module — task-list fallback, footnotes, super/subscript, link normalization, image tagging, and href validation — taking `PreviewComponent` from 946 to 725 lines and making every transform directly testable.

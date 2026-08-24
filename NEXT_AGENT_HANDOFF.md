@@ -121,58 +121,90 @@ Constraints learned the hard way while attempting this:
 The safe fix is either an accurate measurement pass validated in a real browser,
 or lowering individual tiers against observed pane widths reported by the user.
 
-## Remaining agreed pipeline
+## Pipeline status
 
-Do these in order and treat each numbered item as a separate approval boundary.
+The agreed refactoring pipeline is complete and every batch was tested and
+approved by the user. In order: Preview lifecycle, toolbar command routing,
+Settings/UI coordination, the composition root, module decomposition, and CSS
+modularization.
 
-### 2. Decompose the largest remaining modules
+Sizes at completion, largest first:
 
-Current approximate sizes at handoff:
+- `styles/themes/retro.css`: 1,228 lines (never touched; see optional work).
+- `TabUIController.js`: 938 lines.
+- `styles/features/settings-modal.css`: 865 lines.
+- `performance-optimizer.js`: 794 lines.
+- `ToolbarComponent.js`: 788 lines.
+- `styles/features/tab-system.css`: 730 lines.
+- `HorizontalSplitPlugin.js`: 727 lines.
+- `PreviewComponent.js`: 725 lines.
+- `src/styles.css`: 29 lines, an ordered `@import` manifest over eighteen parts
+  in `src/styles/base/`.
 
-- `styles.css`: 3,724 lines (handled primarily in item 3).
-- `styles/themes/retro.css`: 1,228 lines.
-- `ToolbarComponent.js`: 788 lines (Link/Image dialogs already extracted).
-- `performance-optimizer.js`: 1,004 lines.
-- `TabUIController.js`: 974 lines.
-- `PreviewComponent.js`: 725 lines (post-parse pipeline already extracted).
-- `HorizontalSplitPlugin.js`: 911 lines.
+## Verification available in this project
 
-Handle one module/subsystem per approval batch. Extract cohesive pure helpers or controllers with explicit dependencies. Avoid moving code solely to reduce line counts. Good boundaries include toolbar layout/menu presentation, tab drag/reorder UI, Preview post-processing, performance measurements versus virtualization, and horizontal-split layout/settings.
+Read this before planning work, because two attempts were wasted on it.
 
-Preserve:
+- **There is no browser-based test runner.** Only jsdom, which has no layout
+  engine: flexbox, wrapping, `getBoundingClientRect()`, and
+  `offsetTop`/`offsetParent` all report zero or nothing. Layout behaviour
+  cannot be verified here. Do not ship a layout change validated only in jsdom.
+- **What jsdom does verify:** DOM structure and order, class and attribute
+  changes, event wiring, and anything expressed as a pure function that takes
+  measured values as arguments. Several modules were shaped that way
+  deliberately — `tabChrome`, `pageLayout`, `performance/dashboardView`,
+  `performance/tabPolicy`, `previewHtml`, `markdownInsertSyntax`.
+- **CSS moves can be proven.** `scripts/css-order.mjs` resolves `@import` and
+  flattens a stylesheet into the order a browser would apply. A move that keeps
+  the same rules in the same order cannot change the cascade. Comparing a
+  production build before and after is stronger still.
 
-- Per-tab content and Code/Preview/Split scroll state.
-- Full-path file identity for same-named files in different directories.
-- Virtual/dormant pinned-tab activation and close behavior.
-- Native and pinned tab reordering.
-- Windows/Linux file, search, shortcut, and path behavior.
-- Plugin lifecycle isolation and lazy rendering.
+## Optional remaining work
 
-### 3. Modularize CSS
+- **Simplify `styles/themes/retro.css`** (1,228 lines). Treat as its own
+  approval batch and compare Retro against Light and Dark across every surface.
+- **Make print honour the page size.** `styles/utilities/print.css` hardcodes
+  `@page { size: letter }`, so printing ignores the A4/Letter/A3 choice. Legal
+  was considered and deliberately dropped: centered layout constrains width
+  only, and Legal shares Letter's 8.5in width, so it would have been
+  indistinguishable on screen.
 
-Current CSS already has `styles/features`, `styles/themes`, and `styles/utilities`; continue that structure.
+## Open question for the user
 
-Goal:
+**Distraction-free width.** `body.distraction-free.code-mode .editor-pane` and
+its Preview equivalent constrain the pane to `--current-page-width` without
+requiring `.centered-layout`, so distraction-free always narrows to a page even
+when centered layout is off. The user was asked whether that was intended and
+has not answered; nothing was changed.
 
-- Split component-owned blocks out of the 3,724-line `src/styles.css`.
-- Keep only shared tokens, reset/base layout, and genuinely global rules in the base stylesheet.
-- Preserve loading order and theme overrides.
-- Avoid visual changes in a mechanical extraction batch.
-- Then, if useful, simplify the 1,228-line Retro theme as a separate approval batch.
+## Final audit
 
-Manually compare Light, Dark, and Retro across welcome, toolbar, Settings, Plugin Manager, tabs, Code, Preview, vertical/horizontal Split, dialogs, task lists, code blocks, Mermaid, KaTeX, and responsive widths.
+Completed on this machine:
 
-## Final audit after items 2–3
+- `59` Vitest files, `483` tests passed.
+- `npm run build:web` passed; the production CSS bundle is byte-identical to the
+  one the single stylesheet produced.
+- `cargo check` passed.
+- Offline audit: the only remote URLs in shipped source are two user-initiated
+  links in the About modal and four input placeholders. Nothing is fetched at
+  runtime.
+- `git diff --check` passed; Git may still print informational LF-to-CRLF
+  warnings on Windows.
 
-- Run the full automated suite and `npm run build:web`.
-- Run `cargo check` and native development smoke tests.
-- Test on Windows and Linux, especially native file dialogs, full path identity, open-many-files behavior, Ctrl+F/Ctrl+H, Ctrl+1/2/3 and Ctrl+Shift+1/2/3, drag/drop, external links, application-close session preservation, and document-close unsaved prompts.
-- Review startup, 50-file opening, tab switching, memory cleanup, and lazy CodeMirror/KaTeX/Mermaid loading on low-end hardware.
-- Audit offline behavior with the network unavailable.
-- Confirm README/manual/changelog/technical documentation agree.
-- Prepare repeatable Windows and Linux release builds.
+Still owed by the user, and not doable here:
 
-The Vite production build currently reports an informational warning for chunks over 500 kB, notably CodeMirror and a Mermaid dependency chunk. Treat bundle reduction as a measured performance task; do not replace CodeMirror or break lazy plugin loading merely to silence the warning.
+- Native development and packaged smoke tests on Windows and Linux, covering
+  native file dialogs, full path identity, opening many files, `Ctrl+F`/`Ctrl+H`,
+  `Ctrl+1/2/3` and `Ctrl+Shift+1/2/3`, drag and drop, external links,
+  application-close session preservation, and document-close unsaved prompts.
+- Startup, 50-file opening, tab switching, memory cleanup, and lazy
+  CodeMirror/KaTeX/Mermaid loading on low-end hardware.
+- Repeatable Windows and Linux release builds.
+
+The Vite production build reports an informational warning for chunks over
+500 kB, notably CodeMirror and a Mermaid dependency chunk. Treat bundle
+reduction as a measured performance task; do not replace CodeMirror or break
+lazy plugin loading merely to silence the warning.
 
 ## Commands
 

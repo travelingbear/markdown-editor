@@ -1,4 +1,6 @@
 // Splash Screen Component - Loads before main application
+export const SPLASH_IMAGE_URL = new URL('./assets/SplashScreen.gif', import.meta.url).href;
+
 class SplashScreenComponent {
   constructor() {
     this.splashElement = null;
@@ -29,7 +31,7 @@ class SplashScreenComponent {
     
     this.splashElement.innerHTML = `
       <div class="splash-content">
-        <img src="assets/SplashScreen.gif" alt="Markdown Editor" class="splash-image">
+        <img src="${SPLASH_IMAGE_URL}" alt="Markdown Editor" class="splash-image">
         <div class="splash-progress">
           <div class="progress-bar"></div>
         </div>

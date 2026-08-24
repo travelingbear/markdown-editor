@@ -150,6 +150,8 @@ Startup work is divided into:
 
 The splash and welcome page are separate states. The welcome page is not treated as a Preview document, and mode shortcuts do nothing until a document is active.
 
+The splash image URL is created with `new URL('./assets/SplashScreen.gif', import.meta.url)` rather than a literal path inside generated HTML. This makes Vite include and fingerprint the image for `frontendDist`; literal asset paths inside JavaScript template strings are not discovered during production builds.
+
 ## Native backend
 
 `src-tauri/src/lib.rs` configures Tauri plugins and commands for:

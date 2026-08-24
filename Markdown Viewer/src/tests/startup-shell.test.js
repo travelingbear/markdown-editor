@@ -20,10 +20,11 @@ describe('startup shell', () => {
   it('creates the startup cover before the application shell and restores the saved theme', async () => {
     localStorage.setItem('markdownViewer_defaultTheme', 'dark');
 
-    await import('../splash-component.js');
+    const { SPLASH_IMAGE_URL } = await import('../splash-component.js');
 
     expect(document.body.firstElementChild.id).toBe('splash-screen');
     expect(document.body.classList.contains('splash-visible')).toBe(true);
+    expect(document.querySelector('.splash-image').getAttribute('src')).toBe(SPLASH_IMAGE_URL);
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(document.body.dataset.theme).toBe('dark');
   });

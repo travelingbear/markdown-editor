@@ -8,6 +8,7 @@
 - Removed the unreachable legacy monolith, duplicate component entry point, console-only extension experiment, and unregistered Sample Plugin; the maintained bootstrap and plugin registry are now the only runtime paths.
 - Consolidated overlapping and obsolete guides into one user manual, a rewritten current technical overview, and an updated Tauri 2/Vite 8 build guide; also removed duplicate root runtime files and the empty root lockfile.
 - Removed approximately 4.7 MB of unreferenced source artwork, template logos, duplicate native icons, PWA-only files, and unused Retro audio formats; the welcome screen now reuses the compact branded favicon instead of shipping a 1.05 MB traced SVG.
+- Fixed the splash image missing from packaged builds by resolving the JavaScript-created image through Vite, which now emits and references the GIF in the production bundle.
 - Removed broken favicon, Apple touch icon, and web-manifest references from the native application shell and added automated static-reference validation.
 - Added Pure Markdown and Extended rendering modes; optional renderers do not run in Pure mode.
 - Split KaTeX and Mermaid into lazy renderer chunks. Neither runtime is part of the core Preview component, and HTML export only receives plugin styles when the rendered feature is present.

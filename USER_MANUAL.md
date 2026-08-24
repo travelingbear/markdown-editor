@@ -387,6 +387,10 @@ Access via Settings > Performance for real-time monitoring:
 
 ## Customization Options
 
+### Startup Splash
+
+The splash screen can be enabled or disabled and shown for one to five seconds from Settings. Its animation is bundled with the application and works offline in both development and installed production builds.
+
 ### Theme Selection
 
 Four carefully crafted themes:

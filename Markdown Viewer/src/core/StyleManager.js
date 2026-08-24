@@ -99,6 +99,26 @@ class StyleManager {
   }
 
   /**
+   * Keep the theme stylesheet last in <head>.
+   *
+   * Themes and feature stylesheets are both injected at runtime, and features
+   * load on first use -- settings-modal.css arrives the first time Settings is
+   * opened, which is long after the theme loaded at startup. Whichever lands
+   * later wins at equal specificity, so without this a feature rule silently
+   * outranks the theme and the only defence is `!important`.
+   *
+   * Moving an already-loaded <link> does not refetch it; it only changes where
+   * it sits in the cascade.
+   */
+  moveThemeLast() {
+    // Scoped to <head>: `data-theme` also sits on <body> and the root element,
+    // and neither belongs in the stylesheet order.
+    document.head
+      .querySelectorAll('link[data-theme], style[data-theme]')
+      .forEach(sheet => document.head.appendChild(sheet));
+  }
+
+  /**
    * Load a feature CSS file
    * @param {string} featureName - Feature name (print, markdown-toolbar, settings-modal, etc.)
    * @param {string} type - Type of feature ('utilities' or 'features')
@@ -118,6 +138,7 @@ class StyleManager {
         
         link.onload = () => {
           this.loadedFeatures.add(featureName);
+          this.moveThemeLast();
           resolve();
         };
         
@@ -126,6 +147,7 @@ class StyleManager {
         };
         
         document.head.appendChild(link);
+        this.moveThemeLast();
       });
     }
   }

@@ -153,7 +153,15 @@ Read this before planning work, because two attempts were wasted on it.
   changes, event wiring, and anything expressed as a pure function that takes
   measured values as arguments. Several modules were shaped that way
   deliberately — `tabChrome`, `pageLayout`, `performance/dashboardView`,
-  `performance/tabPolicy`, `previewHtml`, `markdownInsertSyntax`.
+  `performance/tabPolicy`, `previewHtml`, `markdownInsertSyntax`,
+  `retroDesktop`.
+- **jsdom also resolves the CSS cascade**, which was underestimated here for a
+  long time. Sheet order and selector specificity both decide
+  `getComputedStyle` exactly as a browser would, so *which rule wins* is
+  testable even though *how it looks* is not. `retro-cascade.test.js` loads the
+  real stylesheets in production order and asserts the winner. Custom
+  properties come back unresolved, which is itself useful: a computed value of
+  `var(--win-face)` proves the theme rule won rather than a feature literal.
 - **CSS moves can be proven.** `scripts/css-order.mjs` resolves `@import` and
   flattens a stylesheet into the order a browser would apply. A move that keeps
   the same rules in the same order cannot change the cascade. Comparing a
@@ -170,11 +178,13 @@ Read this before planning work, because two attempts were wasted on it.
   but it touches most of the file, so it needs a full Retro pass across every
   surface as its own approval batch.
 
-  **Its 45 `!important` declarations are not the same kind of debt.** They exist
-  because runtime injection order decides the cascade; see the Styling section
-  of the technical documentation. Removing one appears to work until the user
-  opens a modal whose stylesheet loads later. Make the order deterministic
-  first, or leave them.
+  **Done.** The theme was rebuilt on the Windows 3.1 palette and three bevel
+  primitives, injection order was fixed so the theme is always last in the
+  cascade, and `!important` went from 59 to 27 — the remainder guard elements
+  built at runtime, which the static shell cannot prove safe. What is left is
+  the 53 `font-family` declarations, most of which are now redundant since the
+  base reads `--font-ui`; the exceptions are form controls, which do not
+  inherit type, so that needs a per-selector pass rather than a sweep.
 - **Make print honour the page size.** `styles/utilities/print.css` hardcodes
   `@page { size: letter }`, so printing ignores the A4/Letter/A3 choice. Legal
   was considered and deliberately dropped: centered layout constrains width

@@ -91,7 +91,7 @@ body.distraction-free.preview-mode .preview-content {
   overflow-y: auto;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   position: relative;
   display: flex;
@@ -139,7 +139,7 @@ body.distraction-free.code-mode #editor {
   height: 100%;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
@@ -233,7 +233,7 @@ body.distraction-free .editor-container::-webkit-scrollbar-track {
 body.distraction-free .preview-content::-webkit-scrollbar-thumb,
 body.distraction-free .editor-container::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
+  border-radius: var(--radius-2);
   transition: all 0.3s ease;
   opacity: 0;
 }
@@ -266,7 +266,7 @@ body.distraction-free::before {
   background: rgba(0, 0, 0, 0.85);
   color: white;
   padding: 12px 24px;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 var(--radius-12) var(--radius-12);
   font-size: 13px;
   font-weight: 500;
   z-index: 10000;

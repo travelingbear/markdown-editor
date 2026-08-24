@@ -186,21 +186,37 @@ Renderer sanitization and native filesystem permissions are high-risk areas. Cha
 
 Order is the whole safety property here: the parts are imported in the order they occupied in the single file, so the flattened result is what the browser used to see. `scripts/css-order.mjs` resolves the imports and flattens a stylesheet into the ordered list of rules a browser would apply, which is how the split was proven not to move anything — same 545 rules in the same order, and a byte-identical production bundle. Use it again before reordering or moving rules between parts.
 
-**The Retro theme is a shape change, not a colour change.** It is large because the base stylesheet tokenizes colour only: none of its `border-radius`, `box-shadow`, or `font-family` declarations go through a token, so a theme that wants square corners and bevels has to restate them rule by rule. Retro draws its bevels with three `box-shadow` primitives — `--bevel-raised`, `--bevel-sunken`, `--bevel-pressed` — rather than `border-style: outset`, whose light and dark sides are derived by an implementation-defined algorithm and are not guaranteed to match between WebView2 and WebKitGTK. A shadow also takes no layout space, so Retro's controls no longer measure wider than the other themes'.
+**The Retro theme is a shape change, not a colour change**, and the base
+stylesheet now has a vocabulary for that. Corner radii and font stacks go
+through tokens (`--radius-2` … `--radius-circle`, `--font-ui`, `--font-mono`),
+so a theme squares the whole interface by redefining eleven values rather than
+shadowing 44 rules. The radius tokens are named by value deliberately:
+consolidating 2/3/4/5/6/7/8/10/12 onto a tidier scale would change pixels, which
+is a design decision rather than a refactor.
+
+`box-shadow` is **not** tokenized, and that is deliberate: the base uses fifteen
+distinct shadow values, and a theme like Retro replaces shadows with bevels that
+differ per surface — raised, sunken, pressed — so a token could not collapse
+those rules anyway. Retro draws its bevels with three `box-shadow` primitives — `--bevel-raised`, `--bevel-sunken`, `--bevel-pressed` — rather than `border-style: outset`, whose light and dark sides are derived by an implementation-defined algorithm and are not guaranteed to match between WebView2 and WebKitGTK. A shadow also takes no layout space, so Retro's controls no longer measure wider than the other themes'.
 
 When editing it, watch for **two `box-shadow` declarations in one rule**: the second silently wins and the bevel disappears with nothing to indicate it. Seventeen rules were in that state during the conversion.
 
-**Cascade position is decided at runtime, not by the file tree.** `StyleManager`
-appends both themes and feature stylesheets to `<head>` with `appendChild`, and
-features load on first use: `settings-modal.css` arrives the first time Settings
-is opened, which is after the theme loaded at startup. A feature rule therefore
-beats a theme rule of equal specificity. This is why `styles/themes/retro.css`
-carries 45 `!important` declarations and selectors as long as
-`body.retro-theme.distraction-free.code-mode` — they are defending against
-stylesheets that are not loaded yet when the theme is tested. **Do not remove an
-`!important` from a theme without first making the injection order
-deterministic**; the rule will keep working until the user opens the modal that
-pulls in the stylesheet that overrides it.
+**The theme stylesheet is kept last in `<head>`.** Themes and feature
+stylesheets are both injected at runtime, and features load on first use:
+`settings-modal.css` arrives the first time Settings is opened, long after the
+theme loaded at startup. Whichever lands later wins at equal specificity, so
+without intervention a feature rule silently outranks the theme.
+`StyleManager.moveThemeLast()` runs after every feature load and re-appends the
+theme link, which does not refetch it — it only moves it in the cascade. This is
+what themes previously worked around with `!important`.
+
+Order settles ties and nothing more: a feature rule with **higher** specificity
+still wins, which is why Retro keeps 27 of its original 59 `!important`
+declarations. Those were retained because their selectors match elements built
+at runtime — context menus, dropdowns — so the static shell cannot prove them
+unnecessary. `src/tests/style-order.test.js` pins the ordering and
+`src/tests/retro-cascade.test.js` loads the real stylesheets in production order
+and checks which rule actually wins.
 
 Two layout rules are load-bearing and covered by tests:
 

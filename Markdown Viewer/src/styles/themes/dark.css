@@ -315,7 +315,7 @@ body.dark-theme.distraction-free #editor,
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
   background: #2d3748;
-  border-radius: 6px;
+  border-radius: var(--radius-6);
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {

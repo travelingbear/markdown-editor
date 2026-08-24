@@ -38,7 +38,7 @@
   max-width: 90vw;
   max-height: 70vh;
   height: auto;
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
@@ -47,14 +47,14 @@
   height: 4px;
   overflow: hidden;
   background: #e0e0e0;
-  border-radius: 2px;
+  border-radius: var(--radius-2);
 }
 
 .splash-progress .progress-bar {
   width: 0;
   height: 100%;
   background: #007acc;
-  border-radius: 2px;
+  border-radius: var(--radius-2);
   transition: width 0.15s ease-out;
 }
 

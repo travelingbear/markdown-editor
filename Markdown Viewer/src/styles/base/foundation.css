@@ -14,6 +14,29 @@
   --accent-hover: #7e80e3;
   
   /* Centered Layout Variables */
+  /* Corner rounding. The base stylesheet used to state these as literals in
+     113 places, so a theme wanting square corners had to restate every one --
+     retro.css carried 44 such overrides. A theme now redefines these instead.
+
+     Named by value on purpose: consolidating 2/3/4/5/6/7/8/10/12 onto a tidier
+     scale would change pixels, and that is a design decision rather than a
+     refactor. */
+  --radius-2: 2px;
+  --radius-3: 3px;
+  --radius-4: 4px;
+  --radius-5: 5px;
+  --radius-6: 6px;
+  --radius-7: 7px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* Interface and monospace stacks, so a theme changes type in one place. */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
   --page-width-a4: 210mm;
   --page-width-letter: 8.5in;
   --page-width-a3: 297mm;
@@ -24,7 +47,7 @@
   --current-page-width: var(--page-width-a4);
   --centered-layout-enabled: 0;
   
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  font-family: var(--font-ui);
   font-size: 14px;
   line-height: 1.5;
 }

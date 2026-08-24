@@ -60,6 +60,9 @@
 - Fixed Retro secondary text turning mid grey, which washed out blockquotes and every muted label. Windows reserves `#808080` for disabled controls, so secondary text is black and grey now means only unavailable.
 - Fixed the blockquote quote bar never rendering in Retro: a `border` shorthand sat after `border-left` and cancelled it.
 - Fixed Mermaid labels overflowing their nodes in Retro. Diagrams are configured to inherit the page font, so they were laid out against a font with different metrics; the diagram subtree now uses Mermaid's own stack.
+- Gave the theme stylesheet a fixed position in the cascade. Themes and feature stylesheets are both injected at runtime, and features load on first use, so `settings-modal.css` arrived after the theme and outranked it at equal specificity. `StyleManager` now keeps the theme last in `<head>`, which is what themes previously needed `!important` to work around.
+- Reduced Retro's `!important` declarations from 59 to 27, removing only those proven unnecessary: for each one, the real application shell decides which rules can match the same element, and anything whose selector matches nothing in the static shell is built at runtime and was left alone.
+- Routed 109 corner radii and 10 font stacks in the base and feature stylesheets through tokens. A theme can now square the entire interface or change its typeface by redefining tokens instead of shadowing rules; Retro's 44 `border-radius: 0` declarations became eleven token redefinitions. Every value is preserved exactly: 948 flattened rules resolve identically once the tokens are substituted back.
 
 ### Markdown Rendering Fixes
 - Extracted the Preview post-parse HTML pipeline into a pure `rendering/previewHtml.js` module — task-list fallback, footnotes, super/subscript, link normalization, image tagging, and href validation — taking `PreviewComponent` from 946 to 725 lines and making every transform directly testable.

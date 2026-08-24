@@ -35,7 +35,7 @@ body.drag-over::before {
   margin: 30px 0;
   padding: 40px;
   border: 3px dashed var(--border-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   background-color: var(--bg-secondary);
   text-align: center;
   transition: all 0.3s ease;

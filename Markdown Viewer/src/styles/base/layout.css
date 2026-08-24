@@ -173,7 +173,7 @@ body.app-initialized .markdown-toolbar {
   padding: 16px;
   border: none;
   outline: none;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 14px;
   line-height: 1.45;
   background-color: var(--bg-primary);

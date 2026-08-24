@@ -27,7 +27,7 @@
   position: relative;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 700px;
@@ -58,7 +58,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-4);
   transition: all 0.2s;
 }
 
@@ -78,7 +78,7 @@
 
 .help-section {
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   padding: 16px;
 }
 
@@ -102,16 +102,16 @@
   justify-content: space-between;
   padding: 6px 8px;
   background: var(--bg-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-4);
   border: 1px solid var(--border-primary);
 }
 
 .shortcut-item kbd {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-secondary);
-  border-radius: 3px;
+  border-radius: var(--radius-3);
   padding: 2px 6px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -154,7 +154,7 @@
   position: relative;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 500px;
@@ -185,7 +185,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-4);
   transition: all 0.2s;
 }
 
@@ -210,7 +210,7 @@
   height: auto;
   margin: 0 auto 12px auto;
   display: block;
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   object-fit: contain;
 }
 
@@ -291,7 +291,7 @@
 .credit-item {
   padding: 8px 12px;
   background: var(--bg-secondary);
-  border-radius: 6px;
+  border-radius: var(--radius-6);
   font-size: 13px;
 }
 
@@ -315,7 +315,7 @@
   margin-bottom: 16px;
   padding: 12px;
   background: var(--bg-secondary);
-  border-radius: 6px;
+  border-radius: var(--radius-6);
   font-size: 13px;
 }
 
@@ -350,7 +350,7 @@
   border: 1px solid var(--border-primary);
   background: var(--bg-secondary);
   color: var(--text-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-6);
   cursor: pointer;
   font-size: 12px;
   transition: all 0.2s;

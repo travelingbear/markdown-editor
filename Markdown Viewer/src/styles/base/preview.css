@@ -85,8 +85,8 @@ body.centered-layout .preview-pane {
   margin: 0;
   font-size: 85%;
   background-color: var(--bg-secondary);
-  border-radius: 6px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  border-radius: var(--radius-6);
+  font-family: var(--font-mono);
 }
 
 .preview-content pre {
@@ -95,7 +95,7 @@ body.centered-layout .preview-pane {
   font-size: 85%;
   line-height: 1.45;
   background-color: var(--bg-secondary);
-  border-radius: 6px;
+  border-radius: var(--radius-6);
   margin-bottom: 16px;
 }
 

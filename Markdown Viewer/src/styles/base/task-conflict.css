@@ -27,7 +27,7 @@
   position: relative;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-radius: var(--radius-8);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   width: 90%;
   max-width: 400px;
@@ -38,7 +38,7 @@
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-primary);
   background: var(--bg-secondary);
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--radius-8) var(--radius-8) 0 0;
 }
 
 .task-conflict-header h3 {
@@ -73,7 +73,7 @@
   border: 1px solid var(--border-primary);
   background: var(--bg-secondary);
   color: var(--text-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-6);
   cursor: pointer;
   font-size: 13px;
   transition: all 0.2s;

@@ -1,0 +1,83 @@
+/* File drag-and-drop affordances */
+
+/* Enhanced Drag and Drop Styles */
+body.drag-over {
+  position: relative;
+}
+
+body.drag-over::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(9, 105, 218, 0.1);
+  border: 4px dashed var(--accent-primary);
+  z-index: 10000;
+  pointer-events: none;
+  animation: dragPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes dragPulse {
+  from {
+    opacity: 0.6;
+    border-color: var(--accent-primary);
+  }
+  to {
+    opacity: 0.9;
+    border-color: var(--accent-hover);
+  }
+}
+
+/* Debug Drop Zone */
+.debug-drop-zone {
+  margin: 30px 0;
+  padding: 40px;
+  border: 3px dashed var(--border-primary);
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.debug-drop-zone:hover {
+  border-color: #7e80e3;
+  background-color: var(--bg-tertiary);
+}
+
+.debug-drop-zone.drag-over {
+  border-color: var(--accent-primary);
+  background-color: rgba(9, 105, 218, 0.1);
+  transform: scale(1.02);
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.drop-icon {
+  font-size: 48px;
+  opacity: 0.7;
+}
+
+.drop-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.drop-status {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.debug-drop-zone.drag-over .drop-status {
+  color: var(--accent-primary);
+  font-weight: 600;
+}

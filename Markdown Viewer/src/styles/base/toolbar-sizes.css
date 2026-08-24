@@ -1,0 +1,100 @@
+/* Main toolbar and status bar size variations */
+
+/* Toolbar Size Variations */
+/*
+ * Main Toolbar Sizes.
+ *
+ * Each size only redefines geometry tokens; no rule here targets a button
+ * directly. Every consumer (base rules and themes alike) reads the tokens, so
+ * the size choice cannot be lost to a more specific theme selector, and
+ * `min-height` lets a button grow rather than spill its label.
+ */
+:root {
+  --main-toolbar-min-height: 40px;
+  --main-toolbar-padding: 8px 12px;
+  --main-toolbar-btn-min-height: 30px;
+  --main-toolbar-btn-padding: 6px 12px;
+  --main-toolbar-btn-font-size: 12px;
+  --main-toolbar-arrow-width: 16px;
+  --main-toolbar-arrow-padding: 6px 4px;
+  --main-toolbar-arrow-font-size: 8px;
+}
+
+[data-main-toolbar-size="small"] {
+  --main-toolbar-min-height: 32px;
+  --main-toolbar-padding: 4px 8px;
+  --main-toolbar-btn-min-height: 24px;
+  --main-toolbar-btn-padding: 4px 8px;
+  --main-toolbar-btn-font-size: 10px;
+  --main-toolbar-arrow-width: 14px;
+  --main-toolbar-arrow-padding: 4px 3px;
+  --main-toolbar-arrow-font-size: 7px;
+}
+
+[data-main-toolbar-size="large"] {
+  --main-toolbar-min-height: 48px;
+  --main-toolbar-padding: 12px 16px;
+  --main-toolbar-btn-min-height: 36px;
+  --main-toolbar-btn-padding: 8px 16px;
+  --main-toolbar-btn-font-size: 14px;
+  --main-toolbar-arrow-width: 20px;
+  --main-toolbar-arrow-padding: 8px 6px;
+  --main-toolbar-arrow-font-size: 10px;
+}
+
+
+
+/* Status Bar Sizes */
+[data-status-bar-size="small"] .status-bar {
+  min-height: 18px;
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+[data-status-bar-size="small"] .status-btn {
+  padding: 1px 4px;
+  font-size: 10px;
+}
+
+[data-status-bar-size="small"] .sync-btn {
+  font-size: 12px;
+}
+
+[data-status-bar-size="small"] .zoom-display {
+  font-size: 10px;
+  padding: 1px 4px;
+  min-width: 32px;
+}
+
+[data-status-bar-size="small"] .zoom-btn {
+  font-size: 9px;
+  padding: 1px 4px;
+  min-width: 28px;
+}
+
+[data-status-bar-size="large"] .status-bar {
+  min-height: 32px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+[data-status-bar-size="large"] .status-btn {
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+[data-status-bar-size="large"] .sync-btn {
+  font-size: 16px;
+}
+
+[data-status-bar-size="large"] .zoom-display {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-width: 48px;
+}
+
+[data-status-bar-size="large"] .zoom-btn {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-width: 40px;
+}

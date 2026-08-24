@@ -1,3 +1,5 @@
+import { resolvePageWidth } from '../pageLayout.js';
+
 /**
  * Settings Controller - Manages application settings and persistence
  */
@@ -59,7 +61,6 @@ class SettingsController extends BaseComponent {
 
   applySettings() {
     this.applyTheme();
-    this.applyCenteredLayout();
     this.applyMarkdownToolbarVisibility();
     this.applyPinnedTabsVisibility();
     this.applyPageSize();
@@ -78,8 +79,12 @@ class SettingsController extends BaseComponent {
     document.body.setAttribute('data-theme', this.theme);
   }
 
-  applyCenteredLayout() {
-    document.body.classList.toggle('centered-layout', this.centeredLayoutEnabled);
+  /**
+   * Centered layout also depends on the view mode, so SettingsCoordinator
+   * decides when it applies and calls this with the answer.
+   */
+  applyCenteredLayout(centered) {
+    document.body.classList.toggle('centered-layout', centered === true);
   }
 
   applyMarkdownToolbarVisibility() {
@@ -97,7 +102,10 @@ class SettingsController extends BaseComponent {
   }
 
   applyPageSize() {
-    document.body.setAttribute('data-page-size', this.currentPageSize);
+    // The stylesheets read this custom property. A data attribute was set
+    // here previously, which no rule ever matched, so choosing a page size
+    // had no effect until the next launch.
+    document.documentElement.style.setProperty('--current-page-width', resolvePageWidth(this.currentPageSize));
   }
 
   applyToolbarSizes() {
@@ -412,10 +420,7 @@ class SettingsController extends BaseComponent {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.centeredLayoutEnabled = id === 'layout-on-btn';
-          localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
-          this.applyCenteredLayout();
-          this.updateSettingsDisplay();
+          this.setCenteredLayoutEnabled(id === 'layout-on-btn');
         });
       }
     });
@@ -541,6 +546,21 @@ class SettingsController extends BaseComponent {
 
   getPinnedTabsEnabled() {
     return this.pinnedTabsEnabled;
+  }
+
+  getCenteredLayoutEnabled() {
+    return this.centeredLayoutEnabled;
+  }
+
+  getPageSize() {
+    return this.currentPageSize;
+  }
+
+  setCenteredLayoutEnabled(enabled) {
+    this.centeredLayoutEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
+    this.emit('centered-layout-changed', { enabled: this.centeredLayoutEnabled });
+    this.updateSettingsDisplay();
   }
 
   /**

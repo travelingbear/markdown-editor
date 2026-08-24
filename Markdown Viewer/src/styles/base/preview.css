@@ -1,0 +1,180 @@
+/* Preview pane, centered layout, and status bar */
+
+/* Preview */
+.preview-pane {
+  background-color: var(--bg-primary);
+}
+
+.preview-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* Centered Layout for Preview Mode */
+body.centered-layout .preview-content {
+  max-width: var(--current-page-width);
+  margin: 0 auto;
+  padding: var(--page-margin-top) var(--page-margin-left) var(--page-margin-bottom) var(--page-margin-right);
+  background: var(--bg-primary);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+}
+
+/* Fix double scrollbar in centered layout - exclude split mode */
+body.centered-layout:not(.split-mode) .preview-pane {
+  overflow-x: hidden;
+}
+
+body.centered-layout:not(.split-mode) .preview-content {
+  overflow-y: visible;
+}
+
+/* Centered Layout for Code Mode */
+body.centered-layout.code-mode .editor-container,
+body.centered-layout.code-mode #editor {
+  max-width: var(--current-page-width);
+  margin: 0 auto;
+  border-left: 1px solid var(--border-primary);
+  border-right: 1px solid var(--border-primary);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Adjust editor pane background for centered layout */
+body.centered-layout .editor-pane {
+  background: var(--bg-primary);
+}
+
+body.centered-layout .preview-pane {
+  background: var(--bg-primary);
+}
+
+.preview-content h1,
+.preview-content h2,
+.preview-content h3,
+.preview-content h4,
+.preview-content h5,
+.preview-content h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.preview-content h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 0.3em;
+}
+
+.preview-content h2 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 0.3em;
+}
+
+.preview-content p {
+  margin-bottom: 16px;
+}
+
+.preview-content code {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.preview-content pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.preview-content pre code {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+}
+
+.preview-content ul,
+.preview-content ol {
+  margin-bottom: 16px;
+  padding-left: 2em;
+}
+
+.preview-content li {
+  margin-bottom: 0.25em;
+}
+
+.preview-content ul {
+  list-style-type: disc;
+}
+
+.preview-content ol {
+  list-style-type: decimal;
+}
+
+.preview-content blockquote {
+  padding: 0 1em;
+  color: var(--text-secondary);
+  border-left: 0.25em solid var(--border-primary);
+  margin-bottom: 16px;
+}
+
+.preview-content table {
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.preview-content th,
+.preview-content td {
+  border: 1px solid var(--border-primary);
+  padding: 6px 13px;
+  text-align: left;
+}
+
+.preview-content th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 12px;
+  background-color: var(--bg-tertiary);
+  border-top: 1px solid var(--border-primary);
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-height: 24px;
+}
+
+.status-left,
+.status-center,
+.status-right {
+  flex: 1;
+}
+
+.status-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.status-right {
+  text-align: right;
+}

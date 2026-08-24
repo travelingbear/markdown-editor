@@ -88,7 +88,9 @@ class TabUIController extends BaseComponent {
     
     // Show up to 9 most recent tabs in dropdown (newest first)
     const visibleTabs = tabs.slice(0, 9);
-    const showMoreBtn = tabs.length > 9;
+    // The tab manager offers search, reordering, and per-tab commands, so it is
+    // worth reaching as soon as there is more than one document to move between.
+    const showMoreBtn = tabs.length > 1;
     
     visibleTabs.forEach((tab, index) => {
       const tabElement = this.createDropdownTabElement(tab, activeTab, index);

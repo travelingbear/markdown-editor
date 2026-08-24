@@ -1,0 +1,168 @@
+/* Main toolbar and its controls */
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--main-toolbar-padding);
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+  min-height: var(--main-toolbar-min-height);
+  position: relative;
+  z-index: 15000;
+  box-shadow: 0 -3px 4px 1px #080808;
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-center {
+  justify-content: center;
+  flex: 1;
+}
+
+.toolbar-btn,
+.mode-btn {
+  /* Centre the label in a box that can never be shorter than its own content.
+     A fixed height plus the inherited 1.5 line-height pushed text and icons
+     outside the button at the Large size. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1.2;
+  min-height: var(--main-toolbar-btn-min-height);
+  padding: var(--main-toolbar-btn-padding);
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: var(--main-toolbar-btn-font-size);
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover,
+.mode-btn:hover {
+  background-color: var(--bg-tertiary);
+  border-color: #7e80e3;
+}
+
+.mode-btn.active {
+  background-color: #5e60e7;
+  color: white;
+  border-color: #7e80e3;
+}
+
+.quick-settings-toolbar,
+.quick-settings-direct {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-settings-toolbar:not(.has-pinned),
+.quick-setting-btn:not(.is-pinned),
+.quick-settings-menu .dropdown-item:not(.is-pinned) {
+  display: none;
+}
+
+.quick-setting-btn.active,
+.quick-settings-menu .dropdown-item.active {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-hover);
+  color: white;
+}
+
+.quick-settings-toolbar .quick-settings-overflow {
+  display: none;
+}
+
+.quick-settings-toolbar .quick-settings-menu {
+  min-width: 220px;
+  right: 0;
+  left: auto;
+  gap: 6px;
+  padding: 6px;
+}
+
+.quick-settings-menu .dropdown-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  width: 100%;
+  height: auto;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-primary);
+  border-left: 4px solid transparent;
+  border-radius: 5px;
+  background: var(--bg-secondary);
+}
+
+.quick-settings-menu .dropdown-item:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.quick-settings-menu .dropdown-item.active {
+  border-color: var(--accent-hover);
+  border-left-color: var(--accent-hover);
+}
+
+.quick-setting-menu-label {
+  font-weight: 600;
+}
+
+.quick-setting-menu-state {
+  align-self: center;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0.8;
+}
+
+@media (max-width: 1180px) {
+  .quick-settings-toolbar.has-pinned .quick-settings-direct {
+    display: none;
+  }
+
+  .quick-settings-toolbar.has-pinned .quick-settings-overflow {
+    display: block;
+  }
+}
+
+.mode-btn.disabled,
+.mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-color: var(--border-primary);
+}
+
+.mode-btn.disabled:hover,
+.mode-btn:disabled:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+.toolbar-btn.dirty {
+  background-color: #f85149;
+  color: white;
+  border-color: #f85149;
+}
+
+.toolbar-btn.dirty:hover {
+  background-color: #da3633;
+  border-color: #da3633;
+}

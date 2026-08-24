@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { inlineImports } from '../../scripts/css-order.mjs';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = resolve(process.cwd());
-const baseStyles = readFileSync(resolve(projectRoot, 'src/styles.css'), 'utf8');
+// The base stylesheet is a manifest of @import rules; flatten it first.
+const baseStyles = inlineImports(resolve(projectRoot, 'src/styles.css'));
 const retroStyles = readFileSync(resolve(projectRoot, 'src/styles/themes/retro.css'), 'utf8');
 
 describe('Retro preview typography', () => {

@@ -435,6 +435,12 @@ Four carefully crafted themes:
 
 Every theme, including Retro, follows the size you choose, and buttons grow to fit their label rather than letting text or icons spill outside.
 
+#### Page Size
+
+With centered layout enabled, content is constrained to a page width: A4, Letter, or A3. The choice applies immediately and is used in distraction-free mode too.
+
+Centered layout applies in Code and Preview. It is suspended in Split, where two panes share the window and narrowing each to a page width would leave two thin columns; it returns when you leave Split.
+
 #### Layout Options
 - **Main Toolbar**: File operations and mode controls
 - **Markdown Toolbar**: Formatting and editing tools

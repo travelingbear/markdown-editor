@@ -1,0 +1,265 @@
+/* Rendered Markdown: footnotes, tasks, tables, code, images */
+
+/* Phase 3: Advanced Features Styles */
+
+/* Footnotes */
+.footnotes {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-primary);
+  font-size: 14px;
+}
+
+.footnotes ol {
+  padding-left: 20px;
+}
+
+.footnotes li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.footnote-ref {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footnote-ref:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.footnote-backref {
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.footnote-backref:hover {
+  color: var(--accent-primary);
+}
+
+/* Task Lists - Simplified structure using divs */
+.preview-content .task-list-item {
+  margin-bottom: 8px;
+  padding: 4px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Nested task lists */
+.preview-content .task-list-item.nested {
+  margin-left: 20px;
+  margin-bottom: 4px;
+}
+
+.preview-content .task-list-container {
+  margin-bottom: 16px;
+}
+
+.preview-content .task-list-nested {
+  margin-left: 20px;
+  margin-top: 8px;
+}
+
+/* Dash tasks (converted from li) get list-style appearance */
+.preview-content .task-list-item.dash-task {
+  margin-left: 20px;
+  position: relative;
+}
+
+.preview-content .task-list-item.dash-task::before {
+  content: '•';
+  position: absolute;
+  left: -16px;
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+
+/* Standalone tasks */
+.preview-content .task-list-item.standalone-task {
+  margin-left: 0;
+}
+
+/* Checkboxes - normalized across standalone, flat, and nested task markup */
+.preview-content .markdown-task-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  position: relative !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Labels */
+.preview-content .task-list-item label,
+.preview-content .markdown-task-label {
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.preview-content .markdown-task-checkbox:checked + .markdown-task-label {
+  opacity: 0.6;
+  color: var(--text-secondary);
+}
+
+/* Nested task list visual hierarchy */
+.preview-content .task-list-nested .task-list-item {
+  border-left: 2px solid var(--border-primary);
+  padding-left: 12px;
+  margin-left: 8px;
+}
+
+.preview-content .task-list-nested .task-list-item.nested {
+  margin-left: 0;
+}
+
+/* highlight.js theme integration */
+[data-theme="light"] .preview-content pre code.hljs {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Enhanced Tables */
+.preview-content table {
+  border-spacing: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.preview-content th {
+  background-color: var(--bg-secondary);
+  font-weight: 600;
+  text-align: left;
+}
+
+.preview-content tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+.preview-content tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Export Buttons */
+.toolbar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Enhanced Code Blocks */
+.preview-content pre {
+  position: relative;
+  border: 1px solid var(--border-primary);
+}
+
+.preview-content pre code {
+  display: block;
+  overflow-x: auto;
+  padding: 0;
+}
+
+/* Code Block Buttons */
+.code-block-buttons {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.preview-content pre:hover .code-block-buttons {
+  opacity: 1;
+}
+
+.code-btn {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.code-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+/* Image Support - Including GIFs */
+.preview-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Image Loading States */
+.preview-content img.markdown-image {
+  opacity: 0.8;
+}
+
+.preview-content img.local-image {
+  opacity: 1;
+}
+
+.preview-content img.remote-image {
+  opacity: 1;
+}
+
+.preview-content img.image-error {
+  opacity: 0.5;
+  background-color: rgba(248, 81, 73, 0.1);
+  position: relative;
+}
+
+.preview-content img.image-error::after {
+  content: "⚠️ Image not found";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(248, 81, 73, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Improved Blockquotes */
+.preview-content blockquote {
+  background-color: var(--bg-secondary);
+  border-radius: 0 6px 6px 0;
+  margin: 16px 0;
+  padding: 16px 20px;
+}
+
+.preview-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Enhanced Lists */
+.preview-content ul ul,
+.preview-content ol ol,
+.preview-content ul ol,
+.preview-content ol ul {
+  margin-bottom: 0;
+  margin-top: 0;
+}

@@ -1,0 +1,120 @@
+/* Preview context menu and the unsaved changes prompt */
+
+/* Preview Context Menu */
+.preview-context-menu {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 30000;
+  min-width: 150px;
+  padding: 4px 0;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.context-menu-item:hover {
+  background: var(--bg-secondary);
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: var(--border-primary);
+  margin: 4px 0;
+}
+
+.context-submenu {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 120px;
+  display: none;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.submenu-parent:hover .context-submenu {
+  display: flex;
+}
+
+.context-submenu .context-menu-item {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Application-owned unsaved changes prompt for consistent Windows/Linux behavior. */
+.unsaved-changes-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.unsaved-changes-dialog {
+  width: min(460px, 100%);
+  padding: 22px;
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+}
+
+.unsaved-changes-dialog h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+}
+
+.unsaved-changes-dialog p {
+  margin: 0 0 8px;
+}
+
+.unsaved-changes-guidance {
+  color: var(--text-secondary);
+}
+
+.unsaved-changes-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.unsaved-changes-actions button {
+  padding: 8px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.unsaved-discard-btn {
+  background: #b42318;
+  color: #fff;
+  border-color: #b42318 !important;
+}
+
+.unsaved-return-btn {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary) !important;
+}

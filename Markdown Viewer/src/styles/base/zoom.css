@@ -1,0 +1,73 @@
+/* Preview zoom controls and their scrollbar handling */
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.zoom-display {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 600;
+  color: #5e60e7;
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-primary);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 11px;
+}
+
+.zoom-btn {
+  font-size: 10px;
+  padding: 2px 6px;
+  min-width: 32px;
+  font-weight: bold;
+}
+
+/* Preview Zoom Styles */
+.preview-content {
+  transform: scale(var(--zoom-scale));
+  transform-origin: top center;
+  width: calc(100% / var(--zoom-scale));
+  transition: transform 0.1s ease;
+}
+
+/* Zoom transform-origin adjustment for non-centered layout */
+body:not(.centered-layout) .preview-content {
+  transform-origin: top left;
+}
+
+/* Scrollbar management for zoom */
+.preview-pane {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* Centered layout scrollbar fixes */
+body.centered-layout .preview-pane {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.centered-layout .preview-content {
+  overflow-y: visible;
+  overflow-x: visible;
+}
+
+/* When zoomed, allow horizontal scroll but manage carefully */
+body.centered-layout .preview-pane[data-zoom-above-100="true"] {
+  overflow-x: auto;
+}
+
+/* Hide scrollbars when zoomed above 100% for non-centered layout */
+body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"]::-webkit-scrollbar {
+  display: none;
+}
+
+body:not(.centered-layout) .preview-pane[data-zoom-above-100="true"] {
+  scrollbar-width: none;
+}

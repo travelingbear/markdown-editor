@@ -55,6 +55,7 @@ Its full method surface is `constructor`, `onInit`, `createComponents`, `applyIn
 - `ToolbarLifecycleController`: the sole owner of toolbar command routing — file new/open/save/save-as/close/reload, mode changes, exports, distraction-free/theme/Settings/Help, quick rendering and pinned-tab controls, font size and Preview zoom, undo/redo, Markdown actions and insertions, find/replace — plus listener teardown. Toolbar intent reaches services through this controller only, so the composition root registers no toolbar listeners.
 - `taskSyntax`: pure fenced-code-aware task extraction and exact source-line updates shared by Preview and Markdown actions; visible task text is no longer used as primary identity.
 - `horizontalSplitStyles`: the horizontal split stylesheet, held apart from the plugin because it is data rather than behaviour. The plugin mounts and removes it; the base stylesheet carries no horizontal-split rules.
+- `pageLayout`: page width tokens and the rule that centered layout applies to a single pane only. `SettingsController` owns the preference and sets `--current-page-width`; `SettingsCoordinator` decides when the `centered-layout` class applies, because that depends on the view mode as well as the setting.
 - `tabChrome`: decisions behind the tab context menu and the tab search modal — keeping the menu on screen, which commands apply to a tab, search matching, and the arrow-key edges in a filtered list. Measured values are passed in, so none of it needs a laid-out document.
 - `performance/tabPolicy`: which tabs to release under memory pressure — idle for five minutes and rarely visited, least-visited first, longest-idle breaking ties, a few per pass — plus the access average used by the performance report. Pure, so the limits are readable in one place; `PerformanceOptimizer` owns the maps and performs the effects.
 - `performance/dashboardView`: pure formatting and thresholds for the Performance Monitor — per-row text and severity classes, plus the overall Good/Warning/Critical status and the tooltip naming what was measured. `PerformanceOptimizer` gathers the measurements and writes the resulting view model to the DOM; the thresholds that decide when the application calls itself slow are readable and tested in one place.
@@ -176,9 +177,11 @@ Renderer sanitization and native filesystem permissions are high-risk areas. Cha
 
 ## Styling
 
-`src/styles.css` contains the current base styles. Feature, theme, and print styles live below `src/styles/` and are loaded through `StyleManager` where appropriate.
+`src/styles.css` is a manifest: eighteen `@import` rules naming the parts in `src/styles/base/`, split by component ownership, and no rules of its own. Feature, theme, and print styles live elsewhere below `src/styles/` and are loaded through `StyleManager`.
 
-The base stylesheet remains a major modularization target. New work should prefer a feature or theme stylesheet when ownership is clear and should avoid adding another competing style source.
+**The manifest must stay rules-free.** An `@import` has to precede every style rule in a file, so a rule added to `styles.css` would jump ahead of all eighteen parts and change the cascade. Put new rules in the part that owns the component, or in a feature stylesheet when the ownership is clear.
+
+Order is the whole safety property here: the parts are imported in the order they occupied in the single file, so the flattened result is what the browser used to see. `scripts/css-order.mjs` resolves the imports and flattens a stylesheet into the ordered list of rules a browser would apply, which is how the split was proven not to move anything — same 545 rules in the same order, and a byte-identical production bundle. Use it again before reordering or moving rules between parts.
 
 Two layout rules are load-bearing and covered by tests:
 

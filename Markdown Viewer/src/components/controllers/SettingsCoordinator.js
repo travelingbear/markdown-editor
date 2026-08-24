@@ -1,3 +1,5 @@
+import { shouldCenterLayout } from '../pageLayout.js';
+
 /**
  * Owns communication between SettingsController, UIController, and the Plugin
  * Manager, plus the single canonical Settings refresh.
@@ -55,6 +57,10 @@ class SettingsCoordinator extends BaseComponent {
       this.toolbarComponent.updateQuickSettings(data));
     this.listen(this.settingsController, 'settings-changed', () => this.refreshSystemInfo());
 
+    // Centered layout depends on the preference and the view mode together.
+    this.listen(this.settingsController, 'centered-layout-changed', () => this.applyCenteredLayout());
+    this.listen(this.modeController, 'mode-changed', () => this.applyCenteredLayout());
+
     // The status-bar tab manager can invalidate performance information.
     this.listen(this.tabUIController, 'settings-update-requested', () =>
       this.refreshSettingsDisplay());
@@ -91,6 +97,17 @@ class SettingsCoordinator extends BaseComponent {
       this.previewComponent,
       this.modeController.getCurrentMode()
     );
+  }
+
+  /**
+   * Centered layout narrows content to one page width, which only makes sense
+   * for a single pane. Split shows two side by side.
+   */
+  applyCenteredLayout() {
+    this.settingsController.applyCenteredLayout(shouldCenterLayout({
+      enabled: this.settingsController.getCenteredLayoutEnabled(),
+      mode: this.modeController.getCurrentMode()
+    }));
   }
 
   syncToolbarQuickSettings() {

@@ -1,0 +1,78 @@
+/* Startup splash screen */
+
+/* Splash Screen */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
+}
+
+.splash-screen.active {
+  opacity: 1;
+}
+
+.splash-screen.fade-out {
+  opacity: 0;
+}
+
+.splash-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  animation: splashFadeIn 0.8s ease-out;
+}
+
+.splash-image {
+  width: 500px;
+  max-width: 90vw;
+  max-height: 70vh;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.splash-progress {
+  width: 200px;
+  height: 4px;
+  overflow: hidden;
+  background: #e0e0e0;
+  border-radius: 2px;
+}
+
+.splash-progress .progress-bar {
+  width: 0;
+  height: 100%;
+  background: #007acc;
+  border-radius: 2px;
+  transition: width 0.15s ease-out;
+}
+
+[data-theme="dark"] .splash-screen {
+  background: #1e1e1e;
+}
+
+[data-theme="dark"] .splash-progress {
+  background: #333;
+}
+
+@keyframes splashFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

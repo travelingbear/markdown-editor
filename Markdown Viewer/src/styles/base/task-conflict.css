@@ -1,0 +1,158 @@
+/* Task conflict prompt */
+
+/* Task Conflict Modal */
+.task-conflict-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-conflict-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.task-conflict-window {
+  position: relative;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  animation: fadeInContent 0.2s ease-out;
+}
+
+.task-conflict-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  border-radius: 8px 8px 0 0;
+}
+
+.task-conflict-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  color: var(--text-primary);
+}
+
+.task-conflict-content {
+  padding: 20px 20px 12px 20px;
+}
+
+.task-conflict-content p {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.task-conflict-content p:last-of-type {
+  margin-bottom: 20px;
+}
+
+.task-conflict-buttons {
+  display: flex;
+  justify-content: center;
+  padding: 0 20px 16px 20px;
+}
+
+.task-conflict-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.task-conflict-btn.primary {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.task-conflict-btn.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .task-conflict-window {
+    width: 95%;
+  }
+  
+  .splash-image {
+    width: 400px;
+  }
+  
+  .help-window,
+  .about-window {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .help-header,
+  .about-header {
+    padding: 16px 20px;
+  }
+  
+  .help-content {
+    padding: 20px;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .about-content {
+    padding: 20px;
+  }
+  
+  .about-logo h1 {
+    font-size: 1.8em;
+  }
+  
+  .credits-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .link-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .welcome-btn.action-btn {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .help-tips ul {
+    grid-template-columns: 1fr;
+  }
+  
+  .shortcut-item kbd {
+    min-width: 50px;
+    font-size: 10px;
+  }
+  
+  .shortcut-item span {
+    font-size: 12px;
+  }
+}

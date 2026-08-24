@@ -169,37 +169,9 @@ class UIController extends BaseComponent {
     this.emit('distraction-free-changed', { isDistractionFree: false });
   }
 
-  // Layout Management
-  setCenteredLayout(enabled) {
-    this.centeredLayoutEnabled = enabled;
-    localStorage.setItem('markdownViewer_centeredLayout', enabled.toString());
-    this.applyCenteredLayout();
-  }
-
-  applyCenteredLayout() {
-    if (this.centeredLayoutEnabled) {
-      document.body.classList.add('centered-layout');
-    } else {
-      document.body.classList.remove('centered-layout');
-    }
-  }
-
-  setPageSize(pageSize) {
-    this.currentPageSize = pageSize;
-    localStorage.setItem('markdownViewer_pageSize', pageSize);
-    this.applyPageSize();
-  }
-
-  applyPageSize() {
-    const pageSizeMap = {
-      'a4': 'var(--page-width-a4)',
-      'letter': 'var(--page-width-letter)',
-      'a3': 'var(--page-width-a3)'
-    };
-    
-    const pageWidth = pageSizeMap[this.currentPageSize] || 'var(--page-width-a4)';
-    document.documentElement.style.setProperty('--current-page-width', pageWidth);
-  }
+  // Centered layout and page size belong to SettingsController, which is the
+  // single write path for every preference; the coordinator decides when
+  // centered layout applies because it also depends on the view mode.
 
   setToolbarEnabled(enabled) {
     this.isToolbarEnabled = enabled;
@@ -317,9 +289,6 @@ class UIController extends BaseComponent {
         this.defaultMode = value;
         localStorage.setItem('markdownViewer_defaultMode', value);
         break;
-      case 'centeredLayout':
-        this.setCenteredLayout(value);
-        break;
       case 'toolbarEnabled':
         this.setToolbarEnabled(value);
         break;
@@ -334,21 +303,12 @@ class UIController extends BaseComponent {
         this.splashDuration = value;
         localStorage.setItem('markdownViewer_splashDuration', value.toString());
         break;
-      case 'pageSize':
-        this.setPageSize(value);
-        break;
     }
   }
 
   async applyInitialSettings() {
     // Apply theme
     await this.setTheme(this.theme, this.isRetroTheme);
-    
-    // Apply centered layout
-    this.applyCenteredLayout();
-    
-    // Apply page size
-    this.applyPageSize();
     
     // Apply markdown toolbar visibility
     this.applyMarkdownToolbarVisibility();

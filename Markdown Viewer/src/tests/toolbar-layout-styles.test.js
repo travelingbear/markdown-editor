@@ -1,13 +1,14 @@
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { inlineImports } from '../../scripts/css-order.mjs';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = resolve(process.cwd());
 
-// Checked-in stylesheets use CRLF on Windows; normalize so multi-line
-// selectors can be matched literally.
+// Checked-in stylesheets use CRLF on Windows; normalize so multi-line selectors
+// can be matched literally. The base stylesheet is a manifest of @import rules,
+// so it is flattened into the order the browser would apply.
 function readStyles(relativePath) {
-  return readFileSync(resolve(projectRoot, relativePath), 'utf8').replace(/\r\n/g, '\n');
+  return inlineImports(resolve(projectRoot, relativePath)).replace(/\r\n/g, '\n');
 }
 
 const baseStyles = readStyles('src/styles.css');

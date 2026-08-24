@@ -1,0 +1,128 @@
+/* Dropdown buttons, tooltips, and the print button */
+
+/* Dropdown Button Styles */
+.dropdown-container {
+  position: relative;
+  display: flex;
+  /* Keep a split button and its arrow the same height at every toolbar size. */
+  align-items: stretch;
+}
+
+.dropdown-toggle {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 20000;
+  display: none;
+  flex-direction: column;
+  margin-top: 2px;
+  width: 100%;
+}
+
+.dropdown-menu.show {
+  display: flex;
+}
+
+.dropdown-item {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: background-color 0.2s;
+  border-radius: 0;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-item:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.dropdown-item:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Save dropdown specific styling */
+.dropdown-main {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+.dropdown-arrow {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  padding: var(--main-toolbar-arrow-padding) !important;
+  font-size: var(--main-toolbar-arrow-font-size) !important;
+  min-width: var(--main-toolbar-arrow-width);
+  width: var(--main-toolbar-arrow-width);
+  min-height: var(--main-toolbar-btn-min-height);
+  margin-left: -1px;
+  border-left: 1px solid var(--border-secondary) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-arrow:hover {
+  background-color: var(--bg-tertiary) !important;
+  border-color: #7e80e3 !important;
+}
+
+#save-dropdown-menu {
+  min-width: 84px;
+  width: auto;
+}
+
+/* Tooltip Styles */
+#distraction-btn,
+#theme-btn {
+  position: relative;
+}
+
+/* Print button styling */
+.toolbar-btn[title*="PDF"],
+.toolbar-btn[title*="Print"] {
+  position: relative;
+}
+
+.toolbar-btn[title*="PDF"]:hover::after,
+.toolbar-btn[title*="Print"]:hover::after {
+  content: "Print current view";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+  border: 1px solid var(--border-primary);
+}

@@ -1,0 +1,225 @@
+/* Performance dashboard, status bar help, and scroll sync */
+
+/* Phase 6: Performance Dashboard Styles */
+.performance-section {
+  margin-bottom: 32px;
+}
+
+.performance-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.2em;
+  color: #5e60e7;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 8px;
+}
+
+/* Performance Monitor Styles */
+.performance-info {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.status-good {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status-warning {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.status-critical {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.perf-metric {
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--border-primary);
+}
+
+.perf-metric label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.perf-value {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text-primary);
+}
+
+.perf-value.good {
+  color: #28a745;
+}
+
+.perf-value.caution {
+  color: #ffc107;
+}
+
+.perf-value.warning {
+  color: #dc3545;
+}
+
+.performance-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.perf-action-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  background: #5e60e7;
+  color: white;
+  border: 1px solid #7e80e3;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.perf-action-btn:hover {
+  background: #4a4cc7;
+  border-color: #6a6cc3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.perf-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Performance Monitor status colors for all themes */
+#perf-status.status-good {
+  color: #28a745;
+}
+
+#perf-status.status-warning {
+  color: #ffc107;
+}
+
+#perf-status.status-critical {
+  color: #dc3545;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .settings-window {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .settings-header {
+    padding: 16px 20px;
+  }
+  
+  .settings-content {
+    padding: 20px;
+  }
+  
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .setting-control {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  /* Responsive dropdown adjustments */
+  .dropdown-item {
+    padding: 5px 10px;
+    font-size: 11px;
+    height: 26px;
+  }
+  
+  /* Responsive performance dashboard */
+  .performance-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+  
+  .perf-metric {
+    padding: 8px;
+  }
+  
+  .perf-metric label {
+    font-size: 10px;
+  }
+  
+  .perf-value {
+    font-size: 12px;
+  }
+  
+  .performance-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .performance-actions .settings-btn {
+    width: 100%;
+    max-width: 150px;
+  }
+}
+
+
+
+/* Status Bar Help Button */
+.status-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.status-btn:hover {
+  background: #5e60e7;
+  color: white;
+}
+
+/* Scroll Sync Button */
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.sync-btn:hover {
+  background: #5e60e7;
+  color: white;
+}

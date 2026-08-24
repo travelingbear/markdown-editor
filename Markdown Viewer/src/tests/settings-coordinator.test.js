@@ -12,7 +12,8 @@ function createCoordinator() {
   const settingsController = new window.BaseComponent('SettingsController');
   const uiController = new window.BaseComponent('UIController');
   const tabUIController = new window.BaseComponent('TabUIController');
-  for (const source of [settingsController, uiController, tabUIController]) {
+  const modeController = new window.BaseComponent('ModeController');
+  for (const source of [settingsController, uiController, tabUIController, modeController]) {
     vi.spyOn(source, 'on');
     vi.spyOn(source, 'off');
   }
@@ -26,6 +27,9 @@ function createCoordinator() {
     updateSystemInfo: vi.fn(),
     getToolbarQuickSettings: vi.fn(() => ({ extended: true, pinnedTabsEnabled: false })),
     getToolbarEnabled: vi.fn(() => settingsController.isToolbarEnabled),
+    centeredLayoutEnabled: false,
+    getCenteredLayoutEnabled: vi.fn(() => settingsController.centeredLayoutEnabled),
+    applyCenteredLayout: vi.fn(),
     syncTheme: vi.fn(({ theme, isRetroTheme }) => {
       settingsController.theme = theme;
       settingsController.isRetroTheme = isRetroTheme === true;
@@ -40,6 +44,11 @@ function createCoordinator() {
     playRetroStartupSound: vi.fn()
   });
   Object.assign(tabUIController, { updatePinnedTabs: vi.fn() });
+  Object.assign(modeController, {
+    currentMode: 'split',
+    getCurrentMode: vi.fn(() => modeController.currentMode),
+    setMode: vi.fn()
+  });
 
   const pluginModalController = { refresh: vi.fn() };
   const toolbarComponent = {
@@ -52,7 +61,6 @@ function createCoordinator() {
   const previewComponent = { emit: vi.fn() };
   const activeTab = { id: 'active', content: '# Active', filePath: 'C:\\notes\\active.md' };
   const tabManager = { getActiveTab: vi.fn(() => activeTab) };
-  const modeController = { getCurrentMode: vi.fn(() => 'split'), setMode: vi.fn() };
   const performanceOptimizer = { id: 'perf' };
 
   const coordinator = new window.SettingsCoordinator();
@@ -185,6 +193,54 @@ describe('SettingsCoordinator', () => {
     expect(context.uiController.setTheme).not.toHaveBeenCalled();
   });
 
+  it('centers the layout in a single-pane mode when the setting is on', async () => {
+    const context = createCoordinator();
+    context.settingsController.centeredLayoutEnabled = true;
+    context.modeController.currentMode = 'preview';
+    await context.coordinator.init();
+
+    context.settingsController.emit('centered-layout-changed', { enabled: true });
+
+    expect(context.settingsController.applyCenteredLayout).toHaveBeenLastCalledWith(true);
+  });
+
+  it('drops centering when the reader switches to Split', async () => {
+    const context = createCoordinator();
+    context.settingsController.centeredLayoutEnabled = true;
+    context.modeController.currentMode = 'code';
+    await context.coordinator.init();
+
+    context.modeController.currentMode = 'split';
+    context.modeController.emit('mode-changed', { mode: 'split' });
+
+    // Two panes cannot each be a centered page.
+    expect(context.settingsController.applyCenteredLayout).toHaveBeenLastCalledWith(false);
+  });
+
+  it('restores centering when leaving Split', async () => {
+    const context = createCoordinator();
+    context.settingsController.centeredLayoutEnabled = true;
+    context.modeController.currentMode = 'split';
+    await context.coordinator.init();
+
+    context.modeController.currentMode = 'preview';
+    context.modeController.emit('mode-changed', { mode: 'preview' });
+
+    expect(context.settingsController.applyCenteredLayout).toHaveBeenLastCalledWith(true);
+  });
+
+  it('never centers while the setting is off', async () => {
+    const context = createCoordinator();
+    context.settingsController.centeredLayoutEnabled = false;
+    await context.coordinator.init();
+
+    for (const mode of ['code', 'preview', 'split']) {
+      context.modeController.currentMode = mode;
+      context.modeController.emit('mode-changed', { mode });
+      expect(context.settingsController.applyCenteredLayout).toHaveBeenLastCalledWith(false);
+    }
+  });
+
   it('routes rendering mode, pinned tabs, quick-control pins, and the sound test', async () => {
     const context = createCoordinator();
     await context.coordinator.init();
@@ -252,14 +308,19 @@ describe('SettingsCoordinator', () => {
     await context.coordinator.init();
     context.uiController.emit('theme-changed', { theme: 'dark', isRetroTheme: false });
 
-    const sources = [context.settingsController, context.uiController, context.tabUIController];
+    const sources = [
+      context.settingsController,
+      context.uiController,
+      context.tabUIController,
+      context.modeController
+    ];
     const registered = sources.reduce((total, source) => total + source.on.mock.calls.length, 0);
 
     context.coordinator.destroy();
     vi.runAllTimers();
     context.uiController.emit('settings-shown');
 
-    expect(registered).toBe(11);
+    expect(registered).toBe(13);
     for (const source of sources) {
       expect(source.off).toHaveBeenCalledTimes(source.on.mock.calls.length);
       for (const [event, handler] of source.on.mock.calls) {

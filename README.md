@@ -116,7 +116,8 @@
 - **Tab System**: Session-owned activation and wraparound navigation, UI-owned context commands, virtualization, and performance optimization
 - **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, 50 tab limit with warnings
 - **Bundle Size**: < 50MB across all platforms
-- **Asset Discipline**: The native shell retains only referenced artwork and one local Retro audio format, and reuses compact branded icons where possible
+- **Stylesheet Ownership**: The base stylesheet is an ordered manifest of component-owned parts rather than one long file, with tooling to prove a CSS move does not change the cascade
+- **Asset Discipline**: The native shell retains only referenced artwork and one local Retro audio format, reuses compact branded icons where possible, and resolves runtime-created images through the production bundler
 - **Security**: Sandboxed file access with CSP protection and plugin validation
 
 ## Documentation

@@ -1,0 +1,182 @@
+/* Application panes, view modes, splitter, and editor host */
+
+/* Main Content */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  --editor-width: 50%;
+  --preview-width: 50%;
+}
+
+/* Hide editor and markdown toolbar on startup to prevent flash */
+.editor-pane {
+  visibility: hidden;
+}
+
+.markdown-toolbar {
+  visibility: hidden;
+}
+
+/* Show elements when app is initialized */
+body.app-initialized .editor-pane,
+body.app-initialized .markdown-toolbar {
+  visibility: visible;
+}
+
+.editor-pane {
+  width: var(--editor-width);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10000;
+  overflow: visible;
+}
+
+.preview-pane {
+  width: var(--preview-width);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.editor-pane {
+  border-right: 1px solid var(--border-primary);
+}
+
+/* View Modes */
+.main-content.code-mode .preview-pane {
+  display: none;
+}
+
+.main-content.code-mode .editor-pane {
+  width: 100%;
+  border-right: none;
+}
+
+.main-content.preview-mode .editor-pane,
+.main-content.welcome-mode .editor-pane {
+  display: none;
+}
+
+.main-content.preview-mode .preview-pane,
+.main-content.welcome-mode .preview-pane {
+  width: 100%;
+}
+
+.main-content.split-mode .editor-pane,
+.main-content.split-mode .preview-pane {
+  display: flex;
+}
+
+/* Splitter */
+.splitter {
+  width: 4px;
+  background-color: var(--border-primary);
+  cursor: col-resize;
+  display: none !important;
+  transition: background-color 0.2s;
+}
+
+.splitter:hover {
+  background-color: var(--accent-primary);
+}
+
+.main-content.split-mode .splitter {
+  display: block !important;
+}
+
+.main-content.code-mode .splitter,
+.main-content.preview-mode .splitter,
+.main-content.welcome-mode .splitter {
+  display: none;
+}
+
+/* Editor host (legacy class name retained for plugin/layout compatibility) */
+.editor-container {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.editor-container > .cm-editor {
+  width: 100%;
+  height: 100%;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+.editor-container > .cm-editor .cm-scroller {
+  height: 100%;
+}
+
+.editor-container > .cm-editor .cm-content,
+.editor-container > .cm-editor .cm-line {
+  caret-color: var(--text-primary);
+}
+
+.editor-container > .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* Semantic CodeMirror classes keep Markdown punctuation readable in every theme. */
+.cm-editor .cm-md-mark {
+  color: #0969da;
+  font-weight: 650;
+}
+
+.cm-editor .cm-md-heading {
+  color: #8250df;
+  font-weight: 700;
+}
+
+.cm-editor .cm-md-strong {
+  color: #953800;
+  font-weight: 700;
+}
+
+.cm-editor .cm-md-emphasis {
+  color: #0550ae;
+  font-style: italic;
+}
+
+.cm-editor .cm-md-link {
+  color: #0969da;
+  text-decoration: underline;
+  text-decoration-color: rgba(9, 105, 218, 0.45);
+}
+
+.cm-editor .cm-md-code {
+  color: #116329;
+}
+
+.cm-editor .cm-md-block,
+.cm-editor .cm-md-comment {
+  color: #57606a;
+}
+
+.cm-editor .cm-md-invalid {
+  color: #cf222e;
+  text-decoration: underline wavy;
+}
+
+.cm-editor.cm-find-only .cm-search br,
+.cm-editor.cm-find-only .cm-search input[name="replace"],
+.cm-editor.cm-find-only .cm-search button[name="replace"],
+.cm-editor.cm-find-only .cm-search button[name="replaceAll"] {
+  display: none;
+}
+
+/* Fallback Editor */
+#editor {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  outline: none;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  resize: none;
+}

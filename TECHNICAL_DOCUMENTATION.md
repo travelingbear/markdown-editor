@@ -244,10 +244,19 @@ npm run tauri dev
 
 ## Current refactoring priorities
 
-1. Continue extracting responsibilities from `MarkdownEditor`, `ToolbarComponent`, `TabUIController`, and `PreviewComponent`.
-2. Split the base stylesheet by component ownership.
-3. Reduce startup and editor bundle cost for low-end systems.
-4. Harden filesystem and native behavior consistently on Windows and Linux.
-5. Prepare repeatable release builds and platform smoke tests.
+The agreed modularization pipeline is complete. Remaining engineering priorities are:
+
+1. Reconcile `refactor/modular-rebuild` with the newer published `origin/main` history only after the user chooses a merge strategy.
+2. Complete native Windows and Linux smoke tests and repeatable release builds.
+3. Profile startup, large-file batches, tabs, and lazy runtimes on low-end hardware before making further bundle changes.
+4. Address the deferred Markdown-toolbar spacing and optional Retro font cleanup only with real-browser visual validation.
+
+For Ubuntu release packaging, `build-linux-ubuntu.sh` installs the Tauri 2 prerequisites, verifies Node.js 20.19 or newer by comparing version components, and invokes the Linux Tauri build. It resolves paths from its own location and re-executes under Bash when called through `sh`, so it is independent of the caller's shell and working directory. The supported Linux release targets are DEB and RPM; AppImage generation is intentionally deferred because the current Tauri `linuxdeploy` flow remains unreliable in the supported WSL/Ubuntu build environment.
+
+Linux package icons must contain the standard square dimensions their filenames declare. The base Tauri config deliberately has no icon list: `tauri.linux.conf.json`, `tauri.windows.conf.json`, and `tauri.macos.conf.json` each supply only their platform's native icon inputs. This separation is necessary because Tauri merges platform-specific icon arrays with the base array instead of replacing it. Native PNG variants are generated deterministically from the square branded favicon.
+
+Application controls use inline SVG with `currentColor` rather than emoji glyphs, keeping icon rendering independent of optional host fonts and compatible with every theme. Retro startup audio is decoded before playback and requests the Web Audio `playback` latency profile; this favors a stable output buffer over low latency on virtualized or low-end Linux audio devices.
+
+The horizontal-split plugin persists only its pane-height ratio. Mode-change events are emitted after the core mode class is applied, so copying pane inline styles at that point would incorrectly capture horizontal heights as Code or Preview state. Leaving Split therefore saves the ratio, removes horizontal classes and inline heights, and lets the base single-pane layout occupy the full content area.
 
 WYSIWYG editing, spreadsheets, and presentations remain future features. Their implementations should use independent modules/plugins rather than adding feature-specific branches to the core Markdown path.

@@ -4,17 +4,22 @@ import { HORIZONTAL_SPLIT_CSS } from '../plugins/horizontalSplitStyles.js';
 
 function createPlugin() {
   const settings = new Map();
-  return new HorizontalSplitPlugin({
+  const handlers = new Map();
+  const plugin = new HorizontalSplitPlugin({
     unregisterExtension: vi.fn(),
     registerCleanup: vi.fn(),
     registerExtension: vi.fn(),
-    on: vi.fn(),
+    on: vi.fn((namespace, event, handler) => {
+      handlers.set(`${namespace}:${event}`, handler);
+    }),
     getSetting: vi.fn((key, defaultValue) => settings.has(key) ? settings.get(key) : defaultValue),
     setSetting: vi.fn((key, value) => {
       settings.set(key, value);
       return true;
     })
   });
+  plugin.testHandlers = handlers;
+  return plugin;
 }
 
 describe('HorizontalSplitPlugin lifecycle', () => {
@@ -112,6 +117,32 @@ describe('HorizontalSplitPlugin lifecycle', () => {
     expect(plugin.getSetting('horizontalSplitToolbar', 'show')).toBe('hide');
     expect(plugin.getSetting('horizontalSplitPaneOrder', 'preview-top')).toBe('code-top');
     expect(localStorage.getItem('markdownViewer_defaultSplitOrientation')).toBeNull();
+  });
+
+  it.each(['code', 'preview'])('clears horizontal pane heights when entering %s mode', async (mode) => {
+    document.querySelector('.main-content').outerHTML = `
+      <div class="main-content ${mode}-mode split-horizontal">
+        <div class="preview-pane" style="height: 40%;"></div>
+        <div class="editor-pane" style="height: 60%;"></div>
+      </div>
+    `;
+    const plugin = createPlugin();
+    plugin.isActive = true;
+    plugin.addModeListener();
+
+    plugin.testHandlers.get('mode:mode-changed')({ mode });
+    await vi.advanceTimersByTimeAsync(100);
+
+    const mainContent = document.querySelector('.main-content');
+    expect(mainContent.classList.contains('split-horizontal')).toBe(false);
+    expect(document.querySelector('.preview-pane').style.height).toBe('');
+    expect(document.querySelector('.editor-pane').style.height).toBe('');
+    expect(plugin.savedPaneSizes).toEqual({
+      previewHeight: '40%',
+      editorHeight: '60%'
+    });
+
+    await plugin.destroy();
   });
 });
 

@@ -489,7 +489,8 @@ Centered layout applies in Code and Preview. It is suspended in Split, where two
 - **Mermaid.js**: Diagram rendering
 - **Staged Bootstrap**: Loads the maintained component graph and registered plugins without legacy application entry points or sample code
 - **Highlight.js**: Syntax highlighting
-- **Local Asset Set**: Keeps only artwork and audio used by the native application; the welcome screen and browser shell share a compact branded icon
+- **Local Asset Set**: Keeps only artwork and audio used by the native application; the welcome screen and package icons share compact branded artwork, while interface controls use bundled SVG instead of optional operating-system emoji fonts
+- **Split Layout State**: Horizontal Split remembers its divider position, while Code and Preview return to the full content height when selected individually
 
 #### Backend Technologies
 - **Rust/Tauri**: Native performance with web flexibility
@@ -608,7 +609,7 @@ Centered layout applies in Code and Preview. It is suspended in Split, where two
 #### Minimum Requirements
 - **Windows**: Windows 10 (1903+)
 - **macOS**: macOS 10.13 (High Sierra+)
-- **Linux**: Ubuntu 18.04, Debian 10, or equivalent
+- **Linux**: Ubuntu 22.04/24.04, Debian 12, or a distribution with WebKitGTK 4.1
 - **RAM**: 4GB minimum
 - **Storage**: 100MB free space
 - **Display**: 1024x768 resolution

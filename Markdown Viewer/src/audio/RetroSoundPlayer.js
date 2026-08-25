@@ -5,7 +5,14 @@ function createDefaultAudioContext() {
   if (!AudioContextClass) {
     throw new Error('Web Audio is not available in this environment');
   }
-  return new AudioContextClass();
+  // The startup clip is not latency-sensitive. Asking the browser for a
+  // playback-sized buffer reduces underruns on virtualized audio backends such
+  // as WSLg/PulseAudio and on slower Linux hardware.
+  try {
+    return new AudioContextClass({ latencyHint: 'playback' });
+  } catch {
+    return new AudioContextClass();
+  }
 }
 
 export class RetroSoundPlayer {

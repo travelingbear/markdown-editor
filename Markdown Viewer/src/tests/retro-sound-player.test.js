@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RetroSoundPlayer } from '../audio/RetroSoundPlayer.js';
 
 function createSource() {
@@ -40,6 +40,23 @@ function createFetch() {
 }
 
 describe('RetroSoundPlayer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('requests a playback-oriented buffer from the default audio context', () => {
+    const AudioContext = vi.fn(function AudioContext(options) {
+      this.options = options;
+    });
+    vi.stubGlobal('AudioContext', AudioContext);
+
+    const player = new RetroSoundPlayer();
+    const context = player.getAudioContext();
+
+    expect(AudioContext).toHaveBeenCalledWith({ latencyHint: 'playback' });
+    expect(context.options).toEqual({ latencyHint: 'playback' });
+  });
+
   it('loads and decodes the complete clip before playback starts', async () => {
     const source = createSource();
     const { context, gains } = createAudioContext([source]);

@@ -23,4 +23,17 @@ describe('static application shell assets', () => {
     expect(html).toContain('src="favicons/favicon-96x96.png"');
     expect(html).not.toContain('assets/icon.svg');
   });
+
+  it('uses bundled SVG markup instead of platform-dependent emoji in buttons', () => {
+    const html = readFileSync(resolve(sourceRoot, 'index.html'), 'utf8');
+    const toolbarSource = readFileSync(resolve(sourceRoot, 'components/ToolbarComponent.js'), 'utf8');
+    const buttonMarkup = [...html.matchAll(/<button\b[\s\S]*?<\/button>/g)]
+      .map((match) => match[0])
+      .join('\n');
+    const emoji = /[\u{1F300}-\u{1FAFF}]/u;
+
+    expect(buttonMarkup).not.toMatch(emoji);
+    expect(toolbarSource).not.toMatch(emoji);
+    expect(html).toContain('class="ui-icon"');
+  });
 });

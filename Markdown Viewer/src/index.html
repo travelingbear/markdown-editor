@@ -15,16 +15,16 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
-          <button id="new-btn" class="toolbar-btn">📄 New</button>
-          <button id="open-btn" class="toolbar-btn">📁 Open</button>
+          <button id="new-btn" class="toolbar-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3h6"/></svg>New</button>
+          <button id="open-btn" class="toolbar-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg>Open</button>
           <div class="dropdown-container">
-            <button id="save-btn" class="toolbar-btn dropdown-main">💾 Save</button>
+            <button id="save-btn" class="toolbar-btn dropdown-main"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save</button>
             <button id="save-dropdown-arrow" class="toolbar-btn dropdown-arrow">▼</button>
             <div id="save-dropdown-menu" class="dropdown-menu">
               <button id="save-as-btn" class="dropdown-item">Save As</button>
             </div>
           </div>
-          <button id="close-btn" class="toolbar-btn">❌ Close</button>
+          <button id="close-btn" class="toolbar-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>Close</button>
         </div>
         <div class="toolbar-center">
           <button id="code-btn" class="mode-btn">Code</button>
@@ -53,14 +53,14 @@
               </div>
             </div>
           </div>
-          <button id="distraction-btn" class="toolbar-btn" title="Toggle Distraction-Free Mode (Shift+F11)">🔳</button>
-          <button id="theme-btn" class="toolbar-btn" title="Toggle Theme (Ctrl+T)">🌙</button>
+          <button id="distraction-btn" class="toolbar-btn" title="Toggle Distraction-Free Mode (Shift+F11)" aria-label="Toggle distraction-free mode"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m18 0v5h-5"/></svg></button>
+          <button id="theme-btn" class="toolbar-btn" title="Toggle Theme (Ctrl+T)" aria-label="Toggle theme"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 9 9 0 1 0 20.5 14.2z"/></svg></button>
           <button id="settings-btn" class="toolbar-btn" title="Settings (Ctrl+,)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="13" height="13" fill="currentColor">
               <path d="M195.1 9.5C198.1-5.3 211.2-16 226.4-16l59.8 0c15.2 0 28.3 10.7 31.3 25.5L332 79.5c14.1 6 27.3 13.7 39.3 22.8l67.8-22.5c14.4-4.8 30.2 1.2 37.8 14.4l29.9 51.8c7.6 13.2 4.9 29.8-6.5 39.9L447 233.3c.9 7.4 1.3 15 1.3 22.7s-.5 15.3-1.3 22.7l53.4 47.5c11.4 10.1 14 26.8 6.5 39.9l-29.9 51.8c-7.6 13.1-23.4 19.2-37.8 14.4l-67.8-22.5c-12.1 9.1-25.3 16.7-39.3 22.8l-14.4 69.9c-3.1 14.9-16.2 25.5-31.3 25.5l-59.8 0c-15.2 0-28.3-10.7-31.3-25.5l-14.4-69.9c-14.1-6-27.2-13.7-39.3-22.8L73.5 432.3c-14.4 4.8-30.2-1.2-37.8-14.4L5.8 366.1c-7.6-13.2-4.9-29.8 6.5-39.9l53.4-47.5c-.9-7.4-1.3-15-1.3-22.7s.5-15.3 1.3-22.7L12.3 185.8c-11.4-10.1-14-26.8-6.5-39.9L35.7 94.1c7.6-13.2 23.4-19.2 37.8-14.4l67.8 22.5c12.1-9.1 25.3-16.7 39.3-22.8L195.1 9.5zM256.3 336a80 80 0 1 0 -.6-160 80 80 0 1 0 .6 160z"/>
             </svg>
           </button>
-          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)">❓</button>
+          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)" aria-label="Help"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.9 1.9c-1.2.8-1.7 1.3-1.7 2.6M12 17h.01"/></svg></button>
         </div>
       </div>
 
@@ -259,8 +259,8 @@
               <p class="welcome-subtitle">A light, yet powerful markdown editor with live preview</p>
               
               <div class="welcome-actions">
-                <button id="welcome-new-btn" class="welcome-btn primary">📄 New File</button>
-                <button id="welcome-open-btn" class="welcome-btn">📁 Open File</button>
+                <button id="welcome-new-btn" class="welcome-btn primary"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3h6"/></svg>New File</button>
+                <button id="welcome-open-btn" class="welcome-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg>Open File</button>
               </div>
               
               <div id="file-history-section" class="file-history" style="display: none;">
@@ -307,9 +307,9 @@
             <button id="font-size-reset" class="status-btn font-btn" title="Reset Font Size">Reset</button>
           </div>
           <div id="zoom-controls" class="zoom-controls" style="display: none;">
-            <button id="zoom-out" class="status-btn zoom-btn" title="Zoom Out (Ctrl+-)">🔎︎−</button>
+            <button id="zoom-out" class="status-btn zoom-btn" title="Zoom Out (Ctrl+-)" aria-label="Zoom out"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 10.5h6"/></svg></button>
             <span id="zoom-display" class="zoom-display">100%</span>
-            <button id="zoom-in" class="status-btn zoom-btn" title="Zoom In (Ctrl+=)">🔎︎＋</button>
+            <button id="zoom-in" class="status-btn zoom-btn" title="Zoom In (Ctrl+=)" aria-label="Zoom in"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 10.5h6m-3-3v6"/></svg></button>
             <button id="zoom-reset" class="status-btn zoom-btn" title="Reset Zoom (Ctrl+0)">Reset</button>
           </div>
         </div>
@@ -369,7 +369,7 @@
                   <input type="checkbox" id="retro-sound-checkbox" class="retro-checkbox" checked>
                   Startup Sound
                 </label>
-                <button id="test-startup-sound-btn" class="setting-btn test-sound-btn" title="Test startup sound">🔊 Test</button>
+                <button id="test-startup-sound-btn" class="setting-btn test-sound-btn" title="Test startup sound"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM15 9a4 4 0 0 1 0 6m3-9a8 8 0 0 1 0 12"/></svg>Test</button>
               </div>
             </div>
             
@@ -727,8 +727,8 @@
             <div class="about-links">
               <h3>Links & Support</h3>
               <div class="link-info">
-                <p><a href="https://github.com/travelingbear/markdown-editor" target="_blank">📚 Documentation/Issues</a></p>
-                <p><a href="https://buymeacoffee.com/travelingbear" target="_blank">☕ Buy me a coffee</a></p>
+                <p><a href="https://github.com/travelingbear/markdown-editor" target="_blank">Documentation/Issues</a></p>
+                <p><a href="https://buymeacoffee.com/travelingbear" target="_blank">Buy me a coffee</a></p>
               </div>
             </div>
             
@@ -822,7 +822,7 @@
               <div id="file-tab" class="tab-pane">
                 <div class="file-drop-zone" id="image-drop-zone">
                   <div class="drop-zone-content">
-                    <div class="drop-icon">📁</div>
+                    <div class="drop-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg></div>
                     <div class="drop-text">Drop image file here</div>
                     <div class="drop-status">or click to browse</div>
                   </div>

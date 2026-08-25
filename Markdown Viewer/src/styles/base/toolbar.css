@@ -48,6 +48,10 @@
   transition: all 0.2s;
 }
 
+.toolbar-btn {
+  gap: 0.4em;
+}
+
 .toolbar-btn:hover,
 .mode-btn:hover {
   background-color: var(--bg-tertiary);

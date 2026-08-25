@@ -91,7 +91,31 @@ src-tauri/target/release/
 
 Installers and platform bundles are written below the corresponding `bundle` directory.
 
-Build release packages on their target operating system whenever possible. Windows MSI/NSIS, macOS application/DMG, and Linux DEB/RPM/AppImage packaging use host-specific tooling. The platform scripts in `package.json` select Rust targets; they do not install cross-compilers or replace target-platform testing.
+Build release packages on their target operating system whenever possible. Windows MSI/NSIS, macOS application/DMG, and Linux DEB/RPM packaging use host-specific tooling. The platform scripts in `package.json` select Rust targets; they do not install cross-compilers or replace target-platform testing.
+
+## Building on Ubuntu
+
+Tauri 2 Linux bundles (DEB/RPM) cannot be produced from a Windows or macOS host because packaging uses Linux tools. Run the build on an Ubuntu 22.04/24.04 machine (or VM/container):
+
+```bash
+bash "Markdown Viewer/build-linux-ubuntu.sh"
+```
+
+The script resolves the application directory from its own location, so it can also be run from inside `Markdown Viewer` as `sh build-linux-ubuntu.sh`. When invoked through Ubuntu's `sh`/`dash`, it safely restarts itself with Bash because the build uses strict `pipefail` handling.
+
+The script installs the WebKitGTK 4.1 development packages, installs Rust when needed, checks Node.js 20.19+, installs dependencies, and runs `npm run build:linux`. The native executable is written to `src-tauri/target/x86_64-unknown-linux-gnu/release/` and installers to its `bundle/{deb,rpm}/` directories.
+
+Test the unpackaged binary on Ubuntu with:
+
+```bash
+./src-tauri/target/x86_64-unknown-linux-gnu/release/markdown-editor
+```
+
+Install the DEB with:
+
+```bash
+sudo apt-get install -y ./src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/Markdown\ Editor_*_amd64.deb
+```
 
 ## Version updates
 
@@ -126,6 +150,10 @@ The native executable may already have compiled successfully. On current Windows
 ### Linux WebKit package cannot be found
 
 Use a distribution supported by the current Tauri 2 prerequisites and install the WebKitGTK 4.1 package for that distribution. Do not substitute the Tauri 1 WebKitGTK 4.0 package list.
+
+### Why no AppImage is produced
+
+The supported Linux build currently produces DEB and RPM packages only. AppImage is intentionally excluded because the current Tauri `linuxdeploy` packaging path remains unreliable in the supported WSL/Ubuntu environment. This does not affect the native executable, DEB, or RPM outputs; AppImage support can be revisited as a separate packaging task.
 
 ### Frontend works but native operations fail
 

@@ -66,13 +66,14 @@
 - **App Bundle**: `Markdown Viewer.app`
 
 #### Linux
-- **RPM**: `markdown-viewer_***_amd64.rpm`
-- **DEB**: `markdown-viewer_***_amd64.deb`
+- **RPM**: `Markdown Editor-***-1.x86_64.rpm`
+- **DEB**: `Markdown Editor_***_amd64.deb`
+- **AppImage**: not currently produced; support is deferred while the Tauri `linuxdeploy` path is stabilized
 
 ### System Requirements
 - **Windows**: Windows 10 (1903) or later
 - **macOS**: macOS 10.13 (High Sierra) or later
-- **Linux**: Ubuntu 18.04, Debian 10, or equivalent
+- **Linux**: Ubuntu 22.04/24.04, Debian 12, or a distribution with WebKitGTK 4.1
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 100MB free space
 
@@ -119,7 +120,8 @@
 - **Performance**: <60ms startup, <500ms file ops, <35ms tab switching, 50 tab limit with warnings
 - **Bundle Size**: < 50MB across all platforms
 - **Stylesheet Ownership**: The base stylesheet is an ordered manifest of component-owned parts rather than one long file, with tooling to prove a CSS move does not change the cascade
-- **Asset Discipline**: The native shell retains only referenced artwork and one local Retro audio format, reuses compact branded icons where possible, and resolves runtime-created images through the production bundler
+- **Asset Discipline**: The native shell retains only referenced artwork and one local Retro audio format, uses bundled inline SVG for interface controls instead of operating-system emoji fonts, validates standard square package-icon sizes, and resolves runtime-created images through the production bundler
+- **Split Layout State**: Vertical and horizontal split ratios are isolated from single-pane Code and Preview layouts, so changing mode cannot leave a pane constrained to an obsolete split size
 - **Security**: Sandboxed file access with CSP protection and plugin validation
 
 ## Documentation

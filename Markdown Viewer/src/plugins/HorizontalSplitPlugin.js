@@ -24,12 +24,6 @@ class HorizontalSplitPlugin {
     this.savedPaneSizes = null;
     this.pendingTimeouts = new Set();
     
-    // State management for different modes
-    this.modeStates = {
-      code: { previewPaneStyles: '', editorPaneStyles: '' },
-      preview: { previewPaneStyles: '', editorPaneStyles: '' },
-      split: { previewPaneStyles: '', editorPaneStyles: '' }
-    };
   }
 
   getSetting(key, defaultValue) {
@@ -370,33 +364,20 @@ class HorizontalSplitPlugin {
     // Mode changes are controller events. The scoped subscription is removed
     // automatically when this plugin is disabled.
     this.pluginAPI.on('mode', 'mode-changed', (data) => {
-      // Save current mode state before switching
       const mainContent = document.querySelector('.main-content');
       if (!mainContent) return;
-
-      if (mainContent.classList.contains('code-mode')) {
-        this.saveCurrentModeState('code');
-      } else if (mainContent.classList.contains('preview-mode')) {
-        this.saveCurrentModeState('preview');
-      } else if (mainContent.classList.contains('split-mode')) {
-        this.saveCurrentModeState('split');
-      }
       
       if (data && data.mode === 'split') {
         this.applySplitOrientation();
         this.applyToolbarVisibility();
         this.applyPaneOrder();
         this.updateDropdownOptions();
-        // Restore split mode state
-        this.schedule(() => this.restoreModeState('split'), 50);
       } else {
         // Save horizontal state before clearing
         this.wasHorizontal = mainContent?.classList.contains('split-horizontal');
         this.clearSplitStyles();
         this.clearToolbarVisibility();
         this.updateDropdownOptions();
-        // Restore the appropriate mode state
-        this.schedule(() => this.restoreModeState(data.mode), 50);
       }
     });
     
@@ -483,26 +464,6 @@ class HorizontalSplitPlugin {
     
     // Clear toolbar visibility
     this.clearToolbarVisibility();
-  }
-  
-  saveCurrentModeState(mode) {
-    const previewPane = document.querySelector('.preview-pane');
-    const editorPane = document.querySelector('.editor-pane');
-    
-    if (previewPane && editorPane && this.modeStates[mode]) {
-      this.modeStates[mode].previewPaneStyles = previewPane.style.cssText;
-      this.modeStates[mode].editorPaneStyles = editorPane.style.cssText;
-    }
-  }
-  
-  restoreModeState(mode) {
-    const previewPane = document.querySelector('.preview-pane');
-    const editorPane = document.querySelector('.editor-pane');
-    
-    if (previewPane && editorPane && this.modeStates[mode]) {
-      previewPane.style.cssText = this.modeStates[mode].previewPaneStyles;
-      editorPane.style.cssText = this.modeStates[mode].editorPaneStyles;
-    }
   }
   
   clearInlineStyles() {

@@ -12,7 +12,12 @@
 **This work is not on `main`, and `main` is not what is published.**
 
 - Work branch: `refactor/modular-rebuild`, pushed to `origin`.
-- Local `main` branched from `3fc42cd` (14 Sep 2025) and never rejoined.
+  **19 ahead of `origin/main`, 30 behind.**
+- Local `main` is at `3182c67` and is not where the work lives:
+  **15 ahead, 30 behind.** The branch was cut from it, so it carries the first
+  fifteen commits and nothing since.
+- The common ancestor with `origin/main` is `3fc42cd` (14 Sep 2025). Both local
+  branches descend from it; neither has rejoined.
 - `origin/main` continued from that same commit for **30 commits** through
   8 May 2026: v3.3.1 through v3.3.4, the Monaco optimization, the
   `.github/workflows/build.yml` CI workflow, the `Cargo.lock` removal, and the
@@ -29,6 +34,15 @@ optimization line is superseded here by the CodeMirror replacement.
 The user was shown this and chose to **push to a branch and defer** the
 reconciliation. Do not merge, rebase, or force-push without asking: force-pushing
 `main` would discard four published releases and the CI workflow.
+
+### Uncommitted at handoff
+
+Not mine, and not committed. Decide with the user before touching them:
+
+- `BUILD_GUIDE.md` — modified.
+- `Markdown Viewer/build-linux-ubuntu.sh` — untracked. Builds the Linux
+  bundles from the repository root.
+- `MARKDOWN_CAPABILITIES_TEST.md` — untracked, a Markdown feature test document.
 
 ## Required working agreement
 
@@ -77,13 +91,13 @@ commit.
   applies; centered layout is suspended in Split; the status bar tab manager
   appears with a second document open.
 
-The latest approved batch continued pipeline item 2 (decomposition):
+An earlier approved batch, during module decomposition:
 
 - Extracted the Preview post-parse HTML pipeline into a pure `rendering/previewHtml.js`; `PreviewComponent` dropped from 946 to 725 lines and every transform is now testable without a mounted component.
 - Removed the unreachable list-converting branches of the task-list fallback, verified with a 15-document before/after diff of the full pipeline. `.task-list-container`, `.task-list-nested`, and `.task-list-item.nested` are now unused selectors, to be dropped during the CSS work.
 
-The preceding approved batch started pipeline item 2 and fixed
-reported Markdown rendering bugs:
+The batch before it began module decomposition and fixed reported Markdown
+rendering bugs:
 
 - Extracted the Link and Image insert flow out of `ToolbarComponent` into `MarkdownDialogController` plus a pure `markdownInsertSyntax` module, taking the component from 1,120 to 788 lines. Fixed the dialogs never releasing any listener, and a dropdown menu being reparented to `<body>` and never returned.
 - Fixed multi-line display math being destroyed by Markdown parsing. Renderers now have a `transformMarkdown` phase that runs before `marked`, and KaTeX renders each formula from the source, so a `$$` block containing a lone `=` line no longer becomes a setext heading that swallows the closing tag and leaves an unclosed `<h1>` dragging the rest of the document to heading size.
@@ -91,7 +105,7 @@ reported Markdown rendering bugs:
 - Retuned the Markdown toolbar collapse breakpoints from the CSS box model; they had been ~25% below what the row actually needs.
 - Gave the Mermaid runtime-loading test an explicit 30s timeout; it imports the real bundled runtime and intermittently exceeded the 5s default under parallel load.
 
-The preceding approved batch completed pipeline item 2 (composition root):
+The batch before that completed the composition root:
 
 - Reduced `MarkdownEditor` to construction, injection, initialization, startup staging, the error boundary, and disposal. `setupComponentCommunication()` is gone; every cross-component event has an owning controller that also removes it. 762 to 608 lines.
 - Added `StatusBarController` (cursor position and the untabbed document name) and `SearchController` (editor adapter in Code/Split, native find in Preview).
@@ -228,10 +242,12 @@ Read this before planning work, because two attempts were wasted on it.
   27. The remaining 27 guard elements built at runtime, which the static shell
   cannot prove safe.
 
-  Left: **53 `font-family` declarations** in `retro.css`, most now redundant
-  because base rules read `--font-ui` and the theme redefines it. The exceptions
-  are form controls, which do not inherit type, so this needs a per-selector
-  pass rather than a sweep.
+  Left: of the 57 `font-family` declarations in `retro.css`, **53 name
+  `var(--font-ui)`** and are mostly redundant now that base rules read the same
+  token and the theme redefines it. The exceptions are form controls, which do
+  not inherit type, so this needs a per-selector pass rather than a sweep. The
+  other four are deliberate: three `--font-mono`, and one pinning Mermaid's own
+  stack so diagrams are not laid out against the theme font.
 
 - **Three unused task-list selectors.** `.task-list-container`,
   `.task-list-nested`, and `.task-list-item.nested` survive in

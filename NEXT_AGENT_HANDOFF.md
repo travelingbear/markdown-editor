@@ -7,6 +7,29 @@
 - Stack: Tauri 2, vanilla JavaScript components/controllers, CodeMirror 6, Vite, Vitest, and Rust.
 - The application must remain fully self-contained and usable offline. KaTeX and Mermaid are bundled, plugin-owned, and lazy-loaded only when Extended rendering needs them.
 
+## Branch state — read before pushing
+
+**This work is not on `main`, and `main` is not what is published.**
+
+- Work branch: `refactor/modular-rebuild`, pushed to `origin`.
+- Local `main` branched from `3fc42cd` (14 Sep 2025) and never rejoined.
+- `origin/main` continued from that same commit for **30 commits** through
+  8 May 2026: v3.3.1 through v3.3.4, the Monaco optimization, the
+  `.github/workflows/build.yml` CI workflow, the `Cargo.lock` removal, and the
+  deleted-file history fix.
+- Local `package.json` says **3.2.1**; `origin/main` says **3.3.4**.
+
+So this entire refactor sits on a base eight months behind the published
+releases. A merge conflicts in roughly **57 files** — every core component, both
+stylesheets, `package.json`, `tauri.conf.json` — plus modify/delete conflicts on
+files this work deliberately removed (Monaco-era `main-component.js`,
+`SamplePlugin`, `TypewriterSoundsPlugin`, `USER_GUIDE.md`). The remote's Monaco
+optimization line is superseded here by the CodeMirror replacement.
+
+The user was shown this and chose to **push to a branch and defer** the
+reconciliation. Do not merge, rebase, or force-push without asking: force-pushing
+`main` would discard four published releases and the CI workflow.
+
 ## Required working agreement
 
 The user manually tests and approves every behavioral fix or refactoring batch before work moves to the next batch.
@@ -25,6 +48,34 @@ Preserve unrelated user changes. Use `apply_patch` for source/document edits. Do
 ## Completed and approved
 
 The broad modernization checkpoint precedes this handoff. Use `git log --oneline` for its exact history.
+
+Batches since, newest first. Each was tested by the user and approved before
+commit.
+
+- **Theme cascade position and shape tokens** (`3c3b94b`). `StyleManager` keeps
+  the theme stylesheet last in `<head>`, so a feature stylesheet loading later
+  can no longer outrank it at equal specificity. Retro's `!important` count fell
+  59 to 27, removing only what the real shell proved unnecessary. 109 corner
+  radii and 10 font stacks in the base and feature stylesheets now read tokens,
+  so Retro's 44 `border-radius: 0` declarations became eleven token
+  redefinitions. 948 flattened rules resolve identically once tokens are
+  substituted back.
+- **Retro rebuilt as Windows 3.1, plus a desktop colour** (`1def599`). Three
+  box-shadow bevel primitives replace every `outset`/`inset` border; modal
+  headers became title bars; added navy selection, dotted focus, engraved
+  disabled text and dithered scrollbar tracks. New Retro-only Desktop Colour
+  setting with eight VGA-palette colours, each carrying a legible text colour.
+  Fixed inline code rendering near 10px, secondary text turned mid grey, a
+  blockquote bar cancelled by a later `border` shorthand, and Mermaid labels
+  overflowing their nodes.
+- **Dead stylesheet rules removed** (`3c0b90b`). 31 rules targeting classes
+  nothing renders, spread across three stylesheets.
+- **Documentation refresh** (`3182c67`) and the **splash image fix**
+  (`7b17fec`, the user's own change).
+- **Base stylesheet split and page layout fixes** (`73d9cfb`). `src/styles.css`
+  became a 29-line `@import` manifest over eighteen parts; page size actually
+  applies; centered layout is suspended in Split; the status bar tab manager
+  appears with a second document open.
 
 The latest approved batch continued pipeline item 2 (decomposition):
 
@@ -85,8 +136,8 @@ Earlier still, the Preview lifecycle extraction:
 
 Validation at handoff:
 
-- `54` Vitest files passed.
-- `360` tests passed.
+- `62` Vitest files passed.
+- `517` tests passed.
 - `npm run build:web` passed.
 - `cargo check` passed during the Preview-lifecycle batch. The batches since then changed no Rust, native commands, or capabilities, so it was not rerun.
 - `git diff --check` passed; Git may still print informational LF-to-CRLF warnings on Windows.
@@ -130,9 +181,11 @@ modularization.
 
 Sizes at completion, largest first:
 
-- `styles/themes/retro.css`: 1,228 lines (never touched; see optional work).
+- `styles/themes/retro.css`: 1,475 lines. Larger than before, but rebuilt: 268
+  colour literals became six tokens, and the growth is the Windows 3.1 chrome
+  and details it never had.
 - `TabUIController.js`: 938 lines.
-- `styles/features/settings-modal.css`: 865 lines.
+- `styles/features/settings-modal.css`: 830 lines.
 - `performance-optimizer.js`: 794 lines.
 - `ToolbarComponent.js`: 788 lines.
 - `styles/features/tab-system.css`: 730 lines.
@@ -169,26 +222,37 @@ Read this before planning work, because two attempts were wasted on it.
 
 ## Optional remaining work
 
-- **Simplify `styles/themes/retro.css`** (1,204 lines after the dead-rule pass).
-  What is left is not accidental complexity. High Contrast is a complete theme
-  in 65 lines because it redefines tokens the base stylesheet already reads;
-  Retro defines nine tokens and then hardcodes their exact values 263 more
-  times, so the obvious win is replacing those literals with the tokens that
-  hold the same value. That is mechanically safe — identical computed values —
-  but it touches most of the file, so it needs a full Retro pass across every
-  surface as its own approval batch.
+- **Retro theme — done, with one loose end.** The theme was rebuilt on the
+  Windows 3.1 palette and three bevel primitives, injection order was fixed so
+  the theme always sits last in the cascade, and `!important` fell from 59 to
+  27. The remaining 27 guard elements built at runtime, which the static shell
+  cannot prove safe.
 
-  **Done.** The theme was rebuilt on the Windows 3.1 palette and three bevel
-  primitives, injection order was fixed so the theme is always last in the
-  cascade, and `!important` went from 59 to 27 — the remainder guard elements
-  built at runtime, which the static shell cannot prove safe. What is left is
-  the 53 `font-family` declarations, most of which are now redundant since the
-  base reads `--font-ui`; the exceptions are form controls, which do not
-  inherit type, so that needs a per-selector pass rather than a sweep.
-- **Make print honour the page size.** `styles/utilities/print.css` hardcodes
-  `@page { size: letter }`, so printing ignores the A4/Letter/A3 choice. Legal
-  was considered and deliberately dropped: centered layout constrains width
-  only, and Legal shares Letter's 8.5in width, so it would have been
+  Left: **53 `font-family` declarations** in `retro.css`, most now redundant
+  because base rules read `--font-ui` and the theme redefines it. The exceptions
+  are form controls, which do not inherit type, so this needs a per-selector
+  pass rather than a sweep.
+
+- **Three unused task-list selectors.** `.task-list-container`,
+  `.task-list-nested`, and `.task-list-item.nested` survive in
+  `styles/base/preview-content.css` and `styles/themes/dark.css`. Nothing emits
+  those classes, and the `extraClass` parameter of `taskItem()` in
+  `rendering/previewHtml.js` that would have applied `nested` has no caller.
+  Removing them is a small cleanup, not a fix.
+
+- **`box-shadow` is deliberately not tokenized.** The base uses fifteen distinct
+  shadow values, and a theme that replaces shadows with bevels needs a
+  per-surface decision — raised, sunken, pressed — so a token could not collapse
+  those rules. Do not "finish the job" by tokenizing them.
+
+## Declined by the user
+
+- **Print ignores the page size.** `styles/utilities/print.css` hardcodes
+  `@page { size: letter }`, so printing does not follow the A4/Letter/A3 choice.
+  This was offered and the user chose to skip it. Do not start it unasked.
+
+- **Legal as a fourth page size.** Considered and dropped: centered layout
+  constrains width only, and Legal shares Letter's 8.5in width, so it would be
   indistinguishable on screen.
 
 ## Open question for the user
@@ -203,10 +267,11 @@ has not answered; nothing was changed.
 
 Completed on this machine:
 
-- `59` Vitest files, `483` tests passed.
-- `npm run build:web` passed; the production CSS bundle is byte-identical to the
-  one the single stylesheet produced.
-- `cargo check` passed.
+- `62` Vitest files, `517` tests passed.
+- `npm run build:web` passed; the production CSS bundle was byte-identical to
+  the one the single stylesheet produced at the time of the split.
+- `cargo check` passed. No batch since has changed Rust, native commands, or
+  capabilities.
 - Offline audit: the only remote URLs in shipped source are two user-initiated
   links in the About modal and four input placeholders. Nothing is fetched at
   runtime.
@@ -222,6 +287,12 @@ Still owed by the user, and not doable here:
 - Startup, 50-file opening, tab switching, memory cleanup, and lazy
   CodeMirror/KaTeX/Mermaid loading on low-end hardware.
 - Repeatable Windows and Linux release builds.
+- **The Retro theme on Linux specifically.** Its font stack resolves to
+  Microsoft Sans Serif on Windows and to Liberation Sans or Arimo on Linux, so
+  the two platforms render it differently by design. If they diverge too far,
+  the fallback is bundling one openly licensed face — Liberation Sans or Arimo,
+  roughly 30-50 KB subset — the way KaTeX, Mermaid and the startup sound are
+  already bundled.
 
 The Vite production build reports an informational warning for chunks over
 500 kB, notably CodeMirror and a Mermaid dependency chunk. Treat bundle

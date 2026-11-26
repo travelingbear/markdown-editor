@@ -9,40 +9,11 @@
 
 ## Branch state — read before pushing
 
-**This work is not on `main`, and `main` is not what is published.**
-
-- Work branch: `refactor/modular-rebuild`, pushed to `origin`.
-  **19 ahead of `origin/main`, 30 behind.**
-- Local `main` is at `3182c67` and is not where the work lives:
-  **15 ahead, 30 behind.** The branch was cut from it, so it carries the first
-  fifteen commits and nothing since.
-- The common ancestor with `origin/main` is `3fc42cd` (14 Sep 2025). Both local
-  branches descend from it; neither has rejoined.
-- `origin/main` continued from that same commit for **30 commits** through
-  8 May 2026: v3.3.1 through v3.3.4, the Monaco optimization, the
-  `.github/workflows/build.yml` CI workflow, the `Cargo.lock` removal, and the
-  deleted-file history fix.
-- Local `package.json` says **3.2.1**; `origin/main` says **3.3.4**.
-
-So this entire refactor sits on a base eight months behind the published
-releases. A merge conflicts in roughly **57 files** — every core component, both
-stylesheets, `package.json`, `tauri.conf.json` — plus modify/delete conflicts on
-files this work deliberately removed (Monaco-era `main-component.js`,
-`SamplePlugin`, `TypewriterSoundsPlugin`, `USER_GUIDE.md`). The remote's Monaco
-optimization line is superseded here by the CodeMirror replacement.
-
-The user was shown this and chose to **push to a branch and defer** the
-reconciliation. Do not merge, rebase, or force-push without asking: force-pushing
-`main` would discard four published releases and the CI workflow.
-
-### Uncommitted at handoff
-
-Not mine, and not committed. Decide with the user before touching them:
-
-- `BUILD_GUIDE.md` — modified.
-- `Markdown Viewer/build-linux-ubuntu.sh` — untracked. Builds the Linux
-  bundles from the repository root.
-- `MARKDOWN_CAPABILITIES_TEST.md` — untracked, a Markdown feature test document.
+- The `refactor/modular-rebuild` branch on GitHub is the CodeMirror 3.4.0 test branch. Follow the [README](README.md) to clone it on Linux.
+- Merge commit `af57631` brought in the `main` history while retaining the CodeMirror tree. It also carried over the Windows build workflow, earlier release notes, and recent-file fix, and included the Preview checkbox and heading-link fixes.
+- GitHub's default `main` currently points to the Monaco build at `979d074`. Linux verification is pending before promoting the CodeMirror build. Verify the current branch tips before changing `main`.
+- Compare release behavior before promotion, including the older Animations and Reopen Last Tabs controls and the Linux New File desktop action. The CodeMirror test build has its own session restore behavior.
+- The Linux build helper and [Markdown capabilities test document](MARKDOWN_CAPABILITIES_TEST.md) are tracked on the test branch.
 
 ## Required working agreement
 

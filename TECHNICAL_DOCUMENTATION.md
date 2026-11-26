@@ -40,7 +40,7 @@ Its full method surface is `constructor`, `onInit`, `createComponents`, `applyIn
 
 - `DocumentComponent` owns the current file content, path, dirty transition, and native open/save operations.
 - `EditorComponent` presents the editor abstraction to the application.
-- `PreviewComponent` owns base Markdown parsing, sanitization, preview updates, renderer-registry integration, and per-task label normalization so checked styling remains isolated across nested lists. Its post-parse HTML transforms live in `rendering/previewHtml.js`.
+- `PreviewComponent` owns base Markdown parsing, sanitization, preview updates, and renderer-registry integration. It groups each checkbox with selectable text and keeps nested lists outside the parent task row. It resolves decoded link fragments against the IDs in the rendered Preview, including numbered and duplicate headings. Its post-parse HTML transforms live in `rendering/previewHtml.js`.
 - `ToolbarComponent` owns main-toolbar and Markdown-toolbar DOM behaviour, responsive presentation, and its own menus, and emits commands rather than performing file or editor work directly. The Link and Image insert flow is not part of it.
 - `TabState`, `TabCollection`, and `TabManager` own persistent per-document state and collection operations.
 
@@ -246,8 +246,8 @@ npm run tauri dev
 
 The agreed modularization pipeline is complete. Remaining engineering priorities are:
 
-1. Reconcile `refactor/modular-rebuild` with the newer published `origin/main` history only after the user chooses a merge strategy.
-2. Complete native Windows and Linux smoke tests and repeatable release builds.
+1. Verify the 3.4.0 CodeMirror test build on Linux before promoting it to `main`. The test branch already includes the current `main` history.
+2. Complete native smoke tests and repeatable release builds on supported platforms.
 3. Profile startup, large-file batches, tabs, and lazy runtimes on low-end hardware before making further bundle changes.
 4. Address the deferred Markdown-toolbar spacing and optional Retro font cleanup only with real-browser visual validation.
 

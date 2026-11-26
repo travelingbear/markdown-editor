@@ -1,6 +1,6 @@
 # Build Guide
 
-This guide describes the maintained Tauri 2 and Vite 8 build workflow. Run all commands from the `Markdown Viewer` directory.
+This guide describes the Tauri 2 and Vite 8 build workflow for the CodeMirror test branch, `refactor/modular-rebuild`. Run commands from the `Markdown Viewer` directory unless a step specifies the repository root.
 
 ## Prerequisites
 
@@ -95,7 +95,7 @@ Build release packages on their target operating system whenever possible. Windo
 
 ## Building on Ubuntu
 
-Tauri 2 Linux bundles (DEB/RPM) cannot be produced from a Windows or macOS host because packaging uses Linux tools. Run the build on an Ubuntu 22.04/24.04 machine (or VM/container):
+Run the build from the repository root on an Ubuntu 22.04 or 24.04 machine, VM, or container:
 
 ```bash
 bash "Markdown Viewer/build-linux-ubuntu.sh"
@@ -103,18 +103,18 @@ bash "Markdown Viewer/build-linux-ubuntu.sh"
 
 The script resolves the application directory from its own location, so it can also be run from inside `Markdown Viewer` as `sh build-linux-ubuntu.sh`. When invoked through Ubuntu's `sh`/`dash`, it safely restarts itself with Bash because the build uses strict `pipefail` handling.
 
-The script installs the WebKitGTK 4.1 development packages, installs Rust when needed, checks Node.js 20.19+, installs dependencies, and runs `npm run build:linux`. The native executable is written to `src-tauri/target/x86_64-unknown-linux-gnu/release/` and installers to its `bundle/{deb,rpm}/` directories.
+The script installs the WebKitGTK 4.1 development packages using `sudo`, installs Rust when needed, checks Node.js, installs locked npm dependencies, and runs `npm run build:linux`. The native executable is written to `Markdown Viewer/src-tauri/target/x86_64-unknown-linux-gnu/release/` and installers to its `bundle/{deb,rpm}/` directories.
 
-Test the unpackaged binary on Ubuntu with:
+From the repository root, test the unpackaged binary on Ubuntu with:
 
 ```bash
-./src-tauri/target/x86_64-unknown-linux-gnu/release/markdown-editor
+"./Markdown Viewer/src-tauri/target/x86_64-unknown-linux-gnu/release/markdown-editor"
 ```
 
 Install the DEB with:
 
 ```bash
-sudo apt-get install -y ./src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/Markdown\ Editor_*_amd64.deb
+sudo apt-get install -y "./Markdown Viewer/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/"*_amd64.deb
 ```
 
 ## Version updates
@@ -122,10 +122,13 @@ sudo apt-get install -y ./src-tauri/target/x86_64-unknown-linux-gnu/release/bund
 Keep the application version synchronized in:
 
 - `Markdown Viewer/package.json`
+- `Markdown Viewer/package-lock.json` (top-level version and root package version)
 - `Markdown Viewer/src-tauri/Cargo.toml`
+- `Markdown Viewer/src-tauri/Cargo.lock` (the `markdown-editor` package entry)
 - `Markdown Viewer/src-tauri/tauri.conf.json`
+- `Markdown Viewer/src/index.html` (About dialog)
 
-Then update `CHANGELOG.md` and confirm that the lockfiles contain the intended dependency versions.
+Then update the README, user manual, and changelog. For a version-only bump, verify that dependency versions in the lockfiles stay the same.
 
 ## Release checklist
 
@@ -140,6 +143,7 @@ Then update `CHANGELOG.md` and confirm that the lockfiles contain the intended d
 9. Confirm Pure and Extended rendering with KaTeX and Mermaid enabled and disabled.
 10. Confirm application close silently restores dirty sessions, while document close still asks before discarding changes.
 11. Confirm the application works without network access.
+12. Open [MARKDOWN_CAPABILITIES_TEST.md](MARKDOWN_CAPABILITIES_TEST.md) and verify that dragging selects task text, toggling a checkbox updates its source line, and the table-of-contents links scroll to their headings.
 
 ## Troubleshooting
 

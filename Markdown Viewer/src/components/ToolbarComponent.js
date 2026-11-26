@@ -1,3 +1,8 @@
+import { shouldShowMarkdownToolbar } from './toolbarState.js';
+
+const MOON_ICON = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 9 9 0 1 0 20.5 14.2z"/></svg>';
+const SUN_ICON = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+
 /**
  * Toolbar Component
  * Manages main toolbar and markdown toolbar functionality
@@ -18,6 +23,12 @@ class ToolbarComponent extends BaseComponent {
     this.mdToolbarSize = localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium';
     this.fontSize = parseInt(localStorage.getItem('markdownViewer_fontSize') || '14');
     this.previewZoom = 1.0;
+    this.quickSettingsState = {
+      extended: localStorage.getItem('markdownViewer_advancedRendering') === 'true',
+      pinnedTabsEnabled: localStorage.getItem('markdownViewer_pinnedTabs') === 'true',
+      renderingPinned: localStorage.getItem('markdownViewer_pinRenderingControl') === 'true',
+      pinnedTabsPinned: localStorage.getItem('markdownViewer_pinPinnedTabsControl') === 'true'
+    };
   }
 
   async onInit() {
@@ -49,6 +60,13 @@ class ToolbarComponent extends BaseComponent {
     this.exportDropdownMenu = document.getElementById('export-dropdown-menu');
     this.exportHtmlBtn = document.getElementById('export-html-btn');
     this.exportPdfBtn = document.getElementById('export-pdf-btn');
+    this.quickSettingsToolbar = document.getElementById('quick-settings-toolbar');
+    this.quickRenderingBtn = document.getElementById('quick-rendering-btn');
+    this.quickPinnedTabsBtn = document.getElementById('quick-pinned-tabs-btn');
+    this.quickSettingsMenuBtn = document.getElementById('quick-settings-menu-btn');
+    this.quickSettingsMenu = document.getElementById('quick-settings-menu');
+    this.quickRenderingMenuItem = document.getElementById('quick-rendering-menu-item');
+    this.quickPinnedTabsMenuItem = document.getElementById('quick-pinned-tabs-menu-item');
     this.distractionBtn = document.getElementById('distraction-btn');
     this.themeBtn = document.getElementById('theme-btn');
     this.settingsBtn = document.getElementById('settings-btn');
@@ -62,6 +80,8 @@ class ToolbarComponent extends BaseComponent {
     
     // Markdown toolbar
     this.markdownToolbar = document.getElementById('markdown-toolbar');
+    this.mountMarkdownToolbar();
+    this.setupResponsiveOverflow();
     
     // Font size controls
     this.fontSizeDisplay = document.getElementById('font-size-display');
@@ -86,6 +106,84 @@ class ToolbarComponent extends BaseComponent {
     if (!this.newBtn || !this.codeBtn) {
       throw new Error('Toolbar elements not found');
     }
+  }
+
+  mountMarkdownToolbar() {
+    const editorPane = document.querySelector('.editor-pane');
+    if (this.markdownToolbar && editorPane && !editorPane.contains(this.markdownToolbar)) {
+      editorPane.insertBefore(this.markdownToolbar, editorPane.firstChild);
+    }
+  }
+
+  setupResponsiveOverflow() {
+    if (!this.markdownToolbar || document.getElementById('md-overflow-btn')) return;
+
+    const toolbarContent = this.markdownToolbar.querySelector('.toolbar-content');
+    const searchGroup = this.markdownToolbar.querySelector('#find-replace-btn')?.closest('.toolbar-group');
+    if (!toolbarContent || !searchGroup) return;
+
+    const overflowGroup = document.createElement('div');
+    overflowGroup.className = 'toolbar-group toolbar-overflow-group';
+    overflowGroup.innerHTML = `
+      <div class="md-overflow-container">
+        <button id="md-overflow-btn" class="md-btn" type="button"
+                aria-haspopup="menu" aria-expanded="false" title="More Markdown tools">
+          <span class="md-overflow-label">More</span><span aria-hidden="true">⋯</span>
+        </button>
+        <div id="md-overflow-menu" class="md-overflow-menu" role="menu" aria-label="More Markdown tools">
+          <section class="md-overflow-section overflow-section-history" aria-label="History">
+            <div class="md-overflow-heading">History</div>
+            <button type="button" class="md-overflow-item" data-command="undo" role="menuitem">
+              <span class="md-overflow-icon">↶</span><span>Undo</span><kbd>Ctrl Z</kbd>
+            </button>
+            <button type="button" class="md-overflow-item" data-command="redo" role="menuitem">
+              <span class="md-overflow-icon">↷</span><span>Redo</span><kbd>Ctrl Y</kbd>
+            </button>
+          </section>
+          <section class="md-overflow-section overflow-section-headings" aria-label="Headings">
+            <div class="md-overflow-heading">Headings</div>
+            <button type="button" class="md-overflow-item" data-action="h1" role="menuitem"><span class="md-overflow-icon">H1</span><span>Heading 1</span></button>
+            <button type="button" class="md-overflow-item" data-action="h2" role="menuitem"><span class="md-overflow-icon">H2</span><span>Heading 2</span></button>
+            <button type="button" class="md-overflow-item" data-action="h3" role="menuitem"><span class="md-overflow-icon">H3</span><span>Heading 3</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-formatting" aria-label="Formatting">
+            <div class="md-overflow-heading">Formatting</div>
+            <button type="button" class="md-overflow-item" data-action="strikethrough" role="menuitem"><span class="md-overflow-icon"><s>S</s></span><span>Strikethrough</span></button>
+            <button type="button" class="md-overflow-item" data-action="underline" role="menuitem"><span class="md-overflow-icon"><u>U</u></span><span>Underline</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-insert" aria-label="Insert">
+            <div class="md-overflow-heading">Insert</div>
+            <button type="button" class="md-overflow-item" data-action="link" role="menuitem"><span class="md-overflow-icon">↗</span><span>Link</span></button>
+            <button type="button" class="md-overflow-item" data-action="image" role="menuitem"><span class="md-overflow-icon">▧</span><span>Image</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-structure" aria-label="Lists and table">
+            <div class="md-overflow-heading">Lists &amp; table</div>
+            <button type="button" class="md-overflow-item" data-action="ul" role="menuitem"><span class="md-overflow-icon">•</span><span>Bulleted list</span></button>
+            <button type="button" class="md-overflow-item" data-action="ol" role="menuitem"><span class="md-overflow-icon">1.</span><span>Numbered list</span></button>
+            <button type="button" class="md-overflow-item" data-action="task" role="menuitem"><span class="md-overflow-icon">☐</span><span>Task list</span></button>
+            <button type="button" class="md-overflow-item" data-action="table" role="menuitem"><span class="md-overflow-icon">▦</span><span>Table</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-blocks" aria-label="Blocks">
+            <div class="md-overflow-heading">Blocks</div>
+            <button type="button" class="md-overflow-item" data-action="code" role="menuitem"><span class="md-overflow-icon">&lt;/&gt;</span><span>Inline code</span></button>
+            <button type="button" class="md-overflow-item" data-action="codeblock" role="menuitem"><span class="md-overflow-icon">{ }</span><span>Code block</span></button>
+            <button type="button" class="md-overflow-item" data-action="quote" role="menuitem"><span class="md-overflow-icon">❞</span><span>Blockquote</span></button>
+          </section>
+          <section class="md-overflow-section overflow-section-alignment" aria-label="Alignment">
+            <div class="md-overflow-heading">Alignment</div>
+            <button type="button" class="md-overflow-item" data-action="align-left" role="menuitem"><span class="md-overflow-icon">≡</span><span>Align left</span></button>
+            <button type="button" class="md-overflow-item" data-action="align-center" role="menuitem"><span class="md-overflow-icon">≣</span><span>Align center</span></button>
+            <button type="button" class="md-overflow-item" data-action="align-right" role="menuitem"><span class="md-overflow-icon">≡</span><span>Align right</span></button>
+            <button type="button" class="md-overflow-item" data-action="align-justify" role="menuitem"><span class="md-overflow-icon">☰</span><span>Justify</span></button>
+          </section>
+        </div>
+      </div>
+    `;
+    // Pinned beside the search control at the right edge of the toolbar.
+    toolbarContent.insertBefore(overflowGroup, searchGroup);
+
+    this.overflowButton = overflowGroup.querySelector('#md-overflow-btn');
+    this.overflowMenu = overflowGroup.querySelector('#md-overflow-menu');
   }
 
   setupEventListeners() {
@@ -143,6 +241,26 @@ class ToolbarComponent extends BaseComponent {
     this.exportPdfBtn.addEventListener('click', () => {
       this.hideExportDropdown();
       this.emit('export-pdf-requested');
+    });
+
+    this.quickRenderingBtn?.addEventListener('click', () => {
+      this.emit('rendering-mode-toggle-requested');
+    });
+    this.quickPinnedTabsBtn?.addEventListener('click', () => {
+      this.emit('pinned-tabs-toggle-requested');
+    });
+    this.quickRenderingMenuItem?.addEventListener('click', () => {
+      this.hideQuickSettingsMenu();
+      this.emit('rendering-mode-toggle-requested');
+    });
+    this.quickPinnedTabsMenuItem?.addEventListener('click', () => {
+      this.hideQuickSettingsMenu();
+      this.emit('pinned-tabs-toggle-requested');
+    });
+    this.quickSettingsMenuBtn?.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isOpen = this.quickSettingsMenu?.classList.toggle('show') === true;
+      this.quickSettingsMenuBtn.setAttribute('aria-expanded', String(isOpen));
     });
     
     // UI controls
@@ -226,12 +344,14 @@ class ToolbarComponent extends BaseComponent {
     
     // Markdown toolbar events
     this.setupMarkdownToolbarEvents();
+    this.setupResponsiveOverflowEvents();
     
     // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.dropdown-container')) {
         this.hideExportDropdown();
         this.hideSaveDropdown();
+        this.hideQuickSettingsMenu();
       }
     });
     
@@ -275,146 +395,49 @@ class ToolbarComponent extends BaseComponent {
       });
     });
     
-    // Setup dropdown functionality
-    this.setupMarkdownDropdowns();
-    
-    // Setup modal functionality
-    this.setupMarkdownModals();
-    
-    // Setup collapsible groups
-    this.setupCollapsibleGroups();
-  }
-  
-  setupMarkdownDropdowns() {
-    // Link dropdown
-    const linkDropdownArrow = document.getElementById('link-dropdown-arrow');
-    const linkDropdownMenu = document.getElementById('link-dropdown-menu');
-    const linkInsertBtn = document.getElementById('link-insert-btn');
-    
-    if (linkDropdownArrow && linkDropdownMenu) {
-      linkDropdownArrow.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleMarkdownDropdown('link');
-      });
-    }
-    
-    if (linkInsertBtn) {
-      linkInsertBtn.addEventListener('click', () => {
-        this.hideMarkdownDropdown('link');
-        this.showLinkModal();
-      });
-    }
-    
-    // Image dropdown
-    const imageDropdownArrow = document.getElementById('image-dropdown-arrow');
-    const imageDropdownMenu = document.getElementById('image-dropdown-menu');
-    const imageOpenBtn = document.getElementById('image-open-btn');
-    
-    if (imageDropdownArrow && imageDropdownMenu) {
-      imageDropdownArrow.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleMarkdownDropdown('image');
-      });
-    }
-    
-    if (imageOpenBtn) {
-      imageOpenBtn.addEventListener('click', () => {
-        this.hideMarkdownDropdown('image');
-        this.showImageModal();
-      });
-    }
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.md-dropdown-container')) {
-        this.hideAllMarkdownDropdowns();
-      }
-    });
-  }
-  
-  setupMarkdownModals() {
-    // Link modal
-    const linkModal = document.getElementById('link-modal');
-    const linkModalClose = document.getElementById('link-modal-close');
-    const linkCancelBtn = document.getElementById('link-cancel-btn');
-    const linkInsertConfirmBtn = document.getElementById('link-insert-confirm-btn');
-    const linkModalOverlay = linkModal?.querySelector('.link-modal-overlay');
-    
-    if (linkModalClose) {
-      linkModalClose.addEventListener('click', () => this.hideLinkModal());
-    }
-    if (linkCancelBtn) {
-      linkCancelBtn.addEventListener('click', () => this.hideLinkModal());
-    }
-    if (linkModalOverlay) {
-      linkModalOverlay.addEventListener('click', () => this.hideLinkModal());
-    }
-    if (linkInsertConfirmBtn) {
-      linkInsertConfirmBtn.addEventListener('click', () => this.insertLink());
-    }
-    
-    // Image modal
-    const imageModal = document.getElementById('image-modal');
-    const imageModalClose = document.getElementById('image-modal-close');
-    const imageCancelBtn = document.getElementById('image-cancel-btn');
-    const imageInsertBtn = document.getElementById('image-insert-btn');
-    const imageModalOverlay = imageModal?.querySelector('.image-modal-overlay');
-    
-    if (imageModalClose) {
-      imageModalClose.addEventListener('click', () => this.hideImageModal());
-    }
-    if (imageCancelBtn) {
-      imageCancelBtn.addEventListener('click', () => this.hideImageModal());
-    }
-    if (imageModalOverlay) {
-      imageModalOverlay.addEventListener('click', () => this.hideImageModal());
-    }
-    if (imageInsertBtn) {
-      imageInsertBtn.addEventListener('click', () => this.insertImage());
-    }
-    
-    // Image modal tabs
-    const imageTabs = document.querySelectorAll('.image-tab');
-    imageTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabName = tab.getAttribute('data-tab');
-        this.switchImageTab(tabName);
-      });
-    });
-    
-    // File drop zone
-    const dropZone = document.getElementById('image-drop-zone');
-    const fileInput = document.getElementById('image-file-input');
-    
-    if (dropZone && fileInput) {
-      dropZone.addEventListener('click', () => fileInput.click());
-      
-      dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('drag-over');
-      });
-      
-      dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('drag-over');
-      });
-      
-      dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('drag-over');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-          this.handleImageFile(files[0]);
-        }
-      });
-      
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-          this.handleImageFile(e.target.files[0]);
-        }
-      });
-    }
+    // The link and image split-button dropdowns and their dialogs are owned by
+    // MarkdownDialogController.
   }
 
+  setupResponsiveOverflowEvents() {
+    if (!this.overflowButton || !this.overflowMenu) return;
+
+    this.overflowButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const isOpen = this.overflowMenu.classList.toggle('show');
+      this.overflowButton.setAttribute('aria-expanded', isOpen.toString());
+    });
+
+    this.overflowMenu.addEventListener('click', (event) => {
+      const item = event.target.closest('.md-overflow-item');
+      if (!item) return;
+
+      const action = item.dataset.action;
+      const command = item.dataset.command;
+      if (action) this.emit('markdown-action', { action });
+      if (command === 'undo') this.emit('editor-undo');
+      if (command === 'redo') this.emit('editor-redo');
+      this.hideResponsiveOverflow();
+    });
+
+    this.overflowMenu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        this.hideResponsiveOverflow();
+        this.overflowButton.focus();
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.md-overflow-container')) this.hideResponsiveOverflow();
+    });
+  }
+
+  hideResponsiveOverflow() {
+    this.overflowMenu?.classList.remove('show');
+    this.overflowButton?.setAttribute('aria-expanded', 'false');
+  }
+  
   /**
    * Set current mode
    */
@@ -509,19 +532,32 @@ class ToolbarComponent extends BaseComponent {
   }
 
   /**
+   * Apply the Markdown toolbar preference owned by SettingsController.
+   */
+  setToolbarEnabled(enabled) {
+    this.isToolbarEnabled = enabled === true;
+    this.updateToolbarVisibility();
+  }
+
+  /**
    * Update toolbar visibility
    */
   updateToolbarVisibility() {
     if (this.markdownToolbar) {
-      const shouldShow = this.currentMode === 'code' && !this.isDistractionFree && this.isToolbarEnabled;
+      const shouldShow = shouldShowMarkdownToolbar({
+        mode: this.currentMode,
+        isDistractionFree: this.isDistractionFree,
+        isToolbarEnabled: this.isToolbarEnabled
+      });
       
       if (shouldShow) {
-        this.markdownToolbar.style.setProperty('display', 'block', 'important');
-        this.markdownToolbar.style.setProperty('visibility', 'visible', 'important');
+        this.markdownToolbar.style.display = 'block';
+        this.markdownToolbar.style.visibility = 'visible';
         this.markdownToolbar.classList.add('visible');
       } else {
         this.markdownToolbar.style.display = 'none';
         this.markdownToolbar.classList.remove('visible');
+        this.hideResponsiveOverflow();
       }
     }
   }
@@ -654,10 +690,79 @@ class ToolbarComponent extends BaseComponent {
     this.updateModeButtons();
     this.updateToolbarVisibility();
     this.updateZoomControlsVisibility();
+    this.updateQuickSettings(this.quickSettingsState);
     
     // Apply toolbar sizes
     document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
+  }
+
+  updateQuickSettings(state = {}) {
+    this.quickSettingsState = { ...this.quickSettingsState, ...state };
+    const {
+      extended,
+      pinnedTabsEnabled,
+      renderingPinned,
+      pinnedTabsPinned
+    } = this.quickSettingsState;
+
+    const renderingLabel = `MD: ${extended ? 'Extended' : 'Pure'}`;
+    if (this.quickRenderingBtn) {
+      this.quickRenderingBtn.textContent = renderingLabel;
+      this.quickRenderingBtn.title = `Markdown rendering: ${extended ? 'Extended' : 'Pure'} (click to toggle)`;
+      this.quickRenderingBtn.classList.toggle('is-pinned', renderingPinned);
+      this.quickRenderingBtn.classList.toggle('active', extended);
+      this.quickRenderingBtn.setAttribute('aria-pressed', String(extended));
+    }
+    if (this.quickRenderingMenuItem) {
+      this.updateQuickMenuItem(
+        this.quickRenderingMenuItem,
+        'Markdown rendering',
+        extended ? 'Extended' : 'Pure',
+        extended
+      );
+      this.quickRenderingMenuItem.classList.toggle('is-pinned', renderingPinned);
+    }
+
+    if (this.quickPinnedTabsBtn) {
+      this.quickPinnedTabsBtn.textContent = 'Tabs';
+      this.quickPinnedTabsBtn.classList.toggle('is-pinned', pinnedTabsPinned);
+      this.quickPinnedTabsBtn.classList.toggle('active', pinnedTabsEnabled);
+      this.quickPinnedTabsBtn.title = `Pinned Tabs: ${pinnedTabsEnabled ? 'Enabled' : 'Disabled'} (click to toggle)`;
+      this.quickPinnedTabsBtn.setAttribute('aria-pressed', String(pinnedTabsEnabled));
+    }
+    if (this.quickPinnedTabsMenuItem) {
+      this.updateQuickMenuItem(
+        this.quickPinnedTabsMenuItem,
+        'Pinned tabs',
+        pinnedTabsEnabled ? 'Enabled' : 'Disabled',
+        pinnedTabsEnabled
+      );
+      this.quickPinnedTabsMenuItem.classList.toggle('is-pinned', pinnedTabsPinned);
+    }
+
+    const hasPinnedControls = renderingPinned || pinnedTabsPinned;
+    this.quickSettingsToolbar?.classList.toggle('has-pinned', hasPinnedControls);
+    if (!hasPinnedControls) this.hideQuickSettingsMenu();
+  }
+
+  updateQuickMenuItem(button, label, value, active) {
+    const labelElement = document.createElement('span');
+    labelElement.className = 'quick-setting-menu-label';
+    labelElement.textContent = label;
+
+    const stateElement = document.createElement('span');
+    stateElement.className = 'quick-setting-menu-state';
+    stateElement.textContent = value;
+
+    button.replaceChildren(labelElement, stateElement);
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+
+  hideQuickSettingsMenu() {
+    this.quickSettingsMenu?.classList.remove('show');
+    this.quickSettingsMenuBtn?.setAttribute('aria-expanded', 'false');
   }
 
   /**
@@ -665,302 +770,15 @@ class ToolbarComponent extends BaseComponent {
    */
   updateThemeButton(theme, isRetro = false) {
     if (isRetro) {
-      this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle;"><g fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></g></svg>';
+      this.themeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 16 16" aria-hidden="true"><g fill="currentColor" stroke="none"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></g></svg>';
     } else if (theme === 'contrast') {
-      this.themeBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;"><circle cx="8" cy="8" r="8" fill="currentColor"/><path d="M8 0a8 8 0 0 0 0 16V0z" fill="white"/></svg>';
+      this.themeBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="currentColor" stroke="none"/><path d="M8 0a8 8 0 0 0 0 16V0z" fill="white" stroke="none"/></svg>';
     } else {
-      this.themeBtn.textContent = theme === 'light' ? '🌙' : '☀️';
+      this.themeBtn.innerHTML = theme === 'light' ? MOON_ICON : SUN_ICON;
     }
   }
 
   // Dropdown methods
-  toggleMarkdownDropdown(type) {
-    const menu = document.getElementById(`${type}-dropdown-menu`);
-    if (menu) {
-      if (menu.classList.contains('show')) {
-        this.hideMarkdownDropdown(type);
-      } else {
-        this.hideAllMarkdownDropdowns();
-        this.showMarkdownDropdown(type);
-      }
-    }
-  }
-  
-  showMarkdownDropdown(type) {
-    const menu = document.getElementById(`${type}-dropdown-menu`);
-    const button = document.getElementById(`${type}-dropdown-arrow`);
-    if (menu && button) {
-      // Move to body to escape stacking context
-      document.body.appendChild(menu);
-      
-      const rect = button.getBoundingClientRect();
-      menu.style.left = rect.left + 'px';
-      menu.style.top = (rect.bottom + 2) + 'px';
-      menu.style.width = (rect.width + button.previousElementSibling.getBoundingClientRect().width) + 'px';
-      menu.style.zIndex = '2147483647'; // Maximum z-index
-      menu.classList.add('show');
-    }
-  }
-  
-  hideMarkdownDropdown(type) {
-    const menu = document.getElementById(`${type}-dropdown-menu`);
-    if (menu) {
-      menu.classList.remove('show');
-      // Move back to original container
-      const container = document.getElementById(`${type}-dropdown-container`);
-      if (container && menu.parentNode !== container) {
-        container.appendChild(menu);
-      }
-    }
-  }
-  
-  hideAllMarkdownDropdowns() {
-    this.hideMarkdownDropdown('link');
-    this.hideMarkdownDropdown('image');
-  }
-  
-  // Modal methods
-  showLinkModal() {
-    const modal = document.getElementById('link-modal');
-    if (modal) {
-      modal.style.display = 'flex';
-      // Focus on first input
-      const linkText = document.getElementById('link-text');
-      if (linkText) {
-        setTimeout(() => linkText.focus(), 100);
-      }
-    }
-  }
-  
-  hideLinkModal() {
-    const modal = document.getElementById('link-modal');
-    if (modal) {
-      modal.style.display = 'none';
-      // Clear form
-      document.getElementById('link-text').value = '';
-      document.getElementById('link-url').value = '';
-      document.getElementById('link-title').value = '';
-    }
-  }
-  
-  showImageModal() {
-    const modal = document.getElementById('image-modal');
-    if (modal) {
-      modal.style.display = 'flex';
-      // Reset to URL tab
-      this.switchImageTab('url');
-    }
-  }
-  
-  hideImageModal() {
-    const modal = document.getElementById('image-modal');
-    if (modal) {
-      modal.style.display = 'none';
-      // Clear form
-      document.getElementById('image-url').value = '';
-      document.getElementById('image-alt').value = '';
-      document.getElementById('image-title').value = '';
-      document.getElementById('image-link').value = '';
-      document.getElementById('file-image-alt').value = '';
-      document.getElementById('file-image-link').value = '';
-      document.getElementById('image-file-input').value = '';
-      document.getElementById('file-alt-group').style.display = 'none';
-      document.getElementById('file-link-group').style.display = 'none';
-    }
-  }
-  
-  switchImageTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.image-tab').forEach(tab => {
-      tab.classList.remove('active');
-    });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
-    // Update tab content
-    document.querySelectorAll('.tab-pane').forEach(pane => {
-      pane.classList.remove('active');
-    });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
-  }
-  
-  insertLink() {
-    const linkText = document.getElementById('link-text').value.trim();
-    const linkUrl = document.getElementById('link-url').value.trim();
-    const linkTitle = document.getElementById('link-title').value.trim();
-    
-    if (!linkUrl) {
-      alert('Please enter a URL');
-      return;
-    }
-    
-    const text = linkText || linkUrl;
-    const title = linkTitle ? ` "${linkTitle}"` : '';
-    const markdown = `[${text}](${linkUrl}${title})`;
-    
-    this.emit('markdown-insert', { text: markdown });
-    this.hideLinkModal();
-  }
-  
-  insertImage() {
-    const activeTab = document.querySelector('.image-tab.active').getAttribute('data-tab');
-    
-    if (activeTab === 'url') {
-      const imageUrl = document.getElementById('image-url').value.trim();
-      const imageAlt = document.getElementById('image-alt').value.trim();
-      const imageTitle = document.getElementById('image-title').value.trim();
-      const imageLink = document.getElementById('image-link').value.trim();
-      
-      if (!imageUrl) {
-        alert('Please enter an image URL');
-        return;
-      }
-      
-      const alt = imageAlt || 'Image';
-      const title = imageTitle ? ` "${imageTitle}"` : '';
-      let markdown = `![${alt}](${imageUrl}${title})`;
-      
-      if (imageLink) {
-        markdown = `[${markdown}](${imageLink})`;
-      }
-      
-      this.emit('markdown-insert', { text: markdown });
-      this.hideImageModal();
-    } else if (activeTab === 'file') {
-      const fileInput = document.getElementById('image-file-input');
-      const fileAlt = document.getElementById('file-image-alt').value.trim();
-      const fileLink = document.getElementById('file-image-link').value.trim();
-      
-      if (!fileInput.files.length) {
-        alert('Please select an image file');
-        return;
-      }
-      
-      const file = fileInput.files[0];
-      const alt = fileAlt || file.name.split('.')[0];
-      
-      let markdown = `![${alt}](${file.name})`;
-      
-      if (fileLink) {
-        markdown = `[${markdown}](${fileLink})`;
-      }
-      
-      this.emit('markdown-insert', { text: markdown });
-      this.hideImageModal();
-    }
-  }
-  
-  handleImageFile(file) {
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      return;
-    }
-    
-    // Show the alt text and link inputs
-    document.getElementById('file-alt-group').style.display = 'block';
-    document.getElementById('file-link-group').style.display = 'block';
-    
-    // Set default alt text to filename without extension
-    const altInput = document.getElementById('file-image-alt');
-    altInput.value = file.name.split('.')[0];
-    
-    // Update drop zone to show selected file
-    const dropZone = document.getElementById('image-drop-zone');
-    const dropText = dropZone.querySelector('.drop-text');
-    const dropStatus = dropZone.querySelector('.drop-status');
-    
-    if (dropText && dropStatus) {
-      dropText.textContent = file.name;
-      dropStatus.textContent = 'File selected';
-    }
-  }
-  
-  setupCollapsibleGroups() {
-    // Headings collapsible group
-    const headingsBtn = document.getElementById('headings-collapse-btn');
-    const headingsMenu = document.getElementById('headings-collapse-menu');
-    
-    if (headingsBtn && headingsMenu) {
-      headingsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleCollapsibleMenu('headings');
-      });
-    }
-    
-    // Alignment collapsible group
-    const alignmentBtn = document.getElementById('alignment-collapse-btn');
-    const alignmentMenu = document.getElementById('alignment-collapse-menu');
-    
-    if (alignmentBtn && alignmentMenu) {
-      alignmentBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleCollapsibleMenu('alignment');
-      });
-    }
-    
-    // Code collapsible group
-    const codeBtn = document.getElementById('code-collapse-btn');
-    const codeMenu = document.getElementById('code-collapse-menu');
-    
-    if (codeBtn && codeMenu) {
-      codeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleCollapsibleMenu('code');
-      });
-    }
-    
-    // Close collapsible menus when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.md-collapsible-group')) {
-        this.hideAllCollapsibleMenus();
-      }
-    });
-  }
-  
-  toggleCollapsibleMenu(type) {
-    const menu = document.getElementById(`${type}-collapse-menu`);
-    if (menu) {
-      if (menu.classList.contains('show')) {
-        this.hideCollapsibleMenu(type);
-      } else {
-        this.hideAllCollapsibleMenus();
-        this.showCollapsibleMenu(type);
-      }
-    }
-  }
-  
-  showCollapsibleMenu(type) {
-    const menu = document.getElementById(`${type}-collapse-menu`);
-    const button = document.getElementById(`${type}-collapse-btn`);
-    if (menu && button) {
-      // Move to body to escape stacking context
-      document.body.appendChild(menu);
-      
-      const rect = button.getBoundingClientRect();
-      menu.style.left = rect.left + 'px';
-      menu.style.top = (rect.bottom + 2) + 'px';
-      menu.style.zIndex = '100000';
-      menu.classList.add('show');
-    }
-  }
-  
-  hideCollapsibleMenu(type) {
-    const menu = document.getElementById(`${type}-collapse-menu`);
-    if (menu) {
-      menu.classList.remove('show');
-      // Move back to original container
-      const container = document.getElementById(`${type}-collapse-container`);
-      if (container && menu.parentNode !== container) {
-        container.appendChild(menu);
-      }
-    }
-  }
-  
-  hideAllCollapsibleMenus() {
-    this.hideCollapsibleMenu('headings');
-    this.hideCollapsibleMenu('alignment');
-    this.hideCollapsibleMenu('code');
-  }
-
   onDestroy() {
     // Clean up any resources
     this.currentMode = 'preview';

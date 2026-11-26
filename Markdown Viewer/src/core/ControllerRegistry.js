@@ -48,6 +48,12 @@ class ControllerRegistry {
     this.instances.clear();
     this.controllers.clear();
   }
+
+  // Drop registry references when another lifecycle owner destroys instances.
+  clear() {
+    this.instances.clear();
+    this.controllers.clear();
+  }
 }
 
 window.ControllerRegistry = ControllerRegistry;

@@ -6,37 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Markdown Viewer</title>
     <link rel="icon" type="image/x-icon" href="favicons/favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="favicons/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="favicons/favicon-96x96.png">
-    <link rel="apple-touch-icon" href="favicons/apple-touch-icon.png">
-    <link rel="manifest" href="favicons/site.webmanifest">
-    <script src="vendor/marked.min.js"></script>
-    <script src="assets/mermaid.min.js"></script>
-    <script src="vendor/monaco-loader.js"></script>
-    <link rel="stylesheet" href="assets/katex.min.css">
-    <link rel="stylesheet" href="vendor/github.min.css">
-    <script src="vendor/highlight.min.js"></script>
-    <script src="vendor/html2canvas.min.js"></script>
   </head>
 
   <body>
-    <!-- Load splash screen component first -->
-    <script src="/splash-component.js"></script>
-
+    <script type="module" src="/splash-component.js"></script>
     <div class="app">
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="toolbar-left">
-          <button id="new-btn" class="toolbar-btn">📄 New</button>
-          <button id="open-btn" class="toolbar-btn">📁 Open</button>
+          <button id="new-btn" class="toolbar-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3h6"/></svg>New</button>
+          <button id="open-btn" class="toolbar-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg>Open</button>
           <div class="dropdown-container">
-            <button id="save-btn" class="toolbar-btn dropdown-main">💾 Save</button>
+            <button id="save-btn" class="toolbar-btn dropdown-main"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save</button>
             <button id="save-dropdown-arrow" class="toolbar-btn dropdown-arrow">▼</button>
             <div id="save-dropdown-menu" class="dropdown-menu">
               <button id="save-as-btn" class="dropdown-item">Save As</button>
             </div>
           </div>
-          <button id="close-btn" class="toolbar-btn">❌ Close</button>
+          <button id="close-btn" class="toolbar-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>Close</button>
         </div>
         <div class="toolbar-center">
           <button id="code-btn" class="mode-btn">Code</button>
@@ -51,50 +39,53 @@
               <button id="export-pdf-btn" class="dropdown-item">PDF</button>
             </div>
           </div>
-          <button id="distraction-btn" class="toolbar-btn" title="Toggle Distraction-Free Mode (Shift+F11)">🔳</button>
-          <button id="theme-btn" class="toolbar-btn" title="Toggle Theme (Ctrl+T)">🌙</button>
+          <div id="quick-settings-toolbar" class="quick-settings-toolbar" aria-label="Pinned quick settings">
+            <div class="quick-settings-direct">
+              <button id="quick-rendering-btn" class="toolbar-btn quick-setting-btn" type="button"></button>
+              <button id="quick-pinned-tabs-btn" class="toolbar-btn quick-setting-btn" type="button">Tabs</button>
+            </div>
+            <div class="dropdown-container quick-settings-overflow">
+              <button id="quick-settings-menu-btn" class="toolbar-btn" type="button"
+                      aria-haspopup="menu" aria-expanded="false" title="Pinned quick settings">Quick ▼</button>
+              <div id="quick-settings-menu" class="dropdown-menu quick-settings-menu" role="menu" aria-label="Pinned quick settings">
+                <button id="quick-rendering-menu-item" class="dropdown-item" type="button" role="menuitem"></button>
+                <button id="quick-pinned-tabs-menu-item" class="dropdown-item" type="button" role="menuitem">Pinned Tabs</button>
+              </div>
+            </div>
+          </div>
+          <button id="distraction-btn" class="toolbar-btn" title="Toggle Distraction-Free Mode (Shift+F11)" aria-label="Toggle distraction-free mode"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m18 0v5h-5"/></svg></button>
+          <button id="theme-btn" class="toolbar-btn" title="Toggle Theme (Ctrl+T)" aria-label="Toggle theme"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5 9 9 0 1 0 20.5 14.2z"/></svg></button>
           <button id="settings-btn" class="toolbar-btn" title="Settings (Ctrl+,)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="13" height="13" fill="currentColor">
               <path d="M195.1 9.5C198.1-5.3 211.2-16 226.4-16l59.8 0c15.2 0 28.3 10.7 31.3 25.5L332 79.5c14.1 6 27.3 13.7 39.3 22.8l67.8-22.5c14.4-4.8 30.2 1.2 37.8 14.4l29.9 51.8c7.6 13.2 4.9 29.8-6.5 39.9L447 233.3c.9 7.4 1.3 15 1.3 22.7s-.5 15.3-1.3 22.7l53.4 47.5c11.4 10.1 14 26.8 6.5 39.9l-29.9 51.8c-7.6 13.1-23.4 19.2-37.8 14.4l-67.8-22.5c-12.1 9.1-25.3 16.7-39.3 22.8l-14.4 69.9c-3.1 14.9-16.2 25.5-31.3 25.5l-59.8 0c-15.2 0-28.3-10.7-31.3-25.5l-14.4-69.9c-14.1-6-27.2-13.7-39.3-22.8L73.5 432.3c-14.4 4.8-30.2-1.2-37.8-14.4L5.8 366.1c-7.6-13.2-4.9-29.8 6.5-39.9l53.4-47.5c-.9-7.4-1.3-15-1.3-22.7s.5-15.3 1.3-22.7L12.3 185.8c-11.4-10.1-14-26.8-6.5-39.9L35.7 94.1c7.6-13.2 23.4-19.2 37.8-14.4l67.8 22.5c12.1-9.1 25.3-16.7 39.3-22.8L195.1 9.5zM256.3 336a80 80 0 1 0 -.6-160 80 80 0 1 0 .6 160z"/>
             </svg>
           </button>
-          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)">❓</button>
+          <button id="help-status-btn" class="toolbar-btn" title="Help (F1)" aria-label="Help"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.9 1.9c-1.2.8-1.7 1.3-1.7 2.6M12 17h.01"/></svg></button>
         </div>
       </div>
 
       <!-- Markdown Toolbar -->
       <div id="markdown-toolbar" class="markdown-toolbar">
-        <div class="toolbar-content">
-          <div class="toolbar-group">
+        <div class="toolbar-content" role="toolbar" aria-label="Markdown formatting">
+          <!-- Formatting groups shrink and clip here so the pinned controls
+               after the spacer can never be pushed outside the code pane. -->
+          <div class="toolbar-primary">
+          <div class="toolbar-group toolbar-group-history">
             <button id="undo-btn" class="md-btn" title="Undo (Ctrl+Z)">↶</button>
             <button id="redo-btn" class="md-btn" title="Redo (Ctrl+Y)">↷</button>
           </div>
           <div class="toolbar-separator"></div>
           <!-- Headings -->
-          <div class="toolbar-group headings">
+          <div class="toolbar-group toolbar-group-headings">
             <button class="md-btn" data-action="paragraph" title="Paragraph (Remove Heading)">P</button>
-            <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+Shift+1)">H1</button>
-            <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+Shift+2)">H2</button>
-            <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+Shift+3)">H3</button>
-          </div>
-          
-          <!-- Collapsible Headings Group -->
-          <div class="md-collapsible-group">
-            <button class="md-collapsible-btn" id="headings-collapse-btn">
-              <span>H</span>
-              <span>▼</span>
-            </button>
-            <div class="md-collapsible-menu" id="headings-collapse-menu">
-              <button class="md-btn" data-action="paragraph" title="Paragraph (Remove Heading)">P</button>
-              <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+Shift+1)">H1</button>
-              <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+Shift+2)">H2</button>
-              <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+Shift+3)">H3</button>
-            </div>
+            <button class="md-btn" data-action="h1" title="Heading 1 (Ctrl+1)">H1</button>
+            <button class="md-btn" data-action="h2" title="Heading 2 (Ctrl+2)">H2</button>
+            <button class="md-btn" data-action="h3" title="Heading 3 (Ctrl+3)">H3</button>
           </div>
           <div class="toolbar-separator"></div>
           
           <!-- Text Formatting -->
-          <div class="toolbar-group">
+          <div class="toolbar-group toolbar-group-formatting">
             <button class="md-btn" data-action="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
             <button class="md-btn" data-action="italic" title="Italic (Ctrl+I)"><em>I</em></button>
             <button class="md-btn" data-action="strikethrough" title="Strikethrough"><del>S</del></button>
@@ -103,7 +94,7 @@
           <div class="toolbar-separator"></div>
           
           <!-- Links & Media -->
-          <div class="toolbar-group">
+          <div class="toolbar-group toolbar-group-media">
             <div class="md-dropdown-container">
               <button class="md-btn md-dropdown-main" data-action="link" title="Link (Ctrl+K)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -133,7 +124,7 @@
           <div class="toolbar-separator"></div>
           
           <!-- Lists & Structure -->
-          <div class="toolbar-group">
+          <div class="toolbar-group toolbar-group-structure">
             <button class="md-btn" data-action="ul" title="Unordered List">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="10" y1="6" x2="21" y2="6"></line>
@@ -178,7 +169,7 @@
           <div class="toolbar-separator"></div>
           
           <!-- Code & Quotes -->
-          <div class="toolbar-group code-quotes">
+          <div class="toolbar-group toolbar-group-code">
             <button class="md-btn" data-action="code" title="Inline Code">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="16,18 22,12 16,6"></polyline>
@@ -199,42 +190,10 @@
               </svg>
             </button>
           </div>
-          
-          <!-- Collapsible Code & Quotes Group -->
-          <div class="md-collapsible-group">
-            <button class="md-collapsible-btn" id="code-collapse-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="16,18 22,12 16,6"></polyline>
-                <polyline points="8,6 2,12 8,18"></polyline>
-              </svg>
-              <span>▼</span>
-            </button>
-            <div class="md-collapsible-menu" id="code-collapse-menu">
-              <button class="md-btn" data-action="code" title="Inline Code">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="16,18 22,12 16,6"></polyline>
-                  <polyline points="8,6 2,12 8,18"></polyline>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="codeblock" title="Code Block">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="quote" title="Blockquote">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path>
-                  <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
           <div class="toolbar-separator"></div>
           
           <!-- Text Alignment -->
-          <div class="toolbar-group text-alignment">
+          <div class="toolbar-group toolbar-group-alignment">
             <button class="md-btn" data-action="align-left" title="Align Left">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -265,52 +224,12 @@
             </button>
           </div>
           
-          <!-- Collapsible Text Alignment Group -->
-          <div class="md-collapsible-group">
-            <button class="md-collapsible-btn" id="alignment-collapse-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="12" x2="15" y2="12"></line>
-                <line x1="3" y1="18" x2="18" y2="18"></line>
-              </svg>
-              <span>▼</span>
-            </button>
-            <div class="md-collapsible-menu" id="alignment-collapse-menu">
-              <button class="md-btn" data-action="align-left" title="Align Left">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="12" x2="15" y2="12"></line>
-                  <line x1="3" y1="18" x2="18" y2="18"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="align-center" title="Align Center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="6" y1="12" x2="18" y2="12"></line>
-                  <line x1="4" y1="18" x2="20" y2="18"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="align-right" title="Align Right">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="7" y1="12" x2="21" y2="12"></line>
-                  <line x1="5" y1="18" x2="21" y2="18"></line>
-                </svg>
-              </button>
-              <button class="md-btn" data-action="align-justify" title="Justify">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="12" x2="21" y2="12"></line>
-                  <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-              </button>
-            </div>
           </div>
+
+          <div class="toolbar-spacer"></div>
           
-          <div style="flex: 1;"></div>
-          
-          <div class="toolbar-group">
-            <button id="find-replace-btn" class="md-btn" title="Find & Replace (Ctrl+F)">
+          <div class="toolbar-group toolbar-group-search">
+            <button id="find-replace-btn" class="md-btn" title="Find & Replace (Ctrl+H)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"></circle>
                 <path d="m21 21-4.35-4.35"></path>
@@ -325,8 +244,8 @@
       <div class="main-content">
         <!-- Editor Pane -->
         <div class="editor-pane">
-          <div id="monaco-editor" class="monaco-editor-container"></div>
-          <textarea id="editor" style="display: none;" placeholder=""></textarea>
+          <div id="code-editor" class="editor-container"></div>
+          <textarea id="editor" style="display: none;" placeholder="# Welcome to Markdown Viewer\n\nStart typing your markdown here..."></textarea>
         </div>
         
         <!-- Splitter -->
@@ -336,18 +255,12 @@
         <div class="preview-pane">
           <div id="welcome-page" class="welcome-page">
             <div class="welcome-content">
-              <h1>
-                <picture>
-                  <source srcset="assets/icon.webp" type="image/webp">
-                  <img src="assets/icon.png" alt="" class="favicon-icon">
-                </picture>
-                Markdown Editor
-              </h1>
+              <h1><img src="favicons/favicon-96x96.png" alt="" class="favicon-icon"> Markdown Editor</h1>
               <p class="welcome-subtitle">A light, yet powerful markdown editor with live preview</p>
               
               <div class="welcome-actions">
-                <button id="welcome-new-btn" class="welcome-btn primary">📄 New File</button>
-                <button id="welcome-open-btn" class="welcome-btn">📁 Open File</button>
+                <button id="welcome-new-btn" class="welcome-btn primary"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 12v6m-3-3h6"/></svg>New File</button>
+                <button id="welcome-open-btn" class="welcome-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg>Open File</button>
               </div>
               
               <div id="file-history-section" class="file-history" style="display: none;">
@@ -367,6 +280,8 @@
             </div>
           </div>
           <div id="preview" class="preview-content" style="display: none;">
+            <h1>Welcome to Markdown Viewer</h1>
+            <p>Start typing your markdown here...</p>
           </div>
         </div>
       </div>
@@ -392,22 +307,9 @@
             <button id="font-size-reset" class="status-btn font-btn" title="Reset Font Size">Reset</button>
           </div>
           <div id="zoom-controls" class="zoom-controls" style="display: none;">
-            <button id="zoom-out" class="status-btn zoom-btn" title="Zoom Out (Ctrl+-)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-                <line x1="8" y1="11" x2="14" y2="11"></line>
-              </svg>
-            </button>
+            <button id="zoom-out" class="status-btn zoom-btn" title="Zoom Out (Ctrl+-)" aria-label="Zoom out"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 10.5h6"/></svg></button>
             <span id="zoom-display" class="zoom-display">100%</span>
-            <button id="zoom-in" class="status-btn zoom-btn" title="Zoom In (Ctrl+=)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-                <line x1="11" y1="8" x2="11" y2="14"></line>
-                <line x1="8" y1="11" x2="14" y2="11"></line>
-              </svg>
-            </button>
+            <button id="zoom-in" class="status-btn zoom-btn" title="Zoom In (Ctrl+=)" aria-label="Zoom in"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 10.5h6m-3-3v6"/></svg></button>
             <button id="zoom-reset" class="status-btn zoom-btn" title="Reset Zoom (Ctrl+0)">Reset</button>
           </div>
         </div>
@@ -449,12 +351,25 @@
                   <button id="theme-contrast-btn" class="setting-btn">High Contrast</button>
                 </div>
               </div>
+              <div class="setting-item retro-desktop-setting" style="display: none;">
+                <label>Desktop Colour</label>
+                <div class="setting-control retro-desktop-swatches">
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="teal" style="--swatch: #008080;" title="Teal" aria-label="Teal desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="gray" style="--swatch: #c0c0c0;" title="Gray" aria-label="Gray desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="navy" style="--swatch: #000080;" title="Navy" aria-label="Navy desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="green" style="--swatch: #008000;" title="Green" aria-label="Green desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="olive" style="--swatch: #808000;" title="Olive" aria-label="Olive desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="maroon" style="--swatch: #800000;" title="Maroon" aria-label="Maroon desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="purple" style="--swatch: #800080;" title="Purple" aria-label="Purple desktop" aria-pressed="false"></button>
+                  <button class="setting-btn retro-desktop-swatch" data-desktop="black" style="--swatch: #000000;" title="Black" aria-label="Black desktop" aria-pressed="false"></button>
+                </div>
+              </div>
               <div class="setting-item retro-sound-setting" style="display: none;">
                 <label>
                   <input type="checkbox" id="retro-sound-checkbox" class="retro-checkbox" checked>
                   Startup Sound
                 </label>
-                <button id="test-startup-sound-btn" class="setting-btn test-sound-btn" title="Test startup sound">🔊 Test</button>
+                <button id="test-startup-sound-btn" class="setting-btn test-sound-btn" title="Test startup sound"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4zM15 9a4 4 0 0 1 0 6m3-9a8 8 0 0 1 0 12"/></svg>Test</button>
               </div>
             </div>
             
@@ -466,6 +381,17 @@
                   <button id="mode-code-btn" class="setting-btn">Code</button>
                   <button id="mode-preview-btn" class="setting-btn">Preview</button>
                   <button id="mode-split-btn" class="setting-btn">Split</button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <label>Preview Rendering</label>
+                <div class="setting-control">
+                  <button id="rendering-pure-btn" class="setting-btn" title="Standard Markdown only; fastest and most predictable">Pure Markdown</button>
+                  <button id="rendering-extended-btn" class="setting-btn" title="Enable optional local renderers, diagrams, and syntax highlighting">Extended</button>
+                  <label class="toolbar-pin-option" title="Show Markdown mode in the main toolbar">
+                    <input id="rendering-pin-checkbox" type="checkbox">
+                    <span>Pinned</span>
+                  </label>
                 </div>
               </div>
 
@@ -482,10 +408,30 @@
                 <div class="setting-control">
                   <button id="pinned-tabs-on-btn" class="setting-btn">Enabled</button>
                   <button id="pinned-tabs-off-btn" class="setting-btn">Disabled</button>
+                  <label class="toolbar-pin-option" title="Show Pinned Tabs in the main toolbar">
+                    <input id="pinned-tabs-pin-checkbox" type="checkbox">
+                    <span>Pinned</span>
+                  </label>
                 </div>
               </div>
 
-
+              <div class="setting-item">
+                <label>Splash Screen</label>
+                <div class="setting-control">
+                  <button id="splash-on-btn" class="setting-btn">Enabled</button>
+                  <button id="splash-off-btn" class="setting-btn">Disabled</button>
+                </div>
+              </div>
+              <div class="setting-item" id="splash-duration-setting">
+                <label>Splash Duration (seconds)</label>
+                <div class="setting-control">
+                  <button id="splash-1s-btn" class="setting-btn">1</button>
+                  <button id="splash-2s-btn" class="setting-btn">2</button>
+                  <button id="splash-3s-btn" class="setting-btn">3</button>
+                  <button id="splash-4s-btn" class="setting-btn">4</button>
+                  <button id="splash-5s-btn" class="setting-btn">5</button>
+                </div>
+              </div>
             </div>
             
             <div class="settings-section">
@@ -514,43 +460,12 @@
                   <button id="status-bar-large" class="setting-btn">Large</button>
                 </div>
               </div>
-              <div class="setting-item">
-                <label>Animations</label>
-                <div class="setting-control">
-                  <button id="animations-on-btn" class="setting-btn">Enabled</button>
-                  <button id="animations-off-btn" class="setting-btn">Disabled</button>
-                </div>
-              </div>
-              <div class="setting-item">
-                <label>Splash Screen</label>
-                <div class="setting-control">
-                  <button id="splash-on-btn" class="setting-btn">Enabled</button>
-                  <button id="splash-off-btn" class="setting-btn">Disabled</button>
-                </div>
-              </div>
-              <div class="setting-item" id="splash-duration-setting">
-                <label>Splash Duration (seconds)</label>
-                <div class="setting-control">
-                  <button id="splash-1s-btn" class="setting-btn">1</button>
-                  <button id="splash-2s-btn" class="setting-btn">2</button>
-                  <button id="splash-3s-btn" class="setting-btn">3</button>
-                  <button id="splash-4s-btn" class="setting-btn">4</button>
-                  <button id="splash-5s-btn" class="setting-btn">5</button>
-                </div>
-              </div>
-              <div class="setting-item">
-                <label>Reopen Last Tabs</label>
-                <div class="setting-control">
-                  <button id="reopen-tabs-on-btn" class="setting-btn">Enabled</button>
-                  <button id="reopen-tabs-off-btn" class="setting-btn">Disabled</button>
-                </div>
-              </div>
             </div>
             
             <div class="settings-section">
               <h3>Layout</h3>
               <div class="setting-item">
-                <label>Centered Layout <span class="setting-info-icon" id="centered-layout-info" style="display: none;" title="Preview mode is set as default when Centered Layout is enabled">ℹ️</span></label>
+                <label>Centered Layout</label>
                 <div class="setting-control">
                   <button id="layout-on-btn" class="setting-btn">Enabled</button>
                   <button id="layout-off-btn" class="setting-btn">Disabled</button>
@@ -594,23 +509,21 @@
                 <button id="perf-cleanup-btn" class="settings-btn perf-action-btn">Clean Memory</button>
                 <button id="perf-clear-virtual-btn" class="settings-btn perf-action-btn">Clear Virtual Tabs</button>
               </div>
+              <div id="perf-action-status" class="perf-action-status" role="status" aria-live="polite"></div>
             </div>
             
             <div class="settings-section">
               <h3>Plugins</h3>
-              <div class="setting-item">
+              <div class="setting-item plugin-system-setting">
                 <label>Plugin System</label>
                 <div class="setting-control">
-                  <button id="plugins-on-btn" class="setting-btn">Enabled</button>
-                  <button id="plugins-off-btn" class="setting-btn">Disabled</button>
+                  <button class="setting-btn" data-plugin-system-value="true">Enabled</button>
+                  <button class="setting-btn" data-plugin-system-value="false">Disabled</button>
+                  <button id="open-plugin-manager-btn" class="setting-btn">Manager</button>
                 </div>
               </div>
-              <div id="plugin-list" class="plugin-list">
-                <!-- Plugin controls will be populated here -->
-              </div>
-              <div class="plugin-actions">
-                <button id="refresh-plugins-btn" class="settings-btn perf-action-btn" title="Reload and refresh all plugins from disk">Refresh Plugins</button>
-                <button id="reset-plugin-config-btn" class="settings-btn perf-action-btn" title="Reset all plugin configurations to defaults">Reset Plugin Config</button>
+              <div id="plugin-summary-list" class="plugin-summary-list">
+                <!-- Compact plugin controls will be populated here -->
               </div>
             </div>
             
@@ -626,22 +539,41 @@
                   <span id="info-current-mode">Preview</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Monaco Editor:</span>
-                  <span id="info-monaco">Loaded</span>
+                  <span class="info-label">Code editor:</span>
+                  <span id="info-code-editor">Loaded</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">Mermaid:</span>
-                  <span id="info-mermaid">Loaded</span>
+                  <span id="info-mermaid">Checking…</span>
                 </div>
                 <div class="info-item">
                   <span class="info-label">KaTeX:</span>
-                  <span id="info-katex">Loaded</span>
+                  <span id="info-katex">Checking…</span>
                 </div>
               </div>
             </div>
             
 
           </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Plugin Manager -->
+      <div id="plugin-manager-modal" class="settings-modal plugin-manager-modal" style="display: none;">
+        <div class="settings-overlay plugin-manager-overlay"></div>
+        <div class="settings-window plugin-manager-window" role="dialog" aria-modal="true" aria-labelledby="plugin-manager-title">
+          <div class="settings-header plugin-manager-header">
+            <div class="plugin-manager-heading">
+              <button id="plugin-manager-back-btn" class="plugin-manager-back-btn" title="Back to Settings">←</button>
+              <h2 id="plugin-manager-title">Plugin Manager</h2>
+            </div>
+            <button id="plugin-manager-close-btn" class="settings-close-btn" aria-label="Close Plugin Manager">×</button>
+          </div>
+          <div class="plugin-manager-body">
+            <div id="plugin-manager-tabs" class="plugin-manager-tabs" role="tablist" aria-label="Plugin settings"></div>
+            <div id="plugin-manager-panels" class="plugin-manager-panels"></div>
+          </div>
+          <div id="plugin-manager-action-status" class="plugin-action-status plugin-manager-action-status" role="status" aria-live="polite"></div>
         </div>
       </div>
 
@@ -653,12 +585,7 @@
             <h2>Help & Shortcuts</h2>
             <button id="help-close-btn" class="help-close-btn">×</button>
           </div>
-          <div class="help-tabs">
-            <button class="help-tab active" data-tab="shortcuts">Shortcuts</button>
-            <button class="help-tab" data-tab="markdown">Markdown Syntax</button>
-          </div>
           <div class="help-content">
-            <div id="shortcuts-tab" class="help-tab-content active">
             <div class="help-section">
               <h3>File Operations</h3>
               <div class="shortcut-list">
@@ -667,16 +594,15 @@
                 <div class="shortcut-item"><kbd>Ctrl+S</kbd><span>Save file</span></div>
                 <div class="shortcut-item"><kbd>Ctrl+Shift+S</kbd><span>Save as</span></div>
                 <div class="shortcut-item"><kbd>Ctrl+W</kbd><span>Close file</span></div>
-                <div class="shortcut-item"><kbd>Ctrl+Q</kbd><span>Quit application</span></div>
               </div>
             </div>
             
             <div class="help-section">
               <h3>View Modes</h3>
               <div class="shortcut-list">
-                <div class="shortcut-item"><kbd>Ctrl+1</kbd><span>Code mode</span></div>
-                <div class="shortcut-item"><kbd>Ctrl+2</kbd><span>Preview mode</span></div>
-                <div class="shortcut-item"><kbd>Ctrl+3</kbd><span>Split mode</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+1</kbd><span>Code mode</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+2</kbd><span>Preview mode</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+Shift+3</kbd><span>Split mode</span></div>
                 <div class="shortcut-item"><kbd>F11</kbd><span>Fullscreen mode</span></div>
                 <div class="shortcut-item"><kbd>Shift+F11</kbd><span>Distraction-free mode</span></div>
                 <div class="shortcut-item"><kbd>Esc</kbd><span>Exit distraction-free</span></div>
@@ -688,9 +614,10 @@
               <div class="shortcut-list">
                 <div class="shortcut-item"><kbd>Ctrl+B</kbd><span>Bold text</span></div>
                 <div class="shortcut-item"><kbd>Ctrl+I</kbd><span>Italic text</span></div>
-                <div class="shortcut-item"><kbd>Ctrl+Shift+1-3</kbd><span>Headers H1-H3</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+1-3</kbd><span>Headers H1-H3</span></div>
                 <div class="shortcut-item"><kbd>Ctrl+Shift+/</kbd><span>Toggle markdown toolbar</span></div>
-                <div class="shortcut-item"><kbd>Ctrl+F</kbd><span>Find & Replace</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+F</kbd><span>Find</span></div>
+                <div class="shortcut-item"><kbd>Ctrl+H</kbd><span>Find & Replace</span></div>
                 <div class="shortcut-item"><kbd>Ctrl+Z</kbd><span>Undo</span></div>
                 <div class="shortcut-item"><kbd>Ctrl+Y</kbd><span>Redo</span></div>
               </div>
@@ -737,55 +664,6 @@
                 <div class="shortcut-item"><kbd>Sync Btn</kbd><span>Manual scroll sync</span></div>
               </div>
             </div>
-            </div>
-            <div id="markdown-tab" class="help-tab-content">
-              <div class="help-section">
-                <h3>Headers</h3>
-                <div class="syntax-list">
-                  <div class="syntax-item"><code># H1</code><span>Heading 1</span></div>
-                  <div class="syntax-item"><code>## H2</code><span>Heading 2</span></div>
-                  <div class="syntax-item"><code>### H3</code><span>Heading 3</span></div>
-                </div>
-              </div>
-              <div class="help-section">
-                <h3>Text Formatting</h3>
-                <div class="syntax-list">
-                  <div class="syntax-item"><code>**bold**</code><span>Bold text</span></div>
-                  <div class="syntax-item"><code>*italic*</code><span>Italic text</span></div>
-                  <div class="syntax-item"><code>~~strike~~</code><span>Strikethrough</span></div>
-                  <div class="syntax-item"><code>`code`</code><span>Inline code</span></div>
-                </div>
-              </div>
-              <div class="help-section">
-                <h3>Lists</h3>
-                <div class="syntax-list">
-                  <div class="syntax-item"><code>- item</code><span>Unordered list</span></div>
-                  <div class="syntax-item"><code>1. item</code><span>Ordered list</span></div>
-                  <div class="syntax-item"><code>- [ ] task</code><span>Task list</span></div>
-                </div>
-              </div>
-              <div class="help-section">
-                <h3>Links & Images</h3>
-                <div class="syntax-list">
-                  <div class="syntax-item"><code>[text](url)</code><span>Link</span></div>
-                  <div class="syntax-item"><code>![alt](url)</code><span>Image</span></div>
-                </div>
-              </div>
-              <div class="help-section">
-                <h3>Code Blocks</h3>
-                <div class="syntax-list">
-                  <div class="syntax-item"><code>```lang</code><span>Code block</span></div>
-                  <div class="syntax-item"><code>&gt; quote</code><span>Blockquote</span></div>
-                </div>
-              </div>
-              <div class="help-section">
-                <h3>Tables</h3>
-                <div class="syntax-list">
-                  <div class="syntax-item"><code>| A | B |</code><span>Table row</span></div>
-                  <div class="syntax-item"><code>|---|---|</code><span>Table separator</span></div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -800,10 +678,7 @@
           </div>
           <div class="about-content">
             <div class="about-logo">
-              <picture>
-                <source srcset="assets/MarkdownEditorAboutImage.webp" type="image/webp">
-                <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
-              </picture>
+              <img src="assets/MarkdownEditorAboutImage.png" alt="Markdown Editor" class="about-image">
               <p class="version">Version 3.3.4</p>
             </div>
             
@@ -816,9 +691,9 @@
               <ul>
                 <li><strong>Multi-Tab Interface:</strong> Open multiple files with smart tab management</li>
                 <li><strong>Three View Modes:</strong> Code, Preview, and Split view modes</li>
-                <li><strong>Monaco Editor:</strong> Professional code editing with syntax highlighting</li>
+                <li><strong>CodeMirror Editor:</strong> Lightweight editing with Markdown syntax highlighting</li>
                 <li><strong>Real-Time Preview:</strong> GitHub-flavored markdown with live updates</li>
-                <li><strong>Advanced Rendering:</strong> KaTeX math expressions and Mermaid diagrams</li>
+                <li><strong>Advanced Rendering:</strong> Optional local renderer plugins and Mermaid diagrams</li>
                 <li><strong>Performance Optimized:</strong> Handles 100+ tabs with virtualization</li>
                 <li><strong>Interactive Elements:</strong> Clickable task lists with state persistence</li>
                 <li><strong>Export Options:</strong> HTML export and PDF printing</li>
@@ -832,13 +707,13 @@
                   <strong>Tauri</strong> - Native app framework
                 </div>
                 <div class="credit-item">
-                  <strong>Monaco Editor</strong> - Code editor
+                  <strong>CodeMirror</strong> - Lightweight code editor
                 </div>
                 <div class="credit-item">
                   <strong>Marked.js</strong> - Markdown parser
                 </div>
                 <div class="credit-item">
-                  <strong>KaTeX</strong> - Math rendering
+                  <strong>KaTeX</strong> - Local math rendering plugin
                 </div>
                 <div class="credit-item">
                   <strong>Mermaid</strong> - Diagram rendering
@@ -852,8 +727,8 @@
             <div class="about-links">
               <h3>Links & Support</h3>
               <div class="link-info">
-                <p><a href="https://github.com/travelingbear/markdown-editor" target="_blank">📚 Documentation/Issues</a></p>
-                <p><a href="https://buymeacoffee.com/travelingbear" target="_blank">☕ Buy me a coffee</a></p>
+                <p><a href="https://github.com/travelingbear/markdown-editor" target="_blank">Documentation/Issues</a></p>
+                <p><a href="https://buymeacoffee.com/travelingbear" target="_blank">Buy me a coffee</a></p>
               </div>
             </div>
             
@@ -947,7 +822,7 @@
               <div id="file-tab" class="tab-pane">
                 <div class="file-drop-zone" id="image-drop-zone">
                   <div class="drop-zone-content">
-                    <div class="drop-icon">📁</div>
+                    <div class="drop-icon"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z"/></svg></div>
                     <div class="drop-text">Drop image file here</div>
                     <div class="drop-status">or click to browse</div>
                   </div>
@@ -973,55 +848,6 @@
 
     </div>
     
-    <!-- Load StyleManager for dynamic CSS loading -->
-    <script src="/core/StyleManager.js"></script>
-    
-    <!-- Load security utilities -->
-    <script src="/utils/sanitizer.js"></script>
-    
-    <!-- Load common utilities -->
-    <script src="/utils/common.js"></script>
-    
-    <!-- Load safe IPC wrapper -->
-    <script src="/ipc-wrapper.js"></script>
-    
-    <!-- Load performance optimizer -->
-    <script src="/performance-optimizer.js"></script>
-    
-    <!-- Load core architecture -->
-    <script src="/core/ExtensionAPI.js"></script>
-    <script src="/core/ControllerRegistry.js"></script>
-    <script src="/core/PluginConfig.js"></script>
-    <script src="/core/PluginValidator.js"></script>
-    <script src="/core/PluginManager.js"></script>
-    <script src="/core/PluginLoader.js"></script>
-    
-    <!-- Load component architecture -->
-    <script src="/components/BaseComponent.js"></script>
-    <script src="/components/controllers/FileController.js"></script>
-    <script src="/components/controllers/UIController.js"></script>
-    <script src="/components/controllers/KeyboardController.js"></script>
-    <script src="/components/controllers/SettingsController.js"></script>
-    <script src="/components/controllers/TabUIController.js"></script>
-    <script src="/components/controllers/ModeController.js"></script>
-    <script src="/components/controllers/MarkdownActionController.js"></script>
-    <script src="/components/controllers/ExportController.js"></script>
-    <script src="/components/DocumentComponent.js"></script>
-    <script src="/components/EditorComponent.js"></script>
-    <script src="/components/PreviewComponent.js"></script>
-    <script src="/components/ToolbarComponent.js"></script>
-    <!-- Load tab management components -->
-    <script src="/components/TabState.js"></script>
-    <script src="/components/TabCollection.js"></script>
-    <script src="/components/TabManager.js"></script>
-    <script src="/components/MarkdownEditor.js"></script>
-    
-    <!-- Load test extension for development -->
-    <script src="/test-extension.js"></script>
-    
-    <!-- Plugin loader already loaded above in core section --></script>
-    
-    <!-- Load main application -->
-    <script src="/main.js"></script>
+    <script type="module" src="/bootstrap.js"></script>
   </body>
 </html>

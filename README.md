@@ -6,7 +6,7 @@
 
 <p align="center">An offline desktop Markdown editor built with Tauri, Rust, and CodeMirror 6.</p>
 
-**Version 3.4.0 is in testing** on `refactor/modular-rebuild`. This is the CodeMirror build. The default GitHub branch, `main`, currently serves the Monaco version.
+**Version 3.4.0** is the CodeMirror source build on `main`. Linux packaging is in testing.
 
 ## ✨ Features
 
@@ -59,10 +59,10 @@
 
 ### Download & Install
 
-For the 3.4.0 test build, clone the branch below and build from source. See [GitHub Releases](https://github.com/travelingbear/markdown-editor/releases) for previously published downloads.
+Clone the repository to build 3.4.0 from source. See [GitHub Releases](https://github.com/travelingbear/markdown-editor/releases) for previously published downloads.
 
 ```bash
-git clone --single-branch --branch refactor/modular-rebuild https://github.com/travelingbear/markdown-editor.git
+git clone https://github.com/travelingbear/markdown-editor.git
 cd markdown-editor
 ```
 

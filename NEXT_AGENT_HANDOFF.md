@@ -9,11 +9,11 @@
 
 ## Branch state — read before pushing
 
-- The `refactor/modular-rebuild` branch on GitHub is the CodeMirror 3.4.0 test branch. Follow the [README](README.md) to clone it on Linux.
+- GitHub's default branch, `main`, contains CodeMirror 3.4.0. Follow the [README](README.md) to clone it on Linux.
 - Merge commit `af57631` brought in the `main` history while retaining the CodeMirror tree. It also carried over the Windows build workflow, earlier release notes, and recent-file fix, and included the Preview checkbox and heading-link fixes.
-- GitHub's default `main` currently points to the Monaco build at `979d074`. Linux verification is pending before promoting the CodeMirror build. Verify the current branch tips before changing `main`.
-- Compare release behavior before promotion, including the older Animations and Reopen Last Tabs controls and the Linux New File desktop action. The CodeMirror test build has its own session restore behavior.
-- The Linux build helper and [Markdown capabilities test document](MARKDOWN_CAPABILITIES_TEST.md) are tracked on the test branch.
+- Linux verification is pending before publishing DEB or RPM installers. The old image-link fix commit is preserved under the tag `archive/fix-image-links-flickering-v2.2.0`.
+- The CodeMirror build has its own session restore behavior. The older Animations and Reopen Last Tabs controls and the Linux New File desktop action remain in the repository's history.
+- The Linux build helper and [Markdown capabilities test document](MARKDOWN_CAPABILITIES_TEST.md) are tracked on `main`.
 
 ## Required working agreement
 

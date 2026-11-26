@@ -246,7 +246,7 @@ npm run tauri dev
 
 The agreed modularization pipeline is complete. Remaining engineering priorities are:
 
-1. Verify the 3.4.0 CodeMirror test build on Linux before promoting it to `main`. The test branch already includes the current `main` history.
+1. Verify DEB and RPM packaging and smoke-test the 3.4.0 CodeMirror build on Linux before publishing Linux installers.
 2. Complete native smoke tests and repeatable release builds on supported platforms.
 3. Profile startup, large-file batches, tabs, and lazy runtimes on low-end hardware before making further bundle changes.
 4. Address the deferred Markdown-toolbar spacing and optional Retro font cleanup only with real-browser visual validation.

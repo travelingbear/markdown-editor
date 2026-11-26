@@ -1,6 +1,6 @@
 # Build Guide
 
-This guide describes the Tauri 2 and Vite 8 build workflow for the CodeMirror test branch, `refactor/modular-rebuild`. Run commands from the `Markdown Viewer` directory unless a step specifies the repository root.
+This guide describes the Tauri 2 and Vite 8 build workflow for the CodeMirror build on `main`. Run commands from the `Markdown Viewer` directory unless a step specifies the repository root.
 
 ## Prerequisites
 

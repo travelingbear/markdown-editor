@@ -1,3 +1,6 @@
+import { resolvePageWidth } from '../pageLayout.js';
+import { DEFAULT_RETRO_DESKTOP, resolveRetroDesktop, retroDesktopNames } from '../retroDesktop.js';
+
 /**
  * Settings Controller - Manages application settings and persistence
  */
@@ -8,71 +11,64 @@ class SettingsController extends BaseComponent {
     // Settings state
     this.theme = 'light';
     this.isRetroTheme = false;
+    this.retroDesktop = DEFAULT_RETRO_DESKTOP;
     this.defaultMode = 'preview';
+    this.advancedRenderingEnabled = false;
     this.centeredLayoutEnabled = false;
     this.isToolbarEnabled = true;
     this.pinnedTabsEnabled = false;
+    this.renderingControlPinned = false;
+    this.pinnedTabsControlPinned = false;
     this.isSplashEnabled = true;
     this.splashDuration = 2;
     this.currentPageSize = 'a4';
     this.mainToolbarSize = 'medium';
     this.mdToolbarSize = 'medium';
     this.statusBarSize = 'medium';
-    this.pluginsEnabled = true;
-    this.animationsEnabled = true;
     
     // Performance tracking
     this.startupTime = 0;
     this.lastFileOpenTime = 0;
     this.lastModeSwitchTime = 0;
-    
-    // Track if this is initial startup
-    this.isInitialStartup = true;
   }
 
   async onInit() {
     this.loadSettings();
     this.setupSettingsControls();
-    // Ensure settings display is updated after initialization
-    setTimeout(() => this.updateSettingsDisplay(), 100);
+    this.updateSettingsDisplay();
   }
 
   loadSettings() {
     // Load theme settings
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
     this.isRetroTheme = localStorage.getItem('markdownViewer_retroTheme') === 'true';
+    this.retroDesktop = localStorage.getItem('markdownViewer_retroDesktop') || DEFAULT_RETRO_DESKTOP;
     
     // Load UI settings
     this.defaultMode = localStorage.getItem('markdownViewer_defaultMode') || 'preview';
+    // Remove the obsolete editor-suggestions preference from older versions.
+    localStorage.removeItem('markdownViewer_suggestionsEnabled');
+    this.advancedRenderingEnabled = localStorage.getItem('markdownViewer_advancedRendering') === 'true';
     this.centeredLayoutEnabled = localStorage.getItem('markdownViewer_centeredLayout') === 'true';
     this.isToolbarEnabled = localStorage.getItem('markdownViewer_toolbarEnabled') !== 'false';
     this.pinnedTabsEnabled = localStorage.getItem('markdownViewer_pinnedTabs') === 'true';
+    this.renderingControlPinned = localStorage.getItem('markdownViewer_pinRenderingControl') === 'true';
+    this.pinnedTabsControlPinned = localStorage.getItem('markdownViewer_pinPinnedTabsControl') === 'true';
     this.isSplashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
     this.splashDuration = parseInt(localStorage.getItem('markdownViewer_splashDuration')) || 2;
     this.currentPageSize = localStorage.getItem('markdownViewer_pageSize') || 'a4';
     this.mainToolbarSize = localStorage.getItem('markdownViewer_mainToolbarSize') || 'medium';
     this.mdToolbarSize = localStorage.getItem('markdownViewer_mdToolbarSize') || 'medium';
     this.statusBarSize = localStorage.getItem('markdownViewer_statusBarSize') || 'medium';
-    this.pluginsEnabled = localStorage.getItem('markdownViewer_pluginsEnabled') !== 'false';
-    this.animationsEnabled = localStorage.getItem('markdownViewer_animationsEnabled') !== 'false';
   }
 
   applySettings() {
     this.applyTheme();
-    this.applyCenteredLayout();
     this.applyMarkdownToolbarVisibility();
     this.applyPinnedTabsVisibility();
     this.applyPageSize();
     this.applyToolbarSizes();
-    this.applyAnimationsEnabled();
-    
-    // Play retro sound only once during initial startup if retro theme is enabled
-    if (this.isInitialStartup && this.isRetroTheme) {
-      this.playRetroStartupSound();
-    }
-    
-    // Mark startup as complete
-    this.isInitialStartup = false;
+    this.applyRetroDesktop();
   }
 
   applyTheme() {
@@ -87,8 +83,12 @@ class SettingsController extends BaseComponent {
     document.body.setAttribute('data-theme', this.theme);
   }
 
-  applyCenteredLayout() {
-    document.body.classList.toggle('centered-layout', this.centeredLayoutEnabled);
+  /**
+   * Centered layout also depends on the view mode, so SettingsCoordinator
+   * decides when it applies and calls this with the answer.
+   */
+  applyCenteredLayout(centered) {
+    document.body.classList.toggle('centered-layout', centered === true);
   }
 
   applyMarkdownToolbarVisibility() {
@@ -106,21 +106,38 @@ class SettingsController extends BaseComponent {
   }
 
   applyPageSize() {
-    document.body.setAttribute('data-page-size', this.currentPageSize);
+    // The stylesheets read this custom property. A data attribute was set
+    // here previously, which no rule ever matched, so choosing a page size
+    // had no effect until the next launch.
+    document.documentElement.style.setProperty('--current-page-width', resolvePageWidth(this.currentPageSize));
+  }
+
+  /**
+   * The desktop colour behind the document and on the welcome screen. Only the
+   * Retro theme reads these properties, so they are harmless under the others
+   * and the setting is simply hidden.
+   */
+  applyRetroDesktop() {
+    const desktop = resolveRetroDesktop(this.retroDesktop);
+    document.documentElement.style.setProperty('--retro-desktop', desktop.value);
+    document.documentElement.style.setProperty('--retro-desktop-text', desktop.text);
+  }
+
+  setRetroDesktop(name) {
+    this.retroDesktop = retroDesktopNames().includes(name) ? name : DEFAULT_RETRO_DESKTOP;
+    localStorage.setItem('markdownViewer_retroDesktop', this.retroDesktop);
+    this.applyRetroDesktop();
+    this.updateSettingsDisplay();
+  }
+
+  getRetroDesktop() {
+    return this.retroDesktop;
   }
 
   applyToolbarSizes() {
     document.body.setAttribute('data-main-toolbar-size', this.mainToolbarSize);
     document.body.setAttribute('data-md-toolbar-size', this.mdToolbarSize);
     document.body.setAttribute('data-status-bar-size', this.statusBarSize);
-  }
-
-  applyAnimationsEnabled() {
-    if (this.animationsEnabled) {
-      document.body.classList.remove('animations-disabled');
-    } else {
-      document.body.classList.add('animations-disabled');
-    }
   }
 
   updateSettingsDisplay() {
@@ -145,6 +162,17 @@ class SettingsController extends BaseComponent {
       retroSoundSetting.style.display = this.isRetroTheme ? 'flex' : 'none';
     }
     
+    // Show/hide the retro desktop colour, which only that theme reads
+    const retroDesktopSetting = document.querySelector('.retro-desktop-setting');
+    if (retroDesktopSetting) {
+      retroDesktopSetting.style.display = this.isRetroTheme ? 'flex' : 'none';
+    }
+
+    document.querySelectorAll('.retro-desktop-swatch').forEach(swatch => {
+      swatch.classList.toggle('active', swatch.dataset.desktop === this.retroDesktop);
+      swatch.setAttribute('aria-pressed', String(swatch.dataset.desktop === this.retroDesktop));
+    });
+
     // Update retro sound checkbox
     const retroSoundCheckbox = document.getElementById('retro-sound-checkbox');
     if (retroSoundCheckbox) {
@@ -168,6 +196,8 @@ class SettingsController extends BaseComponent {
     
     // Update all other settings buttons
     const allSettings = {
+      'rendering-pure-btn': !this.advancedRenderingEnabled,
+      'rendering-extended-btn': this.advancedRenderingEnabled,
       'layout-on-btn': this.centeredLayoutEnabled,
       'layout-off-btn': !this.centeredLayoutEnabled,
       'toolbar-on-btn': this.isToolbarEnabled,
@@ -175,11 +205,7 @@ class SettingsController extends BaseComponent {
       'pinned-tabs-on-btn': this.pinnedTabsEnabled,
       'pinned-tabs-off-btn': !this.pinnedTabsEnabled,
       'splash-on-btn': this.isSplashEnabled,
-      'splash-off-btn': !this.isSplashEnabled,
-      'plugins-on-btn': this.pluginsEnabled,
-      'plugins-off-btn': !this.pluginsEnabled,
-      'animations-on-btn': this.animationsEnabled,
-      'animations-off-btn': !this.animationsEnabled
+      'splash-off-btn': !this.isSplashEnabled
     };
     
     Object.entries(allSettings).forEach(([id, active]) => {
@@ -188,6 +214,12 @@ class SettingsController extends BaseComponent {
         btn.classList.toggle('active', active);
       }
     });
+
+    const renderingPinCheckbox = document.getElementById('rendering-pin-checkbox');
+    if (renderingPinCheckbox) renderingPinCheckbox.checked = this.renderingControlPinned;
+
+    const pinnedTabsPinCheckbox = document.getElementById('pinned-tabs-pin-checkbox');
+    if (pinnedTabsPinCheckbox) pinnedTabsPinCheckbox.checked = this.pinnedTabsControlPinned;
     
     // Update splash duration buttons
     for (let i = 1; i <= 5; i++) {
@@ -224,12 +256,6 @@ class SettingsController extends BaseComponent {
       if (pageSizeSetting) {
         pageSizeSetting.style.display = this.centeredLayoutEnabled ? 'flex' : 'none';
       }
-    }
-    
-    // Show/hide centered layout info icon
-    const centeredLayoutInfo = document.getElementById('centered-layout-info');
-    if (centeredLayoutInfo) {
-      centeredLayoutInfo.style.display = this.centeredLayoutEnabled ? 'inline' : 'none';
     }
     
     // Update toolbar size buttons
@@ -300,12 +326,39 @@ class SettingsController extends BaseComponent {
       // Will be called from MarkdownEditor with proper references
       return;
     }
+    const pluginManager = previewComponent.parentComponent?.pluginManager || null;
+    const katexPluginStatus = pluginManager?.getPluginStatus?.('katex-plugin') || null;
+    const mermaidPluginStatus = pluginManager?.getPluginStatus?.('mermaid-plugin') || null;
+    const katexRenderer = previewComponent.rendererRegistry?.getAll?.()
+      .find((entry) => entry.id === 'katex-plugin.math');
+    const katexStatus = katexRenderer?.renderer?.getStatus?.();
+    const katexIsEnabled = katexPluginStatus
+      ? katexPluginStatus.isEnabled
+      : Boolean(katexRenderer);
+    const katexLabel = !katexIsEnabled
+      ? 'Disabled'
+      : katexStatus?.loaded
+        ? `Loaded${katexStatus.version ? ` (${katexStatus.version})` : ''}`
+        : 'Not Loaded';
+    const mermaidRenderer = previewComponent.rendererRegistry?.getAll?.()
+      .find((entry) => entry.id === 'mermaid-plugin.diagrams');
+    const mermaidStatus = mermaidRenderer?.renderer?.getStatus?.();
+    const mermaidIsEnabled = mermaidPluginStatus
+      ? mermaidPluginStatus.isEnabled
+      : Boolean(mermaidRenderer);
+    const mermaidLabel = !mermaidIsEnabled
+      ? 'Disabled'
+      : mermaidStatus?.loaded
+        ? `Loaded${mermaidStatus.version ? ` (${mermaidStatus.version})` : ''}`
+        : 'Not Loaded';
     const systemInfo = {
       'info-default-mode': this.defaultMode,
       'info-current-mode': currentMode || 'preview',
-      'info-monaco': (editorComponent && editorComponent.isMonacoLoaded === true) ? 'Loaded' : 'Not Loaded',
-      'info-mermaid': (previewComponent && previewComponent.mermaidInitialized === true) ? 'Loaded' : 'Not Loaded',
-      'info-katex': (previewComponent && previewComponent.katexInitialized === true) ? 'Loaded' : 'Not Loaded'
+      'info-code-editor': editorComponent?.isEditorReady()
+        ? `${editorComponent.getEditorEngine?.() || 'Editor'} (Loaded)`
+        : 'Not Loaded',
+      'info-mermaid': mermaidLabel,
+      'info-katex': katexLabel
     };
     
     Object.entries(systemInfo).forEach(([id, value]) => {
@@ -323,31 +376,6 @@ class SettingsController extends BaseComponent {
       return `${used}MB / ${total}MB`;
     }
     return 'Not Available';
-  }
-
-  async playRetroStartupSound() {
-    const soundEnabled = localStorage.getItem('markdownViewer_retroSound') !== 'false';
-    if (!soundEnabled) return;
-    
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const response = await fetch('assets/windows95_startup_hifi.mp3');
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const source = audioContext.createBufferSource();
-      const gainNode = audioContext.createGain();
-      
-      source.buffer = audioBuffer;
-      gainNode.gain.value = 0.5;
-      
-      source.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      source.start(0);
-    } catch (error) {
-      console.warn('[SettingsController] Retro sound failed:', error);
-    }
   }
 
   setupSettingsControls() {
@@ -410,19 +438,26 @@ class SettingsController extends BaseComponent {
     
     if (testSoundBtn) {
       testSoundBtn.addEventListener('click', () => {
-        this.playRetroStartupSound();
+        this.emit('retro-sound-test-requested');
       });
     }
     
+    // Preview rendering controls. Pure Markdown is the lightweight default.
+    ['rendering-pure-btn', 'rendering-extended-btn'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          this.setAdvancedRenderingEnabled(id === 'rendering-extended-btn');
+        });
+      }
+    });
+
     // Layout controls
     ['layout-on-btn', 'layout-off-btn'].forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.centeredLayoutEnabled = id === 'layout-on-btn';
-          localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
-          this.applyCenteredLayout();
-          this.updateSettingsDisplay();
+          this.setCenteredLayoutEnabled(id === 'layout-on-btn');
         });
       }
     });
@@ -432,11 +467,7 @@ class SettingsController extends BaseComponent {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.isToolbarEnabled = id === 'toolbar-on-btn';
-          localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
-          this.applyMarkdownToolbarVisibility();
-          this.emit('toolbar-enabled-changed', { enabled: this.isToolbarEnabled });
-          this.updateSettingsDisplay();
+          this.setToolbarEnabled(id === 'toolbar-on-btn');
         });
       }
     });
@@ -446,13 +477,16 @@ class SettingsController extends BaseComponent {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener('click', () => {
-          this.pinnedTabsEnabled = id === 'pinned-tabs-on-btn';
-          localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
-          this.applyPinnedTabsVisibility();
-          this.emit('pinned-tabs-changed', { enabled: this.pinnedTabsEnabled });
-          this.updateSettingsDisplay();
+          this.setPinnedTabsEnabled(id === 'pinned-tabs-on-btn');
         });
       }
+    });
+
+    document.getElementById('rendering-pin-checkbox')?.addEventListener('change', (event) => {
+      this.setToolbarPin('rendering', event.target.checked);
+    });
+    document.getElementById('pinned-tabs-pin-checkbox')?.addEventListener('change', (event) => {
+      this.setToolbarPin('pinnedTabs', event.target.checked);
     });
     
     // Splash controls
@@ -479,6 +513,11 @@ class SettingsController extends BaseComponent {
       }
     }
     
+    // Retro desktop colour swatches
+    document.querySelectorAll('.retro-desktop-swatch').forEach(swatch => {
+      swatch.addEventListener('click', () => this.setRetroDesktop(swatch.dataset.desktop));
+    });
+
     // Page size controls
     ['page-a4-btn', 'page-letter-btn', 'page-a3-btn'].forEach(id => {
       const btn = document.getElementById(id);
@@ -528,36 +567,6 @@ class SettingsController extends BaseComponent {
         });
       }
     });
-    
-    // Plugin controls
-    ['plugins-on-btn', 'plugins-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.pluginsEnabled = id === 'plugins-on-btn';
-          localStorage.setItem('markdownViewer_pluginsEnabled', this.pluginsEnabled.toString());
-          this.emit('plugins-enabled-changed', { enabled: this.pluginsEnabled });
-          this.updateSettingsDisplay();
-          
-          // Show restart warning
-          alert('Plugin system changes require a manual restart to take effect. Please restart the application.')
-        });
-      }
-    });
-    
-    // Animation controls
-    ['animations-on-btn', 'animations-off-btn'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.addEventListener('click', () => {
-          this.animationsEnabled = id === 'animations-on-btn';
-          localStorage.setItem('markdownViewer_animationsEnabled', this.animationsEnabled.toString());
-          this.applyAnimationsEnabled();
-          this.emit('animations-enabled-changed', { enabled: this.animationsEnabled });
-          this.updateSettingsDisplay();
-        });
-      }
-    });
   }
 
   // Getters for other components to access settings
@@ -569,6 +578,10 @@ class SettingsController extends BaseComponent {
     return this.defaultMode;
   }
 
+  getAdvancedRenderingEnabled() {
+    return this.advancedRenderingEnabled;
+  }
+
   getToolbarEnabled() {
     return this.isToolbarEnabled;
   }
@@ -576,13 +589,91 @@ class SettingsController extends BaseComponent {
   getPinnedTabsEnabled() {
     return this.pinnedTabsEnabled;
   }
-  
-  getPluginsEnabled() {
-    return this.pluginsEnabled;
+
+  getCenteredLayoutEnabled() {
+    return this.centeredLayoutEnabled;
   }
-  
-  getAnimationsEnabled() {
-    return this.animationsEnabled;
+
+  getPageSize() {
+    return this.currentPageSize;
+  }
+
+  setCenteredLayoutEnabled(enabled) {
+    this.centeredLayoutEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_centeredLayout', this.centeredLayoutEnabled.toString());
+    this.emit('centered-layout-changed', { enabled: this.centeredLayoutEnabled });
+    this.updateSettingsDisplay();
+  }
+
+  /**
+   * Adopt the theme applied elsewhere. UIController.setTheme() is the canonical
+   * theme write path — it also serves the toolbar button and Ctrl+T — so this
+   * controller has to follow it instead of keeping an independent copy that
+   * only its own buttons update. Deliberately silent: emitting `theme-changed`
+   * here would route straight back into UIController.setTheme().
+   */
+  syncTheme({ theme, isRetroTheme }) {
+    this.theme = theme;
+    this.isRetroTheme = isRetroTheme === true;
+    this.updateSettingsDisplay();
+  }
+
+  // Single write path for Markdown toolbar visibility, shared by the Settings
+  // On/Off buttons and the Ctrl+Shift+/ shortcut.
+  setToolbarEnabled(enabled) {
+    this.isToolbarEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_toolbarEnabled', this.isToolbarEnabled.toString());
+    this.applyMarkdownToolbarVisibility();
+    this.emit('toolbar-enabled-changed', { enabled: this.isToolbarEnabled });
+    this.updateSettingsDisplay();
+  }
+
+  setAdvancedRenderingEnabled(enabled) {
+    this.advancedRenderingEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_advancedRendering', this.advancedRenderingEnabled.toString());
+    this.emit('rendering-mode-changed', { extended: this.advancedRenderingEnabled });
+    this.updateSettingsDisplay();
+  }
+
+  toggleAdvancedRendering() {
+    this.setAdvancedRenderingEnabled(!this.advancedRenderingEnabled);
+  }
+
+  setPinnedTabsEnabled(enabled) {
+    this.pinnedTabsEnabled = enabled === true;
+    localStorage.setItem('markdownViewer_pinnedTabs', this.pinnedTabsEnabled.toString());
+    this.applyPinnedTabsVisibility();
+    this.emit('pinned-tabs-changed', { enabled: this.pinnedTabsEnabled });
+    this.updateSettingsDisplay();
+  }
+
+  togglePinnedTabs() {
+    this.setPinnedTabsEnabled(!this.pinnedTabsEnabled);
+  }
+
+  setToolbarPin(control, pinned) {
+    if (control === 'rendering') {
+      this.renderingControlPinned = pinned === true;
+      localStorage.setItem('markdownViewer_pinRenderingControl', this.renderingControlPinned.toString());
+    } else if (control === 'pinnedTabs') {
+      this.pinnedTabsControlPinned = pinned === true;
+      localStorage.setItem('markdownViewer_pinPinnedTabsControl', this.pinnedTabsControlPinned.toString());
+    } else {
+      return false;
+    }
+
+    this.emit('toolbar-pins-changed', this.getToolbarQuickSettings());
+    this.updateSettingsDisplay();
+    return true;
+  }
+
+  getToolbarQuickSettings() {
+    return {
+      extended: this.advancedRenderingEnabled,
+      pinnedTabsEnabled: this.pinnedTabsEnabled,
+      renderingPinned: this.renderingControlPinned,
+      pinnedTabsPinned: this.pinnedTabsControlPinned
+    };
   }
 
   // Performance tracking methods

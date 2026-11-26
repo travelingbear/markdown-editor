@@ -1,3 +1,10 @@
+import { sanitizeRenderedHtml } from '../rendering/security.js';
+import { extractMarkdownTasks } from '../rendering/taskSyntax.js';
+import {
+  applyPreviewPostProcessing,
+  validateAndFixLink
+} from '../rendering/previewHtml.js';
+
 /**
  * Preview Component
  * Manages markdown rendering and preview functionality
@@ -5,17 +12,18 @@
 class PreviewComponent extends BaseComponent {
   constructor(options = {}) {
     super('PreviewComponent', options);
+    this.rendererRegistry = options.rendererRegistry || null;
     
     // Preview state
     this.currentContent = '';
     this.previewZoom = 1.0;
     this.theme = localStorage.getItem('markdownViewer_defaultTheme') || 'light';
+    this.advancedRenderingEnabled = localStorage.getItem('markdownViewer_advancedRendering') === 'true';
     
     // Libraries
-    this.mermaidInitialized = false;
-    this.katexInitialized = false;
-    this.mermaid = null;
-    this.katex = null;
+    this.highlightInitialized = false;
+    this.highlighter = null;
+    this.renderVersion = 0;
     
     // Task list states
     this.taskListStates = new Map();
@@ -50,10 +58,6 @@ class PreviewComponent extends BaseComponent {
 
   async initializeAdvancedFeatures() {
     // Libraries will be loaded lazily when needed
-    this.mermaidInitialized = false;
-    this.katexInitialized = false;
-    this.mermaid = null;
-    this.katex = null;
   }
 
   setupEventListeners() {
@@ -74,6 +78,11 @@ class PreviewComponent extends BaseComponent {
     this.on('zoom-changed', (data) => {
       this.updateZoom(data.zoom);
     });
+
+    this.on('rendering-mode-changed', (data) => {
+      this.advancedRenderingEnabled = data.extended === true;
+      this.updatePreview();
+    });
     
     // Setup context menu
     this.setupContextMenu();
@@ -82,8 +91,10 @@ class PreviewComponent extends BaseComponent {
   /**
    * Update preview with new content
    */
-  async updatePreview(markdown = '') {
-    if (!markdown && markdown !== '') {
+  async updatePreview(markdown = null) {
+    const renderVersion = ++this.renderVersion;
+
+    if (markdown === null || markdown === undefined) {
       markdown = this.currentContent;
     }
     
@@ -104,36 +115,46 @@ class PreviewComponent extends BaseComponent {
       // Configure marked
       this.configureMarked();
       
+      // Renderers own any syntax Markdown would otherwise claim, so they see
+      // the source before it is parsed.
+      const rendererContext = this.createRendererContext(markdown, renderVersion);
+      let source = markdown;
+      if (this.rendererRegistry) {
+        source = await this.rendererRegistry.transformMarkdown(markdown, rendererContext);
+        if (renderVersion !== this.renderVersion) return;
+      }
+
       // Parse markdown to HTML
-      let html = marked.parse(markdown);
+      let html = marked.parse(source);
       
-      // Process advanced features
-      html = await this.processMathInHtml(html);
-      html = await this.processMermaidInHtml(html);
-      html = this.processTaskListsInHtml(html);
-      html = this.processFootnotesInHtml(html);
-      html = this.processSupSubScript(html);
-      html = this.processLinksInHtml(html);
-      html = this.postProcessHtmlImages(html);
+      html = applyPreviewPostProcessing(html);
+      if (this.rendererRegistry) {
+        html = await this.rendererRegistry.transformHtml(html, rendererContext);
+        if (renderVersion !== this.renderVersion) return;
+      }
+      html = sanitizeRenderedHtml(html);
+
+      if (renderVersion !== this.renderVersion) return;
       
       // Set the HTML content
       this.preview.innerHTML = html;
       
-      // Remove disabled attribute from checkboxes
-      this.preview.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.removeAttribute('disabled');
-      });
-      
-      // Render advanced features
-      await this.renderMermaidDiagrams();
+      if (this.rendererRegistry) {
+        await this.rendererRegistry.afterRender(this.preview, { ...rendererContext, html });
+        if (renderVersion !== this.renderVersion) return;
+      }
       this.setupTaskListInteractions();
       this.setupAnchorLinks();
-      this.applySyntaxHighlighting();
+      if (this.advancedRenderingEnabled) {
+        await this.applySyntaxHighlighting();
+        if (renderVersion !== this.renderVersion) return;
+      }
       this.setupCodeBlockButtons();
       
       // Process images only if there are images in the content
       if (html.includes('<img')) {
         await this.processImages();
+        if (renderVersion !== this.renderVersion) return;
       }
       
       this.emit('preview-updated', { content: html });
@@ -143,6 +164,17 @@ class PreviewComponent extends BaseComponent {
       this.preview.innerHTML = '<p>⚠️ Markdown rendering error</p>';
       this.emit('preview-error', { error: error.message });
     }
+  }
+
+  createRendererContext(markdown, renderVersion) {
+    return {
+      markdown,
+      mode: this.advancedRenderingEnabled ? 'extended' : 'pure',
+      theme: this.theme,
+      filePath: this.currentFilePath || null,
+      renderVersion,
+      isCurrent: () => renderVersion === this.renderVersion
+    };
   }
 
   configureMarked() {
@@ -185,374 +217,88 @@ class PreviewComponent extends BaseComponent {
     }
   }
 
-  async loadMermaid() {
-    if (this.mermaidInitialized) return;
-    
-    try {
-      if (typeof mermaid === 'undefined') {
-        throw new Error('Mermaid not loaded');
-      }
-      
-      this.mermaid = mermaid;
-      this.mermaid.initialize({
-        startOnLoad: false,
-        theme: this.theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'loose',
-        fontFamily: 'inherit',
-        pie: { useMaxWidth: true }
-      });
-      this.mermaidInitialized = true;
-      this.emit('mermaid-loaded');
-    } catch (error) {
-      console.warn('[Preview] Mermaid not available:', error);
-      this.mermaidInitialized = false;
-    }
-  }
-
-  async loadKaTeX() {
-    if (this.katexInitialized) return;
-    
-    try {
-      const katexModule = await import('/vendor/katex.mjs');
-      this.katex = katexModule.default;
-      this.katexInitialized = true;
-    } catch (error) {
-      console.warn('[Preview] Failed to load KaTeX:', error);
-      this.katexInitialized = false;
-    }
-  }
-
-  async processMathInHtml(html) {
-    // Check if math expressions exist before loading KaTeX
-    const hasMath = html.includes('$$') || /\$[^$]+\$/.test(html);
-    if (!hasMath) return html;
-    
-    // Lazy load KaTeX when needed
-    if (!this.katexInitialized) {
-      await this.loadKaTeX();
-    }
-    
-    if (this.katexInitialized && this.katex) {
-      // Process display math: $$...$$
-      html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        
-        try {
-          // Decode HTML entities and tags that markdown parser added
-          const decodedMath = math.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/<br\s*\/?>/gi, '\n');
-          const rendered = this.katex.renderToString(decodedMath.trim(), {
-            displayMode: true,
-            throwOnError: false
-          });
-          return `<div class="math-display">${rendered}</div>`;
-        } catch (error) {
-          return `<div class="math-display math-error"><code>${math.trim()}</code></div>`;
-        }
-      });
-      
-      // Process inline math: $...$
-      html = html.replace(/\$([^$\n]+?)\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        
-        try {
-          // Decode HTML entities and tags that markdown parser added
-          const decodedMath = math.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/<br\s*\/?>/gi, '\n');
-          const rendered = this.katex.renderToString(decodedMath.trim(), {
-            displayMode: false,
-            throwOnError: false
-          });
-          return `<span class="math-inline">${rendered}</span>`;
-        } catch (error) {
-          return `<span class="math-inline math-error"><code>${math.trim()}</code></span>`;
-        }
-      });
-    } else {
-      // Fallback styling
-      html = html.replace(/\$\$([\s\S]+?)\$\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        return `<div class="math-display math-fallback"><code>${math.trim()}</code></div>`;
-      });
-      
-      html = html.replace(/\$([^$\n]+?)\$/g, (match, math, offset, string) => {
-        if (this.isInsideCodeBlock(string, offset, match.length)) {
-          return match;
-        }
-        return `<span class="math-inline math-fallback"><code>${math.trim()}</code></span>`;
-      });
-    }
-    
-    return html;
-  }
-
-  async processMermaidInHtml(html) {
-    // Check if mermaid diagrams exist before loading
-    const hasMermaid = html.includes('language-mermaid');
-    if (!hasMermaid) return html;
-    
-    // Lazy load Mermaid when needed
-    if (!this.mermaidInitialized) {
-      await this.loadMermaid();
-    }
-    
-    if (this.mermaidInitialized && this.mermaid) {
-      html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
-        const id = 'mermaid-' + Math.random().toString(36).substring(2, 11);
-        return `<div class="mermaid-diagram" id="${id}" data-mermaid-code="${encodeURIComponent(decodedCode.trim())}"></div>`;
-      });
-    } else {
-      html = html.replace(/<pre><code class="language-mermaid">(.*?)<\/code><\/pre>/gs, (match, code) => {
-        const decodedCode = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/&#39;/g, "'");
-        return `<div class="mermaid-placeholder mermaid-fallback">
-          <div class="placeholder-header">📊 Mermaid Diagram</div>
-          <pre class="diagram-code">${decodedCode}</pre>
-          <div class="placeholder-note">Mermaid.js not loaded - showing code instead</div>
-        </div>`;
-      });
-    }
-    
-    return html;
-  }
-
-  processTaskListsInHtml(html) {
-    // Check if we have task list items from our renderer
-    const hasTaskListClass = html.includes('task-list-item');
-    const hasCheckboxInputs = html.includes('<input') && html.includes('checkbox');
-    
-    // If we already have task lists from our renderer, we're good
-    if (hasTaskListClass && hasCheckboxInputs) {
-      return html;
-    }
-    
-    // Fallback: Handle any remaining task list patterns
-    let taskCount = 0;
-    
-    // Only process lists that actually contain task items
-    html = html.replace(/<(ul|ol)([^>]*)>([\s\S]*?)<\/(ul|ol)>/g, (match, tag, attrs, content) => {
-      // Check if this list contains any task items
-      const hasTaskItems = content.includes('[ ]') || content.includes('[x]');
-      
-      if (!hasTaskItems) {
-        return match; // Return unchanged if no task items
-      }
-      
-      const processedContent = content.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (liMatch, checked, liContent) => {
-        const isChecked = checked === 'x';
-        const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-        taskCount++;
-        
-        // Preserve HTML content including links
-        const processedLiContent = liContent.replace(/<(ul|ol)([^>]*)>([\s\S]*?)<\/(ul|ol)>/g, (nestedMatch, nestedTag, nestedAttrs, nestedContent) => {
-          const processedNestedContent = nestedContent.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (nestedLiMatch, nestedChecked, nestedLiContent) => {
-            const nestedIsChecked = nestedChecked === 'x';
-            const nestedId = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-            taskCount++;
-            return `<div class="task-list-item nested"><input type="checkbox" id="${nestedId}" ${nestedIsChecked ? 'checked' : ''}> <label for="${nestedId}">${nestedLiContent}</label></div>`;
-          });
-          return `<div class="task-list-nested"><${nestedTag}${nestedAttrs}>${processedNestedContent}</${nestedTag}></div>`;
-        });
-        
-        return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${processedLiContent}</label></div>`;
-      });
-      
-      // Only wrap if we actually processed task items
-      if (processedContent !== content && processedContent.includes('task-list-item')) {
-        return `<div class="task-list-container">${processedContent}</div>`;
-      }
-      
-      return match;
-    });
-    
-    // Handle remaining task lists in li elements (only if not already processed)
-    html = html.replace(/<li>\s*\[([ x])\]\s*(.*?)<\/li>/gs, (match, checked, content, offset, string) => {
-      if (this.isInsideCodeBlock(string, offset, match.length)) {
-        return match;
-      }
-      
-      // Skip if already inside a processed task list container
-      const beforeMatch = string.substring(0, offset);
-      const isInsideTaskContainer = beforeMatch.includes('task-list-container') && !beforeMatch.includes('</div>');
-      
-      if (isInsideTaskContainer) {
-        return match;
-      }
-      
-      const isChecked = checked === 'x';
-      const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-      taskCount++;
-      
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${content}</label></div>`;
-    });
-    
-    // Handle standalone checkbox patterns
-    html = html.replace(/<p>\[([ x])\]\s*([^<]*?)<\/p>/g, (match, checked, content, offset, string) => {
-      if (this.isInsideCodeBlock(string, offset, match.length)) {
-        return match;
-      }
-      
-      const isChecked = checked === 'x';
-      const cleanContent = content.trim();
-      const id = 'task-' + Math.random().toString(36).substring(2, 11) + '-' + taskCount;
-      taskCount++;
-      
-      return `<div class="task-list-item"><input type="checkbox" id="${id}" ${isChecked ? 'checked' : ''}> <label for="${id}">${cleanContent}</label></div>`;
-    });
-    
-    return html;
-  }
-
-  processFootnotesInHtml(html) {
-    const footnotes = new Map();
-    
-    // Collect definitions
-    html.replace(/\[\^([^\]]+)\]:\s*(.+?)(?=\n|$)/g, (match, id, definition) => {
-      footnotes.set(id, definition.trim());
-    });
-    
-    // Remove definition paragraphs
-    html = html.replace(/<p>\[\^[^\]]+\]:[^<]*<\/p>/g, '');
-    
-    // Process references
-    html = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
-      return footnotes.has(id) ? 
-        `<sup><a href="#footnote-${id}" id="footnote-ref-${id}" class="footnote-ref">${id}</a></sup>` : 
-        match;
-    });
-    
-    // Add footnotes section
-    if (footnotes.size > 0) {
-      let footnotesHtml = '<div class="footnotes"><hr><ol>';
-      for (const [id, definition] of footnotes) {
-        footnotesHtml += `<li id="footnote-${id}">${definition} <a href="#footnote-ref-${id}" class="footnote-backref">↩</a></li>`;
-      }
-      footnotesHtml += '</ol></div>';
-      html += footnotesHtml;
-    }
-    
-    return html;
-  }
-
-  processSupSubScript(html) {
-    // Superscript
-    html = html.replace(/\^\(([^)]+)\)\^/g, '<sup>$1</sup>');
-    html = html.replace(/\^([^\s^]+)\^/g, '<sup>$1</sup>');
-    
-    // Subscript
-    html = html.replace(/~\(([^)]+)\)~/g, '<sub>$1</sub>');
-    html = html.replace(/~([^\s~]+)~/g, '<sub>$1</sub>');
-    
-    return html;
-  }
-  
-  processLinksInHtml(html) {
-    // Fix email links that don't have mailto:
-    html = html.replace(/<a href="([^"]+@[^"]+\.[^"]+)">([^<]+)<\/a>/g, (match, href, text) => {
-      if (!href.startsWith('mailto:')) {
-        return `<a href="mailto:${href}">${text}</a>`;
-      }
-      return match;
-    });
-    
-    // Fix domain links that don't have protocol
-    html = html.replace(/<a href="([^"]+\.[a-zA-Z]{2,}[^"]*)">([^<]+)<\/a>/g, (match, href, text) => {
-      if (!href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('mailto:') && !href.startsWith('#')) {
-        return `<a href="https://${href}">${text}</a>`;
-      }
-      return match;
-    });
-    
-    return html;
-  }
-
-  postProcessHtmlImages(html) {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-    
-    const allImages = tempDiv.querySelectorAll('img');
-    allImages.forEach(img => {
-      if (!img.classList.contains('markdown-image')) {
-        img.classList.add('markdown-image');
-        let srcValue = img.getAttribute('src') || img.src;
-        img.setAttribute('data-original-src', srcValue);
-        if (!img.style.maxWidth) {
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
-        }
-      }
-    });
-    
-    return tempDiv.innerHTML;
-  }
-
-  isInsideCodeBlock(html, offset, matchLength) {
-    const beforeMatch = html.substring(0, offset);
-    const codeOpenBefore = (beforeMatch.match(/<code[^>]*>/g) || []).length;
-    const codeCloseBefore = (beforeMatch.match(/<\/code>/g) || []).length;
-    const preOpenBefore = (beforeMatch.match(/<pre[^>]*>/g) || []).length;
-    const preCloseBefore = (beforeMatch.match(/<\/pre>/g) || []).length;
-    
-    return (codeOpenBefore > codeCloseBefore) || (preOpenBefore > preCloseBefore);
-  }
-
-  async renderMermaidDiagrams() {
-    if (!this.mermaidInitialized || !this.mermaid) {
-      return;
-    }
-    
-    const diagrams = document.querySelectorAll('.mermaid-diagram');
-    
-    for (let i = 0; i < diagrams.length; i++) {
-      const diagram = diagrams[i];
-      const code = decodeURIComponent(diagram.getAttribute('data-mermaid-code'));
-      
-      try {
-        diagram.innerHTML = '';
-        const { svg } = await this.mermaid.render(diagram.id + '-svg', code);
-        diagram.innerHTML = svg;
-      } catch (error) {
-        console.error(`[Preview] Mermaid error:`, error);
-        diagram.innerHTML = `
-          <div class="mermaid-error">
-            <div class="error-header">⚠️ Mermaid Rendering Error</div>
-            <pre class="diagram-code">${code}</pre>
-            <div class="error-message">${error.message}</div>
-          </div>
-        `;
-      }
-    }
-  }
-
   setupTaskListInteractions() {
-    const checkboxes = this.preview.querySelectorAll('input[type="checkbox"]');
-    
-    checkboxes.forEach((checkbox) => {
+    // Marked task inputs are disabled before activation, while the fallback
+    // renderer wraps its generated inputs in task-list-item. This avoids
+    // attaching Markdown behavior to unrelated raw HTML checkboxes.
+    const checkboxes = this.preview.querySelectorAll(
+      'input[disabled][type="checkbox"], .task-list-item input[type="checkbox"]'
+    );
+    const sourceTasks = extractMarkdownTasks(this.currentContent);
+
+    checkboxes.forEach((checkbox, taskIndex) => {
+      const sourceTask = sourceTasks[taskIndex];
+      const taskLabel = this.prepareTaskLabel(checkbox);
+      if (taskLabel && !checkbox.parentElement.classList.contains('task-list-item')) {
+        const row = document.createElement('span');
+        row.className = 'markdown-task-row';
+        checkbox.before(row);
+        row.append(checkbox, taskLabel);
+      }
+      checkbox.classList.add('markdown-task-checkbox');
+      checkbox.removeAttribute('disabled');
+      if (sourceTask) checkbox.dataset.sourceLine = String(sourceTask.lineIndex);
       checkbox.addEventListener('change', (e) => {
-        const taskText = e.target.parentElement.textContent.trim();
+        const taskText = sourceTask?.text
+          || taskLabel?.textContent.trim()
+          || e.target.parentElement.textContent.trim();
+        const sourceLine = Number.parseInt(e.target.dataset.sourceLine, 10);
         
         this.emit('task-toggled', {
           taskText: taskText,
-          checked: e.target.checked
+          checked: e.target.checked,
+          sourceLine: Number.isInteger(sourceLine) ? sourceLine : null
         });
       });
     });
+  }
+
+  prepareTaskLabel(checkbox) {
+    const existingLabel = checkbox.nextElementSibling;
+    if (existingLabel?.tagName === 'LABEL') {
+      existingLabel.classList.add('markdown-task-label');
+      return existingLabel;
+    }
+
+    const container = checkbox.parentElement;
+    if (!container) return null;
+
+    const label = document.createElement('span');
+    label.className = 'markdown-task-label';
+    const labelNodes = [];
+    let sibling = checkbox.nextSibling;
+
+    while (sibling) {
+      const nextSibling = sibling.nextSibling;
+      const isNestedList = sibling.nodeType === 1
+        && (sibling.tagName === 'UL' || sibling.tagName === 'OL');
+      if (isNestedList) break;
+      labelNodes.push(sibling);
+      sibling = nextSibling;
+    }
+
+    labelNodes.forEach((node) => label.appendChild(node));
+    checkbox.after(label);
+    return label;
   }
 
   setupAnchorLinks() {
     // Add IDs to headers
+    const targets = new Map();
+    this.preview.querySelectorAll('[id]').forEach(element => {
+      if (!targets.has(element.id)) targets.set(element.id, element);
+    });
     const headers = this.preview.querySelectorAll('h1, h2, h3, h4, h5, h6');
     headers.forEach(header => {
       if (!header.id) {
-        const id = header.textContent.toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .trim();
+        const base = header.textContent.toLowerCase().trim()
+          .replace(/[^\p{L}\p{M}\p{N}_\s-]/gu, '')
+          .replace(/\s+/g, '-') || 'section';
+        let id = base;
+        let suffix = 1;
+        while (targets.has(id)) id = `${base}-${suffix++}`;
         header.id = id;
+        targets.set(id, header);
       }
     });
     
@@ -562,16 +308,8 @@ class PreviewComponent extends BaseComponent {
     }
     
     this.anchorClickHandler = (e) => {
-      let linkElement = null;
-      let href = null;
-      
-      if (e.target.tagName === 'A') {
-        linkElement = e.target;
-        href = linkElement.getAttribute('href');
-      } else if (e.target.tagName === 'IMG' && e.target.parentElement.tagName === 'A') {
-        linkElement = e.target.parentElement;
-        href = linkElement.getAttribute('href');
-      }
+      const linkElement = e.target.closest?.('a[href]');
+      const href = linkElement?.getAttribute('href');
       
       if (!href || !linkElement) return;
       
@@ -579,8 +317,8 @@ class PreviewComponent extends BaseComponent {
         // Handle internal anchor links
         if (href.startsWith('#')) {
           e.preventDefault();
-          const targetId = href.substring(1);
-          const targetElement = this.preview.querySelector(`#${targetId}`);
+          const targetId = decodeURIComponent(href.slice(1));
+          const targetElement = targets.get(targetId);
           if (targetElement) {
             targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
@@ -588,7 +326,7 @@ class PreviewComponent extends BaseComponent {
         }
         
         // Validate and fix common link issues
-        let validHref = this.validateAndFixLink(href);
+        let validHref = validateAndFixLink(href);
         
         if (validHref) {
           e.preventDefault();
@@ -603,50 +341,26 @@ class PreviewComponent extends BaseComponent {
     this.preview.addEventListener('click', this.anchorClickHandler);
   }
   
-  validateAndFixLink(href) {
-    if (!href || typeof href !== 'string') {
-      return null;
-    }
-    
-    const trimmedHref = href.trim();
-    
-    // Already valid URLs
-    if (trimmedHref.startsWith('http://') || trimmedHref.startsWith('https://')) {
-      return trimmedHref;
-    }
-    
-    // Valid mailto links
-    if (trimmedHref.startsWith('mailto:')) {
-      return trimmedHref;
-    }
-    
-    // Fix common email patterns without mailto:
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (emailPattern.test(trimmedHref)) {
-      return `mailto:${trimmedHref}`;
-    }
-    
-    // Fix URLs missing protocol
-    if (trimmedHref.includes('.') && !trimmedHref.includes(' ')) {
-      // Looks like a domain, add https://
-      if (trimmedHref.match(/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) || trimmedHref.startsWith('www.')) {
-        return `https://${trimmedHref}`;
+  async applySyntaxHighlighting() {
+    const codeBlocks = this.preview.querySelectorAll('pre code:not([data-highlighted])');
+    if (codeBlocks.length === 0) return;
+
+    if (!this.highlightInitialized) {
+      try {
+        const [highlightModule] = await Promise.all([
+          import('highlight.js/lib/common'),
+          import('highlight.js/styles/github.css')
+        ]);
+        this.highlighter = highlightModule.default;
+        this.highlightInitialized = true;
+      } catch (error) {
+        console.warn('[Preview] Failed to load syntax highlighting:', error);
+        return;
       }
     }
-    
-    // File protocols
-    if (trimmedHref.startsWith('file://')) {
-      return trimmedHref;
-    }
-    
-    // If we can't fix it, return null to prevent navigation
-    console.warn('[Preview] Could not validate link:', href);
-    return null;
-  }
 
-  applySyntaxHighlighting() {
-    if (typeof hljs !== 'undefined') {
-      this.preview.querySelectorAll('pre code:not([data-highlighted])').forEach((block) => {
+    if (this.highlighter) {
+      codeBlocks.forEach((block) => {
         try {
           // Store original text content if not already stored
           if (!block.hasAttribute('data-original-text')) {
@@ -660,7 +374,7 @@ class PreviewComponent extends BaseComponent {
           // Remove all hljs classes
           block.className = block.className.replace(/\bhljs[\w-]*\b/g, '').trim();
           
-          hljs.highlightElement(block);
+          this.highlighter.highlightElement(block);
           block.setAttribute('data-highlighted', 'yes');
         } catch (error) {
           // Silently handle highlighting errors
@@ -833,16 +547,9 @@ class PreviewComponent extends BaseComponent {
    */
   updateTheme(theme) {
     this.theme = theme;
-    
-    if (this.mermaidInitialized && this.mermaid) {
-      this.mermaid.initialize({
-        theme: theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'loose',
-        fontFamily: 'inherit'
-      });
-      // Re-render diagrams with new theme
-      this.updatePreview();
-    }
+    // Re-render the generic pipeline so theme-aware renderer plugins receive
+    // fresh context without the preview core knowing which plugins use it.
+    if (this.currentContent) this.updatePreview();
   }
 
   /**

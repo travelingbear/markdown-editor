@@ -1,11 +1,18 @@
 /* Markdown Toolbar Feature Styles */
 
 /* Markdown Toolbar Styles - Simple toggle */
+/*
+ * The toolbar lives inside the code pane, so it must never paint over the
+ * Preview pane beside it. Clipping only the inline axis keeps that guarantee
+ * while leaving the block axis visible, which is what the Markdown dropdowns
+ * and the More menu need in order to hang below the toolbar.
+ */
 .markdown-toolbar {
   background: var(--bg-tertiary);
   border-bottom: 1px solid var(--border-primary);
   padding: 0;
-  overflow: visible;
+  overflow-x: clip;
+  overflow-y: visible;
   height: 0;
   opacity: 0;
   transition: all 0.3s ease;
@@ -14,7 +21,6 @@
 }
 
 .markdown-toolbar.visible {
-  overflow: visible;
   height: auto;
   opacity: 1;
 }
@@ -34,7 +40,41 @@ body:has(.markdown-toolbar.pinned) .main-content {
   align-items: center;
   padding: 8px 12px;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+/*
+ * Formatting groups live in a shrinkable region. Without it every group refused
+ * to shrink (flex items default to min-width: auto), so a narrow code pane —
+ * a vertical split on a portrait monitor — pushed the trailing controls past
+ * the pane edge. `gap: inherit` keeps whatever gap the active size sets on
+ * .toolbar-content, and the inline-axis clip matches .markdown-toolbar so the
+ * Markdown dropdowns can still open downwards.
+ */
+.toolbar-primary {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/*
+ * Absorbs the leftover width so More and Find & Replace stay pinned at the
+ * right edge of the toolbar.
+ */
+.toolbar-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Pinned controls keep their size so they stay reachable inside the pane. */
+.toolbar-overflow-group,
+.toolbar-group-search {
+  flex: 0 0 auto;
 }
 
 .toolbar-group {
@@ -55,14 +95,15 @@ body:has(.markdown-toolbar.pinned) .main-content {
   border: 1px solid var(--border-primary);
   background: var(--bg-primary);
   color: var(--text-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-4);
   cursor: pointer;
   font-size: 11px;
   font-weight: 500;
   transition: all 0.2s;
   white-space: nowrap;
+  line-height: 1.2;
   min-width: 32px;
-  height: 28px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,8 +174,9 @@ body:has(.markdown-toolbar.pinned) .main-content {
   display: none !important;
 }
 
-/* Show toolbar in code and split modes */
-.main-content.code-mode .markdown-toolbar {
+/* Show toolbar in code and split modes when enabled by the component. */
+.main-content.code-mode .markdown-toolbar,
+.main-content.split-mode .markdown-toolbar {
   display: block;
 }
 
@@ -150,14 +192,18 @@ body.distraction-free .markdown-toolbar {
 }
 
 /* Adjust editor container height when toolbar is visible */
-.main-content.code-mode .editor-pane {
+.main-content.code-mode .editor-pane,
+.main-content.split-mode .editor-pane {
   display: flex;
   flex-direction: column;
 }
 
-.main-content.code-mode .monaco-editor-container,
-.main-content.code-mode #editor {
+.main-content.code-mode .editor-container,
+.main-content.code-mode #editor,
+.main-content.split-mode .editor-container,
+.main-content.split-mode #editor {
   flex: 1;
+  min-height: 0;
 }
 
 /* Font Size Control Styles in Toolbar */
@@ -173,9 +219,9 @@ body.distraction-free .markdown-toolbar {
   color: #5e60e7;
   background: var(--bg-tertiary);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-3);
   border: 1px solid var(--border-primary);
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 
@@ -213,7 +259,6 @@ body.distraction-free .markdown-toolbar {
   font-size: 8px !important;
   min-width: 16px;
   width: 16px;
-  height: 28px;
   margin-left: -1px;
   border-left: 1px solid var(--border-secondary) !important;
   display: flex;
@@ -230,7 +275,7 @@ body.distraction-free .markdown-toolbar {
   position: fixed;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-6);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 100000;
   display: none;
@@ -271,6 +316,136 @@ body.distraction-free .markdown-toolbar {
   background-color: var(--bg-tertiary);
 }
 
+/* Responsive overflow menu */
+.editor-pane {
+  container-name: editor-pane;
+  container-type: inline-size;
+}
+
+.toolbar-overflow-group {
+  display: none;
+}
+
+.md-overflow-container {
+  position: relative;
+}
+
+#md-overflow-btn {
+  gap: 4px;
+}
+
+.md-overflow-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100001;
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  /* Sized against the code pane, not the window, so the menu stays inside
+     the pane in a split view instead of being clipped at its edge. */
+  width: min(430px, calc(100cqi - 24px));
+  max-height: min(460px, 72vh);
+  overflow-y: auto;
+  padding: 10px;
+  gap: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-10);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+}
+
+.md-overflow-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 18px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
+  border-left: 1px solid var(--border-primary);
+  transform: rotate(45deg);
+}
+
+.md-overflow-menu.show {
+  display: grid;
+}
+
+.md-overflow-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-7);
+}
+
+.overflow-section-history,
+.overflow-section-headings,
+.overflow-section-formatting,
+.overflow-section-insert,
+.overflow-section-structure,
+.overflow-section-blocks,
+.overflow-section-alignment {
+  display: none;
+}
+
+.md-overflow-heading {
+  padding: 2px 6px 5px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.md-overflow-item {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 8px;
+  gap: 7px;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.md-overflow-item:hover,
+.md-overflow-item:focus-visible {
+  background: var(--bg-tertiary);
+  outline: none;
+}
+
+.md-overflow-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  color: var(--accent-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.md-overflow-item kbd {
+  padding: 1px 4px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-3);
+  font-family: inherit;
+  font-size: 9px;
+}
+
 /* Toolbar Size Variations - Markdown Toolbar */
 [data-md-toolbar-size="small"] .markdown-toolbar {
   padding: 0;
@@ -285,7 +460,7 @@ body.distraction-free .markdown-toolbar {
   padding: 3px 6px;
   font-size: 9px;
   min-width: 24px;
-  height: 22px;
+  min-height: 22px;
 }
 
 [data-md-toolbar-size="small"] .font-size-display {
@@ -304,7 +479,7 @@ body.distraction-free .markdown-toolbar {
   padding: 8px 14px;
   font-size: 13px;
   min-width: 40px;
-  height: 36px;
+  min-height: 36px;
 }
 
 [data-md-toolbar-size="large"] .font-size-display {
@@ -319,48 +494,159 @@ body.distraction-free .markdown-toolbar {
   margin: 0 6px;
 }
 
-/* Collapsible button size variations */
-[data-md-toolbar-size="small"] .md-collapsible-btn {
-  padding: 3px 6px;
-  font-size: 9px;
-  height: 22px;
+/*
+ * Condense progressively based on the code pane, not the window. Each toolbar
+ * size gets its own thresholds because Large can overflow in a full-width
+ * horizontal split while Small can keep considerably more controls visible.
+ */
+@container editor-pane (max-width: 1706px) {
+  [data-md-toolbar-size="large"] .toolbar-content {
+    gap: 6px;
+    padding: 7px 10px;
+  }
+
+  [data-md-toolbar-size="large"] .toolbar-separator {
+    margin-inline: 3px;
+  }
 }
 
-[data-md-toolbar-size="small"] .md-collapsible-menu .md-btn {
-  padding: 3px 6px;
-  font-size: 9px;
-  min-width: 24px;
-  height: 22px;
+@container editor-pane (max-width: 1369px) {
+  [data-md-toolbar-size="medium"] .toolbar-content {
+    gap: 5px;
+    padding: 6px 8px;
+  }
+
+  [data-md-toolbar-size="medium"] .toolbar-separator {
+    margin-inline: 2px;
+  }
 }
 
-[data-md-toolbar-size="large"] .md-collapsible-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  height: 36px;
+@container editor-pane (max-width: 1057px) {
+  [data-md-toolbar-size="small"] .toolbar-content {
+    gap: 3px;
+    padding: 4px 6px;
+  }
+
+  [data-md-toolbar-size="small"] .toolbar-separator {
+    margin-inline: 1px;
+  }
 }
 
-[data-md-toolbar-size="large"] .md-collapsible-menu .md-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  min-width: 40px;
-  height: 36px;
+/* Alignment */
+@container editor-pane (max-width: 1609px) {
+  [data-md-toolbar-size="large"] :is(.toolbar-group-alignment, .toolbar-separator:has(+ .toolbar-group-alignment)) { display: none; }
+  [data-md-toolbar-size="large"] :is(.toolbar-overflow-group, .overflow-section-alignment) { display: flex; }
 }
 
-/* Collapsible Menu Styles */
-.md-collapse-menu {
-  position: fixed;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100000;
-  display: none;
-  flex-direction: column;
-  min-width: 120px;
+@container editor-pane (max-width: 1291px) {
+  [data-md-toolbar-size="medium"] :is(.toolbar-group-alignment, .toolbar-separator:has(+ .toolbar-group-alignment)) { display: none; }
+  [data-md-toolbar-size="medium"] :is(.toolbar-overflow-group, .overflow-section-alignment) { display: flex; }
 }
 
-.md-collapse-menu.show {
-  display: flex;
+@container editor-pane (max-width: 997px) {
+  [data-md-toolbar-size="small"] :is(.toolbar-group-alignment, .toolbar-separator:has(+ .toolbar-group-alignment)) { display: none; }
+  [data-md-toolbar-size="small"] :is(.toolbar-overflow-group, .overflow-section-alignment) { display: flex; }
+}
+
+/* Code blocks and quotes */
+@container editor-pane (max-width: 1379px) {
+  [data-md-toolbar-size="large"] :is(.toolbar-group-code, .toolbar-separator:has(+ .toolbar-group-code)) { display: none; }
+  [data-md-toolbar-size="large"] .overflow-section-blocks { display: flex; }
+}
+
+@container editor-pane (max-width: 1102px) {
+  [data-md-toolbar-size="medium"] :is(.toolbar-group-code, .toolbar-separator:has(+ .toolbar-group-code)) { display: none; }
+  [data-md-toolbar-size="medium"] .overflow-section-blocks { display: flex; }
+}
+
+@container editor-pane (max-width: 846px) {
+  [data-md-toolbar-size="small"] :is(.toolbar-group-code, .toolbar-separator:has(+ .toolbar-group-code)) { display: none; }
+  [data-md-toolbar-size="small"] .overflow-section-blocks { display: flex; }
+}
+
+/* Lists and table */
+@container editor-pane (max-width: 1202px) {
+  [data-md-toolbar-size="large"] :is(.toolbar-group-structure, .toolbar-separator:has(+ .toolbar-group-structure)) { display: none; }
+  [data-md-toolbar-size="large"] .overflow-section-structure { display: flex; }
+}
+
+@container editor-pane (max-width: 958px) {
+  [data-md-toolbar-size="medium"] :is(.toolbar-group-structure, .toolbar-separator:has(+ .toolbar-group-structure)) { display: none; }
+  [data-md-toolbar-size="medium"] .overflow-section-structure { display: flex; }
+}
+
+@container editor-pane (max-width: 731px) {
+  [data-md-toolbar-size="small"] :is(.toolbar-group-structure, .toolbar-separator:has(+ .toolbar-group-structure)) { display: none; }
+  [data-md-toolbar-size="small"] .overflow-section-structure { display: flex; }
+}
+
+/* Links and images */
+@container editor-pane (max-width: 972px) {
+  [data-md-toolbar-size="large"] :is(.toolbar-group-media, .toolbar-separator:has(+ .toolbar-group-media)) { display: none; }
+  [data-md-toolbar-size="large"] .overflow-section-insert { display: flex; }
+}
+
+@container editor-pane (max-width: 770px) {
+  [data-md-toolbar-size="medium"] :is(.toolbar-group-media, .toolbar-separator:has(+ .toolbar-group-media)) { display: none; }
+  [data-md-toolbar-size="medium"] .overflow-section-insert { display: flex; }
+}
+
+@container editor-pane (max-width: 580px) {
+  [data-md-toolbar-size="small"] :is(.toolbar-group-media, .toolbar-separator:has(+ .toolbar-group-media)) { display: none; }
+  [data-md-toolbar-size="small"] .overflow-section-insert { display: flex; }
+}
+
+/* Secondary headings and formatting */
+@container editor-pane (max-width: 813px) {
+  [data-md-toolbar-size="large"] .toolbar-group-headings .md-btn:not([data-action="paragraph"]),
+  [data-md-toolbar-size="large"] .toolbar-group-formatting .md-btn:is([data-action="strikethrough"], [data-action="underline"]) { display: none; }
+  [data-md-toolbar-size="large"] :is(.overflow-section-headings, .overflow-section-formatting) { display: flex; }
+}
+
+@container editor-pane (max-width: 635px) {
+  [data-md-toolbar-size="medium"] .toolbar-group-headings .md-btn:not([data-action="paragraph"]),
+  [data-md-toolbar-size="medium"] .toolbar-group-formatting .md-btn:is([data-action="strikethrough"], [data-action="underline"]) { display: none; }
+  [data-md-toolbar-size="medium"] :is(.overflow-section-headings, .overflow-section-formatting) { display: flex; }
+}
+
+@container editor-pane (max-width: 466px) {
+  [data-md-toolbar-size="small"] .toolbar-group-headings .md-btn:not([data-action="paragraph"]),
+  [data-md-toolbar-size="small"] .toolbar-group-formatting .md-btn:is([data-action="strikethrough"], [data-action="underline"]) { display: none; }
+  [data-md-toolbar-size="small"] :is(.overflow-section-headings, .overflow-section-formatting) { display: flex; }
+}
+
+/* History is the last group moved into More. */
+@container editor-pane (max-width: 565px) {
+  [data-md-toolbar-size="large"] .toolbar-group-history { display: none; }
+  [data-md-toolbar-size="large"] .overflow-section-history { display: flex; }
+}
+
+@container editor-pane (max-width: 437px) {
+  [data-md-toolbar-size="medium"] .toolbar-group-history { display: none; }
+  [data-md-toolbar-size="medium"] .overflow-section-history { display: flex; }
+}
+
+@container editor-pane (max-width: 317px) {
+  [data-md-toolbar-size="small"] .toolbar-group-history { display: none; }
+  [data-md-toolbar-size="small"] .overflow-section-history { display: flex; }
+}
+
+@container editor-pane (max-width: 600px) {
+  .toolbar-content {
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .md-overflow-label {
+    display: none;
+  }
+}
+
+@container editor-pane (max-width: 440px) {
+  .md-overflow-menu {
+    grid-template-columns: 1fr;
+    width: min(270px, calc(100cqi - 18px));
+  }
 }
 
 /* Responsive design */

@@ -1,3 +1,5 @@
+import { message as showMessage } from '@tauri-apps/plugin-dialog';
+
 /**
  * Markdown Editor - Main Component Orchestrator
  * Manages all components and maintains existing functionality
@@ -11,6 +13,7 @@ class MarkdownEditor extends BaseComponent {
     
     // Plugin manager will be initialized after components are created
     this.pluginManager = null;
+    this.rendererRegistry = options.rendererRegistry || new RendererRegistry();
     
     // Extract controllers from options or set to null for default creation
     this.controllers = options.controllers || {};
@@ -27,25 +30,33 @@ class MarkdownEditor extends BaseComponent {
     this.settingsController = this.controllers.settingsController || null;
     this.tabUIController = this.controllers.tabUIController || null;
     this.modeController = this.controllers.modeController || null;
+    this.scrollCoordinator = this.controllers.scrollCoordinator || null;
+    this.tabSessionController = this.controllers.tabSessionController || null;
+    this.documentLifecycleController = this.controllers.documentLifecycleController || null;
+    this.editorLifecycleController = this.controllers.editorLifecycleController || null;
+    this.previewLifecycleController = this.controllers.previewLifecycleController || null;
+    this.toolbarLifecycleController = this.controllers.toolbarLifecycleController || null;
+    this.settingsCoordinator = this.controllers.settingsCoordinator || null;
     this.markdownActionController = this.controllers.markdownActionController || null;
     this.exportController = this.controllers.exportController || null;
+    this.pluginModalController = this.controllers.pluginModalController || null;
+    this.nativeWindowController = this.controllers.nativeWindowController || null;
+    this.fileDropController = this.controllers.fileDropController || null;
+    this.splitPaneController = this.controllers.splitPaneController || null;
+    this.welcomeController = this.controllers.welcomeController || null;
+    this.statusBarController = this.controllers.statusBarController || null;
+    this.searchController = this.controllers.searchController || null;
+    this.markdownDialogController = this.controllers.markdownDialogController || null;
     
     // Performance tracking
     this.startupTime = 0;
-    this.lastFileOpenTime = 0;
     this.lastModeSwitchTime = 0;
     this.performanceOptimizer = window.PerformanceOptimizer ? new window.PerformanceOptimizer() : null;
     
-    // Smart loading flags
-    this.isNewFileRequested = false;
-    
-    // Status bar elements
-    this.cursorPos = null;
-    this.filename = null;
   }
 
   async onInit() {
-    const startupStartTime = window.DEBUG_MODE ? performance.now() : 0;
+    const startupStartTime = performance.now();
     
     try {
       // Initialize performance optimizer early
@@ -54,58 +65,58 @@ class MarkdownEditor extends BaseComponent {
         this.performanceOptimizer.optimizeForMultiTabs();
       }
       
-      // Minimal splash updates for faster startup
-      this.updateSplashProgress(10, 'Loading...');
+      // Update splash screen progress
+      this.updateSplashProgress(10, 'Initializing components...');
       
-      // Initialize DOM elements
-      this.initializeElements();
+      this.updateSplashProgress(25, 'Creating components...');
       
       // Create and initialize components
       await this.createComponents();
       
-      this.updateSplashProgress(50, 'Loading...');
-      
-      // Set up inter-component communication
-      this.setupComponentCommunication();
+      this.updateSplashProgress(70, 'Applying settings...');
       
       // Apply initial settings
       this.applyInitialSettings();
       
+      this.updateSplashProgress(85, 'Setting up event handlers...');
+      
       // Set up global event handlers
       this.setupGlobalEventHandlers();
       
-      this.updateSplashProgress(95, 'Ready...');
+      this.updateSplashProgress(95, 'Finalizing...');
       
-      // Defer plugin loading if enabled
-      if (this.settingsController.getPluginsEnabled()) {
-        // Initialize plugins after UI is ready (non-blocking)
-        // Defer plugin loading until browser is idle for faster startup
-        if (window.requestIdleCallback) {
-          requestIdleCallback(() => this.initializePlugins(), { timeout: 2000 });
-        } else {
-          setTimeout(() => this.initializePlugins(), 1000);
-        }
-      }
+      // Initialize plugin manager
+      this.updateSplashProgress(90, 'Initializing plugins...');
+      this.pluginManager = new PluginManager(this);
+      
+      // Initialize plugin loader
+      this.pluginLoader = new PluginLoader(this.pluginManager);
+      
+      // Discover and register plugins
+      await this.pluginLoader.loadAndRegisterPlugins();
+
+      this.pluginModalController.setDependencies({
+        pluginManager: this.pluginManager,
+        pluginLoader: this.pluginLoader,
+        uiController: this.uiController
+      });
+      
+      // Auto-activate enabled plugins
+      await this.pluginManager.autoActivatePlugins();
+      this.pluginModalController.refresh();
       
       // Complete initialization
-      if (window.DEBUG_MODE) {
-        this.startupTime = performance.now() - startupStartTime;
-        this.settingsController.setStartupTime(this.startupTime);
-      }
+      this.startupTime = performance.now() - startupStartTime;
+      this.settingsController.setStartupTime(this.startupTime);
       
-      // Don't hide splash yet - wait for document to be ready in correct mode
       this.updateSplashProgress(100, 'Ready!');
+      this.hideSplash();
       
       // Mark app as initialized to show hidden elements
       document.body.classList.add('app-initialized');
       
-      // Check for startup file and new file requests
-      const hasDocument = await this.checkStartupFile();
-      
-      // Hide splash after document is ready (or immediately if no document)
-      if (!hasDocument) {
-        this.hideSplash();
-      }
+      // Check for startup file
+      await this.fileController.checkStartupFile(this.documentComponent);
       
       // Retro sound is already played by UIController.setTheme() during applyInitialSettings()
       
@@ -117,636 +128,391 @@ class MarkdownEditor extends BaseComponent {
     }
   }
 
-  initializeElements() {
-    // Status bar elements
-    this.cursorPos = document.getElementById('cursor-pos');
-    this.filename = document.getElementById('filename');
-    
-    if (!this.cursorPos || !this.filename) {
-      throw new Error('Status bar elements not found');
-    }
-  }
-
   async createComponents() {
     // Register default controllers in registry
     this.registry.register('settings', SettingsController);
     this.registry.register('ui', UIController);
     this.registry.register('file', FileController);
+    this.registry.register('keyboard', KeyboardController);
     this.registry.register('mode', ModeController);
     this.registry.register('tabUI', TabUIController);
+    this.registry.register('scroll', ScrollCoordinator);
+    this.registry.register('tabSession', TabSessionController);
+    this.registry.register('documentLifecycle', DocumentLifecycleController);
+    this.registry.register('editorLifecycle', EditorLifecycleController);
+    this.registry.register('previewLifecycle', PreviewLifecycleController);
+    this.registry.register('toolbarLifecycle', ToolbarLifecycleController);
+    this.registry.register('settingsCoordinator', SettingsCoordinator);
     this.registry.register('markdownAction', MarkdownActionController);
     this.registry.register('export', ExportController);
+    this.registry.register('nativeWindow', NativeWindowController);
+    this.registry.register('fileDrop', FileDropController);
+    this.registry.register('splitPane', SplitPaneController);
+    this.registry.register('welcome', WelcomeController);
+    this.registry.register('statusBar', StatusBarController);
+    this.registry.register('search', SearchController);
+    this.registry.register('markdownDialog', MarkdownDialogController);
+    this.registry.register('pluginModal', PluginModalController);
     
-    // Phase 1: Create critical controllers first (settings needed by others)
+    // Create settings controller first (or use injected one)
     if (!this.settingsController) {
       this.settingsController = this.registry.createInstance('settings');
     }
     this.addChild(this.settingsController);
     await this.settingsController.init();
     
-    // Phase 2: Create independent components in parallel
-    const independentComponents = await Promise.all([
-      // UI Controller
-      (async () => {
-        if (!this.uiController) {
-          this.uiController = this.registry.createInstance('ui');
-        }
-        this.addChild(this.uiController);
-        await this.uiController.init();
-        return this.uiController;
-      })(),
-      
-      // File Controller
-      (async () => {
-        if (!this.fileController) {
-          this.fileController = this.registry.createInstance('file');
-        }
-        this.addChild(this.fileController);
-        await this.fileController.init();
-        this.fileController.setPerformanceOptimizer(this.performanceOptimizer);
-        return this.fileController;
-      })(),
-      
-      // Tab Manager
-      (async () => {
-        this.tabManager = new TabManager();
-        this.addChild(this.tabManager);
-        await this.tabManager.init();
-        return this.tabManager;
-      })(),
-      
-      // Document Component
-      (async () => {
-        this.documentComponent = new DocumentComponent();
-        this.addChild(this.documentComponent);
-        await this.documentComponent.init();
-        return this.documentComponent;
-      })(),
-      
-      // Toolbar Component
-      (async () => {
-        this.toolbarComponent = new ToolbarComponent();
-        this.addChild(this.toolbarComponent);
-        await this.toolbarComponent.init();
-        return this.toolbarComponent;
-      })()
-    ]);
-    
-    // Phase 3: Create view components
-    const viewComponents = await Promise.all([
-      // Editor Component
-      (async () => {
-        this.editorComponent = new EditorComponent();
-        this.addChild(this.editorComponent);
-        await this.editorComponent.init();
-        return this.editorComponent;
-      })(),
-      
-      // Preview Component
-      (async () => {
-        this.previewComponent = new PreviewComponent();
-        this.addChild(this.previewComponent);
-        await this.previewComponent.init();
-        return this.previewComponent;
-      })()
-    ]);
-    
-    // Phase 4: Create dependent controllers
-    const dependentControllers = await Promise.all([
-      // Mode Controller
-      (async () => {
-        if (!this.modeController) {
-          this.modeController = this.registry.createInstance('mode');
-        }
-        this.addChild(this.modeController);
-        await this.modeController.init();
-        this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
-        return this.modeController;
-      })(),
-      
-      // Tab UI Controller
-      (async () => {
-        if (!this.tabUIController) {
-          this.tabUIController = this.registry.createInstance('tabUI');
-        }
-        this.addChild(this.tabUIController);
-        await this.tabUIController.init();
-        this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
-        return this.tabUIController;
-      })(),
-      
-      // Markdown Action Controller
-      (async () => {
-        if (!this.markdownActionController) {
-          this.markdownActionController = this.registry.createInstance('markdownAction');
-        }
-        this.addChild(this.markdownActionController);
-        await this.markdownActionController.init();
-        this.markdownActionController.setDependencies(this.editorComponent, this.documentComponent);
-        return this.markdownActionController;
-      })(),
-      
-      // Export Controller
-      (async () => {
-        if (!this.exportController) {
-          this.exportController = this.registry.createInstance('export');
-        }
-        this.addChild(this.exportController);
-        await this.exportController.init();
-        this.exportController.setDependencies(this.editorComponent);
-        return this.exportController;
-      })()
-    ]);
-  }
-
-  async ensureViewComponentsInitialized() {
-    // Components are always initialized at startup now
-    return;
-  }
-
-  setupComponentCommunication() {
-    // Only set up component communication if components exist
-    if (!this.editorComponent || !this.previewComponent) {
-      return;
+    // Create UI controller (or use injected one)
+    if (!this.uiController) {
+      this.uiController = this.registry.createInstance('ui');
     }
+    this.addChild(this.uiController);
+    await this.uiController.init();
     
-    // Tab Manager Events
-    this.tabManager.on('tab-created', (data) => {
-      // Phase 6: Track tab creation performance for all new tabs
-      if (this.performanceOptimizer) {
-        this.performanceOptimizer.trackTabAccess(data.tab.id);
-      }
-      
-      this.tabUIController.updateTabUI();
-      
-      // Update pinned tabs
-      if (this.settingsController.getPinnedTabsEnabled()) {
-        this.tabUIController.updatePinnedTabs();
-      }
-      
-      this.switchToTab(data.tab.id);
-      
-      // Switch to default mode when first document is opened
-      if (this.tabManager.getTabsCount() === 1) {
-        this.ensureViewComponentsInitialized().then(() => {
-          const defaultMode = this.settingsController.getDefaultMode();
-          this.modeController.setMode(defaultMode);
-        });
-      }
-    });
-    
-    this.tabManager.on('tab-removed', (data) => {
-      this.tabUIController.updateTabUI();
-      
-      // Update pinned tabs
-      if (this.settingsController.getPinnedTabsEnabled()) {
-        this.tabUIController.updatePinnedTabs();
-      }
-      
-      // Reset to preview mode when no tabs remain
-      if (this.tabManager.getTabsCount() === 0) {
-        this.modeController.setMode('preview');
-      }
-      
-      // Update tab modal if it's open
-      const tabModal = document.getElementById('tab-modal');
-      if (tabModal && tabModal.style.display === 'flex') {
-        if (this.tabManager.hasTabs()) {
-          this.tabUIController.showTabModal();
-        } else {
-          this.tabUIController.hideTabModal();
-        }
-      }
-      
-      if (!this.tabManager.hasTabs()) {
-        this.showWelcomePage();
-      }
-    });
-    
-    this.tabManager.on('tab-activated', (data) => {
-      // Store if we need to switch mode after loading
-      const welcomePage = document.getElementById('welcome-page');
-      const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
-      data.tab._shouldSwitchMode = isWelcomeVisible && this.tabManager.hasTabs();
-      
-      // Only load content if this is a user-initiated tab switch, not restoration
-      if (data.tab.isContentLoaded) {
-        this.loadTabContent(data.tab);
-      }
-      this.tabUIController.updateTabUI();
-    });
-    
-    this.tabManager.on('tab-content-updated', (data) => {
-      this.tabUIController.updateTabUI();
-    });
-    
-    this.tabManager.on('tab-saved', (data) => {
-      this.tabUIController.updateTabUI();
-    });
-    
-
-    
-    this.tabManager.on('tab-restored', (data) => {
-      // Tab restored from persistence
-    });
-    
-    this.tabManager.on('all-tabs-closed', (data) => {
-      // Close tab modal if open
-      const tabModal = document.getElementById('tab-modal');
-      if (tabModal && tabModal.style.display === 'flex') {
-        this.tabUIController.hideTabModal();
-      }
-      
-      // Clear virtual tabs from memory
-      if (this.performanceOptimizer) {
-        this.performanceOptimizer.clearAllVirtualTabs();
-      }
-      
-      // Update pinned tabs
-      if (this.settingsController.getPinnedTabsEnabled()) {
-        this.tabUIController.updatePinnedTabs();
-      }
-      
-      this.showWelcomePage();
-      this.tabUIController.updateTabUI();
-    });
-    
-    // Document Component Events
-    this.documentComponent.on('document-opened', (data) => {
-      const startTime = performance.now();
-      const currentTabCount = this.tabManager.getTabsCount();
-      
-      // Check if file is already open before creating new tab
-      let existingTab = this.tabManager.tabCollection.findTabByPath(data.filePath);
-      if (!existingTab) {
-        // Also check by filename for drag/drop vs dialog compatibility
-        existingTab = this.tabManager.getAllTabs().find(tab => 
-          tab.fileName === data.fileName && 
-          (tab.filePath === null || tab.filePath === data.fileName || tab.filePath.endsWith('\\' + data.fileName) || tab.filePath.endsWith('/' + data.fileName))
-        );
-      }
-      
-      if (existingTab) {
-        this.tabManager.switchToTab(existingTab.id);
-        return;
-      }
-      
-      // Open file in new tab
-      this.tabManager.openFileInTab(data.filePath, data.content);
-      this.lastFileOpenTime = performance.now();
-      this.settingsController.setLastFileOpenTime(this.lastFileOpenTime);
-      
-      // Switch to default mode when first document is opened
-      if (this.tabManager.getTabsCount() === 1) {
-        this.ensureViewComponentsInitialized().then(() => {
-          const defaultMode = this.settingsController.getDefaultMode();
-          this.modeController.setMode(defaultMode);
-        });
-      }
-      
-      // Phase 6: Track file open performance for all file opens (including from Explorer)
-      if (this.performanceOptimizer && this.tabManager.getTabsCount() > currentTabCount) {
-        this.performanceOptimizer.benchmarkTabOperation('File Open', startTime, currentTabCount + 1);
-      }
-    });
-    
-    this.documentComponent.on('document-new', async (data) => {
-      await this.ensureViewComponentsInitialized();
-      
-      // Create new tab
-      const newTab = this.tabManager.createNewTab(data.content);
-      if (newTab) {
-        // Ensure we switch to the new tab
-        this.switchToTab(newTab.id);
-      }
-      this.modeController.setMode('code'); // New files always start in code mode
-    });
-    
-    this.documentComponent.on('document-closed', () => {
-      // Close active tab
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        this.tabManager.closeTab(activeTab.id);
-      }
-    });
-    
-    this.documentComponent.on('document-dirty-changed', (data) => {
-      // Update active tab dirty state
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        activeTab.isDirty = data.isDirty;
-        // Immediately update tab UI for instant visual feedback
-        this.tabUIController.updateTabUI();
-        // Also update pinned tabs if enabled
-        if (this.settingsController.getPinnedTabsEnabled()) {
-          this.tabUIController.updatePinnedTabs();
-        }
-        this.updateFilename(null, data.isDirty);
-        this.toolbarComponent.emit('document-state-changed', { 
-          hasDocument: true, 
-          isDirty: data.isDirty 
-        });
-      }
-    });
-    
-    this.documentComponent.on('document-saved', (data) => {
-      // Update active tab after save
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        this.tabManager.markTabSaved(activeTab.id, data.filePath);
-      }
-    });
-    
-    this.documentComponent.on('document-error', (data) => {
-      this.handleError(new Error(data.error), data.type);
-    });
-    
-    this.documentComponent.on('document-content-updated', (data) => {
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        activeTab.setContent(data.content);
-        this.editorComponent.emit('set-content', data);
-        this.previewComponent.emit('update-preview', { 
-          content: data.content,
-          filePath: activeTab.filePath 
-        });
-      }
-    });
-    
-    // Editor Component Events
-    this.editorComponent.on('content-changed', (data) => {
-      // Update active tab content
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        // Update tab content but don't update the Monaco model since it's the source
-        activeTab.setContent(data.content);
-        this.tabManager.persistTabs();
-        // Also update document component to keep it in sync
-        this.documentComponent.content = data.content;
-        // Immediately update tab UI for instant visual feedback
-        this.tabUIController.updateTabUI();
-        // Also update pinned tabs if enabled
-        if (this.settingsController.getPinnedTabsEnabled()) {
-          this.tabUIController.updatePinnedTabs();
-        }
-      }
-      this.documentComponent.emit('content-changed', data);
-      
-      this.previewComponent.emit('update-preview', { 
-        content: data.content,
-        filePath: activeTab?.filePath 
-      });
-      
-      // Immediately update toolbar state for save button color
-      this.toolbarComponent.emit('document-state-changed', { 
-        hasDocument: true, 
-        isDirty: true 
-      });
-    });
-    
-    this.editorComponent.on('cursor-position-changed', (data) => {
-      this.updateCursorPosition(data.line, data.col);
-      
-      // Update active tab cursor position
-      const activeTab = this.tabManager.getActiveTab();
-      if (activeTab) {
-        this.tabManager.updateTabCursor(activeTab.id, data.line, data.col);
-      }
-    });
-    
-    this.editorComponent.on('monaco-loaded', () => {
-      // Monaco editor loaded successfully
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    this.editorComponent.on('markdown-action', (data) => {
-      this.markdownActionController.handleMarkdownAction(data.action);
-    });
-    
-    // Preview Component Events
-    this.previewComponent.on('task-toggled', (data) => {
-      // Add small delay to ensure preview has finished processing
-      setTimeout(() => {
-        this.markdownActionController.updateTaskInMarkdown(data.taskText, data.checked);
-      }, 10);
-    });
-    
-    this.previewComponent.on('external-link-clicked', (data) => {
-      this.openExternalLink(data.href);
-    });
-    
-    this.previewComponent.on('preview-error', (data) => {
-      this.handleError(new Error(data.error), 'Preview');
-    });
-    
-    this.previewComponent.on('mermaid-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    this.previewComponent.on('katex-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    // Preview Context Menu Events
-    this.previewComponent.on('reload-file-requested', () => {
-      this.reloadCurrentFile();
-    });
-    
-    this.previewComponent.on('sync-from-code-requested', () => {
-      this.syncFromCode();
-    });
-    
-    this.previewComponent.on('restart-app-requested', () => {
-      this.restartApplication();
-    });
-    
-    this.previewComponent.on('export-html-requested', () => {
-      this.exportController.exportToHtml();
-    });
-    
-    this.previewComponent.on('export-pdf-requested', () => {
-      this.exportController.exportToPdf();
-    });
-    
-    // File Controller Events
-    this.fileController.on('file-new-completed', async () => {
-      await this.ensureViewComponentsInitialized();
-      this.modeController.setMode('code');
-    });
-    
-    this.fileController.on('file-error', (data) => {
-      this.handleError(data.error, data.type);
-    });
-    
-    // Toolbar Component Events
-    this.toolbarComponent.on('file-new-requested', async () => {
-      await this.ensureViewComponentsInitialized();
-      this.fileController.newFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-open-requested', () => {
-      this.fileController.openFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-save-requested', () => {
-      this.fileController.saveFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-save-as-requested', () => {
-      this.fileController.saveAsFile(this.documentComponent, this.tabManager);
-    });
-    
-    this.toolbarComponent.on('file-close-requested', () => {
-      this.fileController.closeFile(this.documentComponent, this.tabManager, this.performanceOptimizer);
-    });
-    
-    this.toolbarComponent.on('mode-change-requested', (data) => {
-      this.modeController.setMode(data.mode);
-    });
-    
-    this.toolbarComponent.on('export-html-requested', () => {
-      this.exportController.exportToHtml();
-    });
-    
-    this.toolbarComponent.on('export-pdf-requested', () => {
-      this.exportController.exportToPdf();
-    });
-    
-    this.toolbarComponent.on('distraction-free-toggle', () => {
-      this.uiController.toggleDistractionFree();
-    });
-    
-    this.toolbarComponent.on('theme-toggle', () => {
-      const themeData = this.uiController.toggleTheme();
-      this.handleThemeChange(themeData);
-    });
-    
-    this.toolbarComponent.on('settings-show', () => {
-      this.uiController.showSettings();
-      // Update plugin display when settings modal opens
-      setTimeout(() => {
-        this.updatePluginDisplay();
-      }, 100);
-    });
-    
-    this.toolbarComponent.on('help-show', () => {
-      this.uiController.showHelp();
-    });
-    
-    this.toolbarComponent.on('font-size-changed', (data) => {
-      this.editorComponent.emit('font-size-changed', data);
-    });
-    
-    this.toolbarComponent.on('zoom-changed', (data) => {
-      this.previewComponent.emit('zoom-changed', data);
-    });
-    
-    this.toolbarComponent.on('editor-undo', () => {
-      this.editorComponent.undo();
-    });
-    
-    this.toolbarComponent.on('editor-redo', () => {
-      this.editorComponent.redo();
-    });
-    
-    this.toolbarComponent.on('markdown-action', async (data) => {
-      await this.markdownActionController.handleMarkdownAction(data.action);
-    });
-    
-    this.toolbarComponent.on('find-replace-requested', () => {
-      this.openFindReplace();
-    });
-    
-    this.toolbarComponent.on('file-reload-requested', () => {
-      this.reloadCurrentFile();
-    });
-    
-    this.toolbarComponent.on('markdown-insert', (data) => {
-      this.markdownActionController.insertMarkdownText(data.text);
-    });
-    
-    // UI Controller Events
-    this.uiController.on('theme-changed', (data) => {
-      this.handleThemeChange(data);
-    });
-    
-    this.uiController.on('distraction-free-changed', (data) => {
-      this.toolbarComponent.emit('distraction-free-changed', data);
-    });
-    
-    // Settings Controller Events
-    this.settingsController.on('theme-changed', (data) => {
-      this.handleThemeChange(data);
-    });
-    
-    this.settingsController.on('toolbar-enabled-changed', (data) => {
-      this.toolbarComponent.isToolbarEnabled = data.enabled;
-      this.toolbarComponent.updateToolbarVisibility();
-    });
-    
-    this.settingsController.on('pinned-tabs-changed', (data) => {
-      if (data.enabled) {
-        this.tabUIController.updatePinnedTabs();
-      }
-    });
-    
-    // Update system info when settings change
-    this.settingsController.on('settings-changed', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    // Plugin Manager Events
-    if (this.pluginManager) {
-      this.pluginManager.on = this.pluginManager.on || (() => {}); // Ensure event support
+    // Create file controller (or use injected one)
+    if (!this.fileController) {
+      this.fileController = this.registry.createInstance('file');
     }
+    this.addChild(this.fileController);
+    await this.fileController.init();
+    this.fileController.setPerformanceOptimizer(this.performanceOptimizer);
     
-    // Mode Controller Events
-    this.modeController.on('mode-changed', (data) => {
-      this.updateScrollSyncButton();
-    });
+    // Create tab manager
+    this.tabManager = new TabManager();
+    this.addChild(this.tabManager);
+    await this.tabManager.init();
     
-    // Tab UI Controller Events
-    this.tabUIController.on('tab-switch-requested', (data) => {
-      this.switchToTab(data.tabId);
-    });
+    // Create document component
+    this.documentComponent = new DocumentComponent();
+    this.addChild(this.documentComponent);
+    await this.documentComponent.init();
     
-    this.tabUIController.on('tab-context-action', (data) => {
-      this.handleTabContextAction(data.action, data.tabId);
+    if (!this.statusBarController) {
+      this.statusBarController = this.registry.createInstance('statusBar');
+    }
+    this.statusBarController.setDependencies({
+      documentComponent: this.documentComponent,
+      tabManager: this.tabManager
     });
+    this.addChild(this.statusBarController);
+    await this.statusBarController.init();
+
+    // Create editor component
+    this.editorComponent = new EditorComponent();
+    this.addChild(this.editorComponent);
+    await this.editorComponent.init();
     
-    this.tabUIController.on('settings-update-requested', () => {
-      this.updateSettingsDisplay();
-    });
+    // Create preview component
+    this.previewComponent = new PreviewComponent({ rendererRegistry: this.rendererRegistry });
+    this.addChild(this.previewComponent);
+    await this.previewComponent.init();
     
-    // Export Controller Events
-    this.exportController.on('export-error', (data) => {
-      this.handleError(data.error, data.type);
+    // Create toolbar component
+    this.toolbarComponent = new ToolbarComponent();
+    this.addChild(this.toolbarComponent);
+    await this.toolbarComponent.init();
+    
+    // Create mode controller (or use injected one)
+    if (!this.modeController) {
+      this.modeController = this.registry.createInstance('mode');
+    }
+    this.addChild(this.modeController);
+    await this.modeController.init();
+    this.modeController.setDependencies(this.editorComponent, this.previewComponent, this.toolbarComponent, this.settingsController, this.tabManager);
+
+    if (!this.searchController) {
+      this.searchController = this.registry.createInstance('search');
+    }
+    this.searchController.setDependencies({
+      editorComponent: this.editorComponent,
+      modeController: this.modeController
     });
+    this.addChild(this.searchController);
+    await this.searchController.init();
+
+    if (!this.scrollCoordinator) {
+      this.scrollCoordinator = this.registry.createInstance('scroll');
+    }
+    this.scrollCoordinator.setDependencies({
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      tabManager: this.tabManager,
+      modeController: this.modeController
+    });
+    this.addChild(this.scrollCoordinator);
+    await this.scrollCoordinator.init();
+    this.modeController.setScrollCoordinator(this.scrollCoordinator);
+    
+    // Create tab UI controller (or use injected one)
+    if (!this.tabUIController) {
+      this.tabUIController = this.registry.createInstance('tabUI');
+    }
+    this.addChild(this.tabUIController);
+    await this.tabUIController.init();
+    this.tabUIController.setDependencies(this.tabManager, this.settingsController, this.performanceOptimizer);
+    
+    // Create markdown action controller (or use injected one)
+    if (!this.markdownActionController) {
+      this.markdownActionController = this.registry.createInstance('markdownAction');
+    }
+    this.addChild(this.markdownActionController);
+    await this.markdownActionController.init();
+    this.markdownActionController.setDependencies(this.editorComponent, this.documentComponent);
+    
+    if (!this.markdownDialogController) {
+      this.markdownDialogController = this.registry.createInstance('markdownDialog');
+    }
+    this.markdownDialogController.setDependencies({
+      markdownActionController: this.markdownActionController
+    });
+    this.addChild(this.markdownDialogController);
+    await this.markdownDialogController.init();
+
+    // Create export controller (or use injected one)
+    if (!this.exportController) {
+      this.exportController = this.registry.createInstance('export');
+    }
+    this.addChild(this.exportController);
+    await this.exportController.init();
+    this.exportController.setDependencies({
+      editorComponent: this.editorComponent,
+      handleError: (error, context) => this.handleError(error, context)
+    });
+
+    if (!this.pluginModalController) {
+      this.pluginModalController = this.registry.createInstance('pluginModal');
+    }
+    this.addChild(this.pluginModalController);
+    await this.pluginModalController.init();
+
+    if (!this.nativeWindowController) {
+      this.nativeWindowController = this.registry.createInstance('nativeWindow');
+    }
+    this.nativeWindowController.setDependencies({
+      tabManager: this.tabManager,
+      documentComponent: this.documentComponent
+    });
+    this.addChild(this.nativeWindowController);
+    await this.nativeWindowController.init();
+
+    if (!this.fileDropController) {
+      this.fileDropController = this.registry.createInstance('fileDrop');
+    }
+    this.fileDropController.setDependencies({
+      tabManager: this.tabManager,
+      settingsController: this.settingsController,
+      modeController: this.modeController,
+      editorComponent: this.editorComponent,
+      documentComponent: this.documentComponent,
+      switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId)
+    });
+    this.addChild(this.fileDropController);
+    await this.fileDropController.init();
+
+    if (!this.splitPaneController) {
+      this.splitPaneController = this.registry.createInstance('splitPane');
+    }
+    this.splitPaneController.setDependencies({ editorComponent: this.editorComponent });
+    this.addChild(this.splitPaneController);
+    await this.splitPaneController.init();
+
+    if (!this.welcomeController) {
+      this.welcomeController = this.registry.createInstance('welcome');
+    }
+    this.welcomeController.setDependencies({
+      fileController: this.fileController,
+      documentComponent: this.documentComponent,
+      tabManager: this.tabManager,
+      uiController: this.uiController,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      toolbarComponent: this.toolbarComponent,
+      modeController: this.modeController,
+      tabUIController: this.tabUIController,
+      scrollCoordinator: this.scrollCoordinator,
+      statusBarController: this.statusBarController
+    });
+    this.addChild(this.welcomeController);
+    await this.welcomeController.init();
+
+    if (!this.tabSessionController) {
+      this.tabSessionController = this.registry.createInstance('tabSession');
+    }
+    this.tabSessionController.setDependencies({
+      tabManager: this.tabManager,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      documentComponent: this.documentComponent,
+      toolbarComponent: this.toolbarComponent,
+      modeController: this.modeController,
+      settingsController: this.settingsController,
+      tabUIController: this.tabUIController,
+      scrollCoordinator: this.scrollCoordinator,
+      performanceOptimizer: this.performanceOptimizer,
+      updateFilename: (fileName, isDirty) =>
+        this.statusBarController.updateFilename(fileName, isDirty),
+      showWelcomePage: () => this.welcomeController.showWelcomePage()
+    });
+    this.addChild(this.tabSessionController);
+    await this.tabSessionController.init();
+
+    if (!this.documentLifecycleController) {
+      this.documentLifecycleController = this.registry.createInstance('documentLifecycle');
+    }
+    this.documentLifecycleController.setDependencies({
+      documentComponent: this.documentComponent,
+      tabManager: this.tabManager,
+      modeController: this.modeController,
+      settingsController: this.settingsController,
+      tabUIController: this.tabUIController,
+      toolbarComponent: this.toolbarComponent,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      performanceOptimizer: this.performanceOptimizer,
+      switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId),
+      fileController: this.fileController,
+      updateFilename: (fileName, isDirty) =>
+        this.statusBarController.updateFilename(fileName, isDirty),
+      handleError: (error, context) => this.handleError(error, context)
+    });
+    this.addChild(this.documentLifecycleController);
+    await this.documentLifecycleController.init();
+
+    if (!this.editorLifecycleController) {
+      this.editorLifecycleController = this.registry.createInstance('editorLifecycle');
+    }
+    this.editorLifecycleController.setDependencies({
+      editorComponent: this.editorComponent,
+      documentComponent: this.documentComponent,
+      previewComponent: this.previewComponent,
+      tabManager: this.tabManager,
+      tabUIController: this.tabUIController,
+      settingsController: this.settingsController,
+      modeController: this.modeController,
+      markdownActionController: this.markdownActionController,
+      updateCursorPosition: (line, col) =>
+        this.statusBarController.updateCursorPosition(line, col)
+    });
+    this.addChild(this.editorLifecycleController);
+    await this.editorLifecycleController.init();
+
+    if (!this.previewLifecycleController) {
+      this.previewLifecycleController = this.registry.createInstance('previewLifecycle');
+    }
+    this.previewLifecycleController.setDependencies({
+      previewComponent: this.previewComponent,
+      editorComponent: this.editorComponent,
+      documentComponent: this.documentComponent,
+      tabManager: this.tabManager,
+      modeController: this.modeController,
+      settingsController: this.settingsController,
+      markdownActionController: this.markdownActionController,
+      fileController: this.fileController,
+      exportController: this.exportController,
+      scrollCoordinator: this.scrollCoordinator,
+      handleError: (error, context) => this.handleError(error, context)
+    });
+    this.addChild(this.previewLifecycleController);
+    await this.previewLifecycleController.init();
+
+    // ToolbarLifecycleController is the sole owner of toolbar command routing.
+    if (!this.toolbarLifecycleController) {
+      this.toolbarLifecycleController = this.registry.createInstance('toolbarLifecycle');
+    }
+    this.toolbarLifecycleController.setDependencies({
+      toolbarComponent: this.toolbarComponent,
+      documentComponent: this.documentComponent,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      tabManager: this.tabManager,
+      fileController: this.fileController,
+      modeController: this.modeController,
+      exportController: this.exportController,
+      uiController: this.uiController,
+      settingsController: this.settingsController,
+      markdownActionController: this.markdownActionController,
+      previewLifecycleController: this.previewLifecycleController,
+      performanceOptimizer: this.performanceOptimizer,
+      actions: {
+        toggleFindReplace: (showReplace) => this.searchController.toggle(showReplace)
+      }
+    });
+    this.addChild(this.toolbarLifecycleController);
+    await this.toolbarLifecycleController.init();
+
+    // SettingsCoordinator is the sole owner of Settings/UI/Plugin Manager
+    // communication and the canonical Settings refresh.
+    if (!this.settingsCoordinator) {
+      this.settingsCoordinator = this.registry.createInstance('settingsCoordinator');
+    }
+    this.settingsCoordinator.setDependencies({
+      settingsController: this.settingsController,
+      uiController: this.uiController,
+      pluginModalController: this.pluginModalController,
+      toolbarComponent: this.toolbarComponent,
+      editorComponent: this.editorComponent,
+      previewComponent: this.previewComponent,
+      tabManager: this.tabManager,
+      tabUIController: this.tabUIController,
+      modeController: this.modeController,
+      performanceOptimizer: this.performanceOptimizer
+    });
+    this.addChild(this.settingsCoordinator);
+    await this.settingsCoordinator.init();
+
+    // KeyboardController is the sole owner of application-level shortcuts.
+    if (!this.keyboardController) {
+      this.keyboardController = this.registry.createInstance('keyboard');
+    }
+    this.keyboardController.setDependencies({
+      documentComponent: this.documentComponent,
+      fileController: this.fileController,
+      uiController: this.uiController,
+      tabManager: this.tabManager,
+      modeController: this.modeController,
+      toolbarComponent: this.toolbarComponent,
+      markdownActionController: this.markdownActionController,
+      pluginModalController: this.pluginModalController,
+      markdownDialogController: this.markdownDialogController,
+      tabUIController: this.tabUIController,
+      exportController: this.exportController,
+      performanceOptimizer: this.performanceOptimizer,
+      actions: {
+        toggleFindReplace: (showReplace) => this.searchController.toggle(showReplace),
+        performManualScrollSync: () => this.scrollCoordinator.alignBothPanes(),
+        toggleMarkdownToolbar: () => this.settingsCoordinator.toggleMarkdownToolbar(),
+        switchToPreviousTab: () => this.tabSessionController.switchToPreviousTab(),
+        switchToNextTab: () => this.tabSessionController.switchToNextTab(),
+        switchToTab: (tabId) => this.tabSessionController.switchToTab(tabId),
+        reloadCurrentFile: () => this.previewLifecycleController.reloadCurrentFile(),
+        toggleFullscreen: () => this.nativeWindowController.toggleFullscreen()
+      }
+    });
+    this.addChild(this.keyboardController);
+    await this.keyboardController.init();
   }
 
   applyInitialSettings() {
     // Apply settings through controllers
     this.settingsController.applySettings();
+    this.settingsCoordinator.syncToolbarQuickSettings();
     
     // Initialize pinned tabs if enabled
     if (this.settingsController.getPinnedTabsEnabled()) {
       this.tabUIController.updatePinnedTabs();
     }
     
-    // Show welcome page directly (no mode controller needed)
-    this.showWelcomePageDirect();
+    // Welcome is an application state, not an empty preview document.
+    this.modeController.enterWelcomeMode();
     
-    // Update cursor position
-    this.updateCursorPosition(1, 1);
+    // Seed the status bar for the welcome state
+    this.statusBarController.updateFilename('Welcome', false);
+    this.statusBarController.updateCursorPosition(1, 1);
     
-    // Update toolbar state
+    // Update toolbar state for no document
     this.toolbarComponent.emit('document-state-changed', { 
-      hasDocument: this.isNewFileRequested, 
+      hasDocument: false, 
       isDirty: false 
     });
-    
-    // Notify toolbar of preview mode
-    this.toolbarComponent.emit('mode-changed', { mode: 'preview' });
     
     // Update theme button
     const themeData = this.settingsController.getTheme();
@@ -756,1060 +522,25 @@ class MarkdownEditor extends BaseComponent {
     this.tabUIController.updateTabUI();
     
     // Initialize system info
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
+    this.settingsCoordinator.refreshSystemInfo();
   }
 
   setupGlobalEventHandlers() {
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      this.handleKeyboardShortcuts(e);
-    });
+    // Native close and single-instance listeners are owned by their controller.
+    this.nativeWindowController.setup();
     
-    // Mouse wheel shortcuts
-    document.addEventListener('wheel', (e) => {
-      this.handleMouseWheelShortcuts(e);
-    }, { passive: false });
+    // Browser and native file-drop listeners are owned by their controller.
+    this.fileDropController.setup();
     
-    // Window close handler
-    this.setupWindowCloseHandler();
+    // Vertical split resizing is owned by its lifecycle-managed controller.
+    this.splitPaneController.setup();
     
-    // Single instance handler
-    this.setupSingleInstanceHandler();
-    
-    // Drag and drop - immediate setup
-    this.setupDragAndDrop();
-    this.setupTauriFileDrop();
-    
-    // Splitter and scroll sync
-    this.setupSplitter();
-    this.setupScrollSync();
-    
-    // Scroll sync button
-    this.setupScrollSyncButton();
-    
-    // Modal event handlers
-    this.setupModalEventHandlers();
+    // Welcome actions are owned by their lifecycle-managed controller.
+    this.welcomeController.setup();
     
 
   }
 
-  handleKeyboardShortcuts(e) {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const useCtrlForModes = e.ctrlKey || (!isMac && e.metaKey);
-    const useCtrlForOther = e.ctrlKey || e.metaKey;
-    
-    if (useCtrlForOther) {
-      switch (e.key) {
-        case 'n':
-          e.preventDefault();
-          this.fileController.newFile(this.documentComponent, this.tabManager);
-          break;
-        case 'o':
-          e.preventDefault();
-          this.fileController.openFile(this.documentComponent, this.tabManager);
-          break;
-        case 's':
-        case 'S':
-          e.preventDefault();
-          if (e.shiftKey) {
-            this.fileController.saveAsFile(this.documentComponent, this.tabManager);
-          } else {
-            this.fileController.saveFile(this.documentComponent, this.tabManager);
-          }
-          break;
-        case 'w':
-          e.preventDefault();
-          this.fileController.closeFile(this.tabManager, this.performanceOptimizer);
-          break;
-      }
-    }
-    
-    // Mode switching: always use Ctrl+1-3 (even on macOS)
-    if (useCtrlForModes) {
-      switch (e.key) {
-        case '1':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.modeController.setMode('code');
-          }
-          break;
-        case '2':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.modeController.setMode('preview');
-          }
-          break;
-        case '3':
-          if (!e.shiftKey) {
-            e.preventDefault();
-            this.modeController.setMode('split');
-          }
-          break;
-      }
-    }
-    
-    if (useCtrlForOther) {
-      switch (e.key) {
-        case 't':
-          e.preventDefault();
-          const themeData = this.uiController.toggleTheme();
-          this.handleThemeChange(themeData);
-          break;
-        case ',':
-          e.preventDefault();
-          this.uiController.showSettings();
-          break;
-        case 'm':
-        case 'M':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.tabUIController.showTabModal();
-          }
-          break;
-        case 'p':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.exportController.exportToPdf();
-          }
-          break;
-        case 'e':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.exportController.exportToHtml();
-          }
-          break;
-        case 'f':
-          if (this.modeController.getCurrentMode() !== 'preview') {
-            e.preventDefault();
-            this.openFindReplace();
-          }
-          break;
-        case 'r':
-          e.preventDefault();
-          this.performManualScrollSync();
-          break;
-        case '/':
-        case '?':
-          if (e.shiftKey) {
-            e.preventDefault();
-            this.toggleMarkdownToolbar();
-          }
-          break;
-        case '=':
-        case '+':
-          e.preventDefault();
-          if (this.modeController.getCurrentMode() === 'code') {
-            this.toolbarComponent.changeFontSize(2);
-          } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-            this.toolbarComponent.changeZoom(0.1);
-          }
-          break;
-        case '-':
-        case '_':
-          e.preventDefault();
-          if (this.modeController.getCurrentMode() === 'code') {
-            this.toolbarComponent.changeFontSize(-2);
-          } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-            this.toolbarComponent.changeZoom(-0.1);
-          }
-          break;
-        case '0':
-          e.preventDefault();
-          if (this.modeController.getCurrentMode() === 'code') {
-            this.toolbarComponent.resetFontSize();
-          } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-            this.toolbarComponent.resetZoom();
-          }
-          break;
-
-
-      }
-    }
-    
-    // Handle Ctrl+Tab and Ctrl+Shift+Tab separately
-    if (e.ctrlKey && e.key === 'Tab') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        this.switchToPreviousTab();
-      } else {
-        this.switchToNextTab();
-      }
-      return;
-    }
-    
-    // Function keys
-    switch (e.key) {
-      case 'F1':
-        e.preventDefault();
-        this.uiController.showHelp();
-        break;
-      case 'F5':
-        e.preventDefault();
-        this.reloadCurrentFile();
-        break;
-      case 'F11':
-        e.preventDefault();
-        if (e.shiftKey) {
-          this.uiController.toggleDistractionFree();
-        } else {
-          this.toggleFullscreen();
-        }
-        break;
-      case 'Escape':
-        // Close modals first, then exit distraction-free mode
-        const settingsModal = document.getElementById('settings-modal');
-        const helpModal = document.getElementById('help-modal');
-        const aboutModal = document.getElementById('about-modal');
-        const linkModal = document.getElementById('link-modal');
-        const imageModal = document.getElementById('image-modal');
-        
-        if (settingsModal && settingsModal.style.display === 'flex') {
-          this.uiController.hideSettings();
-        } else if (helpModal && helpModal.style.display === 'flex') {
-          this.uiController.hideHelp();
-        } else if (aboutModal && aboutModal.style.display === 'flex') {
-          this.uiController.hideAbout();
-        } else if (linkModal && linkModal.style.display === 'flex') {
-          this.toolbarComponent.hideLinkModal();
-        } else if (imageModal && imageModal.style.display === 'flex') {
-          this.toolbarComponent.hideImageModal();
-        } else if (this.uiController.isDistractionFree) {
-          this.uiController.exitDistractionFree();
-        } else if (document.fullscreenElement) {
-          document.exitFullscreen();
-        }
-        break;
-    }
-  }
-
-  handleMouseWheelShortcuts(e) {
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    
-    // Ctrl+Mouse wheel: Font size in Code mode, Zoom in Preview mode
-    if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
-      e.preventDefault();
-      if (e.deltaY < 0) { // Scroll up
-        if (this.modeController.getCurrentMode() === 'code') {
-          this.toolbarComponent.changeFontSize(2);
-        } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-          this.toolbarComponent.changeZoom(0.1);
-        }
-      } else if (e.deltaY > 0) { // Scroll down
-        if (this.modeController.getCurrentMode() === 'code') {
-          this.toolbarComponent.changeFontSize(-2);
-        } else if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-          this.toolbarComponent.changeZoom(-0.1);
-        }
-      }
-      return;
-    }
-    
-    // Ctrl+Shift+Mouse wheel: Switch between modes
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-      e.preventDefault();
-      
-      if (e.deltaY < 0) { // Scroll up - next mode
-        this.modeController.cycleMode(1);
-      } else if (e.deltaY > 0) { // Scroll down - previous mode
-        this.modeController.cycleMode(-1);
-      }
-      return;
-    }
-    
-    // Alt+Mouse wheel (Cmd+Mouse wheel on macOS): Cycle between tabs
-    const useAltKey = e.altKey || (isMac && e.metaKey && !e.ctrlKey);
-    if (useAltKey && this.tabManager.hasTabs()) {
-      e.preventDefault();
-      
-      if (e.deltaY < 0) { // Scroll up - previous tab
-        this.switchToPreviousTab();
-      } else if (e.deltaY > 0) { // Scroll down - next tab
-        this.switchToNextTab();
-      }
-      return;
-    }
-  }
-
-
-
-
-
-  // Lazy load preview component if not already loaded
-  async ensurePreviewComponent() {
-    if (!this.previewComponent) {
-      console.log('[MarkdownEditor] Lazy loading preview component...');
-      this.previewComponent = new PreviewComponent();
-      this.addChild(this.previewComponent);
-      await this.previewComponent.init();
-      
-      // Set up preview component events
-      this.setupPreviewComponentEvents();
-    }
-    return this.previewComponent;
-  }
-  
-  setupPreviewComponentEvents() {
-    if (!this.previewComponent) return;
-    
-    // Preview Component Events
-    this.previewComponent.on('task-toggled', (data) => {
-      setTimeout(() => {
-        this.markdownActionController.updateTaskInMarkdown(data.taskText, data.checked);
-      }, 10);
-    });
-    
-    this.previewComponent.on('external-link-clicked', (data) => {
-      this.openExternalLink(data.href);
-    });
-    
-    this.previewComponent.on('preview-error', (data) => {
-      this.handleError(new Error(data.error), 'Preview');
-    });
-    
-    this.previewComponent.on('mermaid-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    this.previewComponent.on('katex-loaded', () => {
-      this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    });
-    
-    // Preview Context Menu Events
-    this.previewComponent.on('reload-file-requested', () => {
-      this.reloadCurrentFile();
-    });
-    
-    this.previewComponent.on('sync-from-code-requested', () => {
-      this.syncFromCode();
-    });
-    
-    this.previewComponent.on('restart-app-requested', () => {
-      this.restartApplication();
-    });
-    
-    this.previewComponent.on('export-html-requested', () => {
-      this.exportController.exportToHtml();
-    });
-    
-    this.previewComponent.on('export-pdf-requested', () => {
-      this.exportController.exportToPdf();
-    });
-  }
-
-  // Theme change handler
-  async handleThemeChange(themeData) {
-    // Directly update editor theme to ensure Monaco gets updated
-    this.editorComponent.updateTheme(themeData.theme);
-    
-    // Notify preview component if it exists
-    if (this.previewComponent) {
-      this.previewComponent.emit('theme-changed', { theme: themeData.theme });
-    }
-    this.toolbarComponent.updateThemeButton(themeData.theme, themeData.isRetroTheme);
-    
-    // CRITICAL: Reapply current mode after theme change to fix display issues
-    setTimeout(() => {
-      this.modeController.setMode(this.modeController.getCurrentMode());
-    }, 100);
-    
-    // Refresh preview if we have active tab content
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab && this.previewComponent) {
-      this.previewComponent.emit('update-preview', { 
-        content: activeTab.content,
-        filePath: activeTab.filePath 
-      });
-    }
-  }
-
-
-
-
-
-  // Utility Functions
-  updateCursorPosition(line, col) {
-    if (this.cursorPos) {
-      this.cursorPos.textContent = `Line ${line}, Col ${col}`;
-    }
-  }
-
-  updateFilename(name = null, isDirty = null) {
-    const filenameBtn = document.getElementById('filename');
-    if (!filenameBtn) return;
-    
-    // If we have tabs, the filename is managed by updateTabUI
-    if (this.tabManager && this.tabManager.hasTabs()) {
-      return;
-    }
-    
-    const documentState = this.documentComponent.getDocumentState();
-    
-    if (name === null) {
-      if (documentState.currentFile) {
-        name = documentState.fileName;
-      } else if (documentState.hasDocument) {
-        name = 'untitled.md';
-      } else {
-        name = 'Welcome';
-      }
-    }
-    
-    if (isDirty === null) {
-      isDirty = documentState.isDirty;
-    }
-    
-    filenameBtn.textContent = `${name}${isDirty ? ' *' : ''}`;
-    filenameBtn.classList.remove('has-tabs');
-  }
-
-
-
-  async openExternalLink(href) {
-    try {
-      if (window.__TAURI__?.core?.invoke) {
-        await window.__TAURI__.core.invoke('plugin:opener|open_url', { url: href });
-      } else {
-        window.open(href, '_blank');
-      }
-    } catch (error) {
-      console.error('[MarkdownEditor] Error opening external link:', error);
-    }
-  }
-  
-  openFindReplace() {
-    if (this.modeController.getCurrentMode() === 'preview') {
-      // Get selected text from code mode if available
-      let searchText = '';
-      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-        const selection = this.editorComponent.monacoEditor.getSelection();
-        if (selection && !selection.isEmpty()) {
-          searchText = this.editorComponent.monacoEditor.getModel().getValueInRange(selection);
-        }
-      }
-      
-      // Use browser's native find for preview mode
-      if (searchText && navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(searchText).then(() => {
-          document.execCommand('find');
-        }).catch(() => {
-          document.execCommand('find');
-        });
-      } else {
-        document.execCommand('find');
-      }
-      return;
-    }
-    
-    if (!this.editorComponent.isMonacoLoaded || !this.editorComponent.monacoEditor) {
-      return;
-    }
-    
-    // Toggle Monaco's find widget
-    const editor = this.editorComponent.monacoEditor;
-    const findController = editor.getContribution('editor.contrib.findController');
-    if (findController) {
-      if (findController.getState().isRevealed) {
-        findController.closeFindWidget();
-      } else {
-        findController.start({
-          forceRevealReplace: true,
-          seedSearchStringFromSelection: 'single',
-          seedSearchStringFromNonEmptySelection: true,
-          shouldFocus: 1
-        });
-      }
-    }
-    editor.focus();
-  }
-  
-  toggleMarkdownToolbar() {
-    const currentEnabled = this.settingsController.getToolbarEnabled();
-    this.settingsController.isToolbarEnabled = !currentEnabled;
-    localStorage.setItem('markdownViewer_toolbarEnabled', (!currentEnabled).toString());
-    this.settingsController.applyMarkdownToolbarVisibility();
-    this.toolbarComponent.isToolbarEnabled = !currentEnabled;
-    this.toolbarComponent.updateToolbarVisibility();
-  }
-  
-  async reloadCurrentFile() {
-    const activeTab = this.tabManager.getActiveTab();
-    if (activeTab && activeTab.filePath) {
-      try {
-        const newContent = await this.documentComponent.readFile(activeTab.filePath);
-        if (newContent !== activeTab.content) {
-          activeTab.setContent(newContent);
-          this.editorComponent.emit('set-content', { content: newContent });
-          this.previewComponent.emit('update-preview', { 
-            content: newContent,
-            filePath: activeTab.filePath 
-          });
-          this.documentComponent.content = newContent;
-          this.documentComponent.markClean();
-        }
-      } catch (error) {
-        console.error('Failed to reload file:', error);
-      }
-    }
-  }
-  
-  syncFromCode() {
-    const content = this.editorComponent.getContent();
-    const activeTab = this.tabManager.getActiveTab();
-    
-    // Update preview content
-    this.previewComponent.emit('update-preview', { 
-      content,
-      filePath: activeTab?.filePath 
-    });
-    
-    // Sync scroll position from editor to preview
-    setTimeout(() => {
-      if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-        const editor = this.editorComponent.monacoEditor;
-        const previewPane = document.querySelector('.preview-pane');
-        
-        if (editor && previewPane) {
-          const editorScrollTop = editor.getScrollTop();
-          const editorHeight = editor.getLayoutInfo().height;
-          const editorScrollHeight = editor.getScrollHeight();
-          const editorMaxScroll = Math.max(0, editorScrollHeight - editorHeight);
-          
-          let scrollRatio = 0;
-          if (editorMaxScroll > 0) {
-            scrollRatio = editorScrollTop / editorMaxScroll;
-          }
-          
-          const previewHeight = previewPane.clientHeight;
-          const previewScrollHeight = previewPane.scrollHeight;
-          const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
-          const targetScroll = scrollRatio * previewMaxScroll;
-          
-          previewPane.scrollTop = Math.max(0, Math.min(targetScroll, previewMaxScroll));
-        }
-      }
-    }, 100);
-  }
-  
-  async restartApplication() {
-    try {
-      if (window.__TAURI__?.process) {
-        await window.__TAURI__.process.relaunch();
-      } else {
-        location.reload();
-      }
-    } catch (error) {
-      console.error('Failed to restart application:', error);
-      location.reload();
-    }
-  }
-
-  refreshPreview() {
-    const content = this.editorComponent.getContent();
-    
-    // Phase 6: Use debounced preview updates for better performance
-    if (this.performanceOptimizer && window.PerformanceUtils) {
-      if (!this.debouncedPreviewUpdate) {
-        this.debouncedPreviewUpdate = window.PerformanceUtils.debounce((content) => {
-          const activeTab = this.tabManager.getActiveTab();
-          this.previewComponent.emit('update-preview', { 
-            content,
-            filePath: activeTab?.filePath 
-          });
-        }, 150);
-      }
-      this.debouncedPreviewUpdate(content);
-    } else {
-      const activeTab = this.tabManager.getActiveTab();
-      this.previewComponent.emit('update-preview', { 
-        content,
-        filePath: activeTab?.filePath 
-      });
-    }
-  }
-
-  async toggleFullscreen() {
-    try {
-      if (window.__TAURI__?.window) {
-        const { getCurrentWindow } = window.__TAURI__.window;
-        const appWindow = getCurrentWindow();
-        const isFullscreen = await appWindow.isFullscreen();
-        await appWindow.setFullscreen(!isFullscreen);
-      } else {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
-        }
-      }
-    } catch (error) {
-      console.error('[MarkdownEditor] Error toggling fullscreen:', error);
-    }
-  }
-
-  setupModalEventHandlers() {
-    // Welcome page buttons
-    const welcomeNewBtn = document.getElementById('welcome-new-btn');
-    const welcomeOpenBtn = document.getElementById('welcome-open-btn');
-    const welcomeHelpBtn = document.getElementById('welcome-help-btn');
-    const welcomeAboutBtn = document.getElementById('welcome-about-btn');
-    const welcomeSettingsBtn = document.getElementById('welcome-settings-btn');
-    
-    if (welcomeNewBtn) {
-      welcomeNewBtn.addEventListener('click', () => this.fileController.newFile(this.documentComponent, this.tabManager));
-    }
-    if (welcomeOpenBtn) {
-      welcomeOpenBtn.addEventListener('click', () => this.fileController.openFile(this.documentComponent, this.tabManager));
-    }
-    if (welcomeHelpBtn) {
-      welcomeHelpBtn.addEventListener('click', () => this.uiController.showHelp());
-    }
-    if (welcomeAboutBtn) {
-      welcomeAboutBtn.addEventListener('click', () => this.uiController.showAbout());
-    }
-    if (welcomeSettingsBtn) {
-      welcomeSettingsBtn.addEventListener('click', async () => {
-        await this.uiController.showSettings();
-        // Update plugin display when settings modal opens
-        setTimeout(() => {
-          this.updatePluginDisplay();
-        }, 100);
-      });
-    }
-    
-    // Clear history button
-    const clearHistoryBtn = document.getElementById('clear-history-btn');
-    if (clearHistoryBtn) {
-      clearHistoryBtn.addEventListener('click', () => this.clearFileHistory());
-    }
-  }
-
-
-  
-  updateSettingsDisplay() {
-    this.settingsController.updateSettingsDisplay();
-    this.settingsController.updatePerformanceDashboard(this.performanceOptimizer, this.tabManager);
-    this.settingsController.updateSystemInfo(this.editorComponent, this.previewComponent, this.modeController.getCurrentMode());
-    
-    // Update plugin display when settings modal is shown
-    this.updatePluginDisplay();
-  }
-  
-  updatePluginDisplay() {
-    if (!this.settingsController.getPluginsEnabled() || !this.pluginManager) {
-      const pluginList = document.getElementById('plugin-list');
-      if (pluginList) {
-        pluginList.innerHTML = '<div class="no-plugins">Plugins are disabled</div>';
-      }
-      return;
-    }
-    
-    const pluginList = document.getElementById('plugin-list');
-    if (!pluginList) return;
-    
-    const plugins = this.pluginManager.getAllPlugins();
-    
-    pluginList.innerHTML = '';
-    
-    if (plugins.length === 0) {
-      pluginList.innerHTML = '<div class="no-plugins">No plugins available</div>';
-      return;
-    }
-    
-    plugins.forEach(plugin => {
-      const pluginItem = document.createElement('div');
-      pluginItem.className = 'plugin-item';
-      
-      const isEnabled = this.pluginManager.isPluginEnabled(plugin.id);
-      const isActive = this.pluginManager.isPluginActive(plugin.id);
-      
-      const hasWarnings = plugin.validationResult?.warnings?.length > 0;
-      const warningsText = hasWarnings ? ` (${plugin.validationResult.warnings.length} warnings)` : '';
-      
-      pluginItem.innerHTML = `
-        <div class="plugin-info">
-          <div class="plugin-name">${plugin.metadata.name}</div>
-          <div class="plugin-version">v${plugin.metadata.version}${warningsText}</div>
-          <div class="plugin-description">${plugin.metadata.description}</div>
-          ${hasWarnings ? `<div class="plugin-warnings" title="${plugin.validationResult.warnings.join('; ')}">⚠️ Warnings</div>` : ''}
-        </div>
-        <div class="plugin-controls">
-          <button class="setting-btn ${isEnabled ? 'active' : ''}" 
-                  data-plugin-id="${plugin.id}">
-            ${isEnabled ? 'Disable' : 'Enable'}
-          </button>
-          <span class="plugin-status ${isActive ? 'active' : 'inactive'}">
-            ${isActive ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-      `;
-      
-      // Add click handler to the button
-      const button = pluginItem.querySelector('.setting-btn');
-      button.addEventListener('click', () => {
-        this.togglePlugin(plugin.id);
-        // Update display immediately after toggle
-        setTimeout(() => this.updatePluginDisplay(), 50);
-      });
-      
-      pluginList.appendChild(pluginItem);
-    });
-    
-    // Add event handlers for plugin action buttons
-    const refreshBtn = document.getElementById('refresh-plugins-btn');
-    const resetBtn = document.getElementById('reset-plugin-config-btn');
-    
-    if (refreshBtn) {
-      refreshBtn.onclick = () => {
-        this.refreshPlugins();
-        // Update display after refresh
-        setTimeout(() => this.updatePluginDisplay(), 100);
-      };
-    }
-    
-    if (resetBtn) {
-      resetBtn.onclick = () => {
-        if (confirm('Reset all plugin configurations?')) {
-          this.pluginManager.getPluginConfig().resetAllConfig();
-          this.updatePluginDisplay();
-        }
-      };
-    }
-  }
-  
-  togglePlugin(pluginId) {
-    if (!this.pluginManager) return;
-    
-    if (this.pluginManager.isPluginEnabled(pluginId)) {
-      this.pluginManager.disablePlugin(pluginId);
-    } else {
-      this.pluginManager.enablePlugin(pluginId);
-    }
-    
-    this.updatePluginDisplay();
-  }
-  
-  async refreshPlugins() {
-    if (!this.pluginLoader) return;
-    
-    try {
-      await this.pluginLoader.reloadPlugins();
-      this.updatePluginDisplay();
-      console.log('[MarkdownEditor] Plugins refreshed successfully');
-    } catch (error) {
-      console.error('[MarkdownEditor] Failed to refresh plugins:', error);
-    }
-  }
-  
-
-  
-  clearFileHistory() {
-    this.documentComponent.fileHistory = [];
-    localStorage.removeItem('markdownViewer_fileHistory');
-    this.documentComponent.updateFileHistoryDisplay();
-  }
-  
-
-
-  async handleUnsavedChanges() {
-    try {
-      if (window.__TAURI__) {
-        return await window.__TAURI__.dialog.confirm(
-          'Close without saving changes?',
-          { title: 'Unsaved Changes' }
-        );
-      }
-      return confirm('Close without saving changes?');
-    } catch (error) {
-      return false;
-    }
-  }
-
-  async setupWindowCloseHandler() {
-    if (!window.__TAURI__?.window) return;
-    
-    try {
-      const { getCurrentWindow } = window.__TAURI__.window;
-      const appWindow = getCurrentWindow();
-      
-      await appWindow.onCloseRequested(async (event) => {
-        // Always persist tabs before closing (including unsaved changes)
-        if (this.tabManager) {
-          this.tabManager.persistTabs();
-        }
-        // Allow the application to close without confirmation
-      });
-    } catch (error) {
-      console.error('[MarkdownEditor] Error setting up close handler:', error);
-    }
-  }
-
-  async setupSingleInstanceHandler() {
-    if (!window.__TAURI__?.event) return;
-    
-    try {
-      const { listen } = window.__TAURI__.event;
-      
-      // Listen for single instance events
-      await listen('single-instance-args', (event) => {
-        const files = event.payload;
-        if (Array.isArray(files) && files.length > 0) {
-          // Open each file in a new tab
-          files.forEach(filePath => {
-            this.documentComponent.openFile(filePath);
-          });
-        }
-        
-        // Focus the window
-        this.focusWindow();
-      });
-      
-      // Listen for new file requests
-      await listen('new-file-requested', () => {
-        this.fileController.newFile(this.documentComponent, this.tabManager);
-        this.focusWindow();
-      });
-
-      
-
-      
-    } catch (error) {
-      console.error('[MarkdownEditor] Error setting up single instance handler:', error);
-    }
-  }
-
-  async focusWindow() {
-    try {
-      if (window.__TAURI__?.window) {
-        const { getCurrentWindow } = window.__TAURI__.window;
-        const appWindow = getCurrentWindow();
-        await appWindow.setFocus();
-        await appWindow.unminimize();
-      }
-    } catch (error) {
-      console.error('[MarkdownEditor] Error focusing window:', error);
-    }
-  }
-
-  setupDragAndDrop() {
-
-    
-    // Test if events are working at all
-    document.addEventListener('click', () => {
-      // console.log('[DEBUG] Click event works - DOM is ready');
-    }, { once: true });
-    
-    const dragEnterHandler = (e) => {
-      // console.log('[DEBUG] DRAGENTER triggered on:', e.target.tagName);
-      e.preventDefault();
-      e.stopPropagation();
-      document.body.classList.add('drag-over');
-    };
-    
-    const dragOverHandler = (e) => {
-      // console.log('[DEBUG] DRAGOVER triggered');
-      e.preventDefault();
-      e.stopPropagation();
-      e.dataTransfer.dropEffect = 'copy';
-    };
-    
-    const dragLeaveHandler = (e) => {
-      // console.log('[DEBUG] DRAGLEAVE triggered');
-      e.preventDefault();
-      e.stopPropagation();
-      // Only remove if leaving the window entirely
-      if (!e.relatedTarget || !document.contains(e.relatedTarget)) {
-        document.body.classList.remove('drag-over');
-      }
-    };
-    
-    const dropHandler = async (e) => {
-      // console.log('[DEBUG] DROP triggered with files:', e.dataTransfer?.files?.length || 0);
-      e.preventDefault();
-      e.stopPropagation();
-      document.body.classList.remove('drag-over');
-      
-      const files = Array.from(e.dataTransfer?.files || []);
-      if (files.length === 0) {
-        // console.log('[DEBUG] No files in drop event');
-        return;
-      }
-      
-      // console.log('[DEBUG] Processing files:', files.map(f => f.name));
-      
-      // Check drop target
-      const isToolbar = e.target.closest('.toolbar');
-      const isPreview = e.target.closest('.preview-pane');
-      const welcomePage = document.getElementById('welcome-page');
-      const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
-      
-      // Open .md files on toolbar, preview, or welcome screen
-      if (isToolbar || isPreview || isWelcomeVisible || !this.tabManager.hasTabs()) {
-        const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f.name));
-        if (mdFile) {
-          // Check if file is already open by filename
-          const existingTab = this.tabManager.getAllTabs().find(tab => 
-            tab.fileName === mdFile.name
-          );
-          
-          if (existingTab) {
-            this.tabManager.switchToTab(existingTab.id);
-            return;
-          }
-          
-          const content = await mdFile.text();
-          const tab = this.tabManager.tabCollection.createTab({
-            fileName: mdFile.name,
-            filePath: mdFile.name,
-            content,
-            isDirty: false
-          });
-          // Only switch to default mode if we're currently showing welcome page (first tab)
-          if (this.modeController.getCurrentMode() === 'preview' && this.tabManager.getTabsCount() === 1) {
-            const defaultMode = this.settingsController.getDefaultMode();
-            this.modeController.setMode(defaultMode);
-          }
-        }
-        return;
-      }
-      
-      // Code mode: insert file paths at mouse position
-      if (this.modeController.getCurrentMode() === 'code' && this.editorComponent.isMonacoLoaded) {
-        const editor = this.editorComponent.monacoEditor;
-        const mousePosition = editor.getTargetAtClientPoint(e.clientX, e.clientY);
-        const position = mousePosition ? mousePosition.position : editor.getPosition();
-        const filePaths = files.map(f => f.name);
-        const insertText = filePaths.join('\n');
-        
-        editor.executeEdits('drag-drop', [{
-          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
-          text: insertText
-        }]);
-        
-        this.documentComponent.handleContentChange(editor.getValue());
-      }
-    };
-    
-    // Add listeners to document and body
-    document.addEventListener('dragenter', dragEnterHandler, true);
-    document.addEventListener('dragover', dragOverHandler, true);
-    document.addEventListener('dragleave', dragLeaveHandler, true);
-    document.addEventListener('drop', dropHandler, true);
-    
-    document.body.addEventListener('dragenter', dragEnterHandler);
-    document.body.addEventListener('dragover', dragOverHandler);
-    document.body.addEventListener('dragleave', dragLeaveHandler);
-    document.body.addEventListener('drop', dropHandler);
-    
-
-  }
-
-  async initializePlugins() {
-    try {
-      console.log('[MarkdownEditor] Initializing plugins...');
-      
-      // Initialize plugin manager
-      this.pluginManager = new PluginManager(this);
-      
-      // Initialize plugin loader
-      this.pluginLoader = new PluginLoader(this.pluginManager);
-      
-      // Discover and register plugins
-      await this.pluginLoader.loadAndRegisterPlugins();
-      
-      // Auto-activate enabled plugins
-      await this.pluginManager.autoActivatePlugins();
-      
-      console.log('[MarkdownEditor] Plugins initialized successfully');
-    } catch (error) {
-      console.warn('[MarkdownEditor] Plugin initialization failed:', error);
-    }
-  }
-
-  async checkStartupFile() {
-    try {
-      if (window.__TAURI__?.core?.invoke) {
-        // Check for new file request first
-        const newFileRequested = await window.__TAURI__.core.invoke('is_new_file_requested');
-        
-        if (newFileRequested) {
-          this.isNewFileRequested = true;
-          this.fileController.newFile(this.documentComponent, this.tabManager);
-          
-          try {
-            await window.__TAURI__.core.invoke('clear_new_file_request');
-          } catch (clearError) {
-            console.warn('[MarkdownEditor] Failed to clear new file request:', clearError);
-          }
-          return true;
-        }
-        
-        const startupFile = await window.__TAURI__.core.invoke('get_startup_file');
-        
-        if (startupFile && typeof startupFile === 'string' && startupFile.trim()) {
-          this.updateSplashProgress(100, 'Loading document...');
-          this.showLoadingOverlay('Loading your document...');
-          
-          await this.documentComponent.openFile(startupFile);
-          
-          // Set default mode after opening file
-          const defaultMode = this.settingsController.getDefaultMode();
-          await this.modeController.setMode(defaultMode);
-          
-          // Hide splash after document is ready in correct mode
-          this.hideSplash();
-          
-          try {
-            await window.__TAURI__.core.invoke('clear_startup_file');
-          } catch (clearError) {
-            console.warn('[MarkdownEditor] Failed to clear startup file:', clearError);
-          }
-          return true;
-        }
-      }
-      
-      // Reopen last tabs if enabled
-      if (this.uiController.reopenLastTabs) {
-        const persistedTabs = localStorage.getItem('markdownViewer_tabs');
-        if (persistedTabs) {
-          try {
-            const tabsData = JSON.parse(persistedTabs);
-            if (tabsData.tabs && tabsData.tabs.length > 0) {
-              this.updateSplashProgress(100, 'Loading document...');
-              this.showLoadingOverlay('Loading your document...');
-              
-              for (const tabData of tabsData.tabs) {
-                if (tabData.filePath) {
-                  await this.documentComponent.openFile(tabData.filePath);
-                }
-              }
-              if (tabsData.activeTabId) {
-                const activeTab = this.tabManager.getAllTabs().find(t => t.filePath === tabsData.tabs.find(td => td.id === tabsData.activeTabId)?.filePath);
-                if (activeTab) {
-                  this.tabManager.switchToTab(activeTab.id);
-                }
-              }
-              
-              // Set default mode after reopening tabs
-              const defaultMode = this.settingsController.getDefaultMode();
-              await this.modeController.setMode(defaultMode);
-              
-              // Hide splash after document is ready in correct mode
-              this.hideSplash();
-              
-              return true;
-            }
-          } catch (error) {
-            console.warn('[MarkdownEditor] Failed to restore tabs:', error);
-          }
-        }
-      }
-
-    } catch (error) {
-      console.error('[MarkdownEditor] Error checking startup file:', error);
-    }
-    
-    return false;
-  }
 
   updateSplashProgress(progress, message) {
     if (window.splashScreen) {
@@ -1821,86 +552,14 @@ class MarkdownEditor extends BaseComponent {
     if (window.splashScreen) {
       window.splashScreen.hideSplash();
     }
-    this.hideLoadingOverlay();
-  }
-  
-  showLoadingOverlay(message = 'Loading...') {
-    const splashEnabled = localStorage.getItem('markdownViewer_splashEnabled') !== 'false';
-    if (splashEnabled) return;
-    
-    let overlay = document.getElementById('loading-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'loading-overlay';
-      overlay.innerHTML = `
-        <div class="loading-content">
-          <div class="loading-spinner"></div>
-          <div class="loading-message">${message}</div>
-        </div>
-      `;
-      
-      const style = document.createElement('style');
-      style.textContent = `
-        #loading-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: rgba(255, 255, 255, 0.95);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10001;
-        }
-        [data-theme="dark"] #loading-overlay {
-          background: rgba(30, 30, 30, 0.95);
-        }
-        .loading-content {
-          text-align: center;
-        }
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid #e0e0e0;
-          border-top-color: #007acc;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 1rem;
-        }
-        [data-theme="dark"] .loading-spinner {
-          border-color: #333;
-          border-top-color: #007acc;
-        }
-        .loading-message {
-          font-size: 14px;
-          color: #666;
-        }
-        [data-theme="dark"] .loading-message {
-          color: #aaa;
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `;
-      document.head.appendChild(style);
-      document.body.appendChild(overlay);
-    } else {
-      overlay.querySelector('.loading-message').textContent = message;
-    }
-  }
-  
-  hideLoadingOverlay() {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-      overlay.remove();
-    }
   }
 
   handleInitializationError(error) {
     this.hideSplash();
+    document.body.dataset.startupError = 'true';
+    document.body.classList.add('app-initialized');
     console.error('[MarkdownEditor] Initialization error:', error);
-    
+
     // Show basic interface even if advanced features fail
     const welcomePage = document.getElementById('welcome-page');
     if (welcomePage) {
@@ -1910,579 +569,16 @@ class MarkdownEditor extends BaseComponent {
 
   handleError(error, context = 'Unknown') {
     console.error(`[MarkdownEditor] ${context} error:`, error);
-    
-    if (window.__TAURI__?.dialog) {
-      window.__TAURI__.dialog.message(
+
+    if (window.__TAURI__?.core?.invoke) {
+      showMessage(
         `${context} Error: ${error.message}`,
         { title: 'Error', type: 'error' }
       ).catch(() => console.error('[MarkdownEditor] Failed to show error dialog'));
     }
   }
 
-  setupSplitter() {
-    const splitter = document.getElementById('splitter');
-    const mainContent = document.querySelector('.main-content');
-    if (!splitter || !mainContent) return;
-    
-    let isResizing = false;
-    
-    splitter.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-      
-      const containerRect = mainContent.getBoundingClientRect();
-      const percentage = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-      
-      if (percentage > 20 && percentage < 80) {
-        mainContent.style.setProperty('--editor-width', `${percentage}%`);
-        mainContent.style.setProperty('--preview-width', `${100 - percentage}%`);
-        
-        if (this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-          requestAnimationFrame(() => {
-            this.editorComponent.monacoEditor.layout();
-          });
-        }
-      }
-    });
-    
-    document.addEventListener('mouseup', () => {
-      isResizing = false;
-      document.body.style.cursor = 'default';
-    });
-  }
-  
-  setupScrollSync() {
-    let isScrolling = false;
-    
-    const syncEditorToPreview = () => {
-      if (isScrolling || this.modeController.getCurrentMode() !== 'split') return;
-      isScrolling = true;
-      
-      const editor = this.editorComponent.monacoEditor;
-      const previewPane = document.querySelector('.preview-pane');
-      
-      if (editor && previewPane) {
-        const editorScrollTop = editor.getScrollTop();
-        const editorScrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
-        const scrollRatio = editorScrollHeight > 0 ? editorScrollTop / editorScrollHeight : 0;
-        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
-        
-        if (previewScrollHeight > 0) {
-          previewPane.scrollTop = scrollRatio * previewScrollHeight;
-        }
-      }
-      
-      setTimeout(() => { isScrolling = false; }, 50);
-    };
-    
-    const syncPreviewToEditor = () => {
-      if (isScrolling || this.modeController.getCurrentMode() !== 'split') return;
-      isScrolling = true;
-      
-      const editor = this.editorComponent.monacoEditor;
-      const previewPane = document.querySelector('.preview-pane');
-      
-      if (editor && previewPane) {
-        const previewScrollTop = previewPane.scrollTop;
-        const previewScrollHeight = previewPane.scrollHeight - previewPane.clientHeight;
-        const scrollRatio = previewScrollHeight > 0 ? previewScrollTop / previewScrollHeight : 0;
-        const editorScrollHeight = editor.getScrollHeight() - editor.getLayoutInfo().height;
-        
-        if (editorScrollHeight > 0) {
-          editor.setScrollTop(scrollRatio * editorScrollHeight);
-        }
-      }
-      
-      setTimeout(() => { isScrolling = false; }, 50);
-    };
-    
-    if (this.editorComponent) {
-      this.editorComponent.on('monaco-loaded', () => {
-        if (this.editorComponent.monacoEditor) {
-          this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
-        }
-      });
-      
-      if (this.editorComponent.isMonacoLoaded) {
-        this.editorComponent.monacoEditor.onDidScrollChange(syncEditorToPreview);
-      }
-    }
-    
-    const previewPane = document.querySelector('.preview-pane');
-    if (previewPane) {
-      previewPane.addEventListener('scroll', syncPreviewToEditor);
-      
-      // Save scroll position for active tab
-      previewPane.addEventListener('scroll', () => {
-        const activeTab = this.tabManager.getActiveTab();
-        if (activeTab) {
-          this.tabManager.updateTabScroll(activeTab.id, null, previewPane.scrollTop);
-        }
-      });
-    }
-  }
-  
-  setupScrollSyncButton() {
-    const scrollSyncBtn = document.getElementById('scroll-sync-btn');
-    if (!scrollSyncBtn) return;
-    
-    scrollSyncBtn.addEventListener('click', () => {
-      this.performManualScrollSync();
-    });
-  }
-  
-  performManualScrollSync() {
-    const previewPane = document.querySelector('.preview-pane');
-    const activeTab = this.tabManager.getActiveTab();
-    const editor = this.editorComponent.monacoEditor;
-    
-    if (!previewPane || !activeTab || !this.editorComponent.isMonacoLoaded || !editor) {
-      return;
-    }
-    
-    if (this.modeController.getCurrentMode() === 'code' && activeTab.scrollPosition?.preview !== undefined) {
-      // Sync from Preview to Code
-      let previewScroll = activeTab.scrollPosition.preview;
-      
-      if (previewPane.style.display !== 'none') {
-        previewScroll = previewPane.scrollTop;
-      }
-      
-      const wasHidden = previewPane.style.display === 'none';
-      if (wasHidden) {
-        previewPane.style.display = 'block';
-        this.previewComponent.emit('update-preview', { 
-          content: activeTab.content,
-          filePath: activeTab.filePath 
-        });
-        previewPane.offsetHeight;
-      }
-      
-      const previewHeight = previewPane.clientHeight;
-      const previewScrollHeight = previewPane.scrollHeight;
-      const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
-      
-      let scrollRatio = previewMaxScroll > 0 ? previewScroll / previewMaxScroll : 0;
-      
-      const editorScrollHeight = editor.getScrollHeight();
-      const editorHeight = editor.getLayoutInfo().height;
-      const editorMaxScroll = Math.max(0, editorScrollHeight - editorHeight);
-      const targetScroll = scrollRatio * editorMaxScroll;
-      
-      editor.setScrollTop(targetScroll);
-      
-      if (wasHidden) {
-        previewPane.style.display = 'none';
-      }
-      
-    } else if (this.modeController.getCurrentMode() === 'preview') {
-      // Sync from Code to Preview
-      const editorScrollTop = editor.getScrollTop();
-      const editorHeight = editor.getLayoutInfo().height;
-      const editorScrollHeight = editor.getScrollHeight();
-      const editorMaxScroll = Math.max(0, editorScrollHeight - editorHeight);
-      
-      let scrollRatio = 0;
-      if (editorMaxScroll > 0) {
-        scrollRatio = editorScrollTop / editorMaxScroll;
-      }
-      
-      const amplifiedRatio = scrollRatio;
-      
-      const previewHeight = previewPane.clientHeight;
-      const previewScrollHeight = previewPane.scrollHeight;
-      const previewMaxScroll = Math.max(0, previewScrollHeight - previewHeight);
-      const targetScroll = amplifiedRatio * previewMaxScroll;
-      
-      previewPane.scrollTop = Math.max(0, Math.min(targetScroll, previewMaxScroll));
-    }
-  }
-  
-  updateScrollSyncButton() {
-    const scrollSyncBtn = document.getElementById('scroll-sync-btn');
-    if (!scrollSyncBtn) return;
-    
-    const hasDocument = this.tabManager.hasTabs();
-    const welcomePage = document.getElementById('welcome-page');
-    const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
-    const showButton = hasDocument && !isWelcomeVisible && (this.modeController.getCurrentMode() === 'code' || this.modeController.getCurrentMode() === 'preview');
-    
-    scrollSyncBtn.style.display = showButton ? 'inline-flex' : 'none';
-    
-    if (showButton) {
-      if (this.modeController.getCurrentMode() === 'code') {
-        scrollSyncBtn.setAttribute('title', 'Sync from Preview');
-      } else if (this.modeController.getCurrentMode() === 'preview') {
-        scrollSyncBtn.setAttribute('title', 'Sync from Code');
-      }
-    }
-  }
-
-  // Tab Management Methods - With content loading
-  async switchToTab(tabId) {
-    const currentTab = this.tabManager.getActiveTab();
-    const targetTab = this.tabManager.getTab(tabId);
-    if (!targetTab) return;
-    
-    // Save current tab state
-    if (currentTab && this.editorComponent.isMonacoLoaded && this.editorComponent.monacoEditor) {
-      const viewState = this.editorComponent.monacoEditor.saveViewState();
-      this.tabManager.saveTabEditorState(currentTab.id, viewState);
-    }
-    
-    // Use the new loading method
-    const success = await this.tabManager.switchToTabWithLoading(tabId, this.documentComponent);
-    if (!success) return;
-  }
-  
-  loadTabContent(tab) {
-    const startTime = performance.now();
-    
-    // If tab doesn't have content loaded, load it from file first
-    if (!tab.isContentLoaded && tab.filePath) {
-      this.tabManager.loadTabContent(tab.id, this.documentComponent).then(() => {
-        // After loading from file, load into UI
-        this.loadTabContentFull(tab);
-      }).catch(error => {
-        console.warn('[MarkdownEditor] Failed to load tab content:', error);
-        // Still try to load what we have
-        this.loadTabContentFull(tab);
-      });
-      return;
-    }
-    
-    // Tab already has content, load it into UI
-    this.loadTabContentFull(tab);
-    
-    // Phase 6: Track tab load performance
-    if (this.performanceOptimizer) {
-      const allTabs = this.tabManager.getAllTabs();
-      this.performanceOptimizer.benchmarkTabOperation('Tab Load', startTime, allTabs.length);
-    }
-  }
-  
-  // Phase 6: Full tab content loading
-  loadTabContentFull(tab) {
-    // Load tab content into editor with model preservation
-    if (this.editorComponent.isMonacoLoaded) {
-      const model = tab.getMonacoModel();
-      this.editorComponent.setMonacoModel(model, tab.editorViewState);
-    } else {
-      this.editorComponent.emit('set-content', { content: tab.content });
-    }
-    this.previewComponent.emit('update-preview', { 
-      content: tab.content,
-      filePath: tab.filePath 
-    });
-    
-    // Only show preview if we're in preview or split mode
-    if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-      this.previewComponent.showPreview();
-    }
-    
-    // Update filename and document state
-    this.updateFilename(tab.fileName, tab.isDirty);
-    this.toolbarComponent.emit('document-state-changed', { 
-      hasDocument: true, 
-      isDirty: tab.isDirty 
-    });
-    
-    // Switch to default mode if coming from welcome page, otherwise maintain current mode
-    setTimeout(() => {
-      if (tab._shouldSwitchMode) {
-        const defaultMode = this.settingsController.getDefaultMode();
-        this.modeController.setMode(defaultMode);
-        delete tab._shouldSwitchMode;
-      } else {
-        this.modeController.setMode(this.modeController.getCurrentMode());
-      }
-    }, 10);
-    
-    // Restore preview scroll position
-    if (tab.scrollPosition?.preview !== undefined) {
-      setTimeout(() => {
-        const previewPane = document.querySelector('.preview-pane');
-        if (previewPane && previewPane.style.display !== 'none') {
-          previewPane.scrollTop = tab.scrollPosition.preview;
-        }
-      }, 100);
-    }
-  }
-  
-  // Phase 6: Lazy tab content loading
-  loadTabContentLazy(tab) {
-    // Load minimal content first
-    this.updateFilename(tab.fileName, tab.isDirty);
-    this.toolbarComponent.emit('document-state-changed', { 
-      hasDocument: true, 
-      isDirty: tab.isDirty 
-    });
-    
-    // Defer heavy operations
-    const deferCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 0));
-    deferCallback(() => {
-      if (this.editorComponent.isMonacoLoaded) {
-        const model = tab.getMonacoModel();
-        this.editorComponent.setMonacoModel(model, tab.editorViewState);
-      } else {
-        this.editorComponent.emit('set-content', { content: tab.content });
-      }
-      this.previewComponent.emit('update-preview', { 
-        content: tab.content,
-        filePath: tab.filePath 
-      });
-      
-      // Only show preview if we're in preview or split mode
-      if (this.modeController.getCurrentMode() === 'preview' || this.modeController.getCurrentMode() === 'split') {
-        this.previewComponent.showPreview();
-      }
-      
-      // Ensure current mode is maintained after tab switch
-      this.modeController.setMode(this.modeController.getCurrentMode());
-      
-      // Restore preview scroll position
-      if (tab.scrollPosition?.preview !== undefined) {
-        setTimeout(() => {
-          const previewPane = document.querySelector('.preview-pane');
-          if (previewPane && previewPane.style.display !== 'none') {
-            previewPane.scrollTop = tab.scrollPosition.preview;
-          }
-        }, 100);
-      }
-    }, { timeout: 1000 });
-  }
-  
-  showWelcomePageDirect() {
-    // Show welcome page without mode controller
-    const welcomePage = document.getElementById('welcome-page');
-    const previewContent = document.getElementById('preview');
-    const editorPane = document.querySelector('.editor-pane');
-    const previewPane = document.querySelector('.preview-pane');
-    const splitter = document.getElementById('splitter');
-    const markdownToolbar = document.getElementById('markdown-toolbar');
-    
-    if (welcomePage) welcomePage.style.display = 'flex';
-    if (previewContent) previewContent.style.display = 'none';
-    if (editorPane) editorPane.style.display = 'none';
-    if (previewPane) previewPane.style.display = 'block';
-    if (splitter) splitter.style.display = 'none';
-    
-    // Set preview mode manually
-    this.modeController.currentMode = 'preview';
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('code-mode', 'preview-mode', 'split-mode');
-      mainContent.classList.add('preview-mode');
-    }
-    document.body.classList.remove('code-mode', 'preview-mode', 'split-mode');
-    document.body.classList.add('preview-mode');
-    
-    // Hide markdown toolbar on welcome screen
-    if (markdownToolbar) {
-      markdownToolbar.style.display = 'none';
-    }
-    
-    this.updateFilename('Welcome', false);
-  }
-  
-  showWelcomePage() {
-    // Show welcome page (called when closing all tabs)
-    this.showWelcomePageDirect();
-    
-    this.editorComponent.emit('set-content', { content: '' });
-    this.previewComponent.emit('update-preview', { content: '', filePath: null });
-    this.toolbarComponent.emit('document-state-changed', { hasDocument: false, isDirty: false });
-    this.tabUIController.updateTabUIForWelcome();
-    this.updateScrollSyncButton();
-    
-    // Force repaint
-    const welcomePage = document.getElementById('welcome-page');
-    setTimeout(() => {
-      if (welcomePage) welcomePage.offsetHeight;
-    }, 0);
-  }
-  
-
-  
-  switchToNextTab() {
-    const tabs = this.tabManager.getAllTabs();
-    if (tabs.length <= 1) return;
-    
-    const activeTab = this.tabManager.getActiveTab();
-    if (!activeTab) {
-      this.switchToTab(tabs[0].id);
-      return;
-    }
-    
-    const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
-    const nextIndex = (currentIndex + 1) % tabs.length;
-    this.switchToTab(tabs[nextIndex].id);
-  }
-  
-  switchToPreviousTab() {
-    const tabs = this.tabManager.getAllTabs();
-    if (tabs.length <= 1) return;
-    
-    const activeTab = this.tabManager.getActiveTab();
-    if (!activeTab) {
-      this.switchToTab(tabs[tabs.length - 1].id);
-      return;
-    }
-    
-    const currentIndex = tabs.findIndex(tab => tab.id === activeTab.id);
-    const prevIndex = currentIndex === 0 ? tabs.length - 1 : currentIndex - 1;
-    this.switchToTab(tabs[prevIndex].id);
-  }
-  
-
-  
-  async handleTabContextAction(action, tabId) {
-    const tab = this.tabManager.getTab(tabId);
-    if (!tab) return;
-    
-    switch (action) {
-      case 'move-to-1':
-      case 'move-to-2':
-      case 'move-to-3':
-      case 'move-to-4':
-      case 'move-to-5':
-      case 'move-to-6':
-      case 'move-to-7':
-      case 'move-to-8':
-      case 'move-to-9':
-        const position = parseInt(action.split('-')[2]) - 1; // Convert to 0-based index
-        this.moveTabToPosition(tabId, position);
-        // Refresh modal if it's open
-        const tabModal = document.getElementById('tab-modal');
-        if (tabModal && tabModal.style.display === 'flex') {
-          this.tabUIController.showTabModal();
-        }
-        break;
-        
-      case 'close':
-        await this.tabManager.closeTab(tabId);
-        break;
-        
-      case 'close-others':
-        const allTabs = this.tabManager.getAllTabs();
-        for (const otherTab of allTabs) {
-          if (otherTab.id !== tabId) {
-            await this.tabManager.closeTab(otherTab.id);
-          }
-        }
-        break;
-        
-      case 'close-all':
-        await this.tabManager.closeAllTabs();
-        break;
-        
-      case 'duplicate':
-        this.tabManager.createNewTab(tab.content);
-        break;
-        
-      case 'toggle-pinned':
-        this.tabUIController.togglePinnedTabs();
-        break;
-        
-      case 'reveal':
-        if (tab.filePath && window.__TAURI__?.core?.invoke) {
-          try {
-            await window.__TAURI__.core.invoke('show_in_folder', { path: tab.filePath });
-          } catch (error) {
-            console.warn('[MarkdownEditor] Failed to reveal file:', error);
-          }
-        }
-        break;
-    }
-  }
-  
-  // Move tab to specific position
-  moveTabToPosition(tabId, targetIndex) {
-    if (this.tabManager.moveTabToPosition(tabId, targetIndex)) {
-      this.tabManager.persistTabs();
-      this.tabUIController.updateTabUI();
-    }
-  }
-  
-  async setupTauriFileDrop() {
-    if (!window.__TAURI__?.event) {
-      // console.log('[DEBUG] Tauri not available');
-      return;
-    }
-    
-
-    const { listen } = window.__TAURI__.event;
-    
-    try {
-      await listen('tauri://file-drop', async (event) => {
-        // console.log('[DEBUG] TAURI FILE DROP:', event.payload);
-        const files = event.payload;
-        if (!Array.isArray(files) || files.length === 0) return;
-        
-        const welcomePage = document.getElementById('welcome-page');
-        const isWelcomeVisible = welcomePage && welcomePage.style.display !== 'none';
-        
-        if (isWelcomeVisible || !this.tabManager.hasTabs()) {
-          const mdFile = files.find(f => /\.(md|markdown|txt)$/i.test(f));
-          if (mdFile) {
-            await this.documentComponent.openFile(mdFile);
-          }
-        } else if (this.modeController.getCurrentMode() === 'code' && this.editorComponent.isMonacoLoaded) {
-          const editor = this.editorComponent.monacoEditor;
-          const position = editor.getPosition();
-          const insertText = files.join('\n');
-          
-          editor.executeEdits('tauri-file-drop', [{
-            range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
-            text: insertText
-          }]);
-          
-          this.documentComponent.handleContentChange(editor.getValue());
-        }
-      });
-
-      
-      await listen('tauri://file-drop-hover', () => {
-        // console.log('[DEBUG] TAURI HOVER');
-        document.body.classList.add('drag-over');
-      });
-
-      
-      await listen('tauri://file-drop-cancelled', () => {
-        // console.log('[DEBUG] TAURI CANCELLED');
-        document.body.classList.remove('drag-over');
-      });
-
-      
-    } catch (error) {
-      console.error('[DEBUG] Error setting up Tauri listeners:', error);
-    }
-  }
-
-  // Utility function for debouncing
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
-
   onDestroy() {
-    // Clean up debounced functions
-    if (this.debouncedPreviewUpdate) {
-      this.debouncedPreviewUpdate = null;
-    }
-    
     // Phase 6: Clean up performance optimizer
     if (this.performanceOptimizer) {
       this.performanceOptimizer.destroy();
@@ -2495,30 +591,11 @@ class MarkdownEditor extends BaseComponent {
     if (this.pluginLoader) {
       this.pluginLoader = null;
     }
+    this.rendererRegistry?.clear();
     
-    // Clean up controller registry
-    if (this.registry) {
-      this.registry.destroy();
-    }
-    
-
-    
-    // Clean up all child components
-    if (this.tabManager) {
-      this.tabManager.destroy();
-    }
-    if (this.documentComponent) {
-      this.documentComponent.destroy();
-    }
-    if (this.editorComponent) {
-      this.editorComponent.destroy();
-    }
-    if (this.previewComponent) {
-      this.previewComponent.destroy();
-    }
-    if (this.toolbarComponent) {
-      this.toolbarComponent.destroy();
-    }
+    // BaseComponent owns child destruction. Clear the registry's references so
+    // controllers are disposed exactly once during the subsequent cleanup.
+    this.registry?.clear();
     
     // Reset state
     this.isDistractionFree = false;

@@ -1,3 +1,5 @@
+import { showUnsavedChangesDialog } from './unsavedChangesDialog.js';
+
 /**
  * TabManager - Orchestrates multiple documents and tab operations
  */
@@ -6,6 +8,9 @@ class TabManager extends BaseComponent {
     super('TabManager');
     this.tabCollection = new TabCollection();
     this.persistenceKey = 'markdownViewer_tabs';
+    this.batchUpdateDepth = 0;
+    this.batchCreatedTabs = [];
+    this.batchActivatedTab = null;
     this.setupEventHandlers();
   }
 
@@ -17,6 +22,10 @@ class TabManager extends BaseComponent {
   setupEventHandlers() {
     // Tab collection events
     this.tabCollection.on('tab-created', (data) => {
+      if (this.isBatchUpdating()) {
+        this.batchCreatedTabs.push(data.tab);
+        return;
+      }
       this.emit('tab-created', data);
       this.persistTabs();
     });
@@ -27,6 +36,10 @@ class TabManager extends BaseComponent {
     });
 
     this.tabCollection.on('tab-activated', (data) => {
+      if (this.isBatchUpdating()) {
+        this.batchActivatedTab = data.tab;
+        return;
+      }
       this.emit('tab-activated', data);
       this.persistTabs();
     });
@@ -54,12 +67,12 @@ class TabManager extends BaseComponent {
   }
 
   // Open file in new tab
-  async openFileInTab(filePath, content) {
+  async openFileInTab(filePath, content, { activate = true } = {}) {
     try {
       // Check if file is already open
       const existingTab = this.tabCollection.findTabByPath(filePath);
       if (existingTab) {
-        this.tabCollection.setActiveTab(existingTab.id);
+        if (activate) this.tabCollection.setActiveTab(existingTab.id);
         return existingTab;
       }
 
@@ -69,7 +82,8 @@ class TabManager extends BaseComponent {
         fileName,
         filePath,
         content,
-        isDirty: false
+        isDirty: false,
+        activate
       });
 
       return tab;
@@ -85,7 +99,7 @@ class TabManager extends BaseComponent {
     if (!tab) return false;
 
     // Check for unsaved changes
-    if (tab.isDirty) {
+    if (tab.hasUnsavedChanges()) {
       const shouldClose = await this.confirmCloseUnsaved(tab);
       if (!shouldClose) return false;
     }
@@ -98,17 +112,35 @@ class TabManager extends BaseComponent {
     return this.tabCollection.setActiveTab(tabId);
   }
 
-  // Switch to tab with content loading
-  async switchToTabWithLoading(tabId, documentComponent) {
-    const tab = this.tabCollection.getTab(tabId);
-    if (!tab) return false;
+  beginBatchUpdate() {
+    this.batchUpdateDepth++;
+  }
 
-    // Load content if needed
-    if (!tab.isContentLoaded && tab.filePath) {
-      await this.loadTabContent(tabId, documentComponent);
-    }
+  endBatchUpdate() {
+    if (this.batchUpdateDepth === 0) return;
+    this.batchUpdateDepth--;
+    if (this.batchUpdateDepth > 0) return;
 
-    return this.tabCollection.setActiveTab(tabId);
+    const createdTabs = this.batchCreatedTabs.splice(0);
+    const activatedTab = this.batchActivatedTab;
+    this.batchActivatedTab = null;
+    this.persistTabs();
+
+    if (activatedTab) this.emit('tab-activated', { tab: activatedTab });
+    if (createdTabs.length > 0) this.emit('tabs-batch-created', { tabs: createdTabs });
+  }
+
+  isBatchUpdating() {
+    return this.batchUpdateDepth > 0;
+  }
+
+  // Internal removal after a caller has completed any required confirmation.
+  removeTab(tabId) {
+    return this.tabCollection.removeTab(tabId);
+  }
+
+  findTabByPath(filePath) {
+    return this.tabCollection.findTabByPath(filePath);
   }
 
   // Update tab content
@@ -142,7 +174,7 @@ class TabManager extends BaseComponent {
     return true;
   }
 
-  // Save Monaco Editor view state
+  // Save editor view state through the active adapter.
   saveTabEditorState(tabId, viewState) {
     const tab = this.tabCollection.getTab(tabId);
     if (!tab) return false;
@@ -152,16 +184,11 @@ class TabManager extends BaseComponent {
   }
 
   // Update tab scroll position
-  updateTabScroll(tabId, editor = null, preview = null) {
+  updateTabScroll(tabId, editor = null, preview = null, ratio = null, source = null) {
     const tab = this.tabCollection.getTab(tabId);
     if (!tab) return false;
 
-    if (editor !== null) {
-      tab.scrollPosition.editor = editor;
-    }
-    if (preview !== null) {
-      tab.scrollPosition.preview = preview;
-    }
+    tab.setScrollPosition(editor, preview, ratio, source);
     return true;
   }
 
@@ -199,7 +226,12 @@ class TabManager extends BaseComponent {
   
   // Move tab to specific position
   moveTabToPosition(tabId, targetIndex) {
-    return this.tabCollection.moveTabToPosition(tabId, targetIndex);
+    const moved = this.tabCollection.moveTabToPosition(tabId, targetIndex);
+    if (moved) {
+      this.persistTabs();
+      this.emit('tab-reordered', { tabId, targetIndex });
+    }
+    return moved;
   }
   
   // Get tab by ID
@@ -216,7 +248,6 @@ class TabManager extends BaseComponent {
     }
 
     this.tabCollection.closeAllTabs();
-    localStorage.removeItem(this.persistenceKey);
     return true;
   }
 
@@ -237,80 +268,19 @@ class TabManager extends BaseComponent {
       if (!data) return;
 
       const parsedData = JSON.parse(data);
-      
-      // Restore tabs but mark non-active ones as not loaded
-      const restoredTabs = parsedData.tabs.map(tabData => {
-        const tab = TabState.fromJSON(tabData);
-        if (tab.id !== parsedData.activeTabId) {
-          tab.isContentLoaded = false;
-          tab.content = ''; // Clear content for non-active tabs
-          tab.isDirty = false; // Clear dirty state for non-active tabs
-        } else {
-          tab.isContentLoaded = true; // Active tab keeps its content
-          // Active tab should not be dirty when restored from persistence
-          // unless it has actual unsaved changes
-          tab.isDirty = false;
-        }
-        return tab;
-      });
-      
-      this.tabCollection.tabs = restoredTabs;
-      this.tabCollection.activeTabId = parsedData.activeTabId;
-      this.tabCollection.nextTabId = parsedData.nextTabId || restoredTabs.length + 1;
+      this.tabCollection.fromJSON(parsedData);
 
-      // Set active tab properly
-      if (parsedData.activeTabId) {
-        const activeTab = this.tabCollection.getTab(parsedData.activeTabId);
-        if (activeTab) {
-          activeTab.setActive(true);
-        }
-      }
+      // Clear active tab to prevent auto-loading
+      this.tabCollection.activeTabId = null;
+      this.tabCollection.getAllTabs().forEach((tab) => tab.setActive(false));
 
       // Emit event for each restored tab
-      restoredTabs.forEach(tab => {
+      this.tabCollection.getAllTabs().forEach(tab => {
         this.emit('tab-restored', { tab });
       });
-      
-      // Trigger activation for the active tab to load its content
-      if (parsedData.activeTabId) {
-        const activeTab = this.tabCollection.getTab(parsedData.activeTabId);
-        if (activeTab) {
-          this.emit('tab-activated', { tab: activeTab });
-        }
-      }
     } catch (error) {
       console.warn('[TabManager] Failed to load persisted tabs:', error);
       localStorage.removeItem(this.persistenceKey);
-    }
-  }
-
-  // Load content for a specific tab
-  async loadTabContent(tabId, documentComponent) {
-    const tab = this.tabCollection.getTab(tabId);
-    if (!tab) {
-      return tab;
-    }
-
-    // If tab already has content loaded, just return it
-    if (tab.isContentLoaded) {
-      return tab;
-    }
-
-    // If no file path, can't load from file
-    if (!tab.filePath) {
-      tab.isContentLoaded = true;
-      return tab;
-    }
-
-    try {
-      const content = await documentComponent.readFile(tab.filePath);
-      tab.setContentClean(content); // Use setContentClean to avoid marking as dirty
-      tab.isContentLoaded = true;
-      this.persistTabs();
-      return tab;
-    } catch (error) {
-      console.warn(`[TabManager] Failed to load content for tab ${tabId}:`, error);
-      throw error;
     }
   }
 
@@ -322,13 +292,7 @@ class TabManager extends BaseComponent {
   // Confirm close unsaved tab
   async confirmCloseUnsaved(tab) {
     try {
-      if (window.__TAURI__?.dialog) {
-        return await window.__TAURI__.dialog.confirm(
-          `Close "${tab.fileName}" without saving changes?`,
-          { title: 'Unsaved Changes' }
-        );
-      }
-      return confirm(`Close "${tab.fileName}" without saving changes?`);
+      return await showUnsavedChangesDialog([tab.fileName]);
     } catch (error) {
       return false;
     }
@@ -337,13 +301,7 @@ class TabManager extends BaseComponent {
   // Confirm close all unsaved tabs
   async confirmCloseAllUnsaved(dirtyTabs) {
     try {
-      const fileNames = dirtyTabs.map(tab => tab.fileName).join(', ');
-      const message = `Close ${dirtyTabs.length} unsaved file(s) (${fileNames}) without saving?`;
-      
-      if (window.__TAURI__?.dialog) {
-        return await window.__TAURI__.dialog.confirm(message, { title: 'Unsaved Changes' });
-      }
-      return confirm(message);
+      return await showUnsavedChangesDialog(dirtyTabs.map(tab => tab.fileName));
     } catch (error) {
       return false;
     }

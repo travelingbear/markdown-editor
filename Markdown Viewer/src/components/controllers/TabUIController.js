@@ -1,18 +1,31 @@
+import { getPinnedTabDropIndex } from '../tabReorder.js';
+import {
+  clampMenuPosition,
+  matchesTabSearch,
+  resolveContextMenuState,
+  resolveTabModalKey
+} from '../tabChrome.js';
+
 /**
  * TabUIController - Manages tab UI interactions and display
  * Handles tab dropdown, modal, context menu, and pinned tabs functionality
  */
 class TabUIController extends BaseComponent {
-  constructor() {
-    super('TabUIController');
+  constructor(options = {}) {
+    super('TabUIController', options);
     
     // Dependencies (injected)
     this.tabManager = null;
     this.settingsController = null;
     this.performanceOptimizer = null;
+    this.tauriProvider = options.tauriProvider || (() => window.__TAURI__);
     
     // State
     this.contextMenuTabId = null;
+    this.pinnedTabDrag = null;
+    this.suppressPinnedTabClick = false;
+    this.tabListDrag = null;
+    this.suppressTabListClick = false;
   }
 
   async onInit() {
@@ -22,7 +35,6 @@ class TabUIController extends BaseComponent {
     }
     
     this.setupTabDropdown();
-    this.setupTabKeyboardShortcuts();
     this.setupTabContextMenu();
   }
 
@@ -76,7 +88,9 @@ class TabUIController extends BaseComponent {
     
     // Show up to 9 most recent tabs in dropdown (newest first)
     const visibleTabs = tabs.slice(0, 9);
-    const showMoreBtn = tabs.length > 9;
+    // The tab manager offers search, reordering, and per-tab commands, so it is
+    // worth reaching as soon as there is more than one document to move between.
+    const showMoreBtn = tabs.length > 1;
     
     visibleTabs.forEach((tab, index) => {
       const tabElement = this.createDropdownTabElement(tab, activeTab, index);
@@ -118,6 +132,14 @@ class TabUIController extends BaseComponent {
     const tabElement = document.createElement('div');
     tabElement.className = `tab-dropdown-item ${tab.id === activeTab?.id ? 'active' : ''}`;
     tabElement.title = tab.filePath || tab.fileName;
+    tabElement.dataset.tabId = tab.id;
+
+    const reorderHandle = document.createElement('div');
+    reorderHandle.className = 'tab-reorder-handle';
+    reorderHandle.textContent = '⋮⋮';
+    reorderHandle.title = 'Drag to reorder tab';
+    reorderHandle.setAttribute('aria-label', `Reorder ${tab.fileName}`);
+    tabElement.appendChild(reorderHandle);
     
     // Tab number
     const tabNumber = document.createElement('div');
@@ -150,6 +172,7 @@ class TabUIController extends BaseComponent {
     
     // Click to switch tab
     tabElement.onclick = () => {
+      if (this.suppressTabListClick) return;
       this.emit('tab-switch-requested', { tabId: tab.id });
       this.hideTabDropdown();
     };
@@ -158,6 +181,8 @@ class TabUIController extends BaseComponent {
     tabElement.oncontextmenu = (e) => {
       this.showTabContextMenu(e, tab.id);
     };
+
+    this.setupTabListPointerReorder(tabElement, 'tab-dropdown-list');
     
     return tabElement;
   }
@@ -307,6 +332,14 @@ class TabUIController extends BaseComponent {
   createTabModalItem(tab, activeTab) {
     const item = document.createElement('div');
     item.className = `tab-modal-item ${tab.id === activeTab?.id ? 'active' : ''}`;
+    item.dataset.tabId = tab.id;
+
+    const reorderHandle = document.createElement('div');
+    reorderHandle.className = 'tab-reorder-handle';
+    reorderHandle.textContent = '⋮⋮';
+    reorderHandle.title = 'Drag to reorder tab';
+    reorderHandle.setAttribute('aria-label', `Reorder ${tab.fileName}`);
+    item.appendChild(reorderHandle);
     
     // Check if this tab is in the top 9 (dropdown)
     const allTabs = this.tabManager.getAllTabs();
@@ -356,6 +389,7 @@ class TabUIController extends BaseComponent {
     
     // Click to switch tab
     item.onclick = () => {
+      if (this.suppressTabListClick) return;
       this.emit('tab-switch-requested', { tabId: tab.id });
       this.hideTabModal();
     };
@@ -364,30 +398,108 @@ class TabUIController extends BaseComponent {
     item.oncontextmenu = (e) => {
       this.showTabContextMenu(e, tab.id);
     };
+
+    this.setupTabListPointerReorder(item, 'tab-modal-list');
     
     return item;
   }
 
-  setupTabKeyboardShortcuts() {
-    // Alt+1-9 for switching to numbered tabs in dropdown (most recent first)
-    // On macOS, also support Cmd+1-9 as an alternative
-    document.addEventListener('keydown', (e) => {
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const useAltKey = e.altKey || (isMac && e.metaKey);
-      
-      if (useAltKey && e.key >= '1' && e.key <= '9') {
-        const tabIndex = parseInt(e.key) - 1;
-        const tabs = this.tabManager.getAllTabs();
-        const availableTabs = tabs.slice(0, 9); // First 9 tabs (most recent first)
-        
-        if (availableTabs[tabIndex]) {
-          e.preventDefault();
-          this.emit('tab-switch-requested', { tabId: availableTabs[tabIndex].id });
-        }
+  setupTabListPointerReorder(item, containerId) {
+    item.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.target.closest('[class*="close"]')) return;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      this.tabListDrag = {
+        tabId: item.dataset.tabId,
+        pointerId: event.pointerId,
+        source: item,
+        container,
+        startX: event.clientX,
+        startY: event.clientY,
+        isDragging: false,
+        target: null,
+        insertAfter: false
+      };
+      item.setPointerCapture?.(event.pointerId);
+    });
+
+    item.addEventListener('pointermove', (event) => this.updateTabListPointerDrag(event));
+    item.addEventListener('pointerup', (event) => this.finishTabListPointerDrag(event));
+    item.addEventListener('pointercancel', () => this.clearTabListPointerDrag());
+  }
+
+  updateTabListPointerDrag(event) {
+    const drag = this.tabListDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (!drag.isDragging) {
+      const distance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+      if (distance < 5) return;
+      drag.isDragging = true;
+      this.suppressTabListClick = true;
+      drag.source.classList.add('dragging');
+      document.body.classList.add('reordering-tabs');
+    }
+
+    event.preventDefault();
+    const target = this.findTabListItemAtPoint(event.clientX, event.clientY, drag.container);
+    this.clearTabDropMarkers(drag.container);
+    if (!target || target.dataset.tabId === drag.tabId) {
+      drag.target = null;
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    drag.insertAfter = event.clientY >= rect.top + rect.height / 2;
+    target.classList.add(drag.insertAfter ? 'drag-over-after' : 'drag-over-before');
+    drag.target = target;
+  }
+
+  finishTabListPointerDrag(event) {
+    const drag = this.tabListDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (drag.isDragging && drag.target && drag.target.dataset.tabId !== drag.tabId) {
+      const tabs = this.tabManager.getAllTabs();
+      const sourceIndex = tabs.findIndex((tab) => tab.id === drag.tabId);
+      const targetIndex = tabs.findIndex((tab) => tab.id === drag.target.dataset.tabId);
+      if (sourceIndex >= 0 && targetIndex >= 0) {
+        const dropIndex = getPinnedTabDropIndex(sourceIndex, targetIndex, drag.insertAfter, tabs.length);
+        this.tabManager.moveTabToPosition(drag.tabId, dropIndex);
       }
+    }
+
+    const wasModal = drag.container.id === 'tab-modal-list';
+    this.clearTabListPointerDrag();
+    if (wasModal) this.showTabModal();
+    setTimeout(() => { this.suppressTabListClick = false; }, 0);
+  }
+
+  findTabListItemAtPoint(clientX, clientY, container) {
+    const pointed = document.elementFromPoint?.(clientX, clientY)?.closest?.('.tab-dropdown-item, .tab-modal-item');
+    if (pointed && container.contains(pointed)) return pointed;
+
+    const items = [...container.querySelectorAll('.tab-dropdown-item, .tab-modal-item:not(.filtered-out)')];
+    return items.reduce((nearest, element) => {
+      const rect = element.getBoundingClientRect();
+      const distance = Math.abs(clientY - (rect.top + rect.height / 2));
+      return !nearest || distance < nearest.distance ? { element, distance } : nearest;
+    }, null)?.element || null;
+  }
+
+  clearTabDropMarkers(container) {
+    container?.querySelectorAll('.drag-over-before, .drag-over-after').forEach((element) => {
+      element.classList.remove('drag-over-before', 'drag-over-after');
     });
   }
-  
+
+  clearTabListPointerDrag() {
+    this.tabListDrag?.source?.classList.remove('dragging');
+    this.clearTabDropMarkers(this.tabListDrag?.container);
+    document.body.classList.remove('reordering-tabs');
+    this.tabListDrag = null;
+  }
+
   setupTabContextMenu() {
     // Create context menu if it doesn't exist
     let contextMenu = document.getElementById('tab-context-menu');
@@ -454,7 +566,9 @@ class TabUIController extends BaseComponent {
     contextMenu.addEventListener('click', (e) => {
       const action = e.target.dataset.action;
       if (action && this.contextMenuTabId) {
-        this.emit('tab-context-action', { action, tabId: this.contextMenuTabId });
+        this.handleContextAction(action, this.contextMenuTabId).catch((error) => {
+          console.error('[TabUIController] Context action failed:', error);
+        });
       }
       this.hideTabContextMenu();
     });
@@ -479,58 +593,37 @@ class TabUIController extends BaseComponent {
     // Show menu first to get dimensions
     contextMenu.classList.add('show');
     
-    // Calculate position to prevent overflow
+    // Measured after showing, so the menu has dimensions to keep on screen.
     const menuRect = contextMenu.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    let left = e.clientX;
-    let top = e.clientY;
-    
-    // Adjust horizontal position if menu would overflow
-    if (left + menuRect.width > viewportWidth) {
-      left = viewportWidth - menuRect.width - 10;
-    }
-    
-    // Adjust vertical position if menu would overflow
-    if (top + menuRect.height > viewportHeight) {
-      top = viewportHeight - menuRect.height - 10;
-    }
-    
-    // Ensure menu doesn't go off-screen
-    left = Math.max(10, left);
-    top = Math.max(10, top);
-    
+    const { left, top } = clampMenuPosition({
+      pointer: { x: e.clientX, y: e.clientY },
+      menu: { width: menuRect.width, height: menuRect.height },
+      viewport: { width: window.innerWidth, height: window.innerHeight }
+    });
     contextMenu.style.left = `${left}px`;
     contextMenu.style.top = `${top}px`;
-    
 
-    
-    // Update menu items based on context
-    const tabs = this.tabManager.getAllTabs();
-    const tabIndex = tabs.findIndex(tab => tab.id === tabId);
-    const closeOthersBtn = contextMenu.querySelector('[data-action="close-others"]');
-    const closeAllBtn = contextMenu.querySelector('[data-action="close-all"]');
-    const revealBtn = contextMenu.querySelector('[data-action="reveal"]');
-    
-    // Update position buttons - disable current position
-    for (let i = 1; i <= 9; i++) {
-      const posBtn = contextMenu.querySelector(`[data-action="move-to-${i}"]`);
-      if (posBtn) {
-        posBtn.disabled = tabIndex === (i - 1);
-      }
+    this.applyContextMenuState(contextMenu, tabId);
+  }
+
+  applyContextMenuState(contextMenu, tabId) {
+    const state = resolveContextMenuState({
+      tabs: this.tabManager.getAllTabs(),
+      tabId,
+      tab: this.tabManager.getTab(tabId)
+    });
+
+    const setDisabled = (action, disabled) => {
+      const button = contextMenu.querySelector(`[data-action="${action}"]`);
+      if (button) button.disabled = disabled;
+    };
+
+    for (const { position, disabled } of state.positions) {
+      setDisabled(`move-to-${position}`, disabled);
     }
-    
-    if (closeOthersBtn) {
-      closeOthersBtn.disabled = tabs.length <= 1;
-    }
-    if (closeAllBtn) {
-      closeAllBtn.disabled = tabs.length === 0;
-    }
-    if (revealBtn) {
-      const tab = this.tabManager.getTab(tabId);
-      revealBtn.disabled = !tab || !tab.filePath;
-    }
+    setDisabled('close-others', state.closeOthersDisabled);
+    setDisabled('close-all', state.closeAllDisabled);
+    setDisabled('reveal', state.revealDisabled);
   }
   
   hideTabContextMenu() {
@@ -539,6 +632,52 @@ class TabUIController extends BaseComponent {
       contextMenu.classList.remove('show');
     }
     this.contextMenuTabId = null;
+  }
+
+  async handleContextAction(action, tabId) {
+    const tab = this.tabManager.getTab(tabId);
+    if (!tab) return false;
+
+    if (/^move-to-[1-9]$/.test(action)) {
+      const targetIndex = Number.parseInt(action.slice('move-to-'.length), 10) - 1;
+      const moved = this.tabManager.moveTabToPosition(tabId, targetIndex);
+      const tabModal = document.getElementById('tab-modal');
+      if (moved && tabModal?.style.display === 'flex') this.showTabModal();
+      return moved;
+    }
+
+    switch (action) {
+      case 'close':
+        return this.tabManager.closeTab(tabId);
+      case 'close-others': {
+        let closedAny = false;
+        for (const otherTab of [...this.tabManager.getAllTabs()]) {
+          if (otherTab.id === tabId) continue;
+          closedAny = (await this.tabManager.closeTab(otherTab.id)) || closedAny;
+        }
+        return closedAny;
+      }
+      case 'close-all':
+        return this.tabManager.closeAllTabs();
+      case 'duplicate':
+        return Boolean(this.tabManager.createNewTab(tab.content));
+      case 'toggle-pinned':
+        this.togglePinnedTabs();
+        return true;
+      case 'reveal': {
+        const invoke = this.tauriProvider()?.core?.invoke;
+        if (!tab.filePath || !invoke) return false;
+        try {
+          await invoke('show_in_folder', { path: tab.filePath });
+          return true;
+        } catch (error) {
+          console.warn('[TabUIController] Failed to reveal file:', error);
+          return false;
+        }
+      }
+      default:
+        return false;
+    }
   }
   
   filterTabModal(searchTerm) {
@@ -550,17 +689,13 @@ class TabUIController extends BaseComponent {
     
     let visibleCount = 0;
     items.forEach(item => {
-      const name = item.querySelector('.tab-modal-name')?.textContent?.toLowerCase() || '';
-      const path = item.querySelector('.tab-modal-path')?.textContent?.toLowerCase() || '';
-      
-      const matches = !term || name.includes(term) || path.includes(term);
-      
-      if (matches) {
-        item.classList.remove('filtered-out');
-        visibleCount++;
-      } else {
-        item.classList.add('filtered-out');
-      }
+      const matches = matchesTabSearch({
+        name: item.querySelector('.tab-modal-name')?.textContent || '',
+        path: item.querySelector('.tab-modal-path')?.textContent || ''
+      }, term);
+
+      item.classList.toggle('filtered-out', !matches);
+      if (matches) visibleCount++;
     });
     
     // Show empty state if no matches
@@ -585,39 +720,20 @@ class TabUIController extends BaseComponent {
     const visibleItems = Array.from(tabModalList.querySelectorAll('.tab-modal-item:not(.filtered-out)'));
     if (visibleItems.length === 0) return;
     
-    let currentIndex = visibleItems.findIndex(item => item.classList.contains('keyboard-focus'));
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        if (currentIndex < visibleItems.length - 1) {
-          this.setTabModalKeyboardFocus(currentIndex + 1, visibleItems);
-        }
-        break;
-        
-      case 'ArrowUp':
-        e.preventDefault();
-        if (currentIndex > 0) {
-          this.setTabModalKeyboardFocus(currentIndex - 1, visibleItems);
-        } else if (currentIndex === -1 && visibleItems.length > 0) {
-          this.setTabModalKeyboardFocus(visibleItems.length - 1, visibleItems);
-        }
-        break;
-        
-      case 'Enter':
-        e.preventDefault();
-        if (currentIndex >= 0 && visibleItems[currentIndex]) {
-          visibleItems[currentIndex].click();
-        }
-        break;
-        
-      case 'Escape':
-        e.preventDefault();
-        this.hideTabModal();
-        break;
-    }
+    const currentIndex = visibleItems.findIndex(item => item.classList.contains('keyboard-focus'));
+    const { handled, action, index } = resolveTabModalKey(e.key, {
+      currentIndex,
+      itemCount: visibleItems.length
+    });
+
+    if (!handled) return;
+    e.preventDefault();
+
+    if (action === 'focus') this.setTabModalKeyboardFocus(index, visibleItems);
+    else if (action === 'select') visibleItems[index]?.click();
+    else if (action === 'close') this.hideTabModal();
   }
-  
+
   setTabModalKeyboardFocus(index, items) {
     // Remove existing focus
     items.forEach(item => item.classList.remove('keyboard-focus'));
@@ -632,12 +748,7 @@ class TabUIController extends BaseComponent {
   // Pinned Tabs Methods
   togglePinnedTabs() {
     const currentEnabled = this.settingsController.getPinnedTabsEnabled();
-    this.settingsController.pinnedTabsEnabled = !currentEnabled;
-    localStorage.setItem('markdownViewer_pinnedTabs', (!currentEnabled).toString());
-    this.settingsController.applyPinnedTabsVisibility();
-    if (!currentEnabled) {
-      this.updatePinnedTabs();
-    }
+    this.settingsController.setPinnedTabsEnabled(!currentEnabled);
     this.emit('settings-update-requested');
   }
   
@@ -653,6 +764,7 @@ class TabUIController extends BaseComponent {
     tabs.forEach((tab, index) => {
       const pinnedTab = document.createElement('div');
       pinnedTab.className = `pinned-tab ${tab.id === activeTab?.id ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
+      pinnedTab.dataset.tabId = tab.id;
       
       // Add number for first 9 tabs
       if (index < 9) {
@@ -679,12 +791,39 @@ class TabUIController extends BaseComponent {
       pinnedTab.appendChild(closeBtn);
       
       pinnedTab.onclick = () => {
+        if (this.suppressPinnedTabClick) return;
         this.emit('tab-switch-requested', { tabId: tab.id });
       };
       
       pinnedTab.oncontextmenu = (e) => {
         this.showTabContextMenu(e, tab.id);
       };
+
+      pinnedTab.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 || event.target.closest('.pinned-tab-close')) return;
+        this.pinnedTabDrag = {
+          tabId: tab.id,
+          pointerId: event.pointerId,
+          source: pinnedTab,
+          startX: event.clientX,
+          startY: event.clientY,
+          isDragging: false,
+          target: null
+        };
+        pinnedTab.setPointerCapture?.(event.pointerId);
+      });
+
+      pinnedTab.addEventListener('pointermove', (event) => {
+        this.updatePinnedTabPointerDrag(event, pinnedTabsList);
+      });
+
+      pinnedTab.addEventListener('pointerup', (event) => {
+        this.finishPinnedTabPointerDrag(event, pinnedTabsList);
+      });
+
+      pinnedTab.addEventListener('pointercancel', () => {
+        this.clearPinnedTabPointerDrag(pinnedTabsList);
+      });
       
       pinnedTabsList.appendChild(pinnedTab);
     });
@@ -692,12 +831,93 @@ class TabUIController extends BaseComponent {
     // Auto-scroll to active tab
     if (activeTab) {
       setTimeout(() => {
+        if (this.pinnedTabDrag) return;
         const activeElement = pinnedTabsList.querySelector('.pinned-tab.active');
         if (activeElement) {
           activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         }
       }, 50);
     }
+  }
+
+  updatePinnedTabPointerDrag(event, pinnedTabsList) {
+    const drag = this.pinnedTabDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    if (!drag.isDragging) {
+      const distance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+      if (distance < 5) return;
+      drag.isDragging = true;
+      this.suppressPinnedTabClick = true;
+      drag.source.classList.add('dragging');
+      document.body.classList.add('reordering-pinned-tabs');
+    }
+
+    event.preventDefault();
+    const target = this.findPinnedTabAtPoint(event.clientX, event.clientY, pinnedTabsList);
+    pinnedTabsList.querySelectorAll('.drag-over-before, .drag-over-after').forEach((element) => {
+      element.classList.remove('drag-over-before', 'drag-over-after');
+    });
+
+    if (!target || target.dataset.tabId === drag.tabId) {
+      drag.target = null;
+      return;
+    }
+
+    const tabs = this.tabManager.getAllTabs();
+    const sourceIndex = tabs.findIndex((item) => item.id === drag.tabId);
+    const targetIndex = tabs.findIndex((item) => item.id === target.dataset.tabId);
+    const targetRect = target.getBoundingClientRect();
+    drag.insertAfter = targetRect.width > 0
+      ? event.clientX >= targetRect.left + targetRect.width / 2
+      : sourceIndex < targetIndex;
+    target.classList.add(drag.insertAfter ? 'drag-over-after' : 'drag-over-before');
+    drag.target = target;
+  }
+
+  finishPinnedTabPointerDrag(event, pinnedTabsList) {
+    const drag = this.pinnedTabDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const target = drag.target || this.findPinnedTabAtPoint(event.clientX, event.clientY, pinnedTabsList);
+    if (drag.isDragging && target && target.dataset.tabId !== drag.tabId) {
+      const tabs = this.tabManager.getAllTabs();
+      const sourceIndex = tabs.findIndex((item) => item.id === drag.tabId);
+      const targetIndex = tabs.findIndex((item) => item.id === target.dataset.tabId);
+      if (sourceIndex >= 0 && targetIndex >= 0) {
+        const dropIndex = getPinnedTabDropIndex(
+          sourceIndex,
+          targetIndex,
+          drag.insertAfter ?? sourceIndex < targetIndex,
+          tabs.length
+        );
+        this.tabManager.moveTabToPosition(drag.tabId, dropIndex);
+      }
+    }
+
+    this.clearPinnedTabPointerDrag(pinnedTabsList);
+    setTimeout(() => { this.suppressPinnedTabClick = false; }, 0);
+  }
+
+  findPinnedTabAtPoint(clientX, clientY, pinnedTabsList) {
+    const pointedElement = document.elementFromPoint?.(clientX, clientY)?.closest?.('.pinned-tab');
+    if (pointedElement && pinnedTabsList.contains(pointedElement)) return pointedElement;
+
+    const tabs = [...pinnedTabsList.querySelectorAll('.pinned-tab')];
+    return tabs.reduce((nearest, element) => {
+      const rect = element.getBoundingClientRect();
+      const distance = Math.abs(clientX - (rect.left + rect.width / 2));
+      return !nearest || distance < nearest.distance ? { element, distance } : nearest;
+    }, null)?.element || null;
+  }
+
+  clearPinnedTabPointerDrag(pinnedTabsList) {
+    this.pinnedTabDrag?.source?.classList.remove('dragging');
+    pinnedTabsList.querySelectorAll('.drag-over-before, .drag-over-after').forEach((element) => {
+      element.classList.remove('drag-over-before', 'drag-over-after');
+    });
+    document.body.classList.remove('reordering-pinned-tabs');
+    this.pinnedTabDrag = null;
   }
 
   onDestroy() {
@@ -709,6 +929,8 @@ class TabUIController extends BaseComponent {
     
     // Reset state
     this.contextMenuTabId = null;
+    this.pinnedTabDrag = null;
+    this.tabListDrag = null;
   }
 }
 

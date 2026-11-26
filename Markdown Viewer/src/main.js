@@ -1,12 +1,11 @@
 // Component-based Markdown Editor - Main Entry Point
 // This replaces the monolithic MarkdownViewer class with a component-based architecture
 
-window.DEBUG_MODE = false;
-
 let markdownEditor = null;
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
+// Initialize the application once the DOM is ready. With the module bootstrap,
+// this file may be loaded after DOMContentLoaded has already fired.
+async function initializeApplication() {
   try {
     console.log('[App] Starting component-based markdown editor...');
     
@@ -26,6 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     
   } catch (error) {
     console.error('[App] Failed to initialize markdown editor:', error);
+    document.body.dataset.startupError = 'true';
+    document.body.classList.add('app-initialized');
+    window.splashScreen?.hideSplash();
     
     // Fallback error handling
     const welcomePage = document.getElementById('welcome-page');
@@ -41,7 +43,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
     }
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApplication, { once: true });
+} else {
+  initializeApplication();
+}
 
 // Global error handler
 window.addEventListener('error', (event) => {

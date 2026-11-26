@@ -1,0 +1,106 @@
+/* Design tokens, reset, document base, and shell reveal */
+
+/* Theme Imports - Removed, now using dynamic loading */
+
+:root {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #e8e8e8;
+  --bg-tertiary: #d9d9d9;
+  --text-primary: #24292f;
+  --text-secondary: #656d76;
+  --border-primary: #d0d7de;
+  --border-secondary: #8c959f;
+  --accent-primary: #5e60e7;
+  --accent-hover: #7e80e3;
+  
+  /* Centered Layout Variables */
+  /* Corner rounding. The base stylesheet used to state these as literals in
+     113 places, so a theme wanting square corners had to restate every one --
+     retro.css carried 44 such overrides. A theme now redefines these instead.
+
+     Named by value on purpose: consolidating 2/3/4/5/6/7/8/10/12 onto a tidier
+     scale would change pixels, and that is a design decision rather than a
+     refactor. */
+  --radius-2: 2px;
+  --radius-3: 3px;
+  --radius-4: 4px;
+  --radius-5: 5px;
+  --radius-6: 6px;
+  --radius-7: 7px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* Interface and monospace stacks, so a theme changes type in one place. */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  --page-width-a4: 210mm;
+  --page-width-letter: 8.5in;
+  --page-width-a3: 297mm;
+  --page-margin-top: 1in;
+  --page-margin-bottom: 1in;
+  --page-margin-left: 1in;
+  --page-margin-right: 1in;
+  --current-page-width: var(--page-width-a4);
+  --centered-layout-enabled: 0;
+  
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Interface icons are inline SVG so controls never depend on an operating
+   system's optional emoji or symbol fonts. */
+.ui-icon {
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  flex: 0 0 auto;
+  vertical-align: -0.15em;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth theme transitions */
+body.theme-transitioning {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.theme-transitioning * {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Reveal the complete shell in one paint after settings and layout are ready. */
+body:not(.app-initialized) .app,
+body.splash-visible .app {
+  visibility: hidden;
+}
+
+/*
+ * Main toolbar geometry lives in custom properties (see "Toolbar Size
+ * Variations") so the Settings size choice reaches every theme. A theme that
+ * hard-codes button height, padding, or font size silently opts out of that
+ * choice, which is why the Retro toolbar used to ignore it.
+ */

@@ -45,13 +45,13 @@
     overflow: visible !important;
   }
   
-  .main-content.code-mode .monaco-editor-container {
+  .main-content.code-mode .editor-container {
     height: auto !important;
     overflow: visible !important;
   }
   
   .preview-content,
-  .monaco-editor-container,
+  .editor-container,
   #editor {
     padding: 20px !important;
     margin: 0 !important;
@@ -121,7 +121,7 @@
   }
   
   pre code {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-family: 'Consolas', 'Liberation Mono', 'Courier New', monospace !important;
     font-size: 12px !important;
     line-height: 1.4 !important;
     color: black !important;
@@ -135,7 +135,7 @@
     padding: 2px 4px !important;
     border-radius: 3px !important;
     color: black !important;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-family: 'Consolas', 'Liberation Mono', 'Courier New', monospace !important;
   }
   
   /* Optimize images and diagrams for print */
@@ -146,24 +146,6 @@
     break-inside: avoid;
     display: block !important;
     margin: 12px auto !important;
-  }
-  
-  .mermaid-diagram {
-    page-break-inside: avoid;
-    break-inside: avoid;
-    max-width: 100%;
-    overflow: hidden;
-    text-align: center;
-    margin: 16px 0 !important;
-    border: 1px solid #ddd !important;
-    padding: 8px !important;
-  }
-  
-  .mermaid-diagram svg {
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: 400px !important;
-    page-break-inside: avoid;
   }
   
   /* Better table printing */
@@ -232,11 +214,6 @@
   .hljs-attr { color: #e36209 !important; }
   .hljs-built_in { color: #005cc5 !important; }
   
-  /* Monaco editor is hidden during print - we use HTML conversion instead */
-  .monaco-editor {
-    display: none !important;
-  }
-  
   /* Math expressions */
   .math-display, .math-inline {
     color: black !important;
@@ -250,7 +227,7 @@
   
   /* Centered layout print styles */
   body.centered-layout .preview-content,
-  body.centered-layout .monaco-editor-container,
+  body.centered-layout .editor-container,
   body.centered-layout #editor,
   body.centered-layout .editor-pane > div {
     max-width: var(--current-page-width) !important;
@@ -266,7 +243,7 @@
     padding: 0 !important;
     background: white !important;
     border: none !important;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-family: 'Consolas', 'Liberation Mono', 'Courier New', monospace !important;
     font-size: 12px !important;
     line-height: 1.4 !important;
     white-space: pre-wrap !important;

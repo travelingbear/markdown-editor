@@ -1,4 +1,7 @@
 // Performance Optimizer for Multi-Tab Architecture - Phase 6 Enhanced
+import { buildDashboardView } from './performance/dashboardView.js';
+import { averageAccessCount, selectTabsToUnload } from './performance/tabPolicy.js';
+
 class PerformanceOptimizer {
   constructor() {
     this.performanceTargets = {
@@ -12,12 +15,19 @@ class PerformanceOptimizer {
     
     this.memoryMonitor = null;
     this.performanceLog = [];
+    // Created here as well as in the setup methods so teardown is safe on an
+    // instance that was never fully set up.
+    this.virtualizedTabs = new Set();
+    this.unloadCandidates = new Map();
+    this.lastAccessTime = new Map();
+    this.tabAccessPattern = new Map();
     this.tabMemoryUsage = new Map();
     this.inactiveTabsData = new Map(); // Lazy loading storage
     this.performanceMetrics = new Map();
     this.memoryPressureThreshold = 0.8; // 80% of available memory
     this.tabUnloadQueue = [];
     this.isLowPowerMode = false;
+    this.autoVirtualizationPaused = false;
     
     this.startMemoryMonitoring();
     this.setupPerformanceTracking();
@@ -30,39 +40,35 @@ class PerformanceOptimizer {
     // 1. Implement tab virtualization with lazy loading
     this.setupTabVirtualization();
     
-    // 2. Monaco editor pooling with smart disposal
-    this.setupMonacoPooling();
-    
-    // 3. Preview content caching with intelligent eviction
+    // 2. Preview content caching with intelligent eviction
     this.setupPreviewCaching();
     
-    // 4. Memory cleanup strategies with pressure detection
+    // 3. Memory cleanup strategies with pressure detection
     this.setupMemoryCleanup();
     
-    // 5. Phase 6: Lazy loading for inactive tabs
+    // 4. Phase 6: Lazy loading for inactive tabs
     this.setupLazyTabLoading();
     
-    // 6. Phase 6: Smart tab unloading for memory pressure
+    // 5. Phase 6: Smart tab unloading for memory pressure
     this.setupSmartTabUnloading();
     
-    // 7. Phase 6: Performance dashboard
+    // 6. Phase 6: Performance dashboard
     this.setupPerformanceDashboard();
   }
 
   setupTabVirtualization() {
     // Only keep active tab content in DOM
     // Serialize inactive tab content to lightweight objects
-    this.tabContentCache = new Map();
-    this.activeTabLimit = 3; // Only keep 3 tabs fully loaded
     this.virtualizedTabs = new Set(); // Track which tabs are virtualized
   }
   
   // Phase 6: Lazy loading for inactive tabs
   setupLazyTabLoading() {
-    this.lazyLoadThreshold = 10; // Start lazy loading after 10 tabs
-    this.maxActiveEditors = 5; // Maximum Monaco editors to keep active
-    
-
+    this.lazyLoadThreshold = 10; // Start lazy loading beyond 10 open tabs
+    // Documents past this position load their content on demand. Low power
+    // mode lowers it; without a default here shouldLazyLoadTab() compared
+    // against undefined and always answered false.
+    this.maxActiveEditors = 5;
   }
   
   // Phase 6: Smart tab unloading for memory pressure
@@ -87,65 +93,6 @@ class PerformanceOptimizer {
     
     // Track tab access patterns
     this.tabAccessPattern = new Map();
-  }
-
-  setupMonacoPooling() {
-    // Pool of Monaco editor instances to reuse
-    this.monacoPool = [];
-    this.maxPoolSize = 5;
-    
-    // Pre-create Monaco instances for faster tab switching
-    this.preCreateMonacoInstances();
-  }
-
-  preCreateMonacoInstances() {
-    // Create instances in background for instant tab switching
-    for (let i = 0; i < 3; i++) {
-      setTimeout(() => {
-        this.createPooledMonacoInstance();
-      }, i * 100);
-    }
-  }
-
-  createPooledMonacoInstance() {
-    if (typeof monaco === 'undefined') return;
-    
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.width = '800px';
-    container.style.height = '600px';
-    document.body.appendChild(container);
-    
-    const editor = monaco.editor.create(container, {
-      value: '',
-      language: 'markdown',
-      theme: 'vs',
-      automaticLayout: false
-    });
-    
-    this.monacoPool.push({
-      editor,
-      container,
-      inUse: false
-    });
-  }
-
-  getPooledMonacoInstance() {
-    const available = this.monacoPool.find(item => !item.inUse);
-    if (available) {
-      available.inUse = true;
-      return available;
-    }
-    
-    // Create new instance if pool is empty
-    this.createPooledMonacoInstance();
-    return this.monacoPool[this.monacoPool.length - 1];
-  }
-
-  releaseMonacoInstance(instance) {
-    instance.inUse = false;
-    instance.editor.setValue('');
   }
 
   setupPreviewCaching() {
@@ -197,14 +144,30 @@ class PerformanceOptimizer {
     this.setupTabCloseCleanup();
   }
 
-  performMemoryCleanup() {
+  performMemoryCleanup({ aggressive = false } = {}) {
+    const previewEntriesBefore = this.previewCache?.size || 0;
+    let editorDocumentsDisposed = 0;
 
-    
-    // Clear old preview cache entries
-    this.cleanupPreviewCache();
-    
-    // Release unused Monaco instances
-    this.cleanupMonacoPool();
+    // A manual cleanup is intentionally stronger than the periodic sweep.
+    // Cached HTML and inactive CodeMirror documents can always be recreated
+    // from the canonical tab content, so releasing them cannot lose work.
+    if (aggressive) {
+      this.autoVirtualizationPaused = false;
+      this.previewCache?.clear();
+
+      const editor = window.markdownEditor?.editorComponent?.getEditorAdapter?.();
+      const tabManager = window.markdownEditor?.tabManager;
+      const activeTabId = tabManager?.getActiveTab()?.id;
+      for (const tab of tabManager?.getAllTabs?.() || []) {
+        if (tab.id !== activeTabId && tab.editorDocument) {
+          tab.disposeEditorDocument(editor);
+          this.virtualizedTabs.add(tab.id);
+          editorDocumentsDisposed++;
+        }
+      }
+    } else {
+      this.cleanupPreviewCache();
+    }
     
     // Force garbage collection if available
     if (window.gc) {
@@ -213,6 +176,11 @@ class PerformanceOptimizer {
     
     // Log memory usage
     this.logMemoryUsage();
+
+    return {
+      previewEntriesCleared: previewEntriesBefore - (this.previewCache?.size || 0),
+      editorDocumentsDisposed
+    };
   }
 
   cleanupPreviewCache() {
@@ -224,32 +192,6 @@ class PerformanceOptimizer {
         this.previewCache.delete(key);
       }
     }
-  }
-
-  cleanupMonacoPool() {
-    // Remove excess unused instances efficiently
-    const toKeep = [];
-    const toRemove = [];
-    let unusedCount = 0;
-    
-    for (const item of this.monacoPool) {
-      if (item.inUse) {
-        toKeep.push(item);
-      } else if (unusedCount < this.maxPoolSize) {
-        toKeep.push(item);
-        unusedCount++;
-      } else {
-        toRemove.push(item);
-      }
-    }
-    
-    // Dispose removed instances
-    toRemove.forEach(item => {
-      item.editor.dispose();
-      item.container.remove();
-    });
-    
-    this.monacoPool = toKeep;
   }
 
   setupTabCloseCleanup() {
@@ -345,6 +287,8 @@ class PerformanceOptimizer {
   
   // Phase 6: Force virtualization for testing
   forceVirtualization(tabCount) {
+    if (this.autoVirtualizationPaused) return;
+
     // Don't create fake tabs - only virtualize real tabs
     if (window.markdownEditor?.tabManager) {
       const allTabs = window.markdownEditor.tabManager.getAllTabs();
@@ -361,69 +305,11 @@ class PerformanceOptimizer {
   }
   
   // Phase 6: Handle high tab count by virtualizing some tabs
-  handleHighTabCount(tabCount) {
-    // Initialize tab access tracking if not done yet
-    this.initializeTabAccessTracking();
-    
-    const tabsToVirtualize = this.selectTabsForVirtualization(tabCount);
-    
-    if (tabsToVirtualize.length > 0) {
-
-      tabsToVirtualize.forEach(tabId => this.virtualizeTab(tabId));
-    } else {
-
-    }
-  }
-  
-  // Phase 6: Select tabs for virtualization based on usage
-  selectTabsForVirtualization(totalTabs) {
-    if (!window.markdownEditor?.tabManager) {
-      return [];
-    }
-    
-    const allTabs = window.markdownEditor.tabManager.getAllTabs();
-    const activeTab = window.markdownEditor.tabManager.getActiveTab();
-    const maxActiveTabs = 10;
-    const tabsToVirtualize = Math.max(0, allTabs.length - maxActiveTabs);
-    
-    if (tabsToVirtualize <= 0) {
-      return [];
-    }
-    
-    const candidates = [];
-    const now = Date.now();
-    
-    // Always virtualize tabs beyond position 10, except active tab
-    for (let i = maxActiveTabs; i < allTabs.length; i++) {
-      const tab = allTabs[i];
-      if (tab.id !== activeTab?.id && !this.virtualizedTabs.has(tab.id)) {
-        const lastAccess = this.lastAccessTime.get(tab.id) || (now - 300000);
-        const accessCount = this.tabAccessPattern.get(tab.id) || 0;
-        candidates.push({ 
-          tabId: tab.id, 
-          timeSinceAccess: now - lastAccess, 
-          accessCount 
-        });
-      }
-    }
-    
-
-    return candidates.map(c => c.tabId);
-  }
-  
-  // Phase 6: Virtualize a tab (similar to unload but different tracking)
-  virtualizeTab(tabId) {
-    // Mark it as virtualized for display purposes
-    this.virtualizedTabs.add(tabId);
-    
-    // Update access time to prevent immediate re-virtualization
-    const now = Date.now();
-    this.lastAccessTime.set(tabId, now - 300000); // Mark as 5 minutes old
-  }
-  
-  // Phase 6: Handle memory pressure by unloading tabs
   handleMemoryPressure(memoryInfo) {
-    const tabsToUnload = this.selectTabsForUnloading();
+    const tabsToUnload = selectTabsToUnload({
+      lastAccessTime: this.lastAccessTime,
+      accessCounts: this.tabAccessPattern
+    });
     
     if (tabsToUnload.length > 0) {
 
@@ -437,32 +323,6 @@ class PerformanceOptimizer {
   }
   
   // Phase 6: Select tabs for unloading based on access patterns
-  selectTabsForUnloading() {
-    const now = Date.now();
-    const candidates = [];
-    
-    for (const [tabId, lastAccess] of this.lastAccessTime.entries()) {
-      const timeSinceAccess = now - lastAccess;
-      const accessCount = this.tabAccessPattern.get(tabId) || 0;
-      
-      // Unload tabs not accessed in last 5 minutes with low access count
-      if (timeSinceAccess > 300000 && accessCount < 5) {
-        candidates.push({ tabId, timeSinceAccess, accessCount });
-      }
-    }
-    
-    // Sort by least recently used and least accessed
-    candidates.sort((a, b) => {
-      if (a.accessCount !== b.accessCount) {
-        return a.accessCount - b.accessCount;
-      }
-      return b.timeSinceAccess - a.timeSinceAccess;
-    });
-    
-    // Return up to 3 tabs for unloading
-    return candidates.slice(0, 3).map(c => c.tabId);
-  }
-
   logMemoryUsage() {
     const memoryInfo = this.checkMemoryUsage();
     if (memoryInfo) {
@@ -471,9 +331,9 @@ class PerformanceOptimizer {
   }
 
   // Performance benchmarking for multi-tab operations
-  benchmarkTabOperation(operation, startTime, tabCount = 1) {
+  benchmarkTabOperation(operation, startTime, tabCount = 1, targetOverride = null) {
     const duration = performance.now() - startTime;
-    const target = this.getTargetForOperation(operation);
+    const target = targetOverride ?? this.getTargetForOperation(operation);
     
     // Only log slow operations
     if (target && duration > target) {
@@ -528,8 +388,6 @@ class PerformanceOptimizer {
       memoryTrend: memoryMetrics,
       cacheStats: {
         previewCacheSize: this.previewCache?.size || 0,
-        monacoPoolSize: this.monacoPool?.length || 0,
-        monacoPoolInUse: this.monacoPool?.filter(item => item.inUse).length || 0,
         virtualizedTabs: this.virtualizedTabs.size,
         inactiveTabsData: this.inactiveTabsData.size
       },
@@ -537,7 +395,7 @@ class PerformanceOptimizer {
         totalTabs: actualTabCount,
         trackedTabs: this.lastAccessTime.size,
         unloadCandidates: this.unloadCandidates.size,
-        averageAccessCount: this.getAverageAccessCount()
+        averageAccessCount: averageAccessCount(this.tabAccessPattern)
       },
       targets: this.performanceTargets,
       isLowPowerMode: this.isLowPowerMode
@@ -564,7 +422,10 @@ class PerformanceOptimizer {
     
     if (cleanupBtn) {
       cleanupBtn.addEventListener('click', () => {
-        this.performMemoryCleanup();
+        const result = this.performMemoryCleanup({ aggressive: true });
+        this.showPerformanceActionStatus(
+          `Memory cleaned: ${result.previewEntriesCleared} cached preview(s) and ${result.editorDocumentsDisposed} inactive editor document(s) released.`
+        );
         // Update dashboard immediately and again after cleanup
         this.updatePerformanceDashboard();
         setTimeout(() => this.updatePerformanceDashboard(), 100);
@@ -575,12 +436,24 @@ class PerformanceOptimizer {
     const clearVirtualBtn = document.getElementById('perf-clear-virtual-btn');
     if (clearVirtualBtn) {
       clearVirtualBtn.addEventListener('click', () => {
-        this.clearAllVirtualTabs();
+        const result = this.clearAllVirtualTabs();
+        this.showPerformanceActionStatus(
+          result.virtualTabsCleared > 0
+            ? `${result.virtualTabsCleared} virtual tab(s) restored. No documents were closed.`
+            : 'No virtual tabs needed restoring.'
+        );
         // Update dashboard immediately and again after cleanup
         this.updatePerformanceDashboard();
         setTimeout(() => this.updatePerformanceDashboard(), 100);
       });
     }
+  }
+
+  showPerformanceActionStatus(message) {
+    const status = document.getElementById('perf-action-status');
+    if (!status) return;
+    status.textContent = message;
+    status.classList.add('show');
   }
   
   // Phase 6: Check if we're in debug mode
@@ -605,167 +478,61 @@ class PerformanceOptimizer {
   
   // Phase 6: Update performance dashboard
   updatePerformanceDashboard() {
-    // Update elements in the Performance Monitor section
-    const perfTabCount = document.getElementById('perf-tab-count');
-    const perfMemory = document.getElementById('perf-memory');
-    const perfStartup = document.getElementById('perf-startup');
-    const perfTabSwitch = document.getElementById('perf-tab-switch');
-    const perfStatus = document.getElementById('perf-status');
-    
-    // Also update the old element IDs for backward compatibility
-    const memoryEl = document.getElementById('memory-usage');
-    const tabsEl = document.getElementById('active-tabs-count');
-    const switchEl = document.getElementById('tab-switch-avg');
-    const pressureEl = document.getElementById('memory-pressure');
-    
-    const memoryInfo = this.checkMemoryUsage();
-    const report = this.getPerformanceReport();
-    
-    // Update tab count information
-    let actualTabCount = 0;
-    let virtualCount = this.virtualizedTabs.size;
-    
-    if (window.markdownEditor?.tabManager) {
-      actualTabCount = window.markdownEditor.tabManager.getTabsCount();
-    } else {
-      // Fallback: count DOM elements
-      const dropdownItems = document.querySelectorAll('.tab-dropdown-item');
-      actualTabCount = dropdownItems.length;
-    }
-    
-    // Clean up virtualized tabs that no longer exist
-    if (actualTabCount === 0) {
-      this.virtualizedTabs.clear();
-      virtualCount = 0;
-    }
-    
-    // Force virtualization if we have many tabs
-    if (actualTabCount > 15 && virtualCount === 0) {
-      this.forceVirtualization(actualTabCount);
-      virtualCount = this.virtualizedTabs.size;
-    }
-    
-    const tabCountText = `${actualTabCount} (${virtualCount} virtual)`;
-    if (perfTabCount) perfTabCount.textContent = tabCountText;
-    if (tabsEl) tabsEl.textContent = tabCountText;
-    
-    // Update memory information
-    let memoryText = 'Not Available';
-    let memoryClass = 'perf-value';
-    let pressureText = 'N/A';
-    let pressureClass = 'perf-value';
-    
-    if (memoryInfo && performance.memory) {
-      memoryText = `${memoryInfo.used}MB / ${memoryInfo.total}MB`;
-      memoryClass = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
-      
-      pressureText = `${(memoryInfo.pressure * 100).toFixed(1)}%`;
-      pressureClass = `perf-value ${memoryInfo.pressure > 0.8 ? 'warning' : memoryInfo.pressure > 0.6 ? 'caution' : 'good'}`;
-    }
-    
-    if (perfMemory) perfMemory.textContent = memoryText;
-    if (memoryEl) {
-      memoryEl.textContent = memoryText;
-      memoryEl.className = memoryClass;
-    }
-    if (pressureEl) {
-      pressureEl.textContent = pressureText;
-      pressureEl.className = pressureClass;
-    }
-    
-    // Update startup time
-    const startupTime = window.markdownEditor?.startupTime;
-    const startupText = startupTime ? `${startupTime.toFixed(2)}ms` : 'N/A';
-    if (perfStartup) perfStartup.textContent = startupText;
-    
-    // Update tab switch performance
-    const recentSwitches = this.performanceMetrics.get('tabSwitches').slice(-10);
-    let switchText = 'No data';
-    let switchClass = 'perf-value';
-    
-    if (recentSwitches.length > 0) {
-      const avgTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
-      switchText = `${avgTime.toFixed(1)}ms`;
-      switchClass = `perf-value ${avgTime > 100 ? 'warning' : avgTime > 50 ? 'caution' : 'good'}`;
-    }
-    
-    if (perfTabSwitch) perfTabSwitch.textContent = switchText;
-    if (switchEl) {
-      switchEl.textContent = switchText;
-      switchEl.className = switchClass;
-    }
-    
-    // Update performance status based on actual performance metrics
-    let status = 'Good';
-    let statusClass = 'status-good';
-    
-    let warningFactors = 0;
-    let criticalFactors = 0;
-    
-    // Check memory pressure
-    if (memoryInfo && memoryInfo.pressure > 0.7) {
-      warningFactors++;
-      if (memoryInfo.pressure > 0.85) criticalFactors++;
-    }
-    
-    // Check tab switch performance
-    if (recentSwitches.length > 0) {
-      const avgSwitchTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
-      if (avgSwitchTime > 100) {
-        warningFactors++;
-        if (avgSwitchTime > 200) criticalFactors++;
-      }
-    }
-    
-    // Check startup time
-    if (startupTime && startupTime > 1000) {
-      warningFactors++;
-      if (startupTime > 2000) criticalFactors++;
-    }
-    
-    // Check memory usage
-    if (memoryInfo && memoryInfo.used > 150) {
-      warningFactors++;
-      if (memoryInfo.used > 250) criticalFactors++;
-    }
-    
-    // Build tooltip with performance details
-    const issues = [];
-    if (memoryInfo && memoryInfo.pressure > 0.85) issues.push('High memory pressure');
-    else if (memoryInfo && memoryInfo.pressure > 0.7) issues.push('Elevated memory pressure');
-    
-    if (recentSwitches.length > 0) {
-      const avgSwitchTime = recentSwitches.reduce((sum, s) => sum + s.duration, 0) / recentSwitches.length;
-      if (avgSwitchTime > 200) issues.push('Very slow tab switching');
-      else if (avgSwitchTime > 100) issues.push('Slow tab switching');
-    }
-    
-    if (startupTime && startupTime > 2000) issues.push('Very slow startup');
-    else if (startupTime && startupTime > 1000) issues.push('Slow startup');
-    
-    if (memoryInfo && memoryInfo.used > 250) issues.push('Very high memory usage');
-    else if (memoryInfo && memoryInfo.used > 150) issues.push('High memory usage');
-    
-    // Determine status based on performance factors
-    let tooltip = 'Performance is good';
-    if (criticalFactors > 0) {
-      status = 'Critical';
-      statusClass = 'status-critical';
-      tooltip = 'Critical issues: ' + issues.join(', ');
-    } else if (warningFactors >= 2) {
-      status = 'Warning';
-      statusClass = 'status-warning';
-      tooltip = 'Multiple issues: ' + issues.join(', ');
-    } else if (warningFactors >= 1) {
-      status = 'Warning';
-      statusClass = 'status-warning';
-      tooltip = 'Issue detected: ' + issues.join(', ');
-    }
-    
-    if (perfStatus) {
-      perfStatus.textContent = status;
-      perfStatus.className = statusClass;
-      perfStatus.title = tooltip;
+    const view = buildDashboardView({
+      actualTabCount: this.countOpenTabs(),
+      virtualCount: this.virtualizedTabs.size,
+      // performance.memory is Chromium-only; checkMemoryUsage() already
+      // returns null without it.
+      memoryInfo: this.checkMemoryUsage(),
+      startupTime: window.markdownEditor?.startupTime ?? null,
+      tabSwitches: this.performanceMetrics.get('tabSwitches')
+    });
+
+    this.applyDashboardView(view);
+  }
+
+  /**
+   * Prefer the tab manager's count, falling back to the rendered dropdown when
+   * the dashboard is inspected before the editor is available.
+   */
+  countOpenTabs() {
+    const count = window.markdownEditor?.tabManager
+      ? window.markdownEditor.tabManager.getTabsCount()
+      : document.querySelectorAll('.tab-dropdown-item').length;
+
+    // Nothing can still be virtualized once every tab is gone.
+    if (count === 0) this.virtualizedTabs.clear();
+    return count;
+  }
+
+  applyDashboardView(view) {
+    const setText = (id, text) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = text;
+    };
+    const setValue = (id, { text, className }) => {
+      const element = document.getElementById(id);
+      if (!element) return;
+      element.textContent = text;
+      element.className = className;
+    };
+
+    setText('perf-tab-count', view.tabCount);
+    setText('perf-memory', view.memory.text);
+    setText('perf-startup', view.startup);
+    setText('perf-tab-switch', view.tabSwitch.text);
+
+    // Retained element ids from the earlier dashboard markup.
+    setText('active-tabs-count', view.tabCount);
+    setValue('memory-usage', view.memory);
+    setValue('memory-pressure', view.pressure);
+    setValue('tab-switch-avg', view.tabSwitch);
+
+    const status = document.getElementById('perf-status');
+    if (status) {
+      status.textContent = view.status.status;
+      status.className = view.status.className;
+      status.title = view.status.tooltip;
     }
   }
 
@@ -779,7 +546,6 @@ class PerformanceOptimizer {
     this.performanceTargets.maxTotalMemory = 100;
     this.maxCacheSize = 20;
     this.maxPoolSize = 2;
-    this.activeTabLimit = 2; // Reduce active tabs
     this.maxActiveEditors = 1; // Only one active editor
     
     // Reduce update frequency
@@ -824,31 +590,6 @@ class PerformanceOptimizer {
   }
   
   // Phase 6: Initialize tab access tracking for existing tabs
-  initializeTabAccessTracking() {
-    if (window.markdownEditor?.tabManager) {
-      const allTabs = window.markdownEditor.tabManager.getAllTabs();
-      const activeTab = window.markdownEditor.tabManager.getActiveTab();
-      const now = Date.now();
-      
-      // Always reinitialize to catch new tabs
-      allTabs.forEach((tab, index) => {
-        if (!this.lastAccessTime.has(tab.id)) {
-          if (tab.id === activeTab?.id) {
-            this.lastAccessTime.set(tab.id, now);
-            this.tabAccessPattern.set(tab.id, 10);
-          } else {
-            // Make older tabs eligible for virtualization immediately
-            this.lastAccessTime.set(tab.id, now - 120000); // 2 minutes old
-            this.tabAccessPattern.set(tab.id, 1);
-          }
-        }
-      });
-      
-
-    }
-  }
-  
-  // Phase 6: Tab access tracking
   trackTabAccess(tabId) {
     this.lastAccessTime.set(tabId, Date.now());
     const currentCount = this.tabAccessPattern.get(tabId) || 0;
@@ -924,14 +665,6 @@ class PerformanceOptimizer {
   }
   
   // Phase 6: Get average access count for tabs
-  getAverageAccessCount() {
-    if (this.tabAccessPattern.size === 0) return 0;
-    
-    const totalAccess = Array.from(this.tabAccessPattern.values()).reduce((sum, count) => sum + count, 0);
-    return Math.round(totalAccess / this.tabAccessPattern.size);
-  }
-  
-  // Phase 6: Clean up tab tracking data
   cleanupTabTracking(tabId) {
     this.lastAccessTime.delete(tabId);
     this.tabAccessPattern.delete(tabId);
@@ -943,8 +676,13 @@ class PerformanceOptimizer {
   
   // Manual cleanup for virtual tabs when all tabs are closed
   clearAllVirtualTabs() {
+    const virtualTabsCleared = this.virtualizedTabs.size;
+    for (const tabId of this.virtualizedTabs) this.restoreTab(tabId);
 
-    
+    // Respect the explicit manual action for the rest of this session. A
+    // later Clean Memory action or application restart can enable automatic
+    // virtualization again.
+    this.autoVirtualizationPaused = true;
     this.virtualizedTabs.clear();
     this.lastAccessTime.clear();
     this.tabAccessPattern.clear();
@@ -956,8 +694,7 @@ class PerformanceOptimizer {
     if (window.gc) {
       window.gc();
     }
-    
-
+    return { virtualTabsCleared };
   }
   
   // Phase 6: Enhanced cleanup with tab tracking
@@ -975,14 +712,6 @@ class PerformanceOptimizer {
     
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
-    }
-    
-    // Clean up Monaco pool
-    if (this.monacoPool) {
-      this.monacoPool.forEach(item => {
-        if (item.editor) item.editor.dispose();
-        if (item.container) item.container.remove();
-      });
     }
     
     // Clear all maps and caches

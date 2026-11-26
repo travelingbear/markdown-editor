@@ -164,3 +164,5 @@ class PluginValidator {
 }
 
 window.PluginValidator = PluginValidator;
+
+export { PluginValidator };

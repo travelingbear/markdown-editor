@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased (2026-08-24)
+## Version 3.4.0 (in testing)
+
+### Preview Fixes
+
+- Task-list checkboxes sit beside the label in flat and nested lists, and the label text can be selected.
+- Table-of-contents links resolve numbered headings, percent-encoded heading IDs, and duplicate headings with numbered suffixes.
+- Added `MARKDOWN_CAPABILITIES_TEST.md` to exercise these behaviors and the supported Markdown rendering features.
 
 ### Architecture and Performance
 - Replaced Monaco with a lighter CodeMirror editor adapter and removed obsolete Monaco-only settings.

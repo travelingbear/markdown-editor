@@ -1,6 +1,6 @@
 # Markdown Editor - Complete User Manual
 
-*Version 3.3 Development - A comprehensive guide to the current markdown editing experience*
+*Version 3.4.0 test build*
 
 ---
 
@@ -225,7 +225,11 @@ Task lists are fully interactive in Preview mode:
   - [ ] Nested pending task
 ```
 
-Click checkboxes in Preview mode to toggle states. Changes automatically sync to source markdown. Checked task text uses the same subdued appearance for top-level and nested tasks; checking a parent does not change the appearance of its children.
+Click a checkbox in Preview mode to toggle the task and update its Markdown source. Drag over the task text to select it. Checked task text uses the same subdued appearance for top-level and nested tasks.
+
+### Links to Headings
+
+Click a table-of-contents link in Preview or Split mode to jump to its heading. Use a fragment such as `#1-headings` for `## 1. Headings`. When headings share the same title, the later ones get numbered suffixes such as `#notes-1`.
 
 ### Export and Sharing
 
@@ -653,8 +657,4 @@ Centered layout applies in Code and Preview. It is suspended in Split, where two
 
 *This manual represents the current development feature set. Developers should use `TECHNICAL_DOCUMENTATION.md` for architecture and `BUILD_GUIDE.md` for build and release instructions.*
 
-**Document Version**: 3.3 Development
-
-**Last Updated**: August 2026
-
-**Application Version**: 3.2.1 development branch
+**Last updated** November 2026.

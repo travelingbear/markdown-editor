@@ -4,7 +4,9 @@
   <img src="MarkdownEditorAboutImage.png" alt="Markdown Editor Splash Screen">
 </p>
 
-<p align="center">A powerful markdown viewer and editor built with Tauri + Rust + TypeScript/JavaScript.</p>
+<p align="center">An offline desktop Markdown editor built with Tauri, Rust, and CodeMirror 6.</p>
+
+**Version 3.4.0 is in testing** on `refactor/modular-rebuild`. This is the CodeMirror build. The default GitHub branch, `main`, currently serves the Monaco version.
 
 ## ✨ Features
 
@@ -22,7 +24,8 @@
 - **Pure or Extended Rendering**: Keep rendering lightweight and predictable, or enable optional local renderers
 - **Advanced Rendering**: Lazy plugin-owned KaTeX math expressions and Mermaid diagrams without external services
 - **Multi-Line Math**: Display blocks such as matrices and aligned environments render as a single formula, because math is resolved from the source before Markdown parsing
-- **Interactive Elements**: Clickable task lists update their exact source lines, even when labels are similar or repeated, with consistent checked styling at every nesting level
+- **Interactive Task Lists**: Checkboxes sit beside selectable task text and update the exact source line, even when labels repeat
+- **Heading Links**: Table-of-contents links jump to sections in the Preview pane, including numbered headings
 - **Scroll Position Memory**: Independent per-document positions synchronized across Code, Preview, and Split modes
 - **Recoverable Sessions**: Closing the application silently preserves modified tabs for the next launch; closing a document still asks before discarding changes
 
@@ -56,14 +59,21 @@
 
 ### Download & Install
 
-#### Windows
-- **EXE Installer**: `Markdown Viewer_***_x64-setup.exe`
-- **MSI Installer**: `Markdown Viewer_***_x64_en-US.msi`
-- **Portable**: `portable-win-markdown-viewer.exe`
+For the 3.4.0 test build, clone the branch below and build from source. See [GitHub Releases](https://github.com/travelingbear/markdown-editor/releases) for previously published downloads.
 
-#### macOS (I still need to build this one)
-- **DMG Package**: `Markdown Viewer_***_x64.dmg`
-- **App Bundle**: `Markdown Viewer.app`
+```bash
+git clone --single-branch --branch refactor/modular-rebuild https://github.com/travelingbear/markdown-editor.git
+cd markdown-editor
+```
+
+On Ubuntu 22.04 or 24.04, run `bash "Markdown Viewer/build-linux-ubuntu.sh"` to build the Linux packages. For other platforms, see the [Build Guide](BUILD_GUIDE.md).
+
+#### Windows
+- **EXE Installer**: `Markdown Editor_<version>_x64-setup.exe`
+- **MSI Installer**: `Markdown Editor_<version>_x64_en-US.msi`
+
+#### macOS
+- The macOS build outputs a DMG and a `Markdown Editor.app` bundle. The 3.4.0 test build still needs macOS verification.
 
 #### Linux
 - **RPM**: `Markdown Editor-***-1.x86_64.rpm`
@@ -129,7 +139,8 @@
 - [User Manual](USER_MANUAL.md) — features, settings, shortcuts, and troubleshooting
 - [Technical Documentation](TECHNICAL_DOCUMENTATION.md) — current architecture, ownership boundaries, plugin/rendering design, and refactoring priorities
 - [Build Guide](BUILD_GUIDE.md) — prerequisites, validation, native builds, releases, and packaging troubleshooting
-- [Changelog](CHANGELOG.md) — development history and the current unreleased work
+- [Changelog](CHANGELOG.md) — 3.4.0 test build changes and earlier versions
+- [Markdown Capabilities Test](MARKDOWN_CAPABILITIES_TEST.md) — sample document for testing tasks, heading links, and rendering
 
 ## 📄 License
 

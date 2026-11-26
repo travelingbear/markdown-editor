@@ -53,6 +53,8 @@ Cargo.lock
 # *.deb
 # *.AppImage
 
+# Local assistant notes
+/NEXT_AGENT_HANDOFF.md
 AI_ASSISTANT_PROMPT.md
 CURRENT_CHALLENGES.md
 DEVELOPMENT_LOG.md
